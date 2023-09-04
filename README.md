@@ -13,6 +13,10 @@ Cloud-Based Lab Emulator (CBLE) is a self-service lab platform designed to be us
 
 > 🚧 This project is still **heavily** under construction and is still being developed. It is **not** ready for production. 🚧
 
+## Config Files
+
+The provided `config.yaml` file is the default configuration for CBLE. **This file IS NOT gitignore'd!!!** Please use `config.local.yaml` to override the default config.
+
 ---
 
 ## Disclaimer

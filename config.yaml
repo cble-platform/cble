@@ -1,0 +1,5 @@
+database:
+  username: cble
+  password: cble
+  host: 127.0.0.1
+  ssl: false
