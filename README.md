@@ -5,20 +5,30 @@
 ![GitHub](https://img.shields.io/github/license/cble-platform/backend?style=flat-square)
 [![Release](https://img.shields.io/github/release/cble-platform/backend?style=flat-square)](https://github.com/cble-platform/backend/releases/latest?style=flat-square)
 
+---
+
 > _CBLE is pronounced as "cable"_
 
 Cloud-Based Lab Emulator (CBLE) is a self-service lab platform designed to be used in academic institutions, cyber ranges, and pretty much anywhere automated infrastructure deployment is needed. Blueprints can be created and released on CBLE and users can then request their own copies of this blueprinted infrastructure.
 
 > 🚧 This project is still **heavily** under construction and is still being developed. It is **not** ready for production. 🚧
 
-## Warranty Statement
+---
 
-The author of this platform offers no warranty or guarantee for its performance, reliability, or sustainability for any particular purpose.
+## Disclaimer
 
-The platform is provided "as is" without warranty of any kind, either express or implied, including but not limited to the implied warranties of merchantability, fitness for a particular purpose, or non-infringement.
+**Important: This platform comes with NO WARRANTY or GUARANTEE of SECURITY. By using this platform, you acknowledge and accept the following terms and conditions:**
 
-Use of this tool is entirely at the user’s own risk. The author does not accept any liability for any loss, damage or expense incurred by the user or any third party resulting from the use of this tool, whether direct or indirect.
+1. **No Warranty**: This platform is provided "as is" and without any warranty or guarantee of any kind, whether express or implied. The author makes no representations or warranties regarding the accuracy, functionality, or performance of this platform.
 
-Furthermore, the author expressly disclaims any responsibility or liability for the accuracy, content, or availability of information found through the use of this tool, or for any harm caused by viruses, malware, or other harmful components that may be introduced into your system as a result of using this tool.
+2. **Use at Your Own Risk**: You are using this platform at your own risk. The author shall not be held responsible for any harm, damage, or loss of data that may result from using this platform. You assume full responsibility for any risks associated with its use.
 
-By using this tool, the user acknowledges that they have read this warranty statement. Additionally, the user agrees to assume all risks associated with its use.
+3. **No Liability**: The author, contributors, and maintainers of this platform shall not be liable for any direct, indirect, incidental, special, or consequential damages or losses, including but not limited to loss of profits, data, or use, arising out of or in any way connected with the use of this platform.
+
+4. **Security Risks**: This platform may have security vulnerabilities or issues. The author does not guarantee the security of your data or the security of this platform. You are responsible for implementing your own security measures to protect your data and systems.
+
+5. **No Support**: The author may not provide support or assistance for this platform. You are encouraged to seek help from the community or third-party resources if you encounter issues or need assistance.
+
+By using this platform, you agree to these terms and conditions. If you do not agree with these terms, please refrain from using this platform.
+
+Please use this platform responsibly and with caution. Your use of this platform is subject to your acceptance of these terms and conditions. If you have any concerns or questions, please raise these in a [discussion](https://github.com/cble-platform/backend/discussions).
