@@ -2,3 +2,13 @@
 config.local.yaml
 config.development.yaml
 config.production.yaml
+
+# Certs
+*.key
+*.cert
+
+# Air tmp
+tmp/
+
+# Development
+dev/

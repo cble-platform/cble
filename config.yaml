@@ -1,5 +1,16 @@
+server:
+  hostname: localhost
+  port: 8080
+  ssl: false
 database:
   username: cble
   password: cble
   host: 127.0.0.1
   ssl: false
+initialization:
+  default_admin:
+    first_name: CBLE
+    last_name: Admin
+    username: cble
+    password: cble
+  admin_group: CBLE Administrators
