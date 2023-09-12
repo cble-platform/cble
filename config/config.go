@@ -7,17 +7,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Config struct {
-	Database DatabaseConfig `yaml:"database"`
-}
-
-type DatabaseConfig struct {
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
-	Host     string `yaml:"host"`
-	SSL      bool   `yaml:"ssl"`
-}
-
 func LoadConfig(cfgFile string) (*Config, error) {
 	if cfgFile == "" {
 		if f, err := os.Stat("config.local.yaml"); err == nil {
