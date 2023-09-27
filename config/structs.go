@@ -1,8 +1,19 @@
 package config
 
 type Config struct {
+	Debug          bool                 `yaml:"debug,omitempty"`
+	Server         ServerConfig         `yaml:"server"`
 	Database       DatabaseConfig       `yaml:"database"`
 	Initialization InitializationConfig `yaml:"initialization"`
+}
+
+type ServerConfig struct {
+	Hostname         string   `yaml:"hostname"`
+	Port             int      `yaml:"port"`
+	SSL              bool     `yaml:"ssl"`
+	AllowedOrigins   []string `yaml:"allowed_origins,omitempty"`
+	GQlTrace         bool     `yaml:"gql_trace,omitempty"`
+	GQlIntrospection bool     `yaml:"gql_introspection,omitempty"`
 }
 
 type DatabaseConfig struct {

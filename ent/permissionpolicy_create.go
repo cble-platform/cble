@@ -209,11 +209,15 @@ func (ppc *PermissionPolicyCreate) createSpec() (*PermissionPolicy, *sqlgraph.Cr
 // PermissionPolicyCreateBulk is the builder for creating many PermissionPolicy entities in bulk.
 type PermissionPolicyCreateBulk struct {
 	config
+	err      error
 	builders []*PermissionPolicyCreate
 }
 
 // Save creates the PermissionPolicy entities in the database.
 func (ppcb *PermissionPolicyCreateBulk) Save(ctx context.Context) ([]*PermissionPolicy, error) {
+	if ppcb.err != nil {
+		return nil, ppcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(ppcb.builders))
 	nodes := make([]*PermissionPolicy, len(ppcb.builders))
 	mutators := make([]Mutator, len(ppcb.builders))

@@ -1,0 +1,43 @@
+package internal
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/cble-platform/backend/config"
+	"github.com/cble-platform/backend/ent"
+)
+
+func InitializeDatabase(ctx context.Context, cbleConfig *config.Config) (*ent.Client, error) {
+	pgPort := 5432
+	if cbleConfig.Database.Port != nil {
+		pgPort = *cbleConfig.Database.Port
+	}
+	pgDatabase := "cble"
+	if cbleConfig.Database.Database != nil {
+		pgDatabase = *cbleConfig.Database.Database
+	}
+	pgSslMode := "disable"
+	if cbleConfig.Database.SSL != nil && *cbleConfig.Database.SSL {
+		pgSslMode = "require"
+	}
+	pgConnStr := fmt.Sprintf(
+		"host=%s port=%d user=%s dbname=%s password=%s sslmode=%s",
+		cbleConfig.Database.Host,
+		pgPort,
+		cbleConfig.Database.Username,
+		pgDatabase,
+		cbleConfig.Database.Password,
+		pgSslMode,
+	)
+	client, err := ent.Open("postgres", pgConnStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed opening connection to postgres: %v", err)
+	}
+
+	if err := client.Schema.Create(ctx); err != nil {
+		return nil, fmt.Errorf("failed creating schema resources: %v", err)
+	}
+
+	return client, nil
+}
