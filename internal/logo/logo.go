@@ -1,8 +1,8 @@
-package internal
+package logo
 
 import "github.com/fatih/color"
 
-func Logo() string {
+func Print() string {
 	return color.WhiteString("      ____        ") + color.YellowString("  ______  ______   _        _______ ") + color.WhiteString("        ____      ") + "\n" +
 		color.WhiteString(" ____|    \\       ") + color.YellowString(" / _____)| ___  \\ | |      |  _____)") + color.WhiteString("       /    |____ ") + "\n" +
 		color.WhiteString("(____|     '._____") + color.YellowString("/ /      | |__)  )| |      | |______") + color.WhiteString("_____.'     |____)") + "\n" +

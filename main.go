@@ -5,7 +5,10 @@ import (
 	"fmt"
 
 	"github.com/cble-platform/backend/config"
-	"github.com/cble-platform/backend/internal"
+	"github.com/cble-platform/backend/internal/database"
+	"github.com/cble-platform/backend/internal/logo"
+	"github.com/cble-platform/backend/internal/utils"
+	"github.com/cble-platform/backend/internal/webserver"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -14,7 +17,7 @@ import (
 var cfgFile string
 
 func main() {
-	fmt.Println(internal.Logo())
+	fmt.Println(logo.Print())
 	//-------------//
 	// Load config //
 	//-------------//
@@ -33,7 +36,7 @@ func main() {
 	// ENT //
 	//-----//
 
-	client, err := internal.InitializeDatabase(ctx, cbleConfig)
+	client, err := database.Initialize(ctx, cbleConfig)
 	if err != nil {
 		logrus.Fatalf("failed to initialize database: %v", err)
 	}
@@ -43,7 +46,7 @@ func main() {
 	// Default Admin //
 	//---------------//
 
-	err = internal.InitializeDefaultAdminUserGroup(ctx, client, cbleConfig)
+	err = utils.InitializeDefaultAdminUserGroup(ctx, client, cbleConfig)
 	if err != nil {
 		logrus.Fatalf("failed to initialize default admin user/group")
 	}
@@ -52,6 +55,6 @@ func main() {
 	// Webserver //
 	//-----------//
 
-	w := internal.NewWebserver(cbleConfig, client)
+	w := webserver.New(cbleConfig, client)
 	w.Listen()
 }
