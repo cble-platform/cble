@@ -1,0 +1,74 @@
+scalar Time
+
+type Blueprint {
+  id: ID!
+  name: String!
+  blueprintTemplate: String!
+
+  parentGroup: Group!
+  virtualizationProvider: VirtualizationProvider!
+  deployments: [Deployment]!
+}
+
+type Deployment {
+  id: ID!
+
+  blueprint: Blueprint!
+  requester: User!
+}
+
+type Group {
+  id: ID!
+  name: String!
+
+  children: [Group]
+  parent: Group
+  users: [User]
+  permissionPolicies: [PermissionPolicy]
+  blueprints: [Blueprint]
+}
+
+type Permission {
+  id: ID!
+  key: String
+
+  permissionPolicies: [PermissionPolicy]
+}
+
+enum PermissionPolicyType {
+  ALLOW
+  DENY
+}
+
+type PermissionPolicy {
+  id: ID!
+  type: PermissionPolicyType!
+
+  permission: Permission!
+  group: Group!
+}
+
+type User {
+  id: ID!
+  username: String!
+  email: String!
+  firstName: String!
+  lastName: String!
+
+  groups: [Group]!
+  deployments: [Deployment]!
+}
+
+type VirtualizationProvider {
+  id: ID!
+  displayName: String!
+  providerGitUrl: String!
+  providerVersion: String!
+  configPath: String!
+
+  blueprints: [Blueprint]
+}
+
+type Query {
+  users: [User!]!
+}
