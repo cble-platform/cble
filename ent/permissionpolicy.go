@@ -21,6 +21,8 @@ type PermissionPolicy struct {
 	ID uuid.UUID `json:"id,omitempty"`
 	// Type holds the value of the "type" field.
 	Type permissionpolicy.Type `json:"type,omitempty"`
+	// IsInherited holds the value of the "is_inherited" field.
+	IsInherited bool `json:"is_inherited,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PermissionPolicyQuery when eager-loading is set.
 	Edges                        PermissionPolicyEdges `json:"edges"`
@@ -71,6 +73,8 @@ func (*PermissionPolicy) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case permissionpolicy.FieldIsInherited:
+			values[i] = new(sql.NullBool)
 		case permissionpolicy.FieldType:
 			values[i] = new(sql.NullString)
 		case permissionpolicy.FieldID:
@@ -105,6 +109,12 @@ func (pp *PermissionPolicy) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field type", values[i])
 			} else if value.Valid {
 				pp.Type = permissionpolicy.Type(value.String)
+			}
+		case permissionpolicy.FieldIsInherited:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field is_inherited", values[i])
+			} else if value.Valid {
+				pp.IsInherited = value.Bool
 			}
 		case permissionpolicy.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -168,6 +178,9 @@ func (pp *PermissionPolicy) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", pp.ID))
 	builder.WriteString("type=")
 	builder.WriteString(fmt.Sprintf("%v", pp.Type))
+	builder.WriteString(", ")
+	builder.WriteString("is_inherited=")
+	builder.WriteString(fmt.Sprintf("%v", pp.IsInherited))
 	builder.WriteByte(')')
 	return builder.String()
 }

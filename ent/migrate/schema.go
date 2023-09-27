@@ -85,7 +85,9 @@ var (
 	// PermissionsColumns holds the columns for the "permissions" table.
 	PermissionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
-		{Name: "key", Type: field.TypeString},
+		{Name: "key", Type: field.TypeString, Unique: true},
+		{Name: "component", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString},
 	}
 	// PermissionsTable holds the schema information for the "permissions" table.
 	PermissionsTable = &schema.Table{
@@ -97,6 +99,7 @@ var (
 	PermissionPoliciesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "type", Type: field.TypeEnum, Nullable: true, Enums: []string{"ALLOW", "DENY"}, Default: "ALLOW"},
+		{Name: "is_inherited", Type: field.TypeBool, Nullable: true, Default: false},
 		{Name: "permission_policy_permission", Type: field.TypeUUID},
 		{Name: "permission_policy_group", Type: field.TypeUUID},
 	}
@@ -108,13 +111,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "permission_policies_permissions_permission",
-				Columns:    []*schema.Column{PermissionPoliciesColumns[2]},
+				Columns:    []*schema.Column{PermissionPoliciesColumns[3]},
 				RefColumns: []*schema.Column{PermissionsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "permission_policies_groups_group",
-				Columns:    []*schema.Column{PermissionPoliciesColumns[3]},
+				Columns:    []*schema.Column{PermissionPoliciesColumns[4]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},

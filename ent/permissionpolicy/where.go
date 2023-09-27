@@ -54,6 +54,11 @@ func IDLTE(id uuid.UUID) predicate.PermissionPolicy {
 	return predicate.PermissionPolicy(sql.FieldLTE(FieldID, id))
 }
 
+// IsInherited applies equality check predicate on the "is_inherited" field. It's identical to IsInheritedEQ.
+func IsInherited(v bool) predicate.PermissionPolicy {
+	return predicate.PermissionPolicy(sql.FieldEQ(FieldIsInherited, v))
+}
+
 // TypeEQ applies the EQ predicate on the "type" field.
 func TypeEQ(v Type) predicate.PermissionPolicy {
 	return predicate.PermissionPolicy(sql.FieldEQ(FieldType, v))
@@ -82,6 +87,26 @@ func TypeIsNil() predicate.PermissionPolicy {
 // TypeNotNil applies the NotNil predicate on the "type" field.
 func TypeNotNil() predicate.PermissionPolicy {
 	return predicate.PermissionPolicy(sql.FieldNotNull(FieldType))
+}
+
+// IsInheritedEQ applies the EQ predicate on the "is_inherited" field.
+func IsInheritedEQ(v bool) predicate.PermissionPolicy {
+	return predicate.PermissionPolicy(sql.FieldEQ(FieldIsInherited, v))
+}
+
+// IsInheritedNEQ applies the NEQ predicate on the "is_inherited" field.
+func IsInheritedNEQ(v bool) predicate.PermissionPolicy {
+	return predicate.PermissionPolicy(sql.FieldNEQ(FieldIsInherited, v))
+}
+
+// IsInheritedIsNil applies the IsNil predicate on the "is_inherited" field.
+func IsInheritedIsNil() predicate.PermissionPolicy {
+	return predicate.PermissionPolicy(sql.FieldIsNull(FieldIsInherited))
+}
+
+// IsInheritedNotNil applies the NotNil predicate on the "is_inherited" field.
+func IsInheritedNotNil() predicate.PermissionPolicy {
+	return predicate.PermissionPolicy(sql.FieldNotNull(FieldIsInherited))
 }
 
 // HasPermission applies the HasEdge predicate on the "permission" edge.
