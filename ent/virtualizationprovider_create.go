@@ -202,11 +202,15 @@ func (vpc *VirtualizationProviderCreate) createSpec() (*VirtualizationProvider, 
 // VirtualizationProviderCreateBulk is the builder for creating many VirtualizationProvider entities in bulk.
 type VirtualizationProviderCreateBulk struct {
 	config
+	err      error
 	builders []*VirtualizationProviderCreate
 }
 
 // Save creates the VirtualizationProvider entities in the database.
 func (vpcb *VirtualizationProviderCreateBulk) Save(ctx context.Context) ([]*VirtualizationProvider, error) {
+	if vpcb.err != nil {
+		return nil, vpcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(vpcb.builders))
 	nodes := make([]*VirtualizationProvider, len(vpcb.builders))
 	mutators := make([]Mutator, len(vpcb.builders))

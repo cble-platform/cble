@@ -240,11 +240,15 @@ func (bc *BlueprintCreate) createSpec() (*Blueprint, *sqlgraph.CreateSpec) {
 // BlueprintCreateBulk is the builder for creating many Blueprint entities in bulk.
 type BlueprintCreateBulk struct {
 	config
+	err      error
 	builders []*BlueprintCreate
 }
 
 // Save creates the Blueprint entities in the database.
 func (bcb *BlueprintCreateBulk) Save(ctx context.Context) ([]*Blueprint, error) {
+	if bcb.err != nil {
+		return nil, bcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(bcb.builders))
 	nodes := make([]*Blueprint, len(bcb.builders))
 	mutators := make([]Mutator, len(bcb.builders))
