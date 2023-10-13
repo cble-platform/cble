@@ -1,4 +1,4 @@
-package internal
+package webserver
 
 import (
 	"fmt"
@@ -70,16 +70,10 @@ func playgroundHandler() gin.HandlerFunc {
 	}
 }
 
-func NewWebserver(config *config.Config, client *ent.Client) *CBLEWebserver {
+func New(config *config.Config, client *ent.Client) *CBLEWebserver {
 	r := gin.Default()
 
 	api := r.Group("/api")
-
-	api.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
-	})
 
 	gql := api.Group("/graphql")
 

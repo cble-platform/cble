@@ -17,6 +17,8 @@ const (
 	FieldID = "id"
 	// FieldType holds the string denoting the type field in the database.
 	FieldType = "type"
+	// FieldIsInherited holds the string denoting the is_inherited field in the database.
+	FieldIsInherited = "is_inherited"
 	// EdgePermission holds the string denoting the permission edge name in mutations.
 	EdgePermission = "permission"
 	// EdgeGroup holds the string denoting the group edge name in mutations.
@@ -43,6 +45,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldType,
+	FieldIsInherited,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "permission_policies"
@@ -68,6 +71,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultIsInherited holds the default value on creation for the "is_inherited" field.
+	DefaultIsInherited bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -109,6 +114,11 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByType orders the results by the type field.
 func ByType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldType, opts...).ToFunc()
+}
+
+// ByIsInherited orders the results by the is_inherited field.
+func ByIsInherited(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsInherited, opts...).ToFunc()
 }
 
 // ByPermissionField orders the results by permission field.

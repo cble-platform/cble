@@ -1,14 +1,15 @@
-package internal
+package database
 
 import (
 	"context"
 	"fmt"
 
+	"entgo.io/ent/dialect"
 	"github.com/cble-platform/backend/config"
 	"github.com/cble-platform/backend/ent"
 )
 
-func InitializeDatabase(ctx context.Context, cbleConfig *config.Config) (*ent.Client, error) {
+func Initialize(ctx context.Context, cbleConfig *config.Config) (*ent.Client, error) {
 	pgPort := 5432
 	if cbleConfig.Database.Port != nil {
 		pgPort = *cbleConfig.Database.Port
@@ -30,7 +31,7 @@ func InitializeDatabase(ctx context.Context, cbleConfig *config.Config) (*ent.Cl
 		cbleConfig.Database.Password,
 		pgSslMode,
 	)
-	client, err := ent.Open("postgres", pgConnStr)
+	client, err := ent.Open(dialect.Postgres, pgConnStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed opening connection to postgres: %v", err)
 	}
