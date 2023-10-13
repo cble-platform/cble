@@ -75,12 +75,6 @@ func New(config *config.Config, client *ent.Client) *CBLEWebserver {
 
 	api := r.Group("/api")
 
-	api.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
-	})
-
 	gql := api.Group("/graphql")
 
 	gql.Any("/query", graphqlHandler(config, client))

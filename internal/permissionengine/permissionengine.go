@@ -44,7 +44,7 @@ func (pe *PermissionEngine) RegisterPermission(ctx context.Context, key string, 
 		// Some other component registered this same permission, return an error
 		return nil, fmt.Errorf("failed to register permission: component \"%s\" has already registered permission \"%s\"", entPermission.Component, entPermission.Key)
 	} else {
-		// This permission has laready been registered by this component, so return it
+		// This permission has already been registered by this component, so return it
 		return entPermission, nil
 	}
 }
@@ -158,7 +158,7 @@ func inheritPermissionPolicy(ctx context.Context, txClient *ent.Client, policyTy
 
 		// Inherit this policy to all of this group's children
 
-		// iterate over the childern of this group and call self on it
+		// iterate over the children of this group and call self on it
 		entChildGroups, err := entGroup.QueryChildren().All(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to query group children")
@@ -170,7 +170,7 @@ func inheritPermissionPolicy(ctx context.Context, txClient *ent.Client, policyTy
 			}
 		}
 	}
-	// If not inherited, leave it alone as it's overridden and don't propogate to children
+	// If not inherited, leave it alone as it's overridden and don't propagate to children
 
 	return nil
 }
