@@ -1,5 +1,16 @@
 # Openstack CBLE Provider (v1)
 
+## Generating Provider Config
+
+First, download the `<project_name>-rc.sh` file from your Openstack deployment. Then pass it into the `generate_config.sh` script:
+
+```shell
+$ ./generate_config.sh path/to/some-rc.sh
+Generating config from path/to/some-rc.sh...
+Please enter your OpenStack Password for project <project name> as user <username>:
+Generated Openstack provider config config.yaml!
+```
+
 ## Example Blueprint
 
 ```yaml

@@ -32,26 +32,6 @@ func UnmarshalBlueprintWithVars(filepath string, varFilepath string) (*Openstack
 	return blueprint, nil
 }
 
-func ValidateBlueprint(blueprint *OpenstackBlueprint) error {
-	for k, o := range blueprint.Objects {
-		switch o.Resource {
-		case OpenstackResourceTypeHost:
-			if err := validateHost(blueprint, k); err != nil {
-				return fmt.Errorf("invalid host \"%s\": %v", k, err)
-			}
-		case OpenstackResourceTypeNetwork:
-			if err := validateNetwork(blueprint, k); err != nil {
-				return fmt.Errorf("invalid network \"%s\": %v", k, err)
-			}
-		case OpenstackResourceTypeRouter:
-			if err := validateRouter(blueprint, k); err != nil {
-				return fmt.Errorf("invalid router \"%s\": %v", k, err)
-			}
-		}
-	}
-	return nil
-}
-
 func unpackObjects(blueprint *OpenstackBlueprint) error {
 	// Initialize the native maps
 	blueprint.Hosts = make(map[string]OpenstackHost)

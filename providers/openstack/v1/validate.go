@@ -2,6 +2,26 @@ package v1
 
 import "fmt"
 
+func ValidateBlueprint(blueprint *OpenstackBlueprint) error {
+	for k, o := range blueprint.Objects {
+		switch o.Resource {
+		case OpenstackResourceTypeHost:
+			if err := validateHost(blueprint, k); err != nil {
+				return fmt.Errorf("invalid host \"%s\": %v", k, err)
+			}
+		case OpenstackResourceTypeNetwork:
+			if err := validateNetwork(blueprint, k); err != nil {
+				return fmt.Errorf("invalid network \"%s\": %v", k, err)
+			}
+		case OpenstackResourceTypeRouter:
+			if err := validateRouter(blueprint, k); err != nil {
+				return fmt.Errorf("invalid router \"%s\": %v", k, err)
+			}
+		}
+	}
+	return nil
+}
+
 func validateHost(blueprint *OpenstackBlueprint, key string) error {
 	for networkKey, networkAttachment := range blueprint.Hosts[key].Networks {
 		// Check that the network key we're attaching to is defined
