@@ -8,8 +8,8 @@ import (
 
 const MAJOR_VERSION = "1"
 
-func UnmarshalBlueprint(filepath string) (*OpenstackBlueprint, error) {
-	blueprint, err := internal.UnmarshalBlueprint[OpenstackBlueprint](MAJOR_VERSION, filepath)
+func UnmarshalBlueprintBytes(in []byte) (*OpenstackBlueprint, error) {
+	blueprint, err := internal.UnmarshalBlueprintBytes[OpenstackBlueprint](MAJOR_VERSION, in)
 	if err != nil {
 		return nil, err
 	}
@@ -17,11 +17,12 @@ func UnmarshalBlueprint(filepath string) (*OpenstackBlueprint, error) {
 	if err != nil {
 		return nil, err
 	}
+	generateImpliedDependsOn(blueprint)
 	return blueprint, nil
 }
 
-func UnmarshalBlueprintWithVars(filepath string, varFilepath string) (*OpenstackBlueprint, error) {
-	blueprint, err := internal.UnmarshalBlueprintWithVars[OpenstackBlueprint](MAJOR_VERSION, filepath, varFilepath)
+func UnmarshalBlueprintFile(filepath string) (*OpenstackBlueprint, error) {
+	blueprint, err := internal.UnmarshalBlueprintFile[OpenstackBlueprint](MAJOR_VERSION, filepath)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +30,55 @@ func UnmarshalBlueprintWithVars(filepath string, varFilepath string) (*Openstack
 	if err != nil {
 		return nil, err
 	}
+	generateImpliedDependsOn(blueprint)
 	return blueprint, nil
+}
+
+func UnmarshalBlueprintBytesWithVars(in []byte, vars map[string]interface{}) (*OpenstackBlueprint, error) {
+	blueprint, err := internal.UnmarshalBlueprintBytesWithVars[OpenstackBlueprint](MAJOR_VERSION, in, vars)
+	if err != nil {
+		return nil, err
+	}
+	err = unpackObjects(blueprint)
+	if err != nil {
+		return nil, err
+	}
+	generateImpliedDependsOn(blueprint)
+	return blueprint, nil
+}
+
+func UnmarshalBlueprintFileWithVars(filepath string, varFilepath string) (*OpenstackBlueprint, error) {
+	blueprint, err := internal.UnmarshalBlueprintFileWithVars[OpenstackBlueprint](MAJOR_VERSION, filepath, varFilepath)
+	if err != nil {
+		return nil, err
+	}
+	err = unpackObjects(blueprint)
+	if err != nil {
+		return nil, err
+	}
+	generateImpliedDependsOn(blueprint)
+	return blueprint, nil
+}
+
+func generateImpliedDependsOn(blueprint *OpenstackBlueprint) error {
+	for k, o := range blueprint.Objects {
+		switch o.Resource {
+		case OpenstackResourceTypeHost:
+			// Add all networks host is on as depends_on
+			for nk := range o.Host.Networks {
+				o.DependsOn = append(o.DependsOn, nk)
+			}
+			blueprint.Objects[k] = o
+		case OpenstackResourceTypeNetwork:
+		case OpenstackResourceTypeRouter:
+			// Add all networks host is on as depends_on
+			for nk := range o.Router.Networks {
+				o.DependsOn = append(o.DependsOn, nk)
+			}
+			blueprint.Objects[k] = o
+		}
+	}
+	return nil
 }
 
 func unpackObjects(blueprint *OpenstackBlueprint) error {
