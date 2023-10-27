@@ -4,6 +4,7 @@ import "fmt"
 
 func ValidateBlueprint(blueprint *OpenstackBlueprint) error {
 	for k, o := range blueprint.Objects {
+		// Validate individual dependent types
 		switch o.Resource {
 		case OpenstackResourceTypeHost:
 			if err := validateHost(blueprint, k); err != nil {
@@ -18,6 +19,17 @@ func ValidateBlueprint(blueprint *OpenstackBlueprint) error {
 				return fmt.Errorf("invalid router \"%s\": %v", k, err)
 			}
 		}
+		// Validate dependencies
+		for _, d := range o.DependsOn {
+			// Check that not self-dependent
+			if d == k {
+				return fmt.Errorf("object \"%s\" dependent on self", k)
+			}
+			// Check dependency is valid object
+			if _, exists := blueprint.Objects[d]; !exists {
+				return fmt.Errorf("object \"%s\" dependency \"%s\" is undefined", k, d)
+			}
+		}
 	}
 	return nil
 }
@@ -30,8 +42,8 @@ func validateHost(blueprint *OpenstackBlueprint, key string) error {
 			return fmt.Errorf("network object \"%s\" is not defined", networkKey)
 		}
 		// If not DHCP, check for valid IP address
-		if !networkAttachment.DHCP {
-			if !network.Subnet.Contains(networkAttachment.IP) {
+		if !networkAttachment.DHCP && networkAttachment.IP != nil {
+			if !network.Subnet.Contains(*networkAttachment.IP) {
 				return fmt.Errorf("ip of %s on network \"%s\" (%s) is not valid", networkAttachment.IP, networkKey, network.Subnet)
 			}
 		}
@@ -41,8 +53,10 @@ func validateHost(blueprint *OpenstackBlueprint, key string) error {
 
 func validateNetwork(blueprint *OpenstackBlueprint, key string) error {
 	// Check that the gateway address is in the subnet
-	if !blueprint.Networks[key].Subnet.Contains(blueprint.Networks[key].Gateway) {
-		return fmt.Errorf("gateway of %s not in subnet %s", blueprint.Networks[key].Gateway, blueprint.Networks[key].Subnet)
+	if blueprint.Networks[key].Gateway != nil {
+		if !blueprint.Networks[key].Subnet.Contains(*blueprint.Networks[key].Gateway) {
+			return fmt.Errorf("gateway of %s not in subnet %s", blueprint.Networks[key].Gateway, blueprint.Networks[key].Subnet)
+		}
 	}
 	// If DHCP ranges set, validate them
 	if blueprint.Networks[key].DHCP != nil {
@@ -73,8 +87,8 @@ func validateRouter(blueprint *OpenstackBlueprint, key string) error {
 			return fmt.Errorf("network object \"%s\" is not defined", networkKey)
 		}
 		// If not DHCP, check for valid IP address
-		if !networkAttachment.DHCP {
-			if !network.Subnet.Contains(networkAttachment.IP) {
+		if !networkAttachment.DHCP && networkAttachment.IP != nil {
+			if !network.Subnet.Contains(*networkAttachment.IP) {
 				return fmt.Errorf("ip of %s on network \"%s\" (%s) is not valid", networkAttachment.IP, networkKey, network.Subnet)
 			}
 		}

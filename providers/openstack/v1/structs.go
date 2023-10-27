@@ -2,8 +2,10 @@ package v1
 
 import (
 	"fmt"
+	"net"
 	"net/netip"
 
+	"github.com/cble-platform/backend/providers"
 	"gopkg.in/yaml.v3"
 )
 
@@ -16,16 +18,20 @@ const (
 )
 
 type OpenstackBlueprint struct {
-	Version  string                     `yaml:"version"`
-	Objects  map[string]OpenstackObject `yaml:",inline"`
-	Hosts    map[string]OpenstackHost
-	Networks map[string]OpenstackNetwork
-	Routers  map[string]OpenstackRouter
+	// Inherit standard object values
+	providers.Blueprint `yaml:",inline"`
+	// Openstack specific values
+	Objects  map[string]OpenstackObject  `yaml:",inline"`
+	Hosts    map[string]OpenstackHost    `yaml:"-"`
+	Networks map[string]OpenstackNetwork `yaml:"-"`
+	Routers  map[string]OpenstackRouter  `yaml:"-"`
 }
 
 type OpenstackObject struct {
-	Resource OpenstackResourceType `yaml:"resource"`
-	Config   yaml.Node             `yaml:"config"`
+	// Inherit standard object values
+	providers.Object `yaml:",inline"`
+	// Openstack specific values
+	Resource OpenstackResourceType `yaml:"-"`
 	Host     *OpenstackHost        `yaml:"-"`
 	Network  *OpenstackNetwork     `yaml:"-"`
 	Router   *OpenstackRouter      `yaml:"-"`
@@ -42,6 +48,10 @@ func (o *OpenstackObject) UnmarshalYAML(n *yaml.Node) error {
 		return err
 	}
 
+	// Convert resource string into openstack resource type
+	o.Resource = OpenstackResourceType(o.Object.Resource)
+
+	// Marshall the various resource types
 	switch o.Resource {
 	case OpenstackResourceTypeHost:
 		o.Host = new(OpenstackHost)
@@ -68,26 +78,34 @@ type OpenstackHost struct {
 	Image string `yaml:"image"`
 	// Flavor of the host
 	Flavor string `yaml:"flavor"`
-	// Disk size of the host (in MB)
+	// Disk size of the host (in GB)
 	DiskSize int `yaml:"disk_size"`
 	// Networks to attach this host to
 	Networks map[string]OpenstackNetworkAttachment `yaml:"networks"`
+	// Any userdata to pass to created instance
+	UserData []byte `yaml:"user_data,omitempty"`
 }
 
 type OpenstackNetworkAttachment struct {
 	// Should this interface get IP via DHCP (overrides IP setting if set)
 	DHCP bool `yaml:"dhcp,omitempty"`
 	// IPv4 address to use for the interface
-	IP netip.Addr `yaml:"ip,omitempty"`
+	IP *netip.Addr `yaml:"ip,omitempty"`
 }
 
 type OpenstackNetwork struct {
+	// Openstack network name
+	Name *string `yaml:"name,omitempty"`
+	// Openstack network description
+	Description *string `yaml:"description,omitempty"`
 	// The subnet CIDR for the network
 	Subnet netip.Prefix `yaml:"subnet"`
 	// The gateway for the network
-	Gateway netip.Addr `yaml:"gateway,omitempty"`
+	Gateway *netip.Addr `yaml:"gateway,omitempty"`
 	// DHCP ranges for the network (omit to disable DHCP)
 	DHCP []OpenstackNetworkDHCP `yaml:"dhcp,omitempty"`
+	// DNS servers for the network (omit to disable DNS)
+	Resolvers []net.Addr `yaml:"resolvers,omitempty"`
 }
 
 type OpenstackNetworkDHCP struct {
@@ -98,8 +116,10 @@ type OpenstackNetworkDHCP struct {
 }
 
 type OpenstackRouter struct {
-	// Openstack instance name
+	// Openstack router name
 	Name *string `yaml:"name,omitempty"`
+	// Openstack router description
+	Description *string `yaml:"description,omitempty"`
 	// The ID or Name of the external Openstack network to attach this router to
 	ExternalNetwork string `yaml:"external_network"`
 	// Networks to attach this host to
