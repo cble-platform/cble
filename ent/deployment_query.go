@@ -331,6 +331,18 @@ func (dq *DeploymentQuery) WithRequester(opts ...func(*UserQuery)) *DeploymentQu
 
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
+//
+// Example:
+//
+//	var v []struct {
+//		TemplateVars map[string]interface {} `json:"template_vars,omitempty"`
+//		Count int `json:"count,omitempty"`
+//	}
+//
+//	client.Deployment.Query().
+//		GroupBy(deployment.FieldTemplateVars).
+//		Aggregate(ent.Count()).
+//		Scan(ctx, &v)
 func (dq *DeploymentQuery) GroupBy(field string, fields ...string) *DeploymentGroupBy {
 	dq.ctx.Fields = append([]string{field}, fields...)
 	grbuild := &DeploymentGroupBy{build: dq}
@@ -342,6 +354,16 @@ func (dq *DeploymentQuery) GroupBy(field string, fields ...string) *DeploymentGr
 
 // Select allows the selection one or more fields/columns for the given query,
 // instead of selecting all fields in the entity.
+//
+// Example:
+//
+//	var v []struct {
+//		TemplateVars map[string]interface {} `json:"template_vars,omitempty"`
+//	}
+//
+//	client.Deployment.Query().
+//		Select(deployment.FieldTemplateVars).
+//		Scan(ctx, &v)
 func (dq *DeploymentQuery) Select(fields ...string) *DeploymentSelect {
 	dq.ctx.Fields = append(dq.ctx.Fields, fields...)
 	sbuild := &DeploymentSelect{DeploymentQuery: dq}

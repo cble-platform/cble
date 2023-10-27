@@ -18,6 +18,12 @@ func (Deployment) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).
 			Immutable().
 			Default(uuid.New),
+		field.JSON("template_vars", map[string]interface{}{}).
+			Default(make(map[string]interface{})),
+		field.JSON("deployment_vars", map[string]interface{}{}).
+			Default(make(map[string]interface{})),
+		field.JSON("is_active", map[string]int{}).
+			Default(make(map[string]int)),
 	}
 }
 

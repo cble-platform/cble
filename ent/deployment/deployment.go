@@ -13,6 +13,12 @@ const (
 	Label = "deployment"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldTemplateVars holds the string denoting the template_vars field in the database.
+	FieldTemplateVars = "template_vars"
+	// FieldDeploymentVars holds the string denoting the deployment_vars field in the database.
+	FieldDeploymentVars = "deployment_vars"
+	// FieldIsActive holds the string denoting the is_active field in the database.
+	FieldIsActive = "is_active"
 	// EdgeBlueprint holds the string denoting the blueprint edge name in mutations.
 	EdgeBlueprint = "blueprint"
 	// EdgeRequester holds the string denoting the requester edge name in mutations.
@@ -38,6 +44,9 @@ const (
 // Columns holds all SQL columns for deployment fields.
 var Columns = []string{
 	FieldID,
+	FieldTemplateVars,
+	FieldDeploymentVars,
+	FieldIsActive,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "deployments"
@@ -63,6 +72,12 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultTemplateVars holds the default value on creation for the "template_vars" field.
+	DefaultTemplateVars map[string]interface{}
+	// DefaultDeploymentVars holds the default value on creation for the "deployment_vars" field.
+	DefaultDeploymentVars map[string]interface{}
+	// DefaultIsActive holds the default value on creation for the "is_active" field.
+	DefaultIsActive map[string]int
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )

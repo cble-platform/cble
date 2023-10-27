@@ -26,6 +26,18 @@ func init() {
 	blueprint.DefaultID = blueprintDescID.Default.(func() uuid.UUID)
 	deploymentFields := schema.Deployment{}.Fields()
 	_ = deploymentFields
+	// deploymentDescTemplateVars is the schema descriptor for template_vars field.
+	deploymentDescTemplateVars := deploymentFields[1].Descriptor()
+	// deployment.DefaultTemplateVars holds the default value on creation for the template_vars field.
+	deployment.DefaultTemplateVars = deploymentDescTemplateVars.Default.(map[string]interface{})
+	// deploymentDescDeploymentVars is the schema descriptor for deployment_vars field.
+	deploymentDescDeploymentVars := deploymentFields[2].Descriptor()
+	// deployment.DefaultDeploymentVars holds the default value on creation for the deployment_vars field.
+	deployment.DefaultDeploymentVars = deploymentDescDeploymentVars.Default.(map[string]interface{})
+	// deploymentDescIsActive is the schema descriptor for is_active field.
+	deploymentDescIsActive := deploymentFields[3].Descriptor()
+	// deployment.DefaultIsActive holds the default value on creation for the is_active field.
+	deployment.DefaultIsActive = deploymentDescIsActive.Default.(map[string]int)
 	// deploymentDescID is the schema descriptor for id field.
 	deploymentDescID := deploymentFields[0].Descriptor()
 	// deployment.DefaultID holds the default value on creation for the id field.

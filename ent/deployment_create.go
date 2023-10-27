@@ -22,6 +22,24 @@ type DeploymentCreate struct {
 	hooks    []Hook
 }
 
+// SetTemplateVars sets the "template_vars" field.
+func (dc *DeploymentCreate) SetTemplateVars(m map[string]interface{}) *DeploymentCreate {
+	dc.mutation.SetTemplateVars(m)
+	return dc
+}
+
+// SetDeploymentVars sets the "deployment_vars" field.
+func (dc *DeploymentCreate) SetDeploymentVars(m map[string]interface{}) *DeploymentCreate {
+	dc.mutation.SetDeploymentVars(m)
+	return dc
+}
+
+// SetIsActive sets the "is_active" field.
+func (dc *DeploymentCreate) SetIsActive(m map[string]int) *DeploymentCreate {
+	dc.mutation.SetIsActive(m)
+	return dc
+}
+
 // SetID sets the "id" field.
 func (dc *DeploymentCreate) SetID(u uuid.UUID) *DeploymentCreate {
 	dc.mutation.SetID(u)
@@ -93,6 +111,18 @@ func (dc *DeploymentCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (dc *DeploymentCreate) defaults() {
+	if _, ok := dc.mutation.TemplateVars(); !ok {
+		v := deployment.DefaultTemplateVars
+		dc.mutation.SetTemplateVars(v)
+	}
+	if _, ok := dc.mutation.DeploymentVars(); !ok {
+		v := deployment.DefaultDeploymentVars
+		dc.mutation.SetDeploymentVars(v)
+	}
+	if _, ok := dc.mutation.IsActive(); !ok {
+		v := deployment.DefaultIsActive
+		dc.mutation.SetIsActive(v)
+	}
 	if _, ok := dc.mutation.ID(); !ok {
 		v := deployment.DefaultID()
 		dc.mutation.SetID(v)
@@ -101,6 +131,15 @@ func (dc *DeploymentCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (dc *DeploymentCreate) check() error {
+	if _, ok := dc.mutation.TemplateVars(); !ok {
+		return &ValidationError{Name: "template_vars", err: errors.New(`ent: missing required field "Deployment.template_vars"`)}
+	}
+	if _, ok := dc.mutation.DeploymentVars(); !ok {
+		return &ValidationError{Name: "deployment_vars", err: errors.New(`ent: missing required field "Deployment.deployment_vars"`)}
+	}
+	if _, ok := dc.mutation.IsActive(); !ok {
+		return &ValidationError{Name: "is_active", err: errors.New(`ent: missing required field "Deployment.is_active"`)}
+	}
 	if _, ok := dc.mutation.BlueprintID(); !ok {
 		return &ValidationError{Name: "blueprint", err: errors.New(`ent: missing required edge "Deployment.blueprint"`)}
 	}
@@ -141,6 +180,18 @@ func (dc *DeploymentCreate) createSpec() (*Deployment, *sqlgraph.CreateSpec) {
 	if id, ok := dc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
+	}
+	if value, ok := dc.mutation.TemplateVars(); ok {
+		_spec.SetField(deployment.FieldTemplateVars, field.TypeJSON, value)
+		_node.TemplateVars = value
+	}
+	if value, ok := dc.mutation.DeploymentVars(); ok {
+		_spec.SetField(deployment.FieldDeploymentVars, field.TypeJSON, value)
+		_node.DeploymentVars = value
+	}
+	if value, ok := dc.mutation.IsActive(); ok {
+		_spec.SetField(deployment.FieldIsActive, field.TypeJSON, value)
+		_node.IsActive = value
 	}
 	if nodes := dc.mutation.BlueprintIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

@@ -30,6 +30,24 @@ func (du *DeploymentUpdate) Where(ps ...predicate.Deployment) *DeploymentUpdate 
 	return du
 }
 
+// SetTemplateVars sets the "template_vars" field.
+func (du *DeploymentUpdate) SetTemplateVars(m map[string]interface{}) *DeploymentUpdate {
+	du.mutation.SetTemplateVars(m)
+	return du
+}
+
+// SetDeploymentVars sets the "deployment_vars" field.
+func (du *DeploymentUpdate) SetDeploymentVars(m map[string]interface{}) *DeploymentUpdate {
+	du.mutation.SetDeploymentVars(m)
+	return du
+}
+
+// SetIsActive sets the "is_active" field.
+func (du *DeploymentUpdate) SetIsActive(m map[string]int) *DeploymentUpdate {
+	du.mutation.SetIsActive(m)
+	return du
+}
+
 // SetBlueprintID sets the "blueprint" edge to the Blueprint entity by ID.
 func (du *DeploymentUpdate) SetBlueprintID(id uuid.UUID) *DeploymentUpdate {
 	du.mutation.SetBlueprintID(id)
@@ -119,6 +137,15 @@ func (du *DeploymentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := du.mutation.TemplateVars(); ok {
+		_spec.SetField(deployment.FieldTemplateVars, field.TypeJSON, value)
+	}
+	if value, ok := du.mutation.DeploymentVars(); ok {
+		_spec.SetField(deployment.FieldDeploymentVars, field.TypeJSON, value)
+	}
+	if value, ok := du.mutation.IsActive(); ok {
+		_spec.SetField(deployment.FieldIsActive, field.TypeJSON, value)
+	}
 	if du.mutation.BlueprintCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -195,6 +222,24 @@ type DeploymentUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *DeploymentMutation
+}
+
+// SetTemplateVars sets the "template_vars" field.
+func (duo *DeploymentUpdateOne) SetTemplateVars(m map[string]interface{}) *DeploymentUpdateOne {
+	duo.mutation.SetTemplateVars(m)
+	return duo
+}
+
+// SetDeploymentVars sets the "deployment_vars" field.
+func (duo *DeploymentUpdateOne) SetDeploymentVars(m map[string]interface{}) *DeploymentUpdateOne {
+	duo.mutation.SetDeploymentVars(m)
+	return duo
+}
+
+// SetIsActive sets the "is_active" field.
+func (duo *DeploymentUpdateOne) SetIsActive(m map[string]int) *DeploymentUpdateOne {
+	duo.mutation.SetIsActive(m)
+	return duo
 }
 
 // SetBlueprintID sets the "blueprint" edge to the Blueprint entity by ID.
@@ -315,6 +360,15 @@ func (duo *DeploymentUpdateOne) sqlSave(ctx context.Context) (_node *Deployment,
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := duo.mutation.TemplateVars(); ok {
+		_spec.SetField(deployment.FieldTemplateVars, field.TypeJSON, value)
+	}
+	if value, ok := duo.mutation.DeploymentVars(); ok {
+		_spec.SetField(deployment.FieldDeploymentVars, field.TypeJSON, value)
+	}
+	if value, ok := duo.mutation.IsActive(); ok {
+		_spec.SetField(deployment.FieldIsActive, field.TypeJSON, value)
 	}
 	if duo.mutation.BlueprintCleared() {
 		edge := &sqlgraph.EdgeSpec{
