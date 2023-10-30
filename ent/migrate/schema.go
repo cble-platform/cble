@@ -41,7 +41,7 @@ var (
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "template_vars", Type: field.TypeJSON},
 		{Name: "deployment_vars", Type: field.TypeJSON},
-		{Name: "is_active", Type: field.TypeJSON},
+		{Name: "deployment_state", Type: field.TypeJSON},
 		{Name: "deployment_blueprint", Type: field.TypeUUID},
 		{Name: "deployment_requester", Type: field.TypeUUID},
 	}

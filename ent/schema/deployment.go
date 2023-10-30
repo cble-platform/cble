@@ -22,7 +22,7 @@ func (Deployment) Fields() []ent.Field {
 			Default(make(map[string]interface{})),
 		field.JSON("deployment_vars", map[string]interface{}{}).
 			Default(make(map[string]interface{})),
-		field.JSON("is_active", map[string]int{}).
+		field.JSON("deployment_state", map[string]int{}).
 			Default(make(map[string]int)),
 	}
 }

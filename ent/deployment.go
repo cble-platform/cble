@@ -24,8 +24,8 @@ type Deployment struct {
 	TemplateVars map[string]interface{} `json:"template_vars,omitempty"`
 	// DeploymentVars holds the value of the "deployment_vars" field.
 	DeploymentVars map[string]interface{} `json:"deployment_vars,omitempty"`
-	// IsActive holds the value of the "is_active" field.
-	IsActive map[string]int `json:"is_active,omitempty"`
+	// DeploymentState holds the value of the "deployment_state" field.
+	DeploymentState map[string]int `json:"deployment_state,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DeploymentQuery when eager-loading is set.
 	Edges                DeploymentEdges `json:"edges"`
@@ -76,7 +76,7 @@ func (*Deployment) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case deployment.FieldTemplateVars, deployment.FieldDeploymentVars, deployment.FieldIsActive:
+		case deployment.FieldTemplateVars, deployment.FieldDeploymentVars, deployment.FieldDeploymentState:
 			values[i] = new([]byte)
 		case deployment.FieldID:
 			values[i] = new(uuid.UUID)
@@ -121,12 +121,12 @@ func (d *Deployment) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field deployment_vars: %w", err)
 				}
 			}
-		case deployment.FieldIsActive:
+		case deployment.FieldDeploymentState:
 			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field is_active", values[i])
+				return fmt.Errorf("unexpected type %T for field deployment_state", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &d.IsActive); err != nil {
-					return fmt.Errorf("unmarshal field is_active: %w", err)
+				if err := json.Unmarshal(*value, &d.DeploymentState); err != nil {
+					return fmt.Errorf("unmarshal field deployment_state: %w", err)
 				}
 			}
 		case deployment.ForeignKeys[0]:
@@ -195,8 +195,8 @@ func (d *Deployment) String() string {
 	builder.WriteString("deployment_vars=")
 	builder.WriteString(fmt.Sprintf("%v", d.DeploymentVars))
 	builder.WriteString(", ")
-	builder.WriteString("is_active=")
-	builder.WriteString(fmt.Sprintf("%v", d.IsActive))
+	builder.WriteString("deployment_state=")
+	builder.WriteString(fmt.Sprintf("%v", d.DeploymentState))
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -644,7 +644,7 @@ type DeploymentMutation struct {
 	id               *uuid.UUID
 	template_vars    *map[string]interface{}
 	deployment_vars  *map[string]interface{}
-	is_active        *map[string]int
+	deployment_state *map[string]int
 	clearedFields    map[string]struct{}
 	blueprint        *uuid.UUID
 	clearedblueprint bool
@@ -831,40 +831,40 @@ func (m *DeploymentMutation) ResetDeploymentVars() {
 	m.deployment_vars = nil
 }
 
-// SetIsActive sets the "is_active" field.
-func (m *DeploymentMutation) SetIsActive(value map[string]int) {
-	m.is_active = &value
+// SetDeploymentState sets the "deployment_state" field.
+func (m *DeploymentMutation) SetDeploymentState(value map[string]int) {
+	m.deployment_state = &value
 }
 
-// IsActive returns the value of the "is_active" field in the mutation.
-func (m *DeploymentMutation) IsActive() (r map[string]int, exists bool) {
-	v := m.is_active
+// DeploymentState returns the value of the "deployment_state" field in the mutation.
+func (m *DeploymentMutation) DeploymentState() (r map[string]int, exists bool) {
+	v := m.deployment_state
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldIsActive returns the old "is_active" field's value of the Deployment entity.
+// OldDeploymentState returns the old "deployment_state" field's value of the Deployment entity.
 // If the Deployment object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DeploymentMutation) OldIsActive(ctx context.Context) (v map[string]int, err error) {
+func (m *DeploymentMutation) OldDeploymentState(ctx context.Context) (v map[string]int, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldIsActive is only allowed on UpdateOne operations")
+		return v, errors.New("OldDeploymentState is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldIsActive requires an ID field in the mutation")
+		return v, errors.New("OldDeploymentState requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldIsActive: %w", err)
+		return v, fmt.Errorf("querying old value for OldDeploymentState: %w", err)
 	}
-	return oldValue.IsActive, nil
+	return oldValue.DeploymentState, nil
 }
 
-// ResetIsActive resets all changes to the "is_active" field.
-func (m *DeploymentMutation) ResetIsActive() {
-	m.is_active = nil
+// ResetDeploymentState resets all changes to the "deployment_state" field.
+func (m *DeploymentMutation) ResetDeploymentState() {
+	m.deployment_state = nil
 }
 
 // SetBlueprintID sets the "blueprint" edge to the Blueprint entity by id.
@@ -986,8 +986,8 @@ func (m *DeploymentMutation) Fields() []string {
 	if m.deployment_vars != nil {
 		fields = append(fields, deployment.FieldDeploymentVars)
 	}
-	if m.is_active != nil {
-		fields = append(fields, deployment.FieldIsActive)
+	if m.deployment_state != nil {
+		fields = append(fields, deployment.FieldDeploymentState)
 	}
 	return fields
 }
@@ -1001,8 +1001,8 @@ func (m *DeploymentMutation) Field(name string) (ent.Value, bool) {
 		return m.TemplateVars()
 	case deployment.FieldDeploymentVars:
 		return m.DeploymentVars()
-	case deployment.FieldIsActive:
-		return m.IsActive()
+	case deployment.FieldDeploymentState:
+		return m.DeploymentState()
 	}
 	return nil, false
 }
@@ -1016,8 +1016,8 @@ func (m *DeploymentMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldTemplateVars(ctx)
 	case deployment.FieldDeploymentVars:
 		return m.OldDeploymentVars(ctx)
-	case deployment.FieldIsActive:
-		return m.OldIsActive(ctx)
+	case deployment.FieldDeploymentState:
+		return m.OldDeploymentState(ctx)
 	}
 	return nil, fmt.Errorf("unknown Deployment field %s", name)
 }
@@ -1041,12 +1041,12 @@ func (m *DeploymentMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDeploymentVars(v)
 		return nil
-	case deployment.FieldIsActive:
+	case deployment.FieldDeploymentState:
 		v, ok := value.(map[string]int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetIsActive(v)
+		m.SetDeploymentState(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Deployment field %s", name)
@@ -1103,8 +1103,8 @@ func (m *DeploymentMutation) ResetField(name string) error {
 	case deployment.FieldDeploymentVars:
 		m.ResetDeploymentVars()
 		return nil
-	case deployment.FieldIsActive:
-		m.ResetIsActive()
+	case deployment.FieldDeploymentState:
+		m.ResetDeploymentState()
 		return nil
 	}
 	return fmt.Errorf("unknown Deployment field %s", name)

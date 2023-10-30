@@ -34,9 +34,9 @@ func (dc *DeploymentCreate) SetDeploymentVars(m map[string]interface{}) *Deploym
 	return dc
 }
 
-// SetIsActive sets the "is_active" field.
-func (dc *DeploymentCreate) SetIsActive(m map[string]int) *DeploymentCreate {
-	dc.mutation.SetIsActive(m)
+// SetDeploymentState sets the "deployment_state" field.
+func (dc *DeploymentCreate) SetDeploymentState(m map[string]int) *DeploymentCreate {
+	dc.mutation.SetDeploymentState(m)
 	return dc
 }
 
@@ -119,9 +119,9 @@ func (dc *DeploymentCreate) defaults() {
 		v := deployment.DefaultDeploymentVars
 		dc.mutation.SetDeploymentVars(v)
 	}
-	if _, ok := dc.mutation.IsActive(); !ok {
-		v := deployment.DefaultIsActive
-		dc.mutation.SetIsActive(v)
+	if _, ok := dc.mutation.DeploymentState(); !ok {
+		v := deployment.DefaultDeploymentState
+		dc.mutation.SetDeploymentState(v)
 	}
 	if _, ok := dc.mutation.ID(); !ok {
 		v := deployment.DefaultID()
@@ -137,8 +137,8 @@ func (dc *DeploymentCreate) check() error {
 	if _, ok := dc.mutation.DeploymentVars(); !ok {
 		return &ValidationError{Name: "deployment_vars", err: errors.New(`ent: missing required field "Deployment.deployment_vars"`)}
 	}
-	if _, ok := dc.mutation.IsActive(); !ok {
-		return &ValidationError{Name: "is_active", err: errors.New(`ent: missing required field "Deployment.is_active"`)}
+	if _, ok := dc.mutation.DeploymentState(); !ok {
+		return &ValidationError{Name: "deployment_state", err: errors.New(`ent: missing required field "Deployment.deployment_state"`)}
 	}
 	if _, ok := dc.mutation.BlueprintID(); !ok {
 		return &ValidationError{Name: "blueprint", err: errors.New(`ent: missing required edge "Deployment.blueprint"`)}
@@ -189,9 +189,9 @@ func (dc *DeploymentCreate) createSpec() (*Deployment, *sqlgraph.CreateSpec) {
 		_spec.SetField(deployment.FieldDeploymentVars, field.TypeJSON, value)
 		_node.DeploymentVars = value
 	}
-	if value, ok := dc.mutation.IsActive(); ok {
-		_spec.SetField(deployment.FieldIsActive, field.TypeJSON, value)
-		_node.IsActive = value
+	if value, ok := dc.mutation.DeploymentState(); ok {
+		_spec.SetField(deployment.FieldDeploymentState, field.TypeJSON, value)
+		_node.DeploymentState = value
 	}
 	if nodes := dc.mutation.BlueprintIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

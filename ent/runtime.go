@@ -34,10 +34,10 @@ func init() {
 	deploymentDescDeploymentVars := deploymentFields[2].Descriptor()
 	// deployment.DefaultDeploymentVars holds the default value on creation for the deployment_vars field.
 	deployment.DefaultDeploymentVars = deploymentDescDeploymentVars.Default.(map[string]interface{})
-	// deploymentDescIsActive is the schema descriptor for is_active field.
-	deploymentDescIsActive := deploymentFields[3].Descriptor()
-	// deployment.DefaultIsActive holds the default value on creation for the is_active field.
-	deployment.DefaultIsActive = deploymentDescIsActive.Default.(map[string]int)
+	// deploymentDescDeploymentState is the schema descriptor for deployment_state field.
+	deploymentDescDeploymentState := deploymentFields[3].Descriptor()
+	// deployment.DefaultDeploymentState holds the default value on creation for the deployment_state field.
+	deployment.DefaultDeploymentState = deploymentDescDeploymentState.Default.(map[string]int)
 	// deploymentDescID is the schema descriptor for id field.
 	deploymentDescID := deploymentFields[0].Descriptor()
 	// deployment.DefaultID holds the default value on creation for the id field.

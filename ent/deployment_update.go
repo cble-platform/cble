@@ -42,9 +42,9 @@ func (du *DeploymentUpdate) SetDeploymentVars(m map[string]interface{}) *Deploym
 	return du
 }
 
-// SetIsActive sets the "is_active" field.
-func (du *DeploymentUpdate) SetIsActive(m map[string]int) *DeploymentUpdate {
-	du.mutation.SetIsActive(m)
+// SetDeploymentState sets the "deployment_state" field.
+func (du *DeploymentUpdate) SetDeploymentState(m map[string]int) *DeploymentUpdate {
+	du.mutation.SetDeploymentState(m)
 	return du
 }
 
@@ -143,8 +143,8 @@ func (du *DeploymentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := du.mutation.DeploymentVars(); ok {
 		_spec.SetField(deployment.FieldDeploymentVars, field.TypeJSON, value)
 	}
-	if value, ok := du.mutation.IsActive(); ok {
-		_spec.SetField(deployment.FieldIsActive, field.TypeJSON, value)
+	if value, ok := du.mutation.DeploymentState(); ok {
+		_spec.SetField(deployment.FieldDeploymentState, field.TypeJSON, value)
 	}
 	if du.mutation.BlueprintCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -236,9 +236,9 @@ func (duo *DeploymentUpdateOne) SetDeploymentVars(m map[string]interface{}) *Dep
 	return duo
 }
 
-// SetIsActive sets the "is_active" field.
-func (duo *DeploymentUpdateOne) SetIsActive(m map[string]int) *DeploymentUpdateOne {
-	duo.mutation.SetIsActive(m)
+// SetDeploymentState sets the "deployment_state" field.
+func (duo *DeploymentUpdateOne) SetDeploymentState(m map[string]int) *DeploymentUpdateOne {
+	duo.mutation.SetDeploymentState(m)
 	return duo
 }
 
@@ -367,8 +367,8 @@ func (duo *DeploymentUpdateOne) sqlSave(ctx context.Context) (_node *Deployment,
 	if value, ok := duo.mutation.DeploymentVars(); ok {
 		_spec.SetField(deployment.FieldDeploymentVars, field.TypeJSON, value)
 	}
-	if value, ok := duo.mutation.IsActive(); ok {
-		_spec.SetField(deployment.FieldIsActive, field.TypeJSON, value)
+	if value, ok := duo.mutation.DeploymentState(); ok {
+		_spec.SetField(deployment.FieldDeploymentState, field.TypeJSON, value)
 	}
 	if duo.mutation.BlueprintCleared() {
 		edge := &sqlgraph.EdgeSpec{
