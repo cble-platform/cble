@@ -7,7 +7,8 @@ type Blueprint struct {
 }
 
 type Object struct {
-	Resource  string    `yaml:"resource"`
-	Config    yaml.Node `yaml:"config"`
-	DependsOn []string  `yaml:"depends_on,omitempty"`
+	Resource   string    `yaml:"resource"`
+	Config     yaml.Node `yaml:"config"`
+	DependsOn  []string  `yaml:"depends_on,omitempty"`
+	RequiredBy []string  `yaml:"-"`
 }

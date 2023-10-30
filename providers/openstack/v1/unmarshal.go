@@ -61,21 +61,27 @@ func UnmarshalBlueprintFileWithVars(filepath string, varFilepath string) (*Opens
 }
 
 func generateImpliedDependsOn(blueprint *OpenstackBlueprint) error {
-	for k, o := range blueprint.Objects {
+	for ok, o := range blueprint.Objects {
 		switch o.Resource {
 		case OpenstackResourceTypeHost:
 			// Add all networks host is on as depends_on
 			for nk := range o.Host.Networks {
 				o.DependsOn = append(o.DependsOn, nk)
+				n := blueprint.Objects[nk]
+				n.RequiredBy = append(n.RequiredBy, ok)
+				blueprint.Objects[nk] = n
 			}
-			blueprint.Objects[k] = o
+			blueprint.Objects[ok] = o
 		case OpenstackResourceTypeNetwork:
 		case OpenstackResourceTypeRouter:
 			// Add all networks host is on as depends_on
 			for nk := range o.Router.Networks {
 				o.DependsOn = append(o.DependsOn, nk)
+				n := blueprint.Objects[nk]
+				n.RequiredBy = append(n.RequiredBy, ok)
+				blueprint.Objects[nk] = n
 			}
-			blueprint.Objects[k] = o
+			blueprint.Objects[ok] = o
 		}
 	}
 	return nil

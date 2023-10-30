@@ -21,7 +21,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (provider *OpenstackProvider) DeployBlueprint(ctx context.Context, client *ent.Client, entRequester *ent.User, entBlueprint *ent.Blueprint, templateVars map[string]interface{}) error {
+func (provider *OpenstackProvider) DeployBlueprint(ctx context.Context, client *ent.Client, entRequester *ent.User, entBlueprint *ent.Blueprint, templateVars map[string]interface{}) (*ent.Deployment, error) {
 	// Create a deployment for this blueprint
 	entDeployment, err := client.Deployment.Create().
 		SetTemplateVars(templateVars).
@@ -29,47 +29,54 @@ func (provider *OpenstackProvider) DeployBlueprint(ctx context.Context, client *
 		SetRequester(entRequester).
 		Save(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to create deployment: %v", err)
+		return nil, fmt.Errorf("failed to create deployment: %v", err)
 	}
 
 	// Generate authenticated client session
 	authClient, err := provider.newAuthClient()
 	if err != nil {
-		return fmt.Errorf("failed to authenticate: %v", err)
+		return entDeployment, fmt.Errorf("failed to authenticate: %v", err)
 	}
 
 	// Parse blueprint into struct
 	blueprint, err := UnmarshalBlueprintBytesWithVars(entBlueprint.BlueprintTemplate, templateVars)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal blueprint: %v", err)
+		return entDeployment, fmt.Errorf("failed to unmarshal blueprint: %v", err)
 	}
 
 	// Validate the blueprint is valid
 	err = ValidateBlueprint(blueprint)
 	if err != nil {
-		return fmt.Errorf("blueprint is invalid: %v", err)
+		return entDeployment, fmt.Errorf("blueprint is invalid: %v", err)
 	}
+
+	// Generate local routine-safe var map
+	var varMap sync.Map
+	loadVars(entDeployment, &varMap)
+	// Generate local routine-safe state map
+	var stateMap sync.Map
+	loadState(entDeployment, &stateMap)
 
 	objectsWg := sync.WaitGroup{}
 	for k := range blueprint.Objects {
 		objectsWg.Add(1)
 		go func(key string) {
 			// Wait until all depends_on are done
-			err := awaitDependsOn(entDeployment, blueprint, key)
+			err := awaitDependsOn(entDeployment, blueprint, &stateMap, key)
 			if err != nil {
 				logrus.Errorf("failed to deploy network: %v", err)
 			} else {
 				switch blueprint.Objects[key].Resource {
 				case OpenstackResourceTypeHost:
-					if err := provider.deployHost(ctx, client, authClient, entDeployment, blueprint, key); err != nil {
+					if err := provider.deployHost(ctx, client, authClient, entDeployment, &varMap, &stateMap, blueprint, key); err != nil {
 						logrus.Errorf("failed to deploy host \"%s\": %v", key, err)
 					}
 				case OpenstackResourceTypeNetwork:
-					if err := provider.deployNetwork(ctx, client, authClient, entDeployment, blueprint, key); err != nil {
+					if err := provider.deployNetwork(ctx, client, authClient, entDeployment, &varMap, &stateMap, blueprint, key); err != nil {
 						logrus.Errorf("failed to deploy network \"%s\": %v", key, err)
 					}
 				case OpenstackResourceTypeRouter:
-					if err := provider.deployRouter(ctx, client, authClient, entDeployment, blueprint, key); err != nil {
+					if err := provider.deployRouter(ctx, client, authClient, entDeployment, &varMap, &stateMap, blueprint, key); err != nil {
 						logrus.Errorf("failed to deploy router \"%s\": %v", key, err)
 					}
 				}
@@ -79,62 +86,37 @@ func (provider *OpenstackProvider) DeployBlueprint(ctx context.Context, client *
 	}
 	objectsWg.Wait()
 
-	// // Deploy Networks
-	// networksWg := sync.WaitGroup{}
-	// for k := range blueprint.Networks {
-	// 	networksWg.Add(1)
-	// 	go func(key string) {
-	// 		// Wait until all depends_on are done
-	// 		err := awaitDependsOn(entDeployment, blueprint, key)
-	// 		if err != nil {
-	// 			logrus.Errorf("failed to deploy network: %v", err)
-	// 		} else if err := provider.deployNetwork(ctx, client, authClient, entDeployment, blueprint, key); err != nil {
-	// 			logrus.Errorf("failed to deploy network \"%s\": %v", key, err)
-	// 		}
-	// 		networksWg.Done()
-	// 	}(k)
-	// }
-	// networksWg.Wait()
-	// // Deploy Routers
-	// routersWg := sync.WaitGroup{}
-	// for k := range blueprint.Routers {
-	// 	routersWg.Add(1)
-	// 	go func(key string) {
-	// 		// Wait until all depends_on are done
-	// 		err := awaitDependsOn(entDeployment, blueprint, key)
-	// 		if err != nil {
-	// 			logrus.Errorf("failed to deploy router: %v", err)
-	// 		} else if err := provider.deployRouter(ctx, client, authClient, entDeployment, blueprint, key); err != nil {
-	// 			logrus.Errorf("failed to deploy router \"%s\": %v", key, err)
-	// 		}
-	// 		routersWg.Done()
-	// 	}(k)
-	// }
-	// routersWg.Wait()
-	// // Deploy Hosts
-	// hostsWg := sync.WaitGroup{}
-	// for k := range blueprint.Hosts {
-	// 	hostsWg.Add(1)
-	// 	go func(key string) {
-	// 		// Wait until all depends_on are done
-	// 		err := awaitDependsOn(entDeployment, blueprint, key)
-	// 		if err != nil {
-	// 			logrus.Errorf("failed to deploy host: %v", err)
-	// 		} else if err := provider.deployHost(ctx, client, authClient, entDeployment, blueprint, key); err != nil {
-	// 			logrus.Errorf("failed to deploy host \"%s\": %v", key, err)
-	// 		}
-	// 		hostsWg.Done()
-	// 	}(k)
-	// }
-	// hostsWg.Wait()
-	return nil
+	// Get the updated deployment to return
+	entDeployment, err = client.Deployment.Get(ctx, entDeployment.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query updated deployment: %v", err)
+	}
+
+	return entDeployment, nil
 }
 
-func (provider *OpenstackProvider) deployNetwork(ctx context.Context, client *ent.Client, authClient *gophercloud.ProviderClient, entDeployment *ent.Deployment, blueprint *OpenstackBlueprint, networkKey string) error {
+func (provider *OpenstackProvider) deployNetwork(ctx context.Context, client *ent.Client, authClient *gophercloud.ProviderClient, entDeployment *ent.Deployment, varMap *sync.Map, stateMap *sync.Map, blueprint *OpenstackBlueprint, networkKey string) error {
+	logrus.Debugf("Deploying network \"%s\"", networkKey)
+
+	var stateErr, err error
 	// Get the network from blueprint
 	network, exist := blueprint.Networks[networkKey]
 	if !exist {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, networkKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", networkKey, stateErr)
+		}
 		return fmt.Errorf("network \"%s\" is not defined", networkKey)
+	}
+
+	// Set network as in progress for dependencies
+	err = setDeploymentState(ctx, entDeployment, stateMap, networkKey, providers.DeployINPROGRESS)
+	if err != nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, networkKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", networkKey, stateErr)
+		}
+		return fmt.Errorf("failed to set network state: %s", err)
 	}
 
 	// Generate the Network V2 client
@@ -144,6 +126,10 @@ func (provider *OpenstackProvider) deployNetwork(ctx context.Context, client *en
 	}
 	networkClient, err := openstack.NewNetworkV2(authClient, endpointOpts)
 	if err != nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, networkKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", networkKey, stateErr)
+		}
 		return fmt.Errorf("failed to create openstack network client: %v", err)
 	}
 
@@ -158,13 +144,20 @@ func (provider *OpenstackProvider) deployNetwork(ctx context.Context, client *en
 		AdminStateUp: gophercloud.Enabled,
 	}).Extract()
 	if err != nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, networkKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", networkKey, stateErr)
+		}
 		return fmt.Errorf("failed to create network: %v", err)
 	}
 
 	// Save the deployed network id into vars
-	entDeployment.DeploymentVars[networkKey+"_id"] = deployedNetwork.ID
-	err = entDeployment.Update().SetDeploymentVars(entDeployment.DeploymentVars).Exec(ctx)
+	err = saveDeploymentVar(ctx, entDeployment, varMap, networkKey+"_id", deployedNetwork.ID)
 	if err != nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, networkKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", networkKey, stateErr)
+		}
 		return fmt.Errorf("failed to save deployment vars: %v", err)
 	}
 
@@ -199,32 +192,60 @@ func (provider *OpenstackProvider) deployNetwork(ctx context.Context, client *en
 		DNSNameservers:  dnsServers,
 	}).Extract()
 	if err != nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, networkKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", networkKey, stateErr)
+		}
 		return fmt.Errorf("failed to create subnet: %v", err)
 	}
 
 	// Save the deployed network subnet id into vars
-	entDeployment.DeploymentVars[networkKey+"_subnet_id"] = deployedSubnet.ID
-	err = entDeployment.Update().SetDeploymentVars(entDeployment.DeploymentVars).Exec(ctx)
+	err = saveDeploymentVar(ctx, entDeployment, varMap, networkKey+"_subnet_id", deployedSubnet.ID)
 	if err != nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, networkKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", networkKey, stateErr)
+		}
 		return fmt.Errorf("failed to save deployment vars: %v", err)
 	}
 
-	// Set network as active for dependencies
-	entDeployment.IsActive[networkKey] = providers.DeploySUCCEEDED
-	err = entDeployment.Update().SetIsActive(entDeployment.IsActive).Exec(ctx)
+	logrus.Debugf("Successfully deployed network %s as network %s (%s)", networkKey, deployedNetwork.Name, deployedNetwork.ID)
+
+	// Set network as succeeded for dependencies
+	err = setDeploymentState(ctx, entDeployment, stateMap, networkKey, providers.DeploySUCCEEDED)
 	if err != nil {
-		return fmt.Errorf("failed to save is_active map: %s", err)
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, networkKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", networkKey, stateErr)
+		}
+		return fmt.Errorf("failed to set network state: %s", err)
 	}
 
-	logrus.Debugf("Successfully deployed network %s as network %s (%s)", networkKey, deployedNetwork.Name, deployedNetwork.ID)
 	return nil
 }
 
-func (provider *OpenstackProvider) deployRouter(ctx context.Context, client *ent.Client, authClient *gophercloud.ProviderClient, entDeployment *ent.Deployment, blueprint *OpenstackBlueprint, routerKey string) error {
+func (provider *OpenstackProvider) deployRouter(ctx context.Context, client *ent.Client, authClient *gophercloud.ProviderClient, entDeployment *ent.Deployment, varMap *sync.Map, stateMap *sync.Map, blueprint *OpenstackBlueprint, routerKey string) error {
+	logrus.Debugf("Deploying router \"%s\"", routerKey)
+
+	var stateErr, err error
 	// Get the router from blueprint
 	router, exist := blueprint.Routers[routerKey]
 	if !exist {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, routerKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", routerKey, stateErr)
+		}
 		return fmt.Errorf("router \"%s\" is not defined", routerKey)
+	}
+
+	// Set router as in progress for dependencies
+	err = setDeploymentState(ctx, entDeployment, stateMap, routerKey, providers.DeployINPROGRESS)
+	if err != nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, routerKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", routerKey, stateErr)
+		}
+		return fmt.Errorf("failed to set router state: %s", err)
 	}
 
 	// Generate the Network V2 client
@@ -234,6 +255,10 @@ func (provider *OpenstackProvider) deployRouter(ctx context.Context, client *ent
 	}
 	networkClient, err := openstack.NewNetworkV2(authClient, endpointOpts)
 	if err != nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, routerKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", routerKey, stateErr)
+		}
 		return fmt.Errorf("failed to create openstack network client: %v", err)
 	}
 
@@ -241,10 +266,18 @@ func (provider *OpenstackProvider) deployRouter(ctx context.Context, client *ent
 	var routerExternalNetwork *networks.Network = nil
 	allNetworkPages, err := networks.List(networkClient, nil).AllPages()
 	if err != nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, routerKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", routerKey, stateErr)
+		}
 		return fmt.Errorf("failed to get router external network \"%s\": %v", router.ExternalNetwork, err)
 	}
 	allNetworks, err := networks.ExtractNetworks(allNetworkPages)
 	if err != nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, routerKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", routerKey, stateErr)
+		}
 		return fmt.Errorf("failed to get router external network \"%s\": %v", router.ExternalNetwork, err)
 	}
 	for _, net := range allNetworks {
@@ -254,6 +287,10 @@ func (provider *OpenstackProvider) deployRouter(ctx context.Context, client *ent
 		}
 	}
 	if routerExternalNetwork == nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, routerKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", routerKey, stateErr)
+		}
 		return fmt.Errorf("failed to get router external network \"%s\": network not found", router.ExternalNetwork)
 	}
 
@@ -275,25 +312,40 @@ func (provider *OpenstackProvider) deployRouter(ctx context.Context, client *ent
 	// Deploy the router
 	deployedRouter, err := routers.Create(networkClient, routerConfig).Extract()
 	if err != nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, routerKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", routerKey, stateErr)
+		}
 		return fmt.Errorf("failed to create router: %v", err)
 	}
 
 	// Save the deployed router into vars
-	entDeployment.DeploymentVars[routerKey+"_id"] = deployedRouter.ID
-	err = entDeployment.Update().SetDeploymentVars(entDeployment.DeploymentVars).Exec(ctx)
+	err = saveDeploymentVar(ctx, entDeployment, varMap, routerKey+"_id", deployedRouter.ID)
 	if err != nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, routerKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", routerKey, stateErr)
+		}
 		return fmt.Errorf("failed to save deployment vars: %v", err)
 	}
 
 	// Connect router to all attached networks
 
 	for k, networkAttachment := range router.Networks {
-		networkId, exists := entDeployment.DeploymentVars[k+"_id"]
+		networkId, exists := varMap.Load(k + "_id")
 		if !exists {
+			stateErr = setDeploymentState(ctx, entDeployment, stateMap, routerKey, providers.DeployFAILED)
+			if stateErr != nil {
+				logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", routerKey, stateErr)
+			}
 			return fmt.Errorf("ID unknown for network \"%s\"", k)
 		}
-		networkSubnetId, exists := entDeployment.DeploymentVars[k+"_subnet_id"]
+		networkSubnetId, exists := varMap.Load(k + "_subnet_id")
 		if !exists {
+			stateErr = setDeploymentState(ctx, entDeployment, stateMap, routerKey, providers.DeployFAILED)
+			if stateErr != nil {
+				logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", routerKey, stateErr)
+			}
 			return fmt.Errorf("ID unknown for network \"%s\" subnet", k)
 		}
 		// Create Openstack port for router on subnet
@@ -306,47 +358,69 @@ func (provider *OpenstackProvider) deployRouter(ctx context.Context, client *ent
 			}},
 		}).Extract()
 		if err != nil {
+			stateErr = setDeploymentState(ctx, entDeployment, stateMap, routerKey, providers.DeployFAILED)
+			if stateErr != nil {
+				logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", routerKey, stateErr)
+			}
 			return fmt.Errorf("failed to create port for router: %v", err)
 		}
 
 		// Save the deployed router network port into vars
-		entDeployment.DeploymentVars[routerKey+"_"+k+"_port_id"] = osPort.ID
-		err = entDeployment.Update().SetDeploymentVars(entDeployment.DeploymentVars).Exec(ctx)
+		err = saveDeploymentVar(ctx, entDeployment, varMap, routerKey+"_"+k+"_port_id", osPort.ID)
 		if err != nil {
+			stateErr = setDeploymentState(ctx, entDeployment, stateMap, routerKey, providers.DeployFAILED)
+			if stateErr != nil {
+				logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", routerKey, stateErr)
+			}
 			return fmt.Errorf("failed to save deployment vars: %v", err)
 		}
 
-		osInterface, err := routers.AddInterface(networkClient, deployedRouter.ID, routers.AddInterfaceOpts{
+		// We don't need to store this ID since it will get auto-deleted on router delete
+		_, err = routers.AddInterface(networkClient, deployedRouter.ID, routers.AddInterfaceOpts{
 			PortID: osPort.ID,
 		}).Extract()
 		if err != nil {
+			stateErr = setDeploymentState(ctx, entDeployment, stateMap, routerKey, providers.DeployFAILED)
+			if stateErr != nil {
+				logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", routerKey, stateErr)
+			}
 			return fmt.Errorf("failed to create router interface: %v", err)
 		}
-
-		// Save the deployed router network interface into vars
-		entDeployment.DeploymentVars[routerKey+"_"+k+"_interface_id"] = osInterface.ID
-		err = entDeployment.Update().SetDeploymentVars(entDeployment.DeploymentVars).Exec(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to save deployment vars: %v", err)
-		}
-	}
-
-	// Set network as active for dependencies
-	entDeployment.IsActive[routerKey] = providers.DeploySUCCEEDED
-	err = entDeployment.Update().SetIsActive(entDeployment.IsActive).Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to save is_active map: %s", err)
 	}
 
 	logrus.Debugf("Successfully deployed router %s as router %s (%s)", routerKey, deployedRouter.Name, deployedRouter.ID)
+
+	// Set router as succeeded for dependencies
+	err = setDeploymentState(ctx, entDeployment, stateMap, routerKey, providers.DeploySUCCEEDED)
+	if err != nil {
+		return fmt.Errorf("failed to set router state: %s", err)
+	}
+
 	return nil
 }
 
-func (provider *OpenstackProvider) deployHost(ctx context.Context, client *ent.Client, authClient *gophercloud.ProviderClient, entDeployment *ent.Deployment, blueprint *OpenstackBlueprint, hostKey string) error {
+func (provider *OpenstackProvider) deployHost(ctx context.Context, client *ent.Client, authClient *gophercloud.ProviderClient, entDeployment *ent.Deployment, varMap *sync.Map, stateMap *sync.Map, blueprint *OpenstackBlueprint, hostKey string) error {
+	logrus.Debugf("Deploying host \"%s\"", hostKey)
+
+	var stateErr, err error
 	// Get the host from blueprint
 	host, exist := blueprint.Hosts[hostKey]
 	if !exist {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, hostKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", hostKey, stateErr)
+		}
 		return fmt.Errorf("host \"%s\" is not defined", hostKey)
+	}
+
+	// Set host as in progress for dependencies
+	err = setDeploymentState(ctx, entDeployment, stateMap, hostKey, providers.DeployINPROGRESS)
+	if err != nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, hostKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", hostKey, stateErr)
+		}
+		return fmt.Errorf("failed to set host state: %s", err)
 	}
 
 	// Generate the Compute V2 client
@@ -355,16 +429,28 @@ func (provider *OpenstackProvider) deployHost(ctx context.Context, client *ent.C
 	}
 	computeClient, err := openstack.NewComputeV2(authClient, endpointOpts)
 	if err != nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, hostKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", hostKey, stateErr)
+		}
 		return fmt.Errorf("failed to create compute v2 client: %v", err)
 	}
 
 	var hostFlavor *flavors.Flavor = nil
 	allFlavorPages, err := flavors.ListDetail(computeClient, nil).AllPages()
 	if err != nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, hostKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", hostKey, stateErr)
+		}
 		return fmt.Errorf("failed to get host flavor \"%s\": %v", host.Flavor, err)
 	}
 	allFlavors, err := flavors.ExtractFlavors(allFlavorPages)
 	if err != nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, hostKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", hostKey, stateErr)
+		}
 		return fmt.Errorf("failed to get host flavor \"%s\": %v", host.Flavor, err)
 	}
 	for _, fl := range allFlavors {
@@ -374,6 +460,10 @@ func (provider *OpenstackProvider) deployHost(ctx context.Context, client *ent.C
 		}
 	}
 	if hostFlavor == nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, hostKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", hostKey, stateErr)
+		}
 		return fmt.Errorf("failed to get host flavor \"%s\": flavor not found", host.Flavor)
 	}
 
@@ -382,10 +472,18 @@ func (provider *OpenstackProvider) deployHost(ctx context.Context, client *ent.C
 	var hostImage *images.Image = nil
 	allImagePages, err := images.ListDetail(computeClient, nil).AllPages()
 	if err != nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, hostKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", hostKey, stateErr)
+		}
 		return fmt.Errorf("failed to get host image \"%s\": %v", host.Image, err)
 	}
 	allImages, err := images.ExtractImages(allImagePages)
 	if err != nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, hostKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", hostKey, stateErr)
+		}
 		return fmt.Errorf("failed to get host image \"%s\": %v", host.Image, err)
 	}
 	for _, img := range allImages {
@@ -395,11 +493,19 @@ func (provider *OpenstackProvider) deployHost(ctx context.Context, client *ent.C
 		}
 	}
 	if hostImage == nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, hostKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", hostKey, stateErr)
+		}
 		return fmt.Errorf("failed to get host image \"%s\": image not found", host.Image)
 	}
 
 	// Check if the image requires more space than provided
 	if host.DiskSize < hostImage.MinDisk {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, hostKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", hostKey, stateErr)
+		}
 		return fmt.Errorf("host disk size is too small for image (minimum %dGB required)", hostImage.MinDisk)
 	}
 
@@ -428,10 +534,18 @@ func (provider *OpenstackProvider) deployHost(ctx context.Context, client *ent.C
 	for k, networkAttachment := range host.Networks {
 		_, exists := blueprint.Networks[k]
 		if !exists {
+			stateErr = setDeploymentState(ctx, entDeployment, stateMap, hostKey, providers.DeployFAILED)
+			if stateErr != nil {
+				logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", hostKey, stateErr)
+			}
 			return fmt.Errorf("network \"%s\" is not defined", k)
 		}
-		networkId, exists := entDeployment.DeploymentVars[k+"_id"]
+		networkId, exists := varMap.Load(k + "_id")
 		if !exists {
+			stateErr = setDeploymentState(ctx, entDeployment, stateMap, hostKey, providers.DeployFAILED)
+			if stateErr != nil {
+				logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", hostKey, stateErr)
+			}
 			return fmt.Errorf("ID unknown for network \"%s\"", k)
 		}
 		PLACEHOLDER_NET := servers.Network{
@@ -459,13 +573,20 @@ func (provider *OpenstackProvider) deployHost(ctx context.Context, client *ent.C
 	}
 	deployedServer, err := bootfromvolume.Create(computeClient, createOpts).Extract()
 	if err != nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, hostKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", hostKey, stateErr)
+		}
 		return fmt.Errorf("failed to deploy host: %v", err)
 	}
 
 	// Save the deployed host into vars
-	entDeployment.DeploymentVars[hostKey+"_id"] = deployedServer.ID
-	err = entDeployment.Update().SetDeploymentVars(entDeployment.DeploymentVars).Exec(ctx)
+	err = saveDeploymentVar(ctx, entDeployment, varMap, hostKey+"_id", deployedServer.ID)
 	if err != nil {
+		stateErr = setDeploymentState(ctx, entDeployment, stateMap, hostKey, providers.DeployFAILED)
+		if stateErr != nil {
+			logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", hostKey, stateErr)
+		}
 		return fmt.Errorf("failed to save deployment vars: %v", err)
 	}
 
@@ -474,10 +595,18 @@ func (provider *OpenstackProvider) deployHost(ctx context.Context, client *ent.C
 		// Get the updated server from Openstack
 		deployedServer, err = servers.Get(computeClient, deployedServer.ID).Extract()
 		if err != nil {
+			stateErr = setDeploymentState(ctx, entDeployment, stateMap, hostKey, providers.DeployFAILED)
+			if stateErr != nil {
+				logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", hostKey, stateErr)
+			}
 			return fmt.Errorf("failed to get openstack server status: %v", err)
 		}
 		if deployedServer.Status == "ERROR" {
 			// Something happened and this failed
+			stateErr = setDeploymentState(ctx, entDeployment, stateMap, hostKey, providers.DeployFAILED)
+			if stateErr != nil {
+				logrus.Errorf("failed to set deployment_state to FAILED for \"%s\": %v", hostKey, stateErr)
+			}
 			return fmt.Errorf("failed to deploy host: server in ERROR state")
 		}
 		if deployedServer.Status == "ACTIVE" {
@@ -488,32 +617,39 @@ func (provider *OpenstackProvider) deployHost(ctx context.Context, client *ent.C
 		time.Sleep(5 * time.Second)
 	}
 
-	// Set host as active for dependencies
-	entDeployment.IsActive[hostKey] = providers.DeploySUCCEEDED
-	err = entDeployment.Update().SetIsActive(entDeployment.IsActive).Exec(ctx)
+	logrus.Debugf("Successfully deployed host %s as server %s (%s)", hostKey, deployedServer.Name, deployedServer.ID)
+
+	// Set host as succeeded for dependencies
+	err = setDeploymentState(ctx, entDeployment, stateMap, hostKey, providers.DeploySUCCEEDED)
 	if err != nil {
-		return fmt.Errorf("failed to save is_active map: %s", err)
+		return fmt.Errorf("failed to set host state: %s", err)
 	}
 
-	logrus.Debugf("Successfully deployed host %s as server %s (%s)", hostKey, deployedServer.Name, deployedServer.ID)
 	return nil
 }
 
 // Blocks execution until all depends_on are done.
-func awaitDependsOn(entDeployment *ent.Deployment, blueprint *OpenstackBlueprint, key string) error {
+func awaitDependsOn(entDeployment *ent.Deployment, blueprint *OpenstackBlueprint, stateMap *sync.Map, key string) error {
 	// Check on dependencies
 	for {
 		waitingOnDependents := false
 		for _, dependsOnKey := range blueprint.Objects[key].DependsOn {
-			dependsOnIsActive, exists := entDeployment.IsActive[dependsOnKey]
-			if !exists {
-				logrus.Debugf("\"%s\" is waiting on \"%s\"", key, dependsOnKey)
+			dependsOnDeploymentValue, exists := stateMap.Load(dependsOnKey)
+			if exists {
+				dependsOnDeploymentState := dependsOnDeploymentValue.(providers.DeploymentState)
+				if dependsOnDeploymentState == providers.DeployFAILED {
+					return fmt.Errorf("\"%s\" dependency \"%s\" failed", key, dependsOnKey)
+				} else if dependsOnDeploymentState == providers.DeploySUCCEEDED {
+					// Dependent is deployed so we're good
+					continue
+				} else {
+					logrus.Debugf("\"%s\" is waiting on \"%s\"", key, dependsOnKey)
+					// early break since no need to check others if a single dependency is still inactive
+					waitingOnDependents = true
+					break
+				}
+			} else {
 				waitingOnDependents = true
-				// early break since no need to check others if a single dependency is still inactive
-				break
-			}
-			if dependsOnIsActive == providers.DeployFAILED {
-				return fmt.Errorf("\"%s\" dependency \"%s\" failed", key, dependsOnKey)
 			}
 		}
 		// If all depends on objects are done

@@ -3,6 +3,7 @@ version: "3.4"
 services:
   db:
     image: postgres:15-alpine
+    container_name: cble-db
     restart: always
     volumes:
       - cble-db:/var/lib/postgresql/data
