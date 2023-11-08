@@ -1,6 +1,6 @@
 # Cloud-Based Lab Emulator (CBLE)
 
-[![Go version](https://img.shields.io/github/go-mod/go-version/cble-platform/cble-backend?style=flat-square)](https://github.com/BradHacker/compsole)
+[![Go version](https://img.shields.io/github/go-mod/go-version/cble-platform/cble-backend?style=flat-square)](https://github.com/cble-platform/cble-backend)
 [![Go Report Card](https://goreportcard.com/badge/github.com/cble-platform/cble-backend?style=flat-square)](https://goreportcard.com/report/github.com/cble-platform/cble-backend)
 ![GitHub](https://img.shields.io/github/license/cble-platform/cble-backend?style=flat-square)
 [![Release](https://img.shields.io/github/release/cble-platform/cble-backend?style=flat-square)](https://github.com/cble-platform/cble-backend/releases/latest?style=flat-square)
