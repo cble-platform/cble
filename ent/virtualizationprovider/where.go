@@ -69,9 +69,9 @@ func ProviderVersion(v string) predicate.VirtualizationProvider {
 	return predicate.VirtualizationProvider(sql.FieldEQ(FieldProviderVersion, v))
 }
 
-// ConfigPath applies equality check predicate on the "config_path" field. It's identical to ConfigPathEQ.
-func ConfigPath(v string) predicate.VirtualizationProvider {
-	return predicate.VirtualizationProvider(sql.FieldEQ(FieldConfigPath, v))
+// ConfigBytes applies equality check predicate on the "config_bytes" field. It's identical to ConfigBytesEQ.
+func ConfigBytes(v []byte) predicate.VirtualizationProvider {
+	return predicate.VirtualizationProvider(sql.FieldEQ(FieldConfigBytes, v))
 }
 
 // DisplayNameEQ applies the EQ predicate on the "display_name" field.
@@ -269,69 +269,44 @@ func ProviderVersionContainsFold(v string) predicate.VirtualizationProvider {
 	return predicate.VirtualizationProvider(sql.FieldContainsFold(FieldProviderVersion, v))
 }
 
-// ConfigPathEQ applies the EQ predicate on the "config_path" field.
-func ConfigPathEQ(v string) predicate.VirtualizationProvider {
-	return predicate.VirtualizationProvider(sql.FieldEQ(FieldConfigPath, v))
+// ConfigBytesEQ applies the EQ predicate on the "config_bytes" field.
+func ConfigBytesEQ(v []byte) predicate.VirtualizationProvider {
+	return predicate.VirtualizationProvider(sql.FieldEQ(FieldConfigBytes, v))
 }
 
-// ConfigPathNEQ applies the NEQ predicate on the "config_path" field.
-func ConfigPathNEQ(v string) predicate.VirtualizationProvider {
-	return predicate.VirtualizationProvider(sql.FieldNEQ(FieldConfigPath, v))
+// ConfigBytesNEQ applies the NEQ predicate on the "config_bytes" field.
+func ConfigBytesNEQ(v []byte) predicate.VirtualizationProvider {
+	return predicate.VirtualizationProvider(sql.FieldNEQ(FieldConfigBytes, v))
 }
 
-// ConfigPathIn applies the In predicate on the "config_path" field.
-func ConfigPathIn(vs ...string) predicate.VirtualizationProvider {
-	return predicate.VirtualizationProvider(sql.FieldIn(FieldConfigPath, vs...))
+// ConfigBytesIn applies the In predicate on the "config_bytes" field.
+func ConfigBytesIn(vs ...[]byte) predicate.VirtualizationProvider {
+	return predicate.VirtualizationProvider(sql.FieldIn(FieldConfigBytes, vs...))
 }
 
-// ConfigPathNotIn applies the NotIn predicate on the "config_path" field.
-func ConfigPathNotIn(vs ...string) predicate.VirtualizationProvider {
-	return predicate.VirtualizationProvider(sql.FieldNotIn(FieldConfigPath, vs...))
+// ConfigBytesNotIn applies the NotIn predicate on the "config_bytes" field.
+func ConfigBytesNotIn(vs ...[]byte) predicate.VirtualizationProvider {
+	return predicate.VirtualizationProvider(sql.FieldNotIn(FieldConfigBytes, vs...))
 }
 
-// ConfigPathGT applies the GT predicate on the "config_path" field.
-func ConfigPathGT(v string) predicate.VirtualizationProvider {
-	return predicate.VirtualizationProvider(sql.FieldGT(FieldConfigPath, v))
+// ConfigBytesGT applies the GT predicate on the "config_bytes" field.
+func ConfigBytesGT(v []byte) predicate.VirtualizationProvider {
+	return predicate.VirtualizationProvider(sql.FieldGT(FieldConfigBytes, v))
 }
 
-// ConfigPathGTE applies the GTE predicate on the "config_path" field.
-func ConfigPathGTE(v string) predicate.VirtualizationProvider {
-	return predicate.VirtualizationProvider(sql.FieldGTE(FieldConfigPath, v))
+// ConfigBytesGTE applies the GTE predicate on the "config_bytes" field.
+func ConfigBytesGTE(v []byte) predicate.VirtualizationProvider {
+	return predicate.VirtualizationProvider(sql.FieldGTE(FieldConfigBytes, v))
 }
 
-// ConfigPathLT applies the LT predicate on the "config_path" field.
-func ConfigPathLT(v string) predicate.VirtualizationProvider {
-	return predicate.VirtualizationProvider(sql.FieldLT(FieldConfigPath, v))
+// ConfigBytesLT applies the LT predicate on the "config_bytes" field.
+func ConfigBytesLT(v []byte) predicate.VirtualizationProvider {
+	return predicate.VirtualizationProvider(sql.FieldLT(FieldConfigBytes, v))
 }
 
-// ConfigPathLTE applies the LTE predicate on the "config_path" field.
-func ConfigPathLTE(v string) predicate.VirtualizationProvider {
-	return predicate.VirtualizationProvider(sql.FieldLTE(FieldConfigPath, v))
-}
-
-// ConfigPathContains applies the Contains predicate on the "config_path" field.
-func ConfigPathContains(v string) predicate.VirtualizationProvider {
-	return predicate.VirtualizationProvider(sql.FieldContains(FieldConfigPath, v))
-}
-
-// ConfigPathHasPrefix applies the HasPrefix predicate on the "config_path" field.
-func ConfigPathHasPrefix(v string) predicate.VirtualizationProvider {
-	return predicate.VirtualizationProvider(sql.FieldHasPrefix(FieldConfigPath, v))
-}
-
-// ConfigPathHasSuffix applies the HasSuffix predicate on the "config_path" field.
-func ConfigPathHasSuffix(v string) predicate.VirtualizationProvider {
-	return predicate.VirtualizationProvider(sql.FieldHasSuffix(FieldConfigPath, v))
-}
-
-// ConfigPathEqualFold applies the EqualFold predicate on the "config_path" field.
-func ConfigPathEqualFold(v string) predicate.VirtualizationProvider {
-	return predicate.VirtualizationProvider(sql.FieldEqualFold(FieldConfigPath, v))
-}
-
-// ConfigPathContainsFold applies the ContainsFold predicate on the "config_path" field.
-func ConfigPathContainsFold(v string) predicate.VirtualizationProvider {
-	return predicate.VirtualizationProvider(sql.FieldContainsFold(FieldConfigPath, v))
+// ConfigBytesLTE applies the LTE predicate on the "config_bytes" field.
+func ConfigBytesLTE(v []byte) predicate.VirtualizationProvider {
+	return predicate.VirtualizationProvider(sql.FieldLTE(FieldConfigBytes, v))
 }
 
 // HasBlueprints applies the HasEdge predicate on the "blueprints" edge.

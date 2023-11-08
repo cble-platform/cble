@@ -3754,7 +3754,7 @@ type VirtualizationProviderMutation struct {
 	display_name      *string
 	provider_git_url  *string
 	provider_version  *string
-	config_path       *string
+	config_bytes      *[]byte
 	clearedFields     map[string]struct{}
 	blueprints        map[uuid.UUID]struct{}
 	removedblueprints map[uuid.UUID]struct{}
@@ -3976,40 +3976,40 @@ func (m *VirtualizationProviderMutation) ResetProviderVersion() {
 	m.provider_version = nil
 }
 
-// SetConfigPath sets the "config_path" field.
-func (m *VirtualizationProviderMutation) SetConfigPath(s string) {
-	m.config_path = &s
+// SetConfigBytes sets the "config_bytes" field.
+func (m *VirtualizationProviderMutation) SetConfigBytes(b []byte) {
+	m.config_bytes = &b
 }
 
-// ConfigPath returns the value of the "config_path" field in the mutation.
-func (m *VirtualizationProviderMutation) ConfigPath() (r string, exists bool) {
-	v := m.config_path
+// ConfigBytes returns the value of the "config_bytes" field in the mutation.
+func (m *VirtualizationProviderMutation) ConfigBytes() (r []byte, exists bool) {
+	v := m.config_bytes
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldConfigPath returns the old "config_path" field's value of the VirtualizationProvider entity.
+// OldConfigBytes returns the old "config_bytes" field's value of the VirtualizationProvider entity.
 // If the VirtualizationProvider object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *VirtualizationProviderMutation) OldConfigPath(ctx context.Context) (v string, err error) {
+func (m *VirtualizationProviderMutation) OldConfigBytes(ctx context.Context) (v []byte, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldConfigPath is only allowed on UpdateOne operations")
+		return v, errors.New("OldConfigBytes is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldConfigPath requires an ID field in the mutation")
+		return v, errors.New("OldConfigBytes requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldConfigPath: %w", err)
+		return v, fmt.Errorf("querying old value for OldConfigBytes: %w", err)
 	}
-	return oldValue.ConfigPath, nil
+	return oldValue.ConfigBytes, nil
 }
 
-// ResetConfigPath resets all changes to the "config_path" field.
-func (m *VirtualizationProviderMutation) ResetConfigPath() {
-	m.config_path = nil
+// ResetConfigBytes resets all changes to the "config_bytes" field.
+func (m *VirtualizationProviderMutation) ResetConfigBytes() {
+	m.config_bytes = nil
 }
 
 // AddBlueprintIDs adds the "blueprints" edge to the Blueprint entity by ids.
@@ -4110,8 +4110,8 @@ func (m *VirtualizationProviderMutation) Fields() []string {
 	if m.provider_version != nil {
 		fields = append(fields, virtualizationprovider.FieldProviderVersion)
 	}
-	if m.config_path != nil {
-		fields = append(fields, virtualizationprovider.FieldConfigPath)
+	if m.config_bytes != nil {
+		fields = append(fields, virtualizationprovider.FieldConfigBytes)
 	}
 	return fields
 }
@@ -4127,8 +4127,8 @@ func (m *VirtualizationProviderMutation) Field(name string) (ent.Value, bool) {
 		return m.ProviderGitURL()
 	case virtualizationprovider.FieldProviderVersion:
 		return m.ProviderVersion()
-	case virtualizationprovider.FieldConfigPath:
-		return m.ConfigPath()
+	case virtualizationprovider.FieldConfigBytes:
+		return m.ConfigBytes()
 	}
 	return nil, false
 }
@@ -4144,8 +4144,8 @@ func (m *VirtualizationProviderMutation) OldField(ctx context.Context, name stri
 		return m.OldProviderGitURL(ctx)
 	case virtualizationprovider.FieldProviderVersion:
 		return m.OldProviderVersion(ctx)
-	case virtualizationprovider.FieldConfigPath:
-		return m.OldConfigPath(ctx)
+	case virtualizationprovider.FieldConfigBytes:
+		return m.OldConfigBytes(ctx)
 	}
 	return nil, fmt.Errorf("unknown VirtualizationProvider field %s", name)
 }
@@ -4176,12 +4176,12 @@ func (m *VirtualizationProviderMutation) SetField(name string, value ent.Value) 
 		}
 		m.SetProviderVersion(v)
 		return nil
-	case virtualizationprovider.FieldConfigPath:
-		v, ok := value.(string)
+	case virtualizationprovider.FieldConfigBytes:
+		v, ok := value.([]byte)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetConfigPath(v)
+		m.SetConfigBytes(v)
 		return nil
 	}
 	return fmt.Errorf("unknown VirtualizationProvider field %s", name)
@@ -4241,8 +4241,8 @@ func (m *VirtualizationProviderMutation) ResetField(name string) error {
 	case virtualizationprovider.FieldProviderVersion:
 		m.ResetProviderVersion()
 		return nil
-	case virtualizationprovider.FieldConfigPath:
-		m.ResetConfigPath()
+	case virtualizationprovider.FieldConfigBytes:
+		m.ResetConfigBytes()
 		return nil
 	}
 	return fmt.Errorf("unknown VirtualizationProvider field %s", name)

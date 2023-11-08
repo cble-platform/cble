@@ -39,9 +39,9 @@ func (vpc *VirtualizationProviderCreate) SetProviderVersion(s string) *Virtualiz
 	return vpc
 }
 
-// SetConfigPath sets the "config_path" field.
-func (vpc *VirtualizationProviderCreate) SetConfigPath(s string) *VirtualizationProviderCreate {
-	vpc.mutation.SetConfigPath(s)
+// SetConfigBytes sets the "config_bytes" field.
+func (vpc *VirtualizationProviderCreate) SetConfigBytes(b []byte) *VirtualizationProviderCreate {
+	vpc.mutation.SetConfigBytes(b)
 	return vpc
 }
 
@@ -126,8 +126,8 @@ func (vpc *VirtualizationProviderCreate) check() error {
 	if _, ok := vpc.mutation.ProviderVersion(); !ok {
 		return &ValidationError{Name: "provider_version", err: errors.New(`ent: missing required field "VirtualizationProvider.provider_version"`)}
 	}
-	if _, ok := vpc.mutation.ConfigPath(); !ok {
-		return &ValidationError{Name: "config_path", err: errors.New(`ent: missing required field "VirtualizationProvider.config_path"`)}
+	if _, ok := vpc.mutation.ConfigBytes(); !ok {
+		return &ValidationError{Name: "config_bytes", err: errors.New(`ent: missing required field "VirtualizationProvider.config_bytes"`)}
 	}
 	return nil
 }
@@ -176,9 +176,9 @@ func (vpc *VirtualizationProviderCreate) createSpec() (*VirtualizationProvider, 
 		_spec.SetField(virtualizationprovider.FieldProviderVersion, field.TypeString, value)
 		_node.ProviderVersion = value
 	}
-	if value, ok := vpc.mutation.ConfigPath(); ok {
-		_spec.SetField(virtualizationprovider.FieldConfigPath, field.TypeString, value)
-		_node.ConfigPath = value
+	if value, ok := vpc.mutation.ConfigBytes(); ok {
+		_spec.SetField(virtualizationprovider.FieldConfigBytes, field.TypeBytes, value)
+		_node.ConfigBytes = value
 	}
 	if nodes := vpc.mutation.BlueprintsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

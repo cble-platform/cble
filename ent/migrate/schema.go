@@ -147,7 +147,7 @@ var (
 		{Name: "display_name", Type: field.TypeString},
 		{Name: "provider_git_url", Type: field.TypeString},
 		{Name: "provider_version", Type: field.TypeString},
-		{Name: "config_path", Type: field.TypeString},
+		{Name: "config_bytes", Type: field.TypeBytes},
 	}
 	// VirtualizationProvidersTable holds the schema information for the "virtualization_providers" table.
 	VirtualizationProvidersTable = &schema.Table{

@@ -23,8 +23,8 @@ type VirtualizationProvider struct {
 	ProviderGitURL string `json:"provider_git_url,omitempty"`
 	// ProviderVersion holds the value of the "provider_version" field.
 	ProviderVersion string `json:"provider_version,omitempty"`
-	// ConfigPath holds the value of the "config_path" field.
-	ConfigPath string `json:"config_path,omitempty"`
+	// ConfigBytes holds the value of the "config_bytes" field.
+	ConfigBytes []byte `json:"config_bytes,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the VirtualizationProviderQuery when eager-loading is set.
 	Edges        VirtualizationProviderEdges `json:"edges"`
@@ -54,7 +54,9 @@ func (*VirtualizationProvider) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case virtualizationprovider.FieldDisplayName, virtualizationprovider.FieldProviderGitURL, virtualizationprovider.FieldProviderVersion, virtualizationprovider.FieldConfigPath:
+		case virtualizationprovider.FieldConfigBytes:
+			values[i] = new([]byte)
+		case virtualizationprovider.FieldDisplayName, virtualizationprovider.FieldProviderGitURL, virtualizationprovider.FieldProviderVersion:
 			values[i] = new(sql.NullString)
 		case virtualizationprovider.FieldID:
 			values[i] = new(uuid.UUID)
@@ -97,11 +99,11 @@ func (vp *VirtualizationProvider) assignValues(columns []string, values []any) e
 			} else if value.Valid {
 				vp.ProviderVersion = value.String
 			}
-		case virtualizationprovider.FieldConfigPath:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field config_path", values[i])
-			} else if value.Valid {
-				vp.ConfigPath = value.String
+		case virtualizationprovider.FieldConfigBytes:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field config_bytes", values[i])
+			} else if value != nil {
+				vp.ConfigBytes = *value
 			}
 		default:
 			vp.selectValues.Set(columns[i], values[i])
@@ -153,8 +155,8 @@ func (vp *VirtualizationProvider) String() string {
 	builder.WriteString("provider_version=")
 	builder.WriteString(vp.ProviderVersion)
 	builder.WriteString(", ")
-	builder.WriteString("config_path=")
-	builder.WriteString(vp.ConfigPath)
+	builder.WriteString("config_bytes=")
+	builder.WriteString(fmt.Sprintf("%v", vp.ConfigBytes))
 	builder.WriteByte(')')
 	return builder.String()
 }
