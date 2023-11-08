@@ -3,7 +3,7 @@ package providers
 import (
 	"context"
 
-	"github.com/cble-platform/backend/ent"
+	"github.com/cble-platform/cble-backend/ent"
 )
 
 type Provider interface {

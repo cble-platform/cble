@@ -3,7 +3,7 @@ package v1
 import (
 	"fmt"
 
-	"github.com/cble-platform/backend/providers/openstack/internal"
+	"github.com/cble-platform/cble-backend/providers/openstack/internal"
 )
 
 const MAJOR_VERSION = "1"

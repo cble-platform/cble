@@ -18,7 +18,9 @@ func (Permission) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).
 			Immutable().
 			Default(uuid.New),
-		field.String("key"),
+		field.String("key").Unique(),
+		field.String("component"),
+		field.String("description"),
 	}
 }
 

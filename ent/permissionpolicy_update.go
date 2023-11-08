@@ -10,10 +10,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/backend/ent/group"
-	"github.com/cble-platform/backend/ent/permission"
-	"github.com/cble-platform/backend/ent/permissionpolicy"
-	"github.com/cble-platform/backend/ent/predicate"
+	"github.com/cble-platform/cble-backend/ent/group"
+	"github.com/cble-platform/cble-backend/ent/permission"
+	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
+	"github.com/cble-platform/cble-backend/ent/predicate"
 	"github.com/google/uuid"
 )
 
@@ -47,6 +47,26 @@ func (ppu *PermissionPolicyUpdate) SetNillableType(pe *permissionpolicy.Type) *P
 // ClearType clears the value of the "type" field.
 func (ppu *PermissionPolicyUpdate) ClearType() *PermissionPolicyUpdate {
 	ppu.mutation.ClearType()
+	return ppu
+}
+
+// SetIsInherited sets the "is_inherited" field.
+func (ppu *PermissionPolicyUpdate) SetIsInherited(b bool) *PermissionPolicyUpdate {
+	ppu.mutation.SetIsInherited(b)
+	return ppu
+}
+
+// SetNillableIsInherited sets the "is_inherited" field if the given value is not nil.
+func (ppu *PermissionPolicyUpdate) SetNillableIsInherited(b *bool) *PermissionPolicyUpdate {
+	if b != nil {
+		ppu.SetIsInherited(*b)
+	}
+	return ppu
+}
+
+// ClearIsInherited clears the value of the "is_inherited" field.
+func (ppu *PermissionPolicyUpdate) ClearIsInherited() *PermissionPolicyUpdate {
+	ppu.mutation.ClearIsInherited()
 	return ppu
 }
 
@@ -150,6 +170,12 @@ func (ppu *PermissionPolicyUpdate) sqlSave(ctx context.Context) (n int, err erro
 	if ppu.mutation.TypeCleared() {
 		_spec.ClearField(permissionpolicy.FieldType, field.TypeEnum)
 	}
+	if value, ok := ppu.mutation.IsInherited(); ok {
+		_spec.SetField(permissionpolicy.FieldIsInherited, field.TypeBool, value)
+	}
+	if ppu.mutation.IsInheritedCleared() {
+		_spec.ClearField(permissionpolicy.FieldIsInherited, field.TypeBool)
+	}
 	if ppu.mutation.PermissionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -245,6 +271,26 @@ func (ppuo *PermissionPolicyUpdateOne) SetNillableType(pe *permissionpolicy.Type
 // ClearType clears the value of the "type" field.
 func (ppuo *PermissionPolicyUpdateOne) ClearType() *PermissionPolicyUpdateOne {
 	ppuo.mutation.ClearType()
+	return ppuo
+}
+
+// SetIsInherited sets the "is_inherited" field.
+func (ppuo *PermissionPolicyUpdateOne) SetIsInherited(b bool) *PermissionPolicyUpdateOne {
+	ppuo.mutation.SetIsInherited(b)
+	return ppuo
+}
+
+// SetNillableIsInherited sets the "is_inherited" field if the given value is not nil.
+func (ppuo *PermissionPolicyUpdateOne) SetNillableIsInherited(b *bool) *PermissionPolicyUpdateOne {
+	if b != nil {
+		ppuo.SetIsInherited(*b)
+	}
+	return ppuo
+}
+
+// ClearIsInherited clears the value of the "is_inherited" field.
+func (ppuo *PermissionPolicyUpdateOne) ClearIsInherited() *PermissionPolicyUpdateOne {
+	ppuo.mutation.ClearIsInherited()
 	return ppuo
 }
 
@@ -377,6 +423,12 @@ func (ppuo *PermissionPolicyUpdateOne) sqlSave(ctx context.Context) (_node *Perm
 	}
 	if ppuo.mutation.TypeCleared() {
 		_spec.ClearField(permissionpolicy.FieldType, field.TypeEnum)
+	}
+	if value, ok := ppuo.mutation.IsInherited(); ok {
+		_spec.SetField(permissionpolicy.FieldIsInherited, field.TypeBool, value)
+	}
+	if ppuo.mutation.IsInheritedCleared() {
+		_spec.ClearField(permissionpolicy.FieldIsInherited, field.TypeBool)
 	}
 	if ppuo.mutation.PermissionCleared() {
 		edge := &sqlgraph.EdgeSpec{

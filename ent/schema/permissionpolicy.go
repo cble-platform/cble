@@ -22,6 +22,9 @@ func (PermissionPolicy) Fields() []ent.Field {
 			Values("ALLOW", "DENY").
 			Optional().
 			Default("ALLOW"),
+		field.Bool("is_inherited").
+			Optional().
+			Default(false),
 	}
 }
 

@@ -5,7 +5,7 @@ import (
 	"net"
 	"net/netip"
 
-	"github.com/cble-platform/backend/providers"
+	"github.com/cble-platform/cble-backend/providers"
 	"gopkg.in/yaml.v3"
 )
 

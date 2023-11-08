@@ -9,8 +9,8 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/backend/ent/permission"
-	"github.com/cble-platform/backend/ent/permissionpolicy"
+	"github.com/cble-platform/cble-backend/ent/permission"
+	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
 	"github.com/google/uuid"
 )
 
@@ -24,6 +24,18 @@ type PermissionCreate struct {
 // SetKey sets the "key" field.
 func (pc *PermissionCreate) SetKey(s string) *PermissionCreate {
 	pc.mutation.SetKey(s)
+	return pc
+}
+
+// SetComponent sets the "component" field.
+func (pc *PermissionCreate) SetComponent(s string) *PermissionCreate {
+	pc.mutation.SetComponent(s)
+	return pc
+}
+
+// SetDescription sets the "description" field.
+func (pc *PermissionCreate) SetDescription(s string) *PermissionCreate {
+	pc.mutation.SetDescription(s)
 	return pc
 }
 
@@ -102,6 +114,12 @@ func (pc *PermissionCreate) check() error {
 	if _, ok := pc.mutation.Key(); !ok {
 		return &ValidationError{Name: "key", err: errors.New(`ent: missing required field "Permission.key"`)}
 	}
+	if _, ok := pc.mutation.Component(); !ok {
+		return &ValidationError{Name: "component", err: errors.New(`ent: missing required field "Permission.component"`)}
+	}
+	if _, ok := pc.mutation.Description(); !ok {
+		return &ValidationError{Name: "description", err: errors.New(`ent: missing required field "Permission.description"`)}
+	}
 	return nil
 }
 
@@ -140,6 +158,14 @@ func (pc *PermissionCreate) createSpec() (*Permission, *sqlgraph.CreateSpec) {
 	if value, ok := pc.mutation.Key(); ok {
 		_spec.SetField(permission.FieldKey, field.TypeString, value)
 		_node.Key = value
+	}
+	if value, ok := pc.mutation.Component(); ok {
+		_spec.SetField(permission.FieldComponent, field.TypeString, value)
+		_node.Component = value
+	}
+	if value, ok := pc.mutation.Description(); ok {
+		_spec.SetField(permission.FieldDescription, field.TypeString, value)
+		_node.Description = value
 	}
 	if nodes := pc.mutation.PermissionPoliciesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

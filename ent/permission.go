@@ -8,7 +8,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/cble-platform/backend/ent/permission"
+	"github.com/cble-platform/cble-backend/ent/permission"
 	"github.com/google/uuid"
 )
 
@@ -19,6 +19,10 @@ type Permission struct {
 	ID uuid.UUID `json:"id,omitempty"`
 	// Key holds the value of the "key" field.
 	Key string `json:"key,omitempty"`
+	// Component holds the value of the "component" field.
+	Component string `json:"component,omitempty"`
+	// Description holds the value of the "description" field.
+	Description string `json:"description,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PermissionQuery when eager-loading is set.
 	Edges        PermissionEdges `json:"edges"`
@@ -48,7 +52,7 @@ func (*Permission) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case permission.FieldKey:
+		case permission.FieldKey, permission.FieldComponent, permission.FieldDescription:
 			values[i] = new(sql.NullString)
 		case permission.FieldID:
 			values[i] = new(uuid.UUID)
@@ -78,6 +82,18 @@ func (pe *Permission) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field key", values[i])
 			} else if value.Valid {
 				pe.Key = value.String
+			}
+		case permission.FieldComponent:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field component", values[i])
+			} else if value.Valid {
+				pe.Component = value.String
+			}
+		case permission.FieldDescription:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field description", values[i])
+			} else if value.Valid {
+				pe.Description = value.String
 			}
 		default:
 			pe.selectValues.Set(columns[i], values[i])
@@ -122,6 +138,12 @@ func (pe *Permission) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", pe.ID))
 	builder.WriteString("key=")
 	builder.WriteString(pe.Key)
+	builder.WriteString(", ")
+	builder.WriteString("component=")
+	builder.WriteString(pe.Component)
+	builder.WriteString(", ")
+	builder.WriteString("description=")
+	builder.WriteString(pe.Description)
 	builder.WriteByte(')')
 	return builder.String()
 }

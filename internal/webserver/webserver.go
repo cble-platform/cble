@@ -1,4 +1,4 @@
-package internal
+package webserver
 
 import (
 	"fmt"
@@ -10,9 +10,9 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/cble-platform/backend/config"
-	"github.com/cble-platform/backend/ent"
-	"github.com/cble-platform/backend/graph"
+	"github.com/cble-platform/cble-backend/config"
+	"github.com/cble-platform/cble-backend/ent"
+	"github.com/cble-platform/cble-backend/graph"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
@@ -70,16 +70,10 @@ func playgroundHandler() gin.HandlerFunc {
 	}
 }
 
-func NewWebserver(config *config.Config, client *ent.Client) *CBLEWebserver {
+func New(config *config.Config, client *ent.Client) *CBLEWebserver {
 	r := gin.Default()
 
 	api := r.Group("/api")
-
-	api.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
-	})
 
 	gql := api.Group("/graphql")
 

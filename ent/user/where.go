@@ -5,7 +5,7 @@ package user
 import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/cble-platform/backend/ent/predicate"
+	"github.com/cble-platform/cble-backend/ent/predicate"
 	"github.com/google/uuid"
 )
 

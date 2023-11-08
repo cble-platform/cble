@@ -3,14 +3,14 @@
 package ent
 
 import (
-	"github.com/cble-platform/backend/ent/blueprint"
-	"github.com/cble-platform/backend/ent/deployment"
-	"github.com/cble-platform/backend/ent/group"
-	"github.com/cble-platform/backend/ent/permission"
-	"github.com/cble-platform/backend/ent/permissionpolicy"
-	"github.com/cble-platform/backend/ent/schema"
-	"github.com/cble-platform/backend/ent/user"
-	"github.com/cble-platform/backend/ent/virtualizationprovider"
+	"github.com/cble-platform/cble-backend/ent/blueprint"
+	"github.com/cble-platform/cble-backend/ent/deployment"
+	"github.com/cble-platform/cble-backend/ent/group"
+	"github.com/cble-platform/cble-backend/ent/permission"
+	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
+	"github.com/cble-platform/cble-backend/ent/schema"
+	"github.com/cble-platform/cble-backend/ent/user"
+	"github.com/cble-platform/cble-backend/ent/virtualizationprovider"
 	"github.com/google/uuid"
 )
 
@@ -56,6 +56,10 @@ func init() {
 	permission.DefaultID = permissionDescID.Default.(func() uuid.UUID)
 	permissionpolicyFields := schema.PermissionPolicy{}.Fields()
 	_ = permissionpolicyFields
+	// permissionpolicyDescIsInherited is the schema descriptor for is_inherited field.
+	permissionpolicyDescIsInherited := permissionpolicyFields[2].Descriptor()
+	// permissionpolicy.DefaultIsInherited holds the default value on creation for the is_inherited field.
+	permissionpolicy.DefaultIsInherited = permissionpolicyDescIsInherited.Default.(bool)
 	// permissionpolicyDescID is the schema descriptor for id field.
 	permissionpolicyDescID := permissionpolicyFields[0].Descriptor()
 	// permissionpolicy.DefaultID holds the default value on creation for the id field.

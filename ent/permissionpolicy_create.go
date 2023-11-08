@@ -9,9 +9,9 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/backend/ent/group"
-	"github.com/cble-platform/backend/ent/permission"
-	"github.com/cble-platform/backend/ent/permissionpolicy"
+	"github.com/cble-platform/cble-backend/ent/group"
+	"github.com/cble-platform/cble-backend/ent/permission"
+	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
 	"github.com/google/uuid"
 )
 
@@ -32,6 +32,20 @@ func (ppc *PermissionPolicyCreate) SetType(pe permissionpolicy.Type) *Permission
 func (ppc *PermissionPolicyCreate) SetNillableType(pe *permissionpolicy.Type) *PermissionPolicyCreate {
 	if pe != nil {
 		ppc.SetType(*pe)
+	}
+	return ppc
+}
+
+// SetIsInherited sets the "is_inherited" field.
+func (ppc *PermissionPolicyCreate) SetIsInherited(b bool) *PermissionPolicyCreate {
+	ppc.mutation.SetIsInherited(b)
+	return ppc
+}
+
+// SetNillableIsInherited sets the "is_inherited" field if the given value is not nil.
+func (ppc *PermissionPolicyCreate) SetNillableIsInherited(b *bool) *PermissionPolicyCreate {
+	if b != nil {
+		ppc.SetIsInherited(*b)
 	}
 	return ppc
 }
@@ -111,6 +125,10 @@ func (ppc *PermissionPolicyCreate) defaults() {
 		v := permissionpolicy.DefaultType
 		ppc.mutation.SetType(v)
 	}
+	if _, ok := ppc.mutation.IsInherited(); !ok {
+		v := permissionpolicy.DefaultIsInherited
+		ppc.mutation.SetIsInherited(v)
+	}
 	if _, ok := ppc.mutation.ID(); !ok {
 		v := permissionpolicy.DefaultID()
 		ppc.mutation.SetID(v)
@@ -168,6 +186,10 @@ func (ppc *PermissionPolicyCreate) createSpec() (*PermissionPolicy, *sqlgraph.Cr
 	if value, ok := ppc.mutation.GetType(); ok {
 		_spec.SetField(permissionpolicy.FieldType, field.TypeEnum, value)
 		_node.Type = value
+	}
+	if value, ok := ppc.mutation.IsInherited(); ok {
+		_spec.SetField(permissionpolicy.FieldIsInherited, field.TypeBool, value)
+		_node.IsInherited = value
 	}
 	if nodes := ppc.mutation.PermissionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

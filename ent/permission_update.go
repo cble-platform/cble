@@ -10,9 +10,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/backend/ent/permission"
-	"github.com/cble-platform/backend/ent/permissionpolicy"
-	"github.com/cble-platform/backend/ent/predicate"
+	"github.com/cble-platform/cble-backend/ent/permission"
+	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
+	"github.com/cble-platform/cble-backend/ent/predicate"
 	"github.com/google/uuid"
 )
 
@@ -32,6 +32,18 @@ func (pu *PermissionUpdate) Where(ps ...predicate.Permission) *PermissionUpdate 
 // SetKey sets the "key" field.
 func (pu *PermissionUpdate) SetKey(s string) *PermissionUpdate {
 	pu.mutation.SetKey(s)
+	return pu
+}
+
+// SetComponent sets the "component" field.
+func (pu *PermissionUpdate) SetComponent(s string) *PermissionUpdate {
+	pu.mutation.SetComponent(s)
+	return pu
+}
+
+// SetDescription sets the "description" field.
+func (pu *PermissionUpdate) SetDescription(s string) *PermissionUpdate {
+	pu.mutation.SetDescription(s)
 	return pu
 }
 
@@ -115,6 +127,12 @@ func (pu *PermissionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := pu.mutation.Key(); ok {
 		_spec.SetField(permission.FieldKey, field.TypeString, value)
 	}
+	if value, ok := pu.mutation.Component(); ok {
+		_spec.SetField(permission.FieldComponent, field.TypeString, value)
+	}
+	if value, ok := pu.mutation.Description(); ok {
+		_spec.SetField(permission.FieldDescription, field.TypeString, value)
+	}
 	if pu.mutation.PermissionPoliciesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -183,6 +201,18 @@ type PermissionUpdateOne struct {
 // SetKey sets the "key" field.
 func (puo *PermissionUpdateOne) SetKey(s string) *PermissionUpdateOne {
 	puo.mutation.SetKey(s)
+	return puo
+}
+
+// SetComponent sets the "component" field.
+func (puo *PermissionUpdateOne) SetComponent(s string) *PermissionUpdateOne {
+	puo.mutation.SetComponent(s)
+	return puo
+}
+
+// SetDescription sets the "description" field.
+func (puo *PermissionUpdateOne) SetDescription(s string) *PermissionUpdateOne {
+	puo.mutation.SetDescription(s)
 	return puo
 }
 
@@ -295,6 +325,12 @@ func (puo *PermissionUpdateOne) sqlSave(ctx context.Context) (_node *Permission,
 	}
 	if value, ok := puo.mutation.Key(); ok {
 		_spec.SetField(permission.FieldKey, field.TypeString, value)
+	}
+	if value, ok := puo.mutation.Component(); ok {
+		_spec.SetField(permission.FieldComponent, field.TypeString, value)
+	}
+	if value, ok := puo.mutation.Description(); ok {
+		_spec.SetField(permission.FieldDescription, field.TypeString, value)
 	}
 	if puo.mutation.PermissionPoliciesCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -1,13 +1,13 @@
-package internal
+package utils
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/cble-platform/backend/config"
-	"github.com/cble-platform/backend/ent"
-	"github.com/cble-platform/backend/ent/group"
-	"github.com/cble-platform/backend/ent/user"
+	"github.com/cble-platform/cble-backend/config"
+	"github.com/cble-platform/cble-backend/ent"
+	"github.com/cble-platform/cble-backend/ent/group"
+	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )

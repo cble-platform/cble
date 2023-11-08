@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cble-platform/backend/ent"
-	"github.com/cble-platform/backend/providers"
+	"github.com/cble-platform/cble-backend/ent"
+	"github.com/cble-platform/cble-backend/providers"
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/baremetal/v1/ports"

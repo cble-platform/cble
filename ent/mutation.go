@@ -10,14 +10,14 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/cble-platform/backend/ent/blueprint"
-	"github.com/cble-platform/backend/ent/deployment"
-	"github.com/cble-platform/backend/ent/group"
-	"github.com/cble-platform/backend/ent/permission"
-	"github.com/cble-platform/backend/ent/permissionpolicy"
-	"github.com/cble-platform/backend/ent/predicate"
-	"github.com/cble-platform/backend/ent/user"
-	"github.com/cble-platform/backend/ent/virtualizationprovider"
+	"github.com/cble-platform/cble-backend/ent/blueprint"
+	"github.com/cble-platform/cble-backend/ent/deployment"
+	"github.com/cble-platform/cble-backend/ent/group"
+	"github.com/cble-platform/cble-backend/ent/permission"
+	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
+	"github.com/cble-platform/cble-backend/ent/predicate"
+	"github.com/cble-platform/cble-backend/ent/user"
+	"github.com/cble-platform/cble-backend/ent/virtualizationprovider"
 	"github.com/google/uuid"
 )
 
@@ -1942,6 +1942,8 @@ type PermissionMutation struct {
 	typ                        string
 	id                         *uuid.UUID
 	key                        *string
+	component                  *string
+	description                *string
 	clearedFields              map[string]struct{}
 	permission_policies        map[uuid.UUID]struct{}
 	removedpermission_policies map[uuid.UUID]struct{}
@@ -2091,6 +2093,78 @@ func (m *PermissionMutation) ResetKey() {
 	m.key = nil
 }
 
+// SetComponent sets the "component" field.
+func (m *PermissionMutation) SetComponent(s string) {
+	m.component = &s
+}
+
+// Component returns the value of the "component" field in the mutation.
+func (m *PermissionMutation) Component() (r string, exists bool) {
+	v := m.component
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldComponent returns the old "component" field's value of the Permission entity.
+// If the Permission object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PermissionMutation) OldComponent(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldComponent is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldComponent requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldComponent: %w", err)
+	}
+	return oldValue.Component, nil
+}
+
+// ResetComponent resets all changes to the "component" field.
+func (m *PermissionMutation) ResetComponent() {
+	m.component = nil
+}
+
+// SetDescription sets the "description" field.
+func (m *PermissionMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *PermissionMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the Permission entity.
+// If the Permission object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PermissionMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *PermissionMutation) ResetDescription() {
+	m.description = nil
+}
+
 // AddPermissionPolicyIDs adds the "permission_policies" edge to the PermissionPolicy entity by ids.
 func (m *PermissionMutation) AddPermissionPolicyIDs(ids ...uuid.UUID) {
 	if m.permission_policies == nil {
@@ -2179,9 +2253,15 @@ func (m *PermissionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PermissionMutation) Fields() []string {
-	fields := make([]string, 0, 1)
+	fields := make([]string, 0, 3)
 	if m.key != nil {
 		fields = append(fields, permission.FieldKey)
+	}
+	if m.component != nil {
+		fields = append(fields, permission.FieldComponent)
+	}
+	if m.description != nil {
+		fields = append(fields, permission.FieldDescription)
 	}
 	return fields
 }
@@ -2193,6 +2273,10 @@ func (m *PermissionMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case permission.FieldKey:
 		return m.Key()
+	case permission.FieldComponent:
+		return m.Component()
+	case permission.FieldDescription:
+		return m.Description()
 	}
 	return nil, false
 }
@@ -2204,6 +2288,10 @@ func (m *PermissionMutation) OldField(ctx context.Context, name string) (ent.Val
 	switch name {
 	case permission.FieldKey:
 		return m.OldKey(ctx)
+	case permission.FieldComponent:
+		return m.OldComponent(ctx)
+	case permission.FieldDescription:
+		return m.OldDescription(ctx)
 	}
 	return nil, fmt.Errorf("unknown Permission field %s", name)
 }
@@ -2219,6 +2307,20 @@ func (m *PermissionMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetKey(v)
+		return nil
+	case permission.FieldComponent:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetComponent(v)
+		return nil
+	case permission.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Permission field %s", name)
@@ -2271,6 +2373,12 @@ func (m *PermissionMutation) ResetField(name string) error {
 	switch name {
 	case permission.FieldKey:
 		m.ResetKey()
+		return nil
+	case permission.FieldComponent:
+		m.ResetComponent()
+		return nil
+	case permission.FieldDescription:
+		m.ResetDescription()
 		return nil
 	}
 	return fmt.Errorf("unknown Permission field %s", name)
@@ -2367,6 +2475,7 @@ type PermissionPolicyMutation struct {
 	typ               string
 	id                *uuid.UUID
 	_type             *permissionpolicy.Type
+	is_inherited      *bool
 	clearedFields     map[string]struct{}
 	permission        *uuid.UUID
 	clearedpermission bool
@@ -2530,6 +2639,55 @@ func (m *PermissionPolicyMutation) ResetType() {
 	delete(m.clearedFields, permissionpolicy.FieldType)
 }
 
+// SetIsInherited sets the "is_inherited" field.
+func (m *PermissionPolicyMutation) SetIsInherited(b bool) {
+	m.is_inherited = &b
+}
+
+// IsInherited returns the value of the "is_inherited" field in the mutation.
+func (m *PermissionPolicyMutation) IsInherited() (r bool, exists bool) {
+	v := m.is_inherited
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIsInherited returns the old "is_inherited" field's value of the PermissionPolicy entity.
+// If the PermissionPolicy object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PermissionPolicyMutation) OldIsInherited(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIsInherited is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIsInherited requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIsInherited: %w", err)
+	}
+	return oldValue.IsInherited, nil
+}
+
+// ClearIsInherited clears the value of the "is_inherited" field.
+func (m *PermissionPolicyMutation) ClearIsInherited() {
+	m.is_inherited = nil
+	m.clearedFields[permissionpolicy.FieldIsInherited] = struct{}{}
+}
+
+// IsInheritedCleared returns if the "is_inherited" field was cleared in this mutation.
+func (m *PermissionPolicyMutation) IsInheritedCleared() bool {
+	_, ok := m.clearedFields[permissionpolicy.FieldIsInherited]
+	return ok
+}
+
+// ResetIsInherited resets all changes to the "is_inherited" field.
+func (m *PermissionPolicyMutation) ResetIsInherited() {
+	m.is_inherited = nil
+	delete(m.clearedFields, permissionpolicy.FieldIsInherited)
+}
+
 // SetPermissionID sets the "permission" edge to the Permission entity by id.
 func (m *PermissionPolicyMutation) SetPermissionID(id uuid.UUID) {
 	m.permission = &id
@@ -2642,9 +2800,12 @@ func (m *PermissionPolicyMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PermissionPolicyMutation) Fields() []string {
-	fields := make([]string, 0, 1)
+	fields := make([]string, 0, 2)
 	if m._type != nil {
 		fields = append(fields, permissionpolicy.FieldType)
+	}
+	if m.is_inherited != nil {
+		fields = append(fields, permissionpolicy.FieldIsInherited)
 	}
 	return fields
 }
@@ -2656,6 +2817,8 @@ func (m *PermissionPolicyMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case permissionpolicy.FieldType:
 		return m.GetType()
+	case permissionpolicy.FieldIsInherited:
+		return m.IsInherited()
 	}
 	return nil, false
 }
@@ -2667,6 +2830,8 @@ func (m *PermissionPolicyMutation) OldField(ctx context.Context, name string) (e
 	switch name {
 	case permissionpolicy.FieldType:
 		return m.OldType(ctx)
+	case permissionpolicy.FieldIsInherited:
+		return m.OldIsInherited(ctx)
 	}
 	return nil, fmt.Errorf("unknown PermissionPolicy field %s", name)
 }
@@ -2682,6 +2847,13 @@ func (m *PermissionPolicyMutation) SetField(name string, value ent.Value) error 
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetType(v)
+		return nil
+	case permissionpolicy.FieldIsInherited:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIsInherited(v)
 		return nil
 	}
 	return fmt.Errorf("unknown PermissionPolicy field %s", name)
@@ -2716,6 +2888,9 @@ func (m *PermissionPolicyMutation) ClearedFields() []string {
 	if m.FieldCleared(permissionpolicy.FieldType) {
 		fields = append(fields, permissionpolicy.FieldType)
 	}
+	if m.FieldCleared(permissionpolicy.FieldIsInherited) {
+		fields = append(fields, permissionpolicy.FieldIsInherited)
+	}
 	return fields
 }
 
@@ -2733,6 +2908,9 @@ func (m *PermissionPolicyMutation) ClearField(name string) error {
 	case permissionpolicy.FieldType:
 		m.ClearType()
 		return nil
+	case permissionpolicy.FieldIsInherited:
+		m.ClearIsInherited()
+		return nil
 	}
 	return fmt.Errorf("unknown PermissionPolicy nullable field %s", name)
 }
@@ -2743,6 +2921,9 @@ func (m *PermissionPolicyMutation) ResetField(name string) error {
 	switch name {
 	case permissionpolicy.FieldType:
 		m.ResetType()
+		return nil
+	case permissionpolicy.FieldIsInherited:
+		m.ResetIsInherited()
 		return nil
 	}
 	return fmt.Errorf("unknown PermissionPolicy field %s", name)

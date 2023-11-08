@@ -8,9 +8,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cble-platform/backend/ent"
-	"github.com/cble-platform/backend/graph/generated"
-	"github.com/cble-platform/backend/graph/model"
+	"github.com/cble-platform/cble-backend/ent"
+	"github.com/cble-platform/cble-backend/graph/generated"
+	"github.com/cble-platform/cble-backend/graph/model"
 )
 
 // ID is the resolver for the id field.

@@ -2,8 +2,8 @@ package graph
 
 import (
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/cble-platform/backend/ent"
-	"github.com/cble-platform/backend/graph/generated"
+	"github.com/cble-platform/cble-backend/ent"
+	"github.com/cble-platform/cble-backend/graph/generated"
 )
 
 // This file will not be regenerated automatically.
