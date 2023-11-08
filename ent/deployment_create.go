@@ -9,9 +9,9 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/backend/ent/blueprint"
-	"github.com/cble-platform/backend/ent/deployment"
-	"github.com/cble-platform/backend/ent/user"
+	"github.com/cble-platform/cble-backend/ent/blueprint"
+	"github.com/cble-platform/cble-backend/ent/deployment"
+	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -20,6 +20,24 @@ type DeploymentCreate struct {
 	config
 	mutation *DeploymentMutation
 	hooks    []Hook
+}
+
+// SetTemplateVars sets the "template_vars" field.
+func (dc *DeploymentCreate) SetTemplateVars(m map[string]interface{}) *DeploymentCreate {
+	dc.mutation.SetTemplateVars(m)
+	return dc
+}
+
+// SetDeploymentVars sets the "deployment_vars" field.
+func (dc *DeploymentCreate) SetDeploymentVars(m map[string]interface{}) *DeploymentCreate {
+	dc.mutation.SetDeploymentVars(m)
+	return dc
+}
+
+// SetDeploymentState sets the "deployment_state" field.
+func (dc *DeploymentCreate) SetDeploymentState(m map[string]int) *DeploymentCreate {
+	dc.mutation.SetDeploymentState(m)
+	return dc
 }
 
 // SetID sets the "id" field.
@@ -93,6 +111,18 @@ func (dc *DeploymentCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (dc *DeploymentCreate) defaults() {
+	if _, ok := dc.mutation.TemplateVars(); !ok {
+		v := deployment.DefaultTemplateVars
+		dc.mutation.SetTemplateVars(v)
+	}
+	if _, ok := dc.mutation.DeploymentVars(); !ok {
+		v := deployment.DefaultDeploymentVars
+		dc.mutation.SetDeploymentVars(v)
+	}
+	if _, ok := dc.mutation.DeploymentState(); !ok {
+		v := deployment.DefaultDeploymentState
+		dc.mutation.SetDeploymentState(v)
+	}
 	if _, ok := dc.mutation.ID(); !ok {
 		v := deployment.DefaultID()
 		dc.mutation.SetID(v)
@@ -101,6 +131,15 @@ func (dc *DeploymentCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (dc *DeploymentCreate) check() error {
+	if _, ok := dc.mutation.TemplateVars(); !ok {
+		return &ValidationError{Name: "template_vars", err: errors.New(`ent: missing required field "Deployment.template_vars"`)}
+	}
+	if _, ok := dc.mutation.DeploymentVars(); !ok {
+		return &ValidationError{Name: "deployment_vars", err: errors.New(`ent: missing required field "Deployment.deployment_vars"`)}
+	}
+	if _, ok := dc.mutation.DeploymentState(); !ok {
+		return &ValidationError{Name: "deployment_state", err: errors.New(`ent: missing required field "Deployment.deployment_state"`)}
+	}
 	if _, ok := dc.mutation.BlueprintID(); !ok {
 		return &ValidationError{Name: "blueprint", err: errors.New(`ent: missing required edge "Deployment.blueprint"`)}
 	}
@@ -141,6 +180,18 @@ func (dc *DeploymentCreate) createSpec() (*Deployment, *sqlgraph.CreateSpec) {
 	if id, ok := dc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
+	}
+	if value, ok := dc.mutation.TemplateVars(); ok {
+		_spec.SetField(deployment.FieldTemplateVars, field.TypeJSON, value)
+		_node.TemplateVars = value
+	}
+	if value, ok := dc.mutation.DeploymentVars(); ok {
+		_spec.SetField(deployment.FieldDeploymentVars, field.TypeJSON, value)
+		_node.DeploymentVars = value
+	}
+	if value, ok := dc.mutation.DeploymentState(); ok {
+		_spec.SetField(deployment.FieldDeploymentState, field.TypeJSON, value)
+		_node.DeploymentState = value
 	}
 	if nodes := dc.mutation.BlueprintIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

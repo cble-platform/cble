@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cble-platform/backend/cble"
-	"github.com/cble-platform/backend/internal/logo"
+	"github.com/cble-platform/cble-backend/cble"
+	"github.com/cble-platform/cble-backend/internal/logo"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"

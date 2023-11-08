@@ -10,11 +10,11 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/backend/ent/blueprint"
-	"github.com/cble-platform/backend/ent/group"
-	"github.com/cble-platform/backend/ent/permissionpolicy"
-	"github.com/cble-platform/backend/ent/predicate"
-	"github.com/cble-platform/backend/ent/user"
+	"github.com/cble-platform/cble-backend/ent/blueprint"
+	"github.com/cble-platform/cble-backend/ent/group"
+	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
+	"github.com/cble-platform/cble-backend/ent/predicate"
+	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
 )
 

@@ -12,13 +12,13 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/cble-platform/backend/ent/blueprint"
-	"github.com/cble-platform/backend/ent/deployment"
-	"github.com/cble-platform/backend/ent/group"
-	"github.com/cble-platform/backend/ent/permission"
-	"github.com/cble-platform/backend/ent/permissionpolicy"
-	"github.com/cble-platform/backend/ent/user"
-	"github.com/cble-platform/backend/ent/virtualizationprovider"
+	"github.com/cble-platform/cble-backend/ent/blueprint"
+	"github.com/cble-platform/cble-backend/ent/deployment"
+	"github.com/cble-platform/cble-backend/ent/group"
+	"github.com/cble-platform/cble-backend/ent/permission"
+	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
+	"github.com/cble-platform/cble-backend/ent/user"
+	"github.com/cble-platform/cble-backend/ent/virtualizationprovider"
 )
 
 // ent aliases to avoid import conflicts in user's code.

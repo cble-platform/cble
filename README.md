@@ -1,9 +1,9 @@
 # Cloud-Based Lab Emulator (CBLE)
 
-[![Go version](https://img.shields.io/github/go-mod/go-version/cble-platform/backend?style=flat-square)](https://github.com/BradHacker/compsole)
-[![Go Report Card](https://goreportcard.com/badge/github.com/cble-platform/backend?style=flat-square)](https://goreportcard.com/report/github.com/cble-platform/backend)
-![GitHub](https://img.shields.io/github/license/cble-platform/backend?style=flat-square)
-[![Release](https://img.shields.io/github/release/cble-platform/backend?style=flat-square)](https://github.com/cble-platform/backend/releases/latest?style=flat-square)
+[![Go version](https://img.shields.io/github/go-mod/go-version/cble-platform/cble-backend?style=flat-square)](https://github.com/BradHacker/compsole)
+[![Go Report Card](https://goreportcard.com/badge/github.com/cble-platform/cble-backend?style=flat-square)](https://goreportcard.com/report/github.com/cble-platform/cble-backend)
+![GitHub](https://img.shields.io/github/license/cble-platform/cble-backend?style=flat-square)
+[![Release](https://img.shields.io/github/release/cble-platform/cble-backend?style=flat-square)](https://github.com/cble-platform/cble-backend/releases/latest?style=flat-square)
 
 ---
 
@@ -35,4 +35,4 @@ The provided `config.yaml` file is the default configuration for CBLE. **This fi
 
 By using this platform, you agree to these terms and conditions. If you do not agree with these terms, please refrain from using this platform.
 
-Please use this platform responsibly and with caution. Your use of this platform is subject to your acceptance of these terms and conditions. If you have any concerns or questions, please raise these in a [discussion](https://github.com/cble-platform/backend/discussions).
+Please use this platform responsibly and with caution. Your use of this platform is subject to your acceptance of these terms and conditions. If you have any concerns or questions, please raise these in a [discussion](https://github.com/cble-platform/cble-backend/discussions).

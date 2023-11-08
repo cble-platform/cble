@@ -10,14 +10,14 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/cble-platform/backend/ent/blueprint"
-	"github.com/cble-platform/backend/ent/deployment"
-	"github.com/cble-platform/backend/ent/group"
-	"github.com/cble-platform/backend/ent/permission"
-	"github.com/cble-platform/backend/ent/permissionpolicy"
-	"github.com/cble-platform/backend/ent/predicate"
-	"github.com/cble-platform/backend/ent/user"
-	"github.com/cble-platform/backend/ent/virtualizationprovider"
+	"github.com/cble-platform/cble-backend/ent/blueprint"
+	"github.com/cble-platform/cble-backend/ent/deployment"
+	"github.com/cble-platform/cble-backend/ent/group"
+	"github.com/cble-platform/cble-backend/ent/permission"
+	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
+	"github.com/cble-platform/cble-backend/ent/predicate"
+	"github.com/cble-platform/cble-backend/ent/user"
+	"github.com/cble-platform/cble-backend/ent/virtualizationprovider"
 	"github.com/google/uuid"
 )
 
@@ -642,6 +642,9 @@ type DeploymentMutation struct {
 	op               Op
 	typ              string
 	id               *uuid.UUID
+	template_vars    *map[string]interface{}
+	deployment_vars  *map[string]interface{}
+	deployment_state *map[string]int
 	clearedFields    map[string]struct{}
 	blueprint        *uuid.UUID
 	clearedblueprint bool
@@ -756,6 +759,114 @@ func (m *DeploymentMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 	}
 }
 
+// SetTemplateVars sets the "template_vars" field.
+func (m *DeploymentMutation) SetTemplateVars(value map[string]interface{}) {
+	m.template_vars = &value
+}
+
+// TemplateVars returns the value of the "template_vars" field in the mutation.
+func (m *DeploymentMutation) TemplateVars() (r map[string]interface{}, exists bool) {
+	v := m.template_vars
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTemplateVars returns the old "template_vars" field's value of the Deployment entity.
+// If the Deployment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DeploymentMutation) OldTemplateVars(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTemplateVars is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTemplateVars requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTemplateVars: %w", err)
+	}
+	return oldValue.TemplateVars, nil
+}
+
+// ResetTemplateVars resets all changes to the "template_vars" field.
+func (m *DeploymentMutation) ResetTemplateVars() {
+	m.template_vars = nil
+}
+
+// SetDeploymentVars sets the "deployment_vars" field.
+func (m *DeploymentMutation) SetDeploymentVars(value map[string]interface{}) {
+	m.deployment_vars = &value
+}
+
+// DeploymentVars returns the value of the "deployment_vars" field in the mutation.
+func (m *DeploymentMutation) DeploymentVars() (r map[string]interface{}, exists bool) {
+	v := m.deployment_vars
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeploymentVars returns the old "deployment_vars" field's value of the Deployment entity.
+// If the Deployment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DeploymentMutation) OldDeploymentVars(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeploymentVars is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeploymentVars requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeploymentVars: %w", err)
+	}
+	return oldValue.DeploymentVars, nil
+}
+
+// ResetDeploymentVars resets all changes to the "deployment_vars" field.
+func (m *DeploymentMutation) ResetDeploymentVars() {
+	m.deployment_vars = nil
+}
+
+// SetDeploymentState sets the "deployment_state" field.
+func (m *DeploymentMutation) SetDeploymentState(value map[string]int) {
+	m.deployment_state = &value
+}
+
+// DeploymentState returns the value of the "deployment_state" field in the mutation.
+func (m *DeploymentMutation) DeploymentState() (r map[string]int, exists bool) {
+	v := m.deployment_state
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeploymentState returns the old "deployment_state" field's value of the Deployment entity.
+// If the Deployment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DeploymentMutation) OldDeploymentState(ctx context.Context) (v map[string]int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeploymentState is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeploymentState requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeploymentState: %w", err)
+	}
+	return oldValue.DeploymentState, nil
+}
+
+// ResetDeploymentState resets all changes to the "deployment_state" field.
+func (m *DeploymentMutation) ResetDeploymentState() {
+	m.deployment_state = nil
+}
+
 // SetBlueprintID sets the "blueprint" edge to the Blueprint entity by id.
 func (m *DeploymentMutation) SetBlueprintID(id uuid.UUID) {
 	m.blueprint = &id
@@ -868,7 +979,16 @@ func (m *DeploymentMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *DeploymentMutation) Fields() []string {
-	fields := make([]string, 0, 0)
+	fields := make([]string, 0, 3)
+	if m.template_vars != nil {
+		fields = append(fields, deployment.FieldTemplateVars)
+	}
+	if m.deployment_vars != nil {
+		fields = append(fields, deployment.FieldDeploymentVars)
+	}
+	if m.deployment_state != nil {
+		fields = append(fields, deployment.FieldDeploymentState)
+	}
 	return fields
 }
 
@@ -876,6 +996,14 @@ func (m *DeploymentMutation) Fields() []string {
 // return value indicates that this field was not set, or was not defined in the
 // schema.
 func (m *DeploymentMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case deployment.FieldTemplateVars:
+		return m.TemplateVars()
+	case deployment.FieldDeploymentVars:
+		return m.DeploymentVars()
+	case deployment.FieldDeploymentState:
+		return m.DeploymentState()
+	}
 	return nil, false
 }
 
@@ -883,6 +1011,14 @@ func (m *DeploymentMutation) Field(name string) (ent.Value, bool) {
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
 func (m *DeploymentMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case deployment.FieldTemplateVars:
+		return m.OldTemplateVars(ctx)
+	case deployment.FieldDeploymentVars:
+		return m.OldDeploymentVars(ctx)
+	case deployment.FieldDeploymentState:
+		return m.OldDeploymentState(ctx)
+	}
 	return nil, fmt.Errorf("unknown Deployment field %s", name)
 }
 
@@ -891,6 +1027,27 @@ func (m *DeploymentMutation) OldField(ctx context.Context, name string) (ent.Val
 // type.
 func (m *DeploymentMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case deployment.FieldTemplateVars:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTemplateVars(v)
+		return nil
+	case deployment.FieldDeploymentVars:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeploymentVars(v)
+		return nil
+	case deployment.FieldDeploymentState:
+		v, ok := value.(map[string]int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeploymentState(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Deployment field %s", name)
 }
@@ -912,6 +1069,8 @@ func (m *DeploymentMutation) AddedField(name string) (ent.Value, bool) {
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
 func (m *DeploymentMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown Deployment numeric field %s", name)
 }
 
@@ -937,6 +1096,17 @@ func (m *DeploymentMutation) ClearField(name string) error {
 // ResetField resets all changes in the mutation for the field with the given name.
 // It returns an error if the field is not defined in the schema.
 func (m *DeploymentMutation) ResetField(name string) error {
+	switch name {
+	case deployment.FieldTemplateVars:
+		m.ResetTemplateVars()
+		return nil
+	case deployment.FieldDeploymentVars:
+		m.ResetDeploymentVars()
+		return nil
+	case deployment.FieldDeploymentState:
+		m.ResetDeploymentState()
+		return nil
+	}
 	return fmt.Errorf("unknown Deployment field %s", name)
 }
 

@@ -8,8 +8,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/backend/ent/deployment"
-	"github.com/cble-platform/backend/ent/predicate"
+	"github.com/cble-platform/cble-backend/ent/deployment"
+	"github.com/cble-platform/cble-backend/ent/predicate"
 )
 
 // DeploymentDelete is the builder for deleting a Deployment entity.

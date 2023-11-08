@@ -10,10 +10,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/backend/ent/group"
-	"github.com/cble-platform/backend/ent/permission"
-	"github.com/cble-platform/backend/ent/permissionpolicy"
-	"github.com/cble-platform/backend/ent/predicate"
+	"github.com/cble-platform/cble-backend/ent/group"
+	"github.com/cble-platform/cble-backend/ent/permission"
+	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
+	"github.com/cble-platform/cble-backend/ent/predicate"
 	"github.com/google/uuid"
 )
 

@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cble-platform/backend/ent"
-	"github.com/cble-platform/backend/ent/group"
-	"github.com/cble-platform/backend/ent/permission"
-	"github.com/cble-platform/backend/ent/permissionpolicy"
-	"github.com/cble-platform/backend/internal/utils"
+	"github.com/cble-platform/cble-backend/ent"
+	"github.com/cble-platform/cble-backend/ent/group"
+	"github.com/cble-platform/cble-backend/ent/permission"
+	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
+	"github.com/cble-platform/cble-backend/internal/utils"
 )
 
 type PermissionEngine struct {

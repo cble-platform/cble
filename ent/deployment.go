@@ -3,22 +3,29 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/cble-platform/backend/ent/blueprint"
-	"github.com/cble-platform/backend/ent/deployment"
-	"github.com/cble-platform/backend/ent/user"
+	"github.com/cble-platform/cble-backend/ent/blueprint"
+	"github.com/cble-platform/cble-backend/ent/deployment"
+	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
 )
 
 // Deployment is the model entity for the Deployment schema.
 type Deployment struct {
-	config
+	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
+	// TemplateVars holds the value of the "template_vars" field.
+	TemplateVars map[string]interface{} `json:"template_vars,omitempty"`
+	// DeploymentVars holds the value of the "deployment_vars" field.
+	DeploymentVars map[string]interface{} `json:"deployment_vars,omitempty"`
+	// DeploymentState holds the value of the "deployment_state" field.
+	DeploymentState map[string]int `json:"deployment_state,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DeploymentQuery when eager-loading is set.
 	Edges                DeploymentEdges `json:"edges"`
@@ -69,6 +76,8 @@ func (*Deployment) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case deployment.FieldTemplateVars, deployment.FieldDeploymentVars, deployment.FieldDeploymentState:
+			values[i] = new([]byte)
 		case deployment.FieldID:
 			values[i] = new(uuid.UUID)
 		case deployment.ForeignKeys[0]: // deployment_blueprint
@@ -95,6 +104,30 @@ func (d *Deployment) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				d.ID = *value
+			}
+		case deployment.FieldTemplateVars:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field template_vars", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &d.TemplateVars); err != nil {
+					return fmt.Errorf("unmarshal field template_vars: %w", err)
+				}
+			}
+		case deployment.FieldDeploymentVars:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field deployment_vars", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &d.DeploymentVars); err != nil {
+					return fmt.Errorf("unmarshal field deployment_vars: %w", err)
+				}
+			}
+		case deployment.FieldDeploymentState:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field deployment_state", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &d.DeploymentState); err != nil {
+					return fmt.Errorf("unmarshal field deployment_state: %w", err)
+				}
 			}
 		case deployment.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -155,7 +188,15 @@ func (d *Deployment) Unwrap() *Deployment {
 func (d *Deployment) String() string {
 	var builder strings.Builder
 	builder.WriteString("Deployment(")
-	builder.WriteString(fmt.Sprintf("id=%v", d.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", d.ID))
+	builder.WriteString("template_vars=")
+	builder.WriteString(fmt.Sprintf("%v", d.TemplateVars))
+	builder.WriteString(", ")
+	builder.WriteString("deployment_vars=")
+	builder.WriteString(fmt.Sprintf("%v", d.DeploymentVars))
+	builder.WriteString(", ")
+	builder.WriteString("deployment_state=")
+	builder.WriteString(fmt.Sprintf("%v", d.DeploymentState))
 	builder.WriteByte(')')
 	return builder.String()
 }

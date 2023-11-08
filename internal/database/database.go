@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"entgo.io/ent/dialect"
-	"github.com/cble-platform/backend/config"
-	"github.com/cble-platform/backend/ent"
+	"github.com/cble-platform/cble-backend/config"
+	"github.com/cble-platform/cble-backend/ent"
 )
 
 func Initialize(ctx context.Context, cbleConfig *config.Config) (*ent.Client, error) {

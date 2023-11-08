@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cble-platform/backend/config"
-	"github.com/cble-platform/backend/ent"
-	"github.com/cble-platform/backend/internal/database"
-	"github.com/cble-platform/backend/internal/permissionengine"
-	"github.com/cble-platform/backend/internal/utils"
-	"github.com/cble-platform/backend/internal/webserver"
+	"github.com/cble-platform/cble-backend/config"
+	"github.com/cble-platform/cble-backend/ent"
+	"github.com/cble-platform/cble-backend/internal/database"
+	"github.com/cble-platform/cble-backend/internal/permissionengine"
+	"github.com/cble-platform/cble-backend/internal/utils"
+	"github.com/cble-platform/cble-backend/internal/webserver"
 )
 
 type CBLEServer struct {

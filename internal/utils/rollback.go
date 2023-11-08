@@ -3,7 +3,7 @@ package utils
 import (
 	"fmt"
 
-	"github.com/cble-platform/backend/ent"
+	"github.com/cble-platform/cble-backend/ent"
 )
 
 func RollbackWithErr(tx *ent.Tx, err error) error {

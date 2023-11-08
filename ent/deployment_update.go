@@ -10,10 +10,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/backend/ent/blueprint"
-	"github.com/cble-platform/backend/ent/deployment"
-	"github.com/cble-platform/backend/ent/predicate"
-	"github.com/cble-platform/backend/ent/user"
+	"github.com/cble-platform/cble-backend/ent/blueprint"
+	"github.com/cble-platform/cble-backend/ent/deployment"
+	"github.com/cble-platform/cble-backend/ent/predicate"
+	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -27,6 +27,24 @@ type DeploymentUpdate struct {
 // Where appends a list predicates to the DeploymentUpdate builder.
 func (du *DeploymentUpdate) Where(ps ...predicate.Deployment) *DeploymentUpdate {
 	du.mutation.Where(ps...)
+	return du
+}
+
+// SetTemplateVars sets the "template_vars" field.
+func (du *DeploymentUpdate) SetTemplateVars(m map[string]interface{}) *DeploymentUpdate {
+	du.mutation.SetTemplateVars(m)
+	return du
+}
+
+// SetDeploymentVars sets the "deployment_vars" field.
+func (du *DeploymentUpdate) SetDeploymentVars(m map[string]interface{}) *DeploymentUpdate {
+	du.mutation.SetDeploymentVars(m)
+	return du
+}
+
+// SetDeploymentState sets the "deployment_state" field.
+func (du *DeploymentUpdate) SetDeploymentState(m map[string]int) *DeploymentUpdate {
+	du.mutation.SetDeploymentState(m)
 	return du
 }
 
@@ -119,6 +137,15 @@ func (du *DeploymentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := du.mutation.TemplateVars(); ok {
+		_spec.SetField(deployment.FieldTemplateVars, field.TypeJSON, value)
+	}
+	if value, ok := du.mutation.DeploymentVars(); ok {
+		_spec.SetField(deployment.FieldDeploymentVars, field.TypeJSON, value)
+	}
+	if value, ok := du.mutation.DeploymentState(); ok {
+		_spec.SetField(deployment.FieldDeploymentState, field.TypeJSON, value)
+	}
 	if du.mutation.BlueprintCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -195,6 +222,24 @@ type DeploymentUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *DeploymentMutation
+}
+
+// SetTemplateVars sets the "template_vars" field.
+func (duo *DeploymentUpdateOne) SetTemplateVars(m map[string]interface{}) *DeploymentUpdateOne {
+	duo.mutation.SetTemplateVars(m)
+	return duo
+}
+
+// SetDeploymentVars sets the "deployment_vars" field.
+func (duo *DeploymentUpdateOne) SetDeploymentVars(m map[string]interface{}) *DeploymentUpdateOne {
+	duo.mutation.SetDeploymentVars(m)
+	return duo
+}
+
+// SetDeploymentState sets the "deployment_state" field.
+func (duo *DeploymentUpdateOne) SetDeploymentState(m map[string]int) *DeploymentUpdateOne {
+	duo.mutation.SetDeploymentState(m)
+	return duo
 }
 
 // SetBlueprintID sets the "blueprint" edge to the Blueprint entity by ID.
@@ -315,6 +360,15 @@ func (duo *DeploymentUpdateOne) sqlSave(ctx context.Context) (_node *Deployment,
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := duo.mutation.TemplateVars(); ok {
+		_spec.SetField(deployment.FieldTemplateVars, field.TypeJSON, value)
+	}
+	if value, ok := duo.mutation.DeploymentVars(); ok {
+		_spec.SetField(deployment.FieldDeploymentVars, field.TypeJSON, value)
+	}
+	if value, ok := duo.mutation.DeploymentState(); ok {
+		_spec.SetField(deployment.FieldDeploymentState, field.TypeJSON, value)
 	}
 	if duo.mutation.BlueprintCleared() {
 		edge := &sqlgraph.EdgeSpec{
