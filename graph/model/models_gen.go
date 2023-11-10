@@ -8,6 +8,13 @@ import (
 	"strconv"
 )
 
+type VirtualizationProviderInput struct {
+	DisplayName     string `json:"displayName"`
+	ProviderGitURL  string `json:"providerGitUrl"`
+	ProviderVersion string `json:"providerVersion"`
+	ConfigBytes     string `json:"configBytes"`
+}
+
 type PermissionPolicyType string
 
 const (

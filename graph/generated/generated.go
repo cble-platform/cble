@@ -40,6 +40,7 @@ type ResolverRoot interface {
 	Blueprint() BlueprintResolver
 	Deployment() DeploymentResolver
 	Group() GroupResolver
+	Mutation() MutationResolver
 	Permission() PermissionResolver
 	PermissionPolicy() PermissionPolicyResolver
 	Query() QueryResolver
@@ -76,6 +77,11 @@ type ComplexityRoot struct {
 		Users              func(childComplexity int) int
 	}
 
+	Mutation struct {
+		CreateVirtualizationProvider func(childComplexity int, input model.VirtualizationProviderInput) int
+		LoadVirtualizationProvider   func(childComplexity int, id string) int
+	}
+
 	Permission struct {
 		ID                 func(childComplexity int) int
 		Key                func(childComplexity int) int
@@ -105,7 +111,7 @@ type ComplexityRoot struct {
 
 	VirtualizationProvider struct {
 		Blueprints      func(childComplexity int) int
-		ConfigPath      func(childComplexity int) int
+		ConfigBytes     func(childComplexity int) int
 		DisplayName     func(childComplexity int) int
 		ID              func(childComplexity int) int
 		ProviderGitURL  func(childComplexity int) int
@@ -135,6 +141,10 @@ type GroupResolver interface {
 	PermissionPolicies(ctx context.Context, obj *ent.Group) ([]*ent.PermissionPolicy, error)
 	Blueprints(ctx context.Context, obj *ent.Group) ([]*ent.Blueprint, error)
 }
+type MutationResolver interface {
+	CreateVirtualizationProvider(ctx context.Context, input model.VirtualizationProviderInput) (*ent.VirtualizationProvider, error)
+	LoadVirtualizationProvider(ctx context.Context, id string) (*ent.VirtualizationProvider, error)
+}
 type PermissionResolver interface {
 	ID(ctx context.Context, obj *ent.Permission) (string, error)
 
@@ -158,6 +168,7 @@ type UserResolver interface {
 type VirtualizationProviderResolver interface {
 	ID(ctx context.Context, obj *ent.VirtualizationProvider) (string, error)
 
+	ConfigBytes(ctx context.Context, obj *ent.VirtualizationProvider) (string, error)
 	Blueprints(ctx context.Context, obj *ent.VirtualizationProvider) ([]*ent.Blueprint, error)
 }
 
@@ -288,6 +299,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Group.Users(childComplexity), true
 
+	case "Mutation.createVirtualizationProvider":
+		if e.complexity.Mutation.CreateVirtualizationProvider == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createVirtualizationProvider_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateVirtualizationProvider(childComplexity, args["input"].(model.VirtualizationProviderInput)), true
+
+	case "Mutation.loadVirtualizationProvider":
+		if e.complexity.Mutation.LoadVirtualizationProvider == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_loadVirtualizationProvider_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.LoadVirtualizationProvider(childComplexity, args["id"].(string)), true
+
 	case "Permission.id":
 		if e.complexity.Permission.ID == nil {
 			break
@@ -400,12 +435,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.VirtualizationProvider.Blueprints(childComplexity), true
 
-	case "VirtualizationProvider.configPath":
-		if e.complexity.VirtualizationProvider.ConfigPath == nil {
+	case "VirtualizationProvider.configBytes":
+		if e.complexity.VirtualizationProvider.ConfigBytes == nil {
 			break
 		}
 
-		return e.complexity.VirtualizationProvider.ConfigPath(childComplexity), true
+		return e.complexity.VirtualizationProvider.ConfigBytes(childComplexity), true
 
 	case "VirtualizationProvider.displayName":
 		if e.complexity.VirtualizationProvider.DisplayName == nil {
@@ -442,7 +477,9 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e, 0, 0, make(chan graphql.DeferredResult)}
-	inputUnmarshalMap := graphql.BuildUnmarshalerMap()
+	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputVirtualizationProviderInput,
+	)
 	first := true
 
 	switch rc.Operation.Operation {
@@ -475,6 +512,21 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			}
 
 			return &response
+		}
+	case ast.Mutation:
+		return func(ctx context.Context) *graphql.Response {
+			if !first {
+				return nil
+			}
+			first = false
+			ctx = graphql.WithUnmarshalerMap(ctx, inputUnmarshalMap)
+			data := ec._Mutation(ctx, rc.Operation.SelectionSet)
+			var buf bytes.Buffer
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
 		}
 
 	default:
@@ -590,13 +642,25 @@ type VirtualizationProvider {
   displayName: String!
   providerGitUrl: String!
   providerVersion: String!
-  configPath: String!
+  configBytes: String!
 
   blueprints: [Blueprint]
 }
 
 type Query {
   users: [User!]!
+}
+
+input VirtualizationProviderInput {
+  displayName: String!
+  providerGitUrl: String!
+  providerVersion: String!
+  configBytes: String!
+}
+
+type Mutation {
+  createVirtualizationProvider(input: VirtualizationProviderInput!): VirtualizationProvider!
+  loadVirtualizationProvider(id: ID!): VirtualizationProvider!
 }
 `, BuiltIn: false},
 }
@@ -605,6 +669,36 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_createVirtualizationProvider_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.VirtualizationProviderInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNVirtualizationProviderInput2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐVirtualizationProviderInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_loadVirtualizationProvider_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -819,7 +913,7 @@ func (ec *executionContext) _Blueprint_parentGroup(ctx context.Context, field gr
 	}
 	res := resTmp.(*ent.Group)
 	fc.Result = res
-	return ec.marshalNGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐGroup(ctx, field.Selections, res)
+	return ec.marshalNGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Blueprint_parentGroup(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -879,7 +973,7 @@ func (ec *executionContext) _Blueprint_virtualizationProvider(ctx context.Contex
 	}
 	res := resTmp.(*ent.VirtualizationProvider)
 	fc.Result = res
-	return ec.marshalNVirtualizationProvider2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐVirtualizationProvider(ctx, field.Selections, res)
+	return ec.marshalNVirtualizationProvider2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐVirtualizationProvider(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Blueprint_virtualizationProvider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -898,8 +992,8 @@ func (ec *executionContext) fieldContext_Blueprint_virtualizationProvider(ctx co
 				return ec.fieldContext_VirtualizationProvider_providerGitUrl(ctx, field)
 			case "providerVersion":
 				return ec.fieldContext_VirtualizationProvider_providerVersion(ctx, field)
-			case "configPath":
-				return ec.fieldContext_VirtualizationProvider_configPath(ctx, field)
+			case "configBytes":
+				return ec.fieldContext_VirtualizationProvider_configBytes(ctx, field)
 			case "blueprints":
 				return ec.fieldContext_VirtualizationProvider_blueprints(ctx, field)
 			}
@@ -937,7 +1031,7 @@ func (ec *executionContext) _Blueprint_deployments(ctx context.Context, field gr
 	}
 	res := resTmp.([]*ent.Deployment)
 	fc.Result = res
-	return ec.marshalNDeployment2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐDeployment(ctx, field.Selections, res)
+	return ec.marshalNDeployment2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeployment(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Blueprint_deployments(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1033,7 +1127,7 @@ func (ec *executionContext) _Deployment_blueprint(ctx context.Context, field gra
 	}
 	res := resTmp.(*ent.Blueprint)
 	fc.Result = res
-	return ec.marshalNBlueprint2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐBlueprint(ctx, field.Selections, res)
+	return ec.marshalNBlueprint2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐBlueprint(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Deployment_blueprint(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1091,7 +1185,7 @@ func (ec *executionContext) _Deployment_requester(ctx context.Context, field gra
 	}
 	res := resTmp.(*ent.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Deployment_requester(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1236,7 +1330,7 @@ func (ec *executionContext) _Group_children(ctx context.Context, field graphql.C
 	}
 	res := resTmp.([]*ent.Group)
 	fc.Result = res
-	return ec.marshalOGroup2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐGroup(ctx, field.Selections, res)
+	return ec.marshalOGroup2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Group_children(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1293,7 +1387,7 @@ func (ec *executionContext) _Group_parent(ctx context.Context, field graphql.Col
 	}
 	res := resTmp.(*ent.Group)
 	fc.Result = res
-	return ec.marshalOGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐGroup(ctx, field.Selections, res)
+	return ec.marshalOGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Group_parent(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1350,7 +1444,7 @@ func (ec *executionContext) _Group_users(ctx context.Context, field graphql.Coll
 	}
 	res := resTmp.([]*ent.User)
 	fc.Result = res
-	return ec.marshalOUser2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐUser(ctx, field.Selections, res)
+	return ec.marshalOUser2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Group_users(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1407,7 +1501,7 @@ func (ec *executionContext) _Group_permissionPolicies(ctx context.Context, field
 	}
 	res := resTmp.([]*ent.PermissionPolicy)
 	fc.Result = res
-	return ec.marshalOPermissionPolicy2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐPermissionPolicy(ctx, field.Selections, res)
+	return ec.marshalOPermissionPolicy2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐPermissionPolicy(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Group_permissionPolicies(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1458,7 +1552,7 @@ func (ec *executionContext) _Group_blueprints(ctx context.Context, field graphql
 	}
 	res := resTmp.([]*ent.Blueprint)
 	fc.Result = res
-	return ec.marshalOBlueprint2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐBlueprint(ctx, field.Selections, res)
+	return ec.marshalOBlueprint2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐBlueprint(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Group_blueprints(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1484,6 +1578,144 @@ func (ec *executionContext) fieldContext_Group_blueprints(ctx context.Context, f
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Blueprint", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_createVirtualizationProvider(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createVirtualizationProvider(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateVirtualizationProvider(rctx, fc.Args["input"].(model.VirtualizationProviderInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.VirtualizationProvider)
+	fc.Result = res
+	return ec.marshalNVirtualizationProvider2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐVirtualizationProvider(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createVirtualizationProvider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_VirtualizationProvider_id(ctx, field)
+			case "displayName":
+				return ec.fieldContext_VirtualizationProvider_displayName(ctx, field)
+			case "providerGitUrl":
+				return ec.fieldContext_VirtualizationProvider_providerGitUrl(ctx, field)
+			case "providerVersion":
+				return ec.fieldContext_VirtualizationProvider_providerVersion(ctx, field)
+			case "configBytes":
+				return ec.fieldContext_VirtualizationProvider_configBytes(ctx, field)
+			case "blueprints":
+				return ec.fieldContext_VirtualizationProvider_blueprints(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type VirtualizationProvider", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createVirtualizationProvider_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_loadVirtualizationProvider(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_loadVirtualizationProvider(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().LoadVirtualizationProvider(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.VirtualizationProvider)
+	fc.Result = res
+	return ec.marshalNVirtualizationProvider2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐVirtualizationProvider(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_loadVirtualizationProvider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_VirtualizationProvider_id(ctx, field)
+			case "displayName":
+				return ec.fieldContext_VirtualizationProvider_displayName(ctx, field)
+			case "providerGitUrl":
+				return ec.fieldContext_VirtualizationProvider_providerGitUrl(ctx, field)
+			case "providerVersion":
+				return ec.fieldContext_VirtualizationProvider_providerVersion(ctx, field)
+			case "configBytes":
+				return ec.fieldContext_VirtualizationProvider_configBytes(ctx, field)
+			case "blueprints":
+				return ec.fieldContext_VirtualizationProvider_blueprints(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type VirtualizationProvider", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_loadVirtualizationProvider_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -1598,7 +1830,7 @@ func (ec *executionContext) _Permission_permissionPolicies(ctx context.Context, 
 	}
 	res := resTmp.([]*ent.PermissionPolicy)
 	fc.Result = res
-	return ec.marshalOPermissionPolicy2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐPermissionPolicy(ctx, field.Selections, res)
+	return ec.marshalOPermissionPolicy2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐPermissionPolicy(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Permission_permissionPolicies(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1696,7 +1928,7 @@ func (ec *executionContext) _PermissionPolicy_type(ctx context.Context, field gr
 	}
 	res := resTmp.(model.PermissionPolicyType)
 	fc.Result = res
-	return ec.marshalNPermissionPolicyType2githubᚗcomᚋcbleᚑplatformᚋbackendᚋgraphᚋmodelᚐPermissionPolicyType(ctx, field.Selections, res)
+	return ec.marshalNPermissionPolicyType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐPermissionPolicyType(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_PermissionPolicy_type(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1740,7 +1972,7 @@ func (ec *executionContext) _PermissionPolicy_permission(ctx context.Context, fi
 	}
 	res := resTmp.(*ent.Permission)
 	fc.Result = res
-	return ec.marshalNPermission2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐPermission(ctx, field.Selections, res)
+	return ec.marshalNPermission2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐPermission(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_PermissionPolicy_permission(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1792,7 +2024,7 @@ func (ec *executionContext) _PermissionPolicy_group(ctx context.Context, field g
 	}
 	res := resTmp.(*ent.Group)
 	fc.Result = res
-	return ec.marshalNGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐGroup(ctx, field.Selections, res)
+	return ec.marshalNGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_PermissionPolicy_group(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1852,7 +2084,7 @@ func (ec *executionContext) _Query_users(ctx context.Context, field graphql.Coll
 	}
 	res := resTmp.([]*ent.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐUserᚄ(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐUserᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_users(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2261,7 +2493,7 @@ func (ec *executionContext) _User_groups(ctx context.Context, field graphql.Coll
 	}
 	res := resTmp.([]*ent.Group)
 	fc.Result = res
-	return ec.marshalNGroup2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐGroup(ctx, field.Selections, res)
+	return ec.marshalNGroup2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_User_groups(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2321,7 +2553,7 @@ func (ec *executionContext) _User_deployments(ctx context.Context, field graphql
 	}
 	res := resTmp.([]*ent.Deployment)
 	fc.Result = res
-	return ec.marshalNDeployment2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐDeployment(ctx, field.Selections, res)
+	return ec.marshalNDeployment2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeployment(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_User_deployments(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2521,8 +2753,8 @@ func (ec *executionContext) fieldContext_VirtualizationProvider_providerVersion(
 	return fc, nil
 }
 
-func (ec *executionContext) _VirtualizationProvider_configPath(ctx context.Context, field graphql.CollectedField, obj *ent.VirtualizationProvider) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_VirtualizationProvider_configPath(ctx, field)
+func (ec *executionContext) _VirtualizationProvider_configBytes(ctx context.Context, field graphql.CollectedField, obj *ent.VirtualizationProvider) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VirtualizationProvider_configBytes(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -2535,7 +2767,7 @@ func (ec *executionContext) _VirtualizationProvider_configPath(ctx context.Conte
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ConfigPath, nil
+		return ec.resolvers.VirtualizationProvider().ConfigBytes(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2552,12 +2784,12 @@ func (ec *executionContext) _VirtualizationProvider_configPath(ctx context.Conte
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_VirtualizationProvider_configPath(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_VirtualizationProvider_configBytes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "VirtualizationProvider",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -2590,7 +2822,7 @@ func (ec *executionContext) _VirtualizationProvider_blueprints(ctx context.Conte
 	}
 	res := resTmp.([]*ent.Blueprint)
 	fc.Result = res
-	return ec.marshalOBlueprint2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐBlueprint(ctx, field.Selections, res)
+	return ec.marshalOBlueprint2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐBlueprint(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_VirtualizationProvider_blueprints(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4393,6 +4625,62 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputVirtualizationProviderInput(ctx context.Context, obj interface{}) (model.VirtualizationProviderInput, error) {
+	var it model.VirtualizationProviderInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"displayName", "providerGitUrl", "providerVersion", "configBytes"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "displayName":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayName"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DisplayName = data
+		case "providerGitUrl":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerGitUrl"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProviderGitURL = data
+		case "providerVersion":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerVersion"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProviderVersion = data
+		case "configBytes":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("configBytes"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConfigBytes = data
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -5002,6 +5290,62 @@ func (ec *executionContext) _Group(ctx context.Context, sel ast.SelectionSet, ob
 	return out
 }
 
+var mutationImplementors = []string{"Mutation"}
+
+func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mutationImplementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Mutation",
+	})
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		innerCtx := graphql.WithRootFieldContext(ctx, &graphql.RootFieldContext{
+			Object: field.Name,
+			Field:  field,
+		})
+
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Mutation")
+		case "createVirtualizationProvider":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createVirtualizationProvider(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "loadVirtualizationProvider":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_loadVirtualizationProvider(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var permissionImplementors = []string{"Permission"}
 
 func (ec *executionContext) _Permission(ctx context.Context, sel ast.SelectionSet, obj *ent.Permission) graphql.Marshaler {
@@ -5581,11 +5925,42 @@ func (ec *executionContext) _VirtualizationProvider(ctx context.Context, sel ast
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "configPath":
-			out.Values[i] = ec._VirtualizationProvider_configPath(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+		case "configBytes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._VirtualizationProvider_configBytes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "blueprints":
 			field := field
 
@@ -5968,11 +6343,11 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
-func (ec *executionContext) marshalNBlueprint2githubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐBlueprint(ctx context.Context, sel ast.SelectionSet, v ent.Blueprint) graphql.Marshaler {
+func (ec *executionContext) marshalNBlueprint2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐBlueprint(ctx context.Context, sel ast.SelectionSet, v ent.Blueprint) graphql.Marshaler {
 	return ec._Blueprint(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNBlueprint2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐBlueprint(ctx context.Context, sel ast.SelectionSet, v *ent.Blueprint) graphql.Marshaler {
+func (ec *executionContext) marshalNBlueprint2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐBlueprint(ctx context.Context, sel ast.SelectionSet, v *ent.Blueprint) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -5997,7 +6372,7 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) marshalNDeployment2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐDeployment(ctx context.Context, sel ast.SelectionSet, v []*ent.Deployment) graphql.Marshaler {
+func (ec *executionContext) marshalNDeployment2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeployment(ctx context.Context, sel ast.SelectionSet, v []*ent.Deployment) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -6021,7 +6396,7 @@ func (ec *executionContext) marshalNDeployment2ᚕᚖgithubᚗcomᚋcbleᚑplatf
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalODeployment2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐDeployment(ctx, sel, v[i])
+			ret[i] = ec.marshalODeployment2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeployment(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -6035,11 +6410,11 @@ func (ec *executionContext) marshalNDeployment2ᚕᚖgithubᚗcomᚋcbleᚑplatf
 	return ret
 }
 
-func (ec *executionContext) marshalNGroup2githubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐGroup(ctx context.Context, sel ast.SelectionSet, v ent.Group) graphql.Marshaler {
+func (ec *executionContext) marshalNGroup2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx context.Context, sel ast.SelectionSet, v ent.Group) graphql.Marshaler {
 	return ec._Group(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNGroup2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐGroup(ctx context.Context, sel ast.SelectionSet, v []*ent.Group) graphql.Marshaler {
+func (ec *executionContext) marshalNGroup2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx context.Context, sel ast.SelectionSet, v []*ent.Group) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -6063,7 +6438,7 @@ func (ec *executionContext) marshalNGroup2ᚕᚖgithubᚗcomᚋcbleᚑplatform�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐGroup(ctx, sel, v[i])
+			ret[i] = ec.marshalOGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -6077,7 +6452,7 @@ func (ec *executionContext) marshalNGroup2ᚕᚖgithubᚗcomᚋcbleᚑplatform�
 	return ret
 }
 
-func (ec *executionContext) marshalNGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐGroup(ctx context.Context, sel ast.SelectionSet, v *ent.Group) graphql.Marshaler {
+func (ec *executionContext) marshalNGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx context.Context, sel ast.SelectionSet, v *ent.Group) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -6102,11 +6477,11 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
-func (ec *executionContext) marshalNPermission2githubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐPermission(ctx context.Context, sel ast.SelectionSet, v ent.Permission) graphql.Marshaler {
+func (ec *executionContext) marshalNPermission2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐPermission(ctx context.Context, sel ast.SelectionSet, v ent.Permission) graphql.Marshaler {
 	return ec._Permission(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNPermission2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐPermission(ctx context.Context, sel ast.SelectionSet, v *ent.Permission) graphql.Marshaler {
+func (ec *executionContext) marshalNPermission2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐPermission(ctx context.Context, sel ast.SelectionSet, v *ent.Permission) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -6116,13 +6491,13 @@ func (ec *executionContext) marshalNPermission2ᚖgithubᚗcomᚋcbleᚑplatform
 	return ec._Permission(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNPermissionPolicyType2githubᚗcomᚋcbleᚑplatformᚋbackendᚋgraphᚋmodelᚐPermissionPolicyType(ctx context.Context, v interface{}) (model.PermissionPolicyType, error) {
+func (ec *executionContext) unmarshalNPermissionPolicyType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐPermissionPolicyType(ctx context.Context, v interface{}) (model.PermissionPolicyType, error) {
 	var res model.PermissionPolicyType
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNPermissionPolicyType2githubᚗcomᚋcbleᚑplatformᚋbackendᚋgraphᚋmodelᚐPermissionPolicyType(ctx context.Context, sel ast.SelectionSet, v model.PermissionPolicyType) graphql.Marshaler {
+func (ec *executionContext) marshalNPermissionPolicyType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐPermissionPolicyType(ctx context.Context, sel ast.SelectionSet, v model.PermissionPolicyType) graphql.Marshaler {
 	return v
 }
 
@@ -6141,11 +6516,11 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
-func (ec *executionContext) marshalNUser2githubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐUser(ctx context.Context, sel ast.SelectionSet, v ent.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐUser(ctx context.Context, sel ast.SelectionSet, v ent.User) graphql.Marshaler {
 	return ec._User(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNUser2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐUserᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐUserᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.User) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -6169,7 +6544,7 @@ func (ec *executionContext) marshalNUser2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNUser2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐUser(ctx, sel, v[i])
+			ret[i] = ec.marshalNUser2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐUser(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -6189,7 +6564,7 @@ func (ec *executionContext) marshalNUser2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋ
 	return ret
 }
 
-func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐUser(ctx context.Context, sel ast.SelectionSet, v *ent.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐUser(ctx context.Context, sel ast.SelectionSet, v *ent.User) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -6199,11 +6574,11 @@ func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋcbleᚑplatformᚋbac
 	return ec._User(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNVirtualizationProvider2githubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐVirtualizationProvider(ctx context.Context, sel ast.SelectionSet, v ent.VirtualizationProvider) graphql.Marshaler {
+func (ec *executionContext) marshalNVirtualizationProvider2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐVirtualizationProvider(ctx context.Context, sel ast.SelectionSet, v ent.VirtualizationProvider) graphql.Marshaler {
 	return ec._VirtualizationProvider(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNVirtualizationProvider2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐVirtualizationProvider(ctx context.Context, sel ast.SelectionSet, v *ent.VirtualizationProvider) graphql.Marshaler {
+func (ec *executionContext) marshalNVirtualizationProvider2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐVirtualizationProvider(ctx context.Context, sel ast.SelectionSet, v *ent.VirtualizationProvider) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -6211,6 +6586,11 @@ func (ec *executionContext) marshalNVirtualizationProvider2ᚖgithubᚗcomᚋcbl
 		return graphql.Null
 	}
 	return ec._VirtualizationProvider(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNVirtualizationProviderInput2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐVirtualizationProviderInput(ctx context.Context, v interface{}) (model.VirtualizationProviderInput, error) {
+	res, err := ec.unmarshalInputVirtualizationProviderInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -6466,7 +6846,7 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
-func (ec *executionContext) marshalOBlueprint2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐBlueprint(ctx context.Context, sel ast.SelectionSet, v []*ent.Blueprint) graphql.Marshaler {
+func (ec *executionContext) marshalOBlueprint2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐBlueprint(ctx context.Context, sel ast.SelectionSet, v []*ent.Blueprint) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -6493,7 +6873,7 @@ func (ec *executionContext) marshalOBlueprint2ᚕᚖgithubᚗcomᚋcbleᚑplatfo
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOBlueprint2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐBlueprint(ctx, sel, v[i])
+			ret[i] = ec.marshalOBlueprint2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐBlueprint(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -6507,7 +6887,7 @@ func (ec *executionContext) marshalOBlueprint2ᚕᚖgithubᚗcomᚋcbleᚑplatfo
 	return ret
 }
 
-func (ec *executionContext) marshalOBlueprint2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐBlueprint(ctx context.Context, sel ast.SelectionSet, v *ent.Blueprint) graphql.Marshaler {
+func (ec *executionContext) marshalOBlueprint2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐBlueprint(ctx context.Context, sel ast.SelectionSet, v *ent.Blueprint) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -6540,14 +6920,14 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
-func (ec *executionContext) marshalODeployment2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐDeployment(ctx context.Context, sel ast.SelectionSet, v *ent.Deployment) graphql.Marshaler {
+func (ec *executionContext) marshalODeployment2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeployment(ctx context.Context, sel ast.SelectionSet, v *ent.Deployment) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Deployment(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOGroup2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐGroup(ctx context.Context, sel ast.SelectionSet, v []*ent.Group) graphql.Marshaler {
+func (ec *executionContext) marshalOGroup2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx context.Context, sel ast.SelectionSet, v []*ent.Group) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -6574,7 +6954,7 @@ func (ec *executionContext) marshalOGroup2ᚕᚖgithubᚗcomᚋcbleᚑplatform�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐGroup(ctx, sel, v[i])
+			ret[i] = ec.marshalOGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -6588,14 +6968,14 @@ func (ec *executionContext) marshalOGroup2ᚕᚖgithubᚗcomᚋcbleᚑplatform�
 	return ret
 }
 
-func (ec *executionContext) marshalOGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐGroup(ctx context.Context, sel ast.SelectionSet, v *ent.Group) graphql.Marshaler {
+func (ec *executionContext) marshalOGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx context.Context, sel ast.SelectionSet, v *ent.Group) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Group(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOPermissionPolicy2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐPermissionPolicy(ctx context.Context, sel ast.SelectionSet, v []*ent.PermissionPolicy) graphql.Marshaler {
+func (ec *executionContext) marshalOPermissionPolicy2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐPermissionPolicy(ctx context.Context, sel ast.SelectionSet, v []*ent.PermissionPolicy) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -6622,7 +7002,7 @@ func (ec *executionContext) marshalOPermissionPolicy2ᚕᚖgithubᚗcomᚋcble�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOPermissionPolicy2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐPermissionPolicy(ctx, sel, v[i])
+			ret[i] = ec.marshalOPermissionPolicy2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐPermissionPolicy(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -6636,7 +7016,7 @@ func (ec *executionContext) marshalOPermissionPolicy2ᚕᚖgithubᚗcomᚋcble�
 	return ret
 }
 
-func (ec *executionContext) marshalOPermissionPolicy2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐPermissionPolicy(ctx context.Context, sel ast.SelectionSet, v *ent.PermissionPolicy) graphql.Marshaler {
+func (ec *executionContext) marshalOPermissionPolicy2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐPermissionPolicy(ctx context.Context, sel ast.SelectionSet, v *ent.PermissionPolicy) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -6669,7 +7049,7 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	return res
 }
 
-func (ec *executionContext) marshalOUser2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐUser(ctx context.Context, sel ast.SelectionSet, v []*ent.User) graphql.Marshaler {
+func (ec *executionContext) marshalOUser2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐUser(ctx context.Context, sel ast.SelectionSet, v []*ent.User) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -6696,7 +7076,7 @@ func (ec *executionContext) marshalOUser2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOUser2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐUser(ctx, sel, v[i])
+			ret[i] = ec.marshalOUser2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐUser(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -6710,7 +7090,7 @@ func (ec *executionContext) marshalOUser2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋ
 	return ret
 }
 
-func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋcbleᚑplatformᚋbackendᚋentᚐUser(ctx context.Context, sel ast.SelectionSet, v *ent.User) graphql.Marshaler {
+func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐUser(ctx context.Context, sel ast.SelectionSet, v *ent.User) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}

@@ -6,10 +6,12 @@ package graph
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/graph/generated"
 	"github.com/cble-platform/cble-backend/graph/model"
+	"github.com/google/uuid"
 )
 
 // ID is the resolver for the id field.
@@ -102,6 +104,38 @@ func (r *groupResolver) Blueprints(ctx context.Context, obj *ent.Group) ([]*ent.
 	return obj.QueryBlueprints().All(ctx)
 }
 
+// CreateVirtualizationProvider is the resolver for the createVirtualizationProvider field.
+func (r *mutationResolver) CreateVirtualizationProvider(ctx context.Context, input model.VirtualizationProviderInput) (*ent.VirtualizationProvider, error) {
+	entVirtualizationProvider, err := r.ent.VirtualizationProvider.Create().
+		SetDisplayName(input.DisplayName).
+		SetProviderGitURL(input.ProviderGitURL).
+		SetProviderVersion(input.ProviderVersion).
+		SetConfigBytes([]byte(input.ConfigBytes)).
+		Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create virtualization provider: %v", err)
+	}
+
+	return entVirtualizationProvider, nil
+}
+
+// LoadVirtualizationProvider is the resolver for the loadVirtualizationProvider field.
+func (r *mutationResolver) LoadVirtualizationProvider(ctx context.Context, id string) (*ent.VirtualizationProvider, error) {
+	providerUuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, fmt.Errorf("id is not valid UUID: %v", err)
+	}
+	entVirtualizationProvider, err := r.ent.VirtualizationProvider.Get(ctx, providerUuid)
+	if err != nil {
+		return nil, fmt.Errorf("could not find virtualization provider with id %s", id)
+	}
+
+	// Queue the provider to load
+	r.cbleServer.QueueLoadProvider(id)
+
+	return entVirtualizationProvider, nil
+}
+
 // ID is the resolver for the id field.
 func (r *permissionResolver) ID(ctx context.Context, obj *ent.Permission) (string, error) {
 	return obj.ID.String(), nil
@@ -165,6 +199,11 @@ func (r *virtualizationProviderResolver) ID(ctx context.Context, obj *ent.Virtua
 	return obj.ID.String(), nil
 }
 
+// ConfigBytes is the resolver for the configBytes field.
+func (r *virtualizationProviderResolver) ConfigBytes(ctx context.Context, obj *ent.VirtualizationProvider) (string, error) {
+	return string(obj.ConfigBytes), nil
+}
+
 // Blueprints is the resolver for the blueprints field.
 func (r *virtualizationProviderResolver) Blueprints(ctx context.Context, obj *ent.VirtualizationProvider) ([]*ent.Blueprint, error) {
 	return obj.QueryBlueprints().All(ctx)
@@ -178,6 +217,9 @@ func (r *Resolver) Deployment() generated.DeploymentResolver { return &deploymen
 
 // Group returns generated.GroupResolver implementation.
 func (r *Resolver) Group() generated.GroupResolver { return &groupResolver{r} }
+
+// Mutation returns generated.MutationResolver implementation.
+func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
 // Permission returns generated.PermissionResolver implementation.
 func (r *Resolver) Permission() generated.PermissionResolver { return &permissionResolver{r} }
@@ -201,6 +243,7 @@ func (r *Resolver) VirtualizationProvider() generated.VirtualizationProviderReso
 type blueprintResolver struct{ *Resolver }
 type deploymentResolver struct{ *Resolver }
 type groupResolver struct{ *Resolver }
+type mutationResolver struct{ *Resolver }
 type permissionResolver struct{ *Resolver }
 type permissionPolicyResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
