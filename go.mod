@@ -5,7 +5,7 @@ go 1.21
 require (
 	entgo.io/ent v0.12.4
 	github.com/99designs/gqlgen v0.17.40
-	github.com/cble-platform/cble-provider-grpc v0.0.0-20231109000505-5afe22467b77
+	github.com/cble-platform/cble-provider-grpc v0.1.0
 	github.com/crewjam/saml v0.4.14
 	github.com/fatih/color v1.16.0
 	github.com/gin-gonic/gin v1.9.1
