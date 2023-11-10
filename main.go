@@ -3,6 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 
 	"github.com/cble-platform/cble-backend/cble"
 	"github.com/cble-platform/cble-backend/internal/logo"
@@ -12,7 +16,7 @@ import (
 )
 
 func main() {
-	ctx := context.Background()
+	ctx, closeContext := context.WithCancel(context.Background())
 
 	// Print the logo
 	fmt.Println(logo.Print())
@@ -34,10 +38,29 @@ func main() {
 	if err := cbleServer.Initialize(ctx); err != nil {
 		logrus.Fatalf("failed to initialize CBLE server: %v", err)
 	}
-	// Run (blocking)
-	cbleServer.Run(ctx)
+
+	// Run all runtimes
+	var wg sync.WaitGroup
+	cbleServer.Run(ctx, &wg)
+
+	// Close global context on signal receive
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	wg.Add(1)
+	go func() {
+		s := <-sigCh
+		logrus.Warnf("Received signal %v, attempting graceful shutdown...", s)
+		closeContext()
+		wg.Done()
+	}()
+
+	// Wait for all runtimes to shutdown
+	wg.Wait()
+
 	// Shutdown
-	if err := cbleServer.Shutdown(ctx); err != nil {
+	if err := cbleServer.Shutdown(); err != nil {
 		logrus.Fatalf("failed to initialize CBLE server: %v", err)
 	}
+
+	logrus.Infof("CBLE shutdown successful")
 }

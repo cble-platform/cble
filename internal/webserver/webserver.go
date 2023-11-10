@@ -1,8 +1,10 @@
 package webserver
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -13,23 +15,24 @@ import (
 	"github.com/cble-platform/cble-backend/config"
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/graph"
+	"github.com/cble-platform/cble-backend/providers"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
 )
 
 type CBLEWebserver struct {
-	router *gin.Engine
-	config *config.Config
+	webserver *http.Server
+	config    *config.Config
 }
 
-func graphqlHandler(config *config.Config, client *ent.Client) gin.HandlerFunc {
+func graphqlHandler(config *config.Config, client *ent.Client, cbleServer *providers.CBLEServer) gin.HandlerFunc {
 	cors_urls := []string{"http://localhost", "http://localhost:8080", "http://localhost:3000"}
 	if len(config.Server.AllowedOrigins) > 0 {
 		cors_urls = config.Server.AllowedOrigins
 	}
 
-	srv := handler.New(graph.NewSchema(client))
+	srv := handler.New(graph.NewSchema(client, cbleServer))
 
 	srv.AddTransport(&transport.Websocket{
 		KeepAlivePingInterval: 10 * time.Second,
@@ -70,27 +73,39 @@ func playgroundHandler() gin.HandlerFunc {
 	}
 }
 
-func New(config *config.Config, client *ent.Client) *CBLEWebserver {
+func New(config *config.Config, client *ent.Client, cbleServer *providers.CBLEServer) *CBLEWebserver {
 	r := gin.Default()
 
 	api := r.Group("/api")
 
 	gql := api.Group("/graphql")
 
-	gql.Any("/query", graphqlHandler(config, client))
+	gql.Any("/query", graphqlHandler(config, client, cbleServer))
 	if config.Debug {
 		gql.Any("/playground", playgroundHandler())
 	}
 
+	srv := &http.Server{
+		Addr:    fmt.Sprintf("%s:%d", config.Server.Hostname, config.Server.Port),
+		Handler: r,
+	}
+
 	return &CBLEWebserver{
-		router: r,
-		config: config,
+		webserver: srv,
+		config:    config,
 	}
 }
 
-func (w *CBLEWebserver) Listen() {
-	addr := fmt.Sprintf("%s:%d", w.config.Server.Hostname, w.config.Server.Port)
-	if err := w.router.Run(addr); err != nil {
-		logrus.Fatalf("failed to start gin router")
-	}
+func (w *CBLEWebserver) Listen(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	go func() {
+		if err := w.webserver.ListenAndServe(); err != http.ErrServerClosed {
+			logrus.Fatalf("failed to start webserver")
+		}
+	}()
+
+	<-ctx.Done()
+	logrus.Warnf("Gracefully shutting down CBLE webserver...")
+	w.webserver.Shutdown(ctx)
 }

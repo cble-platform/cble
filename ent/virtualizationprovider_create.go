@@ -39,9 +39,23 @@ func (vpc *VirtualizationProviderCreate) SetProviderVersion(s string) *Virtualiz
 	return vpc
 }
 
-// SetConfigPath sets the "config_path" field.
-func (vpc *VirtualizationProviderCreate) SetConfigPath(s string) *VirtualizationProviderCreate {
-	vpc.mutation.SetConfigPath(s)
+// SetConfigBytes sets the "config_bytes" field.
+func (vpc *VirtualizationProviderCreate) SetConfigBytes(b []byte) *VirtualizationProviderCreate {
+	vpc.mutation.SetConfigBytes(b)
+	return vpc
+}
+
+// SetIsLoaded sets the "is_loaded" field.
+func (vpc *VirtualizationProviderCreate) SetIsLoaded(b bool) *VirtualizationProviderCreate {
+	vpc.mutation.SetIsLoaded(b)
+	return vpc
+}
+
+// SetNillableIsLoaded sets the "is_loaded" field if the given value is not nil.
+func (vpc *VirtualizationProviderCreate) SetNillableIsLoaded(b *bool) *VirtualizationProviderCreate {
+	if b != nil {
+		vpc.SetIsLoaded(*b)
+	}
 	return vpc
 }
 
@@ -109,6 +123,10 @@ func (vpc *VirtualizationProviderCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (vpc *VirtualizationProviderCreate) defaults() {
+	if _, ok := vpc.mutation.IsLoaded(); !ok {
+		v := virtualizationprovider.DefaultIsLoaded
+		vpc.mutation.SetIsLoaded(v)
+	}
 	if _, ok := vpc.mutation.ID(); !ok {
 		v := virtualizationprovider.DefaultID()
 		vpc.mutation.SetID(v)
@@ -126,8 +144,11 @@ func (vpc *VirtualizationProviderCreate) check() error {
 	if _, ok := vpc.mutation.ProviderVersion(); !ok {
 		return &ValidationError{Name: "provider_version", err: errors.New(`ent: missing required field "VirtualizationProvider.provider_version"`)}
 	}
-	if _, ok := vpc.mutation.ConfigPath(); !ok {
-		return &ValidationError{Name: "config_path", err: errors.New(`ent: missing required field "VirtualizationProvider.config_path"`)}
+	if _, ok := vpc.mutation.ConfigBytes(); !ok {
+		return &ValidationError{Name: "config_bytes", err: errors.New(`ent: missing required field "VirtualizationProvider.config_bytes"`)}
+	}
+	if _, ok := vpc.mutation.IsLoaded(); !ok {
+		return &ValidationError{Name: "is_loaded", err: errors.New(`ent: missing required field "VirtualizationProvider.is_loaded"`)}
 	}
 	return nil
 }
@@ -176,9 +197,13 @@ func (vpc *VirtualizationProviderCreate) createSpec() (*VirtualizationProvider, 
 		_spec.SetField(virtualizationprovider.FieldProviderVersion, field.TypeString, value)
 		_node.ProviderVersion = value
 	}
-	if value, ok := vpc.mutation.ConfigPath(); ok {
-		_spec.SetField(virtualizationprovider.FieldConfigPath, field.TypeString, value)
-		_node.ConfigPath = value
+	if value, ok := vpc.mutation.ConfigBytes(); ok {
+		_spec.SetField(virtualizationprovider.FieldConfigBytes, field.TypeBytes, value)
+		_node.ConfigBytes = value
+	}
+	if value, ok := vpc.mutation.IsLoaded(); ok {
+		_spec.SetField(virtualizationprovider.FieldIsLoaded, field.TypeBool, value)
+		_node.IsLoaded = value
 	}
 	if nodes := vpc.mutation.BlueprintsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

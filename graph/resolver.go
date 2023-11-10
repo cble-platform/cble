@@ -4,6 +4,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/graph/generated"
+	"github.com/cble-platform/cble-backend/providers"
 )
 
 // This file will not be regenerated automatically.
@@ -13,15 +14,17 @@ import (
 //go:generate go run github.com/99designs/gqlgen generate
 
 type Resolver struct {
-	ent *ent.Client
+	ent        *ent.Client
+	cbleServer *providers.CBLEServer
 	// redis *redis.Client
 }
 
 // NewSchema creates a graphql executable schema.
-func NewSchema(client *ent.Client) graphql.ExecutableSchema {
+func NewSchema(client *ent.Client, cbleServer *providers.CBLEServer) graphql.ExecutableSchema {
 	c := generated.Config{
 		Resolvers: &Resolver{
-			ent: client,
+			ent:        client,
+			cbleServer: cbleServer,
 			// rdb:           rdb,
 		},
 	}

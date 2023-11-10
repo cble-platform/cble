@@ -64,11 +64,23 @@ type VirtualizationProvider {
   displayName: String!
   providerGitUrl: String!
   providerVersion: String!
-  configPath: String!
+  configBytes: String!
 
   blueprints: [Blueprint]
 }
 
 type Query {
   users: [User!]!
+}
+
+input VirtualizationProviderInput {
+  displayName: String!
+  providerGitUrl: String!
+  providerVersion: String!
+  configBytes: String!
+}
+
+type Mutation {
+  createVirtualizationProvider(input: VirtualizationProviderInput!): VirtualizationProvider!
+  loadVirtualizationProvider(id: ID!): VirtualizationProvider!
 }

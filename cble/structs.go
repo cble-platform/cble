@@ -3,6 +3,7 @@ package cble
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/cble-platform/cble-backend/config"
 	"github.com/cble-platform/cble-backend/ent"
@@ -10,6 +11,8 @@ import (
 	"github.com/cble-platform/cble-backend/internal/permissionengine"
 	"github.com/cble-platform/cble-backend/internal/utils"
 	"github.com/cble-platform/cble-backend/internal/webserver"
+	"github.com/cble-platform/cble-backend/providers"
+	"github.com/sirupsen/logrus"
 )
 
 type CBLEServer struct {
@@ -17,6 +20,7 @@ type CBLEServer struct {
 	Ent              *ent.Client
 	Webserver        *webserver.CBLEWebserver
 	PermissionEngine *permissionengine.PermissionEngine
+	GRPCServer       *providers.CBLEServer
 }
 
 func NewServer(ctx context.Context, configFile string) (*CBLEServer, error) {
@@ -29,6 +33,11 @@ func NewServer(ctx context.Context, configFile string) (*CBLEServer, error) {
 		return nil, fmt.Errorf("failed to load config: %v", err)
 	}
 
+	// Enable debug logging in debug mode
+	if cbleConfig.Debug {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
+
 	//-----//
 	// ENT //
 	//-----//
@@ -37,12 +46,6 @@ func NewServer(ctx context.Context, configFile string) (*CBLEServer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %v", err)
 	}
-
-	//-----------//
-	// Webserver //
-	//-----------//
-
-	w := webserver.New(cbleConfig, client)
 
 	//-------------------//
 	// Permission Engine //
@@ -53,11 +56,24 @@ func NewServer(ctx context.Context, configFile string) (*CBLEServer, error) {
 		return nil, fmt.Errorf("failed to create permission engine")
 	}
 
+	//------------------//
+	// gRPC CBLE Server //
+	//------------------//
+
+	grpcServer := providers.NewServer(client, &cbleConfig.Providers)
+
+	//-----------//
+	// Webserver //
+	//-----------//
+
+	w := webserver.New(cbleConfig, client, grpcServer)
+
 	return &CBLEServer{
 		Config:           cbleConfig,
 		Ent:              client,
 		Webserver:        w,
 		PermissionEngine: pe,
+		GRPCServer:       grpcServer,
 	}, nil
 }
 
@@ -75,17 +91,26 @@ func (s *CBLEServer) Initialize(ctx context.Context) error {
 	return nil
 }
 
-// Run is a blocking method (for now) which should be called to run the main webserver
-func (s *CBLEServer) Run(ctx context.Context) {
+// Run is called to start all of the CBLE runtimes
+func (s *CBLEServer) Run(ctx context.Context, wg *sync.WaitGroup) {
+	//------------------//
+	// gRPC CBLE Server //
+	//------------------//
+	wg.Add(3)
+	go s.GRPCServer.Listen(ctx, wg)
+	go s.GRPCServer.RunProviderServers(ctx, wg)
+	go s.GRPCServer.RunProviderClients(ctx, wg)
+
 	//-----------//
 	// Webserver //
 	//-----------//
 
-	s.Webserver.Listen()
+	wg.Add(1)
+	go s.Webserver.Listen(ctx, wg)
 }
 
 // Shutdown should be called after Run returns
-func (s *CBLEServer) Shutdown(ctx context.Context) error {
+func (s *CBLEServer) Shutdown() error {
 	//-----//
 	// Ent //
 	//-----//

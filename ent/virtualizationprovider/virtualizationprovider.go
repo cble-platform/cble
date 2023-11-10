@@ -19,8 +19,10 @@ const (
 	FieldProviderGitURL = "provider_git_url"
 	// FieldProviderVersion holds the string denoting the provider_version field in the database.
 	FieldProviderVersion = "provider_version"
-	// FieldConfigPath holds the string denoting the config_path field in the database.
-	FieldConfigPath = "config_path"
+	// FieldConfigBytes holds the string denoting the config_bytes field in the database.
+	FieldConfigBytes = "config_bytes"
+	// FieldIsLoaded holds the string denoting the is_loaded field in the database.
+	FieldIsLoaded = "is_loaded"
 	// EdgeBlueprints holds the string denoting the blueprints edge name in mutations.
 	EdgeBlueprints = "blueprints"
 	// Table holds the table name of the virtualizationprovider in the database.
@@ -40,7 +42,8 @@ var Columns = []string{
 	FieldDisplayName,
 	FieldProviderGitURL,
 	FieldProviderVersion,
-	FieldConfigPath,
+	FieldConfigBytes,
+	FieldIsLoaded,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -54,6 +57,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultIsLoaded holds the default value on creation for the "is_loaded" field.
+	DefaultIsLoaded bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -81,9 +86,9 @@ func ByProviderVersion(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProviderVersion, opts...).ToFunc()
 }
 
-// ByConfigPath orders the results by the config_path field.
-func ByConfigPath(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldConfigPath, opts...).ToFunc()
+// ByIsLoaded orders the results by the is_loaded field.
+func ByIsLoaded(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsLoaded, opts...).ToFunc()
 }
 
 // ByBlueprintsCount orders the results by blueprints count.

@@ -47,9 +47,23 @@ func (vpu *VirtualizationProviderUpdate) SetProviderVersion(s string) *Virtualiz
 	return vpu
 }
 
-// SetConfigPath sets the "config_path" field.
-func (vpu *VirtualizationProviderUpdate) SetConfigPath(s string) *VirtualizationProviderUpdate {
-	vpu.mutation.SetConfigPath(s)
+// SetConfigBytes sets the "config_bytes" field.
+func (vpu *VirtualizationProviderUpdate) SetConfigBytes(b []byte) *VirtualizationProviderUpdate {
+	vpu.mutation.SetConfigBytes(b)
+	return vpu
+}
+
+// SetIsLoaded sets the "is_loaded" field.
+func (vpu *VirtualizationProviderUpdate) SetIsLoaded(b bool) *VirtualizationProviderUpdate {
+	vpu.mutation.SetIsLoaded(b)
+	return vpu
+}
+
+// SetNillableIsLoaded sets the "is_loaded" field if the given value is not nil.
+func (vpu *VirtualizationProviderUpdate) SetNillableIsLoaded(b *bool) *VirtualizationProviderUpdate {
+	if b != nil {
+		vpu.SetIsLoaded(*b)
+	}
 	return vpu
 }
 
@@ -139,8 +153,11 @@ func (vpu *VirtualizationProviderUpdate) sqlSave(ctx context.Context) (n int, er
 	if value, ok := vpu.mutation.ProviderVersion(); ok {
 		_spec.SetField(virtualizationprovider.FieldProviderVersion, field.TypeString, value)
 	}
-	if value, ok := vpu.mutation.ConfigPath(); ok {
-		_spec.SetField(virtualizationprovider.FieldConfigPath, field.TypeString, value)
+	if value, ok := vpu.mutation.ConfigBytes(); ok {
+		_spec.SetField(virtualizationprovider.FieldConfigBytes, field.TypeBytes, value)
+	}
+	if value, ok := vpu.mutation.IsLoaded(); ok {
+		_spec.SetField(virtualizationprovider.FieldIsLoaded, field.TypeBool, value)
 	}
 	if vpu.mutation.BlueprintsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -225,9 +242,23 @@ func (vpuo *VirtualizationProviderUpdateOne) SetProviderVersion(s string) *Virtu
 	return vpuo
 }
 
-// SetConfigPath sets the "config_path" field.
-func (vpuo *VirtualizationProviderUpdateOne) SetConfigPath(s string) *VirtualizationProviderUpdateOne {
-	vpuo.mutation.SetConfigPath(s)
+// SetConfigBytes sets the "config_bytes" field.
+func (vpuo *VirtualizationProviderUpdateOne) SetConfigBytes(b []byte) *VirtualizationProviderUpdateOne {
+	vpuo.mutation.SetConfigBytes(b)
+	return vpuo
+}
+
+// SetIsLoaded sets the "is_loaded" field.
+func (vpuo *VirtualizationProviderUpdateOne) SetIsLoaded(b bool) *VirtualizationProviderUpdateOne {
+	vpuo.mutation.SetIsLoaded(b)
+	return vpuo
+}
+
+// SetNillableIsLoaded sets the "is_loaded" field if the given value is not nil.
+func (vpuo *VirtualizationProviderUpdateOne) SetNillableIsLoaded(b *bool) *VirtualizationProviderUpdateOne {
+	if b != nil {
+		vpuo.SetIsLoaded(*b)
+	}
 	return vpuo
 }
 
@@ -347,8 +378,11 @@ func (vpuo *VirtualizationProviderUpdateOne) sqlSave(ctx context.Context) (_node
 	if value, ok := vpuo.mutation.ProviderVersion(); ok {
 		_spec.SetField(virtualizationprovider.FieldProviderVersion, field.TypeString, value)
 	}
-	if value, ok := vpuo.mutation.ConfigPath(); ok {
-		_spec.SetField(virtualizationprovider.FieldConfigPath, field.TypeString, value)
+	if value, ok := vpuo.mutation.ConfigBytes(); ok {
+		_spec.SetField(virtualizationprovider.FieldConfigBytes, field.TypeBytes, value)
+	}
+	if value, ok := vpuo.mutation.IsLoaded(); ok {
+		_spec.SetField(virtualizationprovider.FieldIsLoaded, field.TypeBool, value)
 	}
 	if vpuo.mutation.BlueprintsCleared() {
 		edge := &sqlgraph.EdgeSpec{

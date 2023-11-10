@@ -5,6 +5,7 @@ type Config struct {
 	Server         ServerConfig         `yaml:"server"`
 	Database       DatabaseConfig       `yaml:"database"`
 	Initialization InitializationConfig `yaml:"initialization"`
+	Providers      ProvidersConfig      `yaml:"providers,omitempty"`
 }
 
 type ServerConfig struct {
@@ -36,4 +37,8 @@ type DefaultAdminConfig struct {
 	Email     string `yaml:"email"`
 	FirstName string `yaml:"first_name"`
 	LastName  string `yaml:"last_name"`
+}
+
+type ProvidersConfig struct {
+	CacheDir string `yaml:"cache"`
 }
