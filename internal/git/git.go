@@ -1,8 +1,6 @@
 package git
 
 import (
-	"path"
-
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -51,8 +49,8 @@ func ValidateVirtualizationProviderGit(entProvider *ent.VirtualizationProvider) 
 }
 
 // Clones the repo associated with a Virtualization Provider.
-func CloneVirtualizationProvider(providerPath string, entProvider *ent.VirtualizationProvider) error {
-	_, err := git.PlainClone(path.Join(providerPath, entProvider.ID.String()), false, &git.CloneOptions{
+func CloneVirtualizationProvider(repoPath string, entProvider *ent.VirtualizationProvider) error {
+	_, err := git.PlainClone(repoPath, false, &git.CloneOptions{
 		URL:               entProvider.ProviderGitURL,
 		ReferenceName:     plumbing.ReferenceName(entProvider.ProviderVersion),
 		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
@@ -61,9 +59,9 @@ func CloneVirtualizationProvider(providerPath string, entProvider *ent.Virtualiz
 }
 
 // Checks out a version of a Virtualization Provider.
-func CheckoutVirtualizationProvider(providerPath string, entProvider *ent.VirtualizationProvider) error {
+func CheckoutVirtualizationProvider(repoPath string, entProvider *ent.VirtualizationProvider) error {
 	// Open the local repo and get worktree
-	repo, err := git.PlainOpen(path.Join(providerPath, entProvider.ID.String()))
+	repo, err := git.PlainOpen(repoPath)
 	if err != nil {
 		return err
 	}

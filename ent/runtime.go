@@ -72,6 +72,10 @@ func init() {
 	user.DefaultID = userDescID.Default.(func() uuid.UUID)
 	virtualizationproviderFields := schema.VirtualizationProvider{}.Fields()
 	_ = virtualizationproviderFields
+	// virtualizationproviderDescIsLoaded is the schema descriptor for is_loaded field.
+	virtualizationproviderDescIsLoaded := virtualizationproviderFields[5].Descriptor()
+	// virtualizationprovider.DefaultIsLoaded holds the default value on creation for the is_loaded field.
+	virtualizationprovider.DefaultIsLoaded = virtualizationproviderDescIsLoaded.Default.(bool)
 	// virtualizationproviderDescID is the schema descriptor for id field.
 	virtualizationproviderDescID := virtualizationproviderFields[0].Descriptor()
 	// virtualizationprovider.DefaultID holds the default value on creation for the id field.

@@ -51,6 +51,14 @@ func (vpc *VirtualizationProviderCreate) SetIsLoaded(b bool) *VirtualizationProv
 	return vpc
 }
 
+// SetNillableIsLoaded sets the "is_loaded" field if the given value is not nil.
+func (vpc *VirtualizationProviderCreate) SetNillableIsLoaded(b *bool) *VirtualizationProviderCreate {
+	if b != nil {
+		vpc.SetIsLoaded(*b)
+	}
+	return vpc
+}
+
 // SetID sets the "id" field.
 func (vpc *VirtualizationProviderCreate) SetID(u uuid.UUID) *VirtualizationProviderCreate {
 	vpc.mutation.SetID(u)
@@ -115,6 +123,10 @@ func (vpc *VirtualizationProviderCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (vpc *VirtualizationProviderCreate) defaults() {
+	if _, ok := vpc.mutation.IsLoaded(); !ok {
+		v := virtualizationprovider.DefaultIsLoaded
+		vpc.mutation.SetIsLoaded(v)
+	}
 	if _, ok := vpc.mutation.ID(); !ok {
 		v := virtualizationprovider.DefaultID()
 		vpc.mutation.SetID(v)

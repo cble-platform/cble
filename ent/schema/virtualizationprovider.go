@@ -22,7 +22,7 @@ func (VirtualizationProvider) Fields() []ent.Field {
 		field.String("provider_git_url"),
 		field.String("provider_version"),
 		field.Bytes("config_bytes"),
-		field.Bool("is_loaded"),
+		field.Bool("is_loaded").Default(false),
 	}
 }
 

@@ -57,6 +57,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultIsLoaded holds the default value on creation for the "is_loaded" field.
+	DefaultIsLoaded bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )

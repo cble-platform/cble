@@ -59,6 +59,14 @@ func (vpu *VirtualizationProviderUpdate) SetIsLoaded(b bool) *VirtualizationProv
 	return vpu
 }
 
+// SetNillableIsLoaded sets the "is_loaded" field if the given value is not nil.
+func (vpu *VirtualizationProviderUpdate) SetNillableIsLoaded(b *bool) *VirtualizationProviderUpdate {
+	if b != nil {
+		vpu.SetIsLoaded(*b)
+	}
+	return vpu
+}
+
 // AddBlueprintIDs adds the "blueprints" edge to the Blueprint entity by IDs.
 func (vpu *VirtualizationProviderUpdate) AddBlueprintIDs(ids ...uuid.UUID) *VirtualizationProviderUpdate {
 	vpu.mutation.AddBlueprintIDs(ids...)
@@ -243,6 +251,14 @@ func (vpuo *VirtualizationProviderUpdateOne) SetConfigBytes(b []byte) *Virtualiz
 // SetIsLoaded sets the "is_loaded" field.
 func (vpuo *VirtualizationProviderUpdateOne) SetIsLoaded(b bool) *VirtualizationProviderUpdateOne {
 	vpuo.mutation.SetIsLoaded(b)
+	return vpuo
+}
+
+// SetNillableIsLoaded sets the "is_loaded" field if the given value is not nil.
+func (vpuo *VirtualizationProviderUpdateOne) SetNillableIsLoaded(b *bool) *VirtualizationProviderUpdateOne {
+	if b != nil {
+		vpuo.SetIsLoaded(*b)
+	}
 	return vpuo
 }
 
