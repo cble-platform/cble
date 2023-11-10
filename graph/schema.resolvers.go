@@ -6,7 +6,6 @@ package graph
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/graph/generated"
@@ -15,7 +14,7 @@ import (
 
 // ID is the resolver for the id field.
 func (r *blueprintResolver) ID(ctx context.Context, obj *ent.Blueprint) (string, error) {
-	panic(fmt.Errorf("not implemented: ID - id"))
+	return obj.ID.String(), nil
 }
 
 // BlueprintTemplate is the resolver for the blueprintTemplate field.

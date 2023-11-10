@@ -86,12 +86,7 @@ func CheckoutVirtualizationProvider(providerPath string, entProvider *ent.Virtua
 
 	// Checkout the version
 	err = w.Checkout(&git.CheckoutOptions{
-		Hash:                      *tagHash,
-		Branch:                    "",
-		Create:                    false,
-		Force:                     false,
-		Keep:                      false,
-		SparseCheckoutDirectories: []string{},
+		Hash: *tagHash,
 	})
 	if err != nil {
 		return err
