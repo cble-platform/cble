@@ -53,6 +53,12 @@ func (vpu *VirtualizationProviderUpdate) SetConfigBytes(b []byte) *Virtualizatio
 	return vpu
 }
 
+// SetIsLoaded sets the "is_loaded" field.
+func (vpu *VirtualizationProviderUpdate) SetIsLoaded(b bool) *VirtualizationProviderUpdate {
+	vpu.mutation.SetIsLoaded(b)
+	return vpu
+}
+
 // AddBlueprintIDs adds the "blueprints" edge to the Blueprint entity by IDs.
 func (vpu *VirtualizationProviderUpdate) AddBlueprintIDs(ids ...uuid.UUID) *VirtualizationProviderUpdate {
 	vpu.mutation.AddBlueprintIDs(ids...)
@@ -142,6 +148,9 @@ func (vpu *VirtualizationProviderUpdate) sqlSave(ctx context.Context) (n int, er
 	if value, ok := vpu.mutation.ConfigBytes(); ok {
 		_spec.SetField(virtualizationprovider.FieldConfigBytes, field.TypeBytes, value)
 	}
+	if value, ok := vpu.mutation.IsLoaded(); ok {
+		_spec.SetField(virtualizationprovider.FieldIsLoaded, field.TypeBool, value)
+	}
 	if vpu.mutation.BlueprintsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -228,6 +237,12 @@ func (vpuo *VirtualizationProviderUpdateOne) SetProviderVersion(s string) *Virtu
 // SetConfigBytes sets the "config_bytes" field.
 func (vpuo *VirtualizationProviderUpdateOne) SetConfigBytes(b []byte) *VirtualizationProviderUpdateOne {
 	vpuo.mutation.SetConfigBytes(b)
+	return vpuo
+}
+
+// SetIsLoaded sets the "is_loaded" field.
+func (vpuo *VirtualizationProviderUpdateOne) SetIsLoaded(b bool) *VirtualizationProviderUpdateOne {
+	vpuo.mutation.SetIsLoaded(b)
 	return vpuo
 }
 
@@ -349,6 +364,9 @@ func (vpuo *VirtualizationProviderUpdateOne) sqlSave(ctx context.Context) (_node
 	}
 	if value, ok := vpuo.mutation.ConfigBytes(); ok {
 		_spec.SetField(virtualizationprovider.FieldConfigBytes, field.TypeBytes, value)
+	}
+	if value, ok := vpuo.mutation.IsLoaded(); ok {
+		_spec.SetField(virtualizationprovider.FieldIsLoaded, field.TypeBool, value)
 	}
 	if vpuo.mutation.BlueprintsCleared() {
 		edge := &sqlgraph.EdgeSpec{

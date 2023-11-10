@@ -3755,6 +3755,7 @@ type VirtualizationProviderMutation struct {
 	provider_git_url  *string
 	provider_version  *string
 	config_bytes      *[]byte
+	is_loaded         *bool
 	clearedFields     map[string]struct{}
 	blueprints        map[uuid.UUID]struct{}
 	removedblueprints map[uuid.UUID]struct{}
@@ -4012,6 +4013,42 @@ func (m *VirtualizationProviderMutation) ResetConfigBytes() {
 	m.config_bytes = nil
 }
 
+// SetIsLoaded sets the "is_loaded" field.
+func (m *VirtualizationProviderMutation) SetIsLoaded(b bool) {
+	m.is_loaded = &b
+}
+
+// IsLoaded returns the value of the "is_loaded" field in the mutation.
+func (m *VirtualizationProviderMutation) IsLoaded() (r bool, exists bool) {
+	v := m.is_loaded
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIsLoaded returns the old "is_loaded" field's value of the VirtualizationProvider entity.
+// If the VirtualizationProvider object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VirtualizationProviderMutation) OldIsLoaded(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIsLoaded is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIsLoaded requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIsLoaded: %w", err)
+	}
+	return oldValue.IsLoaded, nil
+}
+
+// ResetIsLoaded resets all changes to the "is_loaded" field.
+func (m *VirtualizationProviderMutation) ResetIsLoaded() {
+	m.is_loaded = nil
+}
+
 // AddBlueprintIDs adds the "blueprints" edge to the Blueprint entity by ids.
 func (m *VirtualizationProviderMutation) AddBlueprintIDs(ids ...uuid.UUID) {
 	if m.blueprints == nil {
@@ -4100,7 +4137,7 @@ func (m *VirtualizationProviderMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *VirtualizationProviderMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m.display_name != nil {
 		fields = append(fields, virtualizationprovider.FieldDisplayName)
 	}
@@ -4112,6 +4149,9 @@ func (m *VirtualizationProviderMutation) Fields() []string {
 	}
 	if m.config_bytes != nil {
 		fields = append(fields, virtualizationprovider.FieldConfigBytes)
+	}
+	if m.is_loaded != nil {
+		fields = append(fields, virtualizationprovider.FieldIsLoaded)
 	}
 	return fields
 }
@@ -4129,6 +4169,8 @@ func (m *VirtualizationProviderMutation) Field(name string) (ent.Value, bool) {
 		return m.ProviderVersion()
 	case virtualizationprovider.FieldConfigBytes:
 		return m.ConfigBytes()
+	case virtualizationprovider.FieldIsLoaded:
+		return m.IsLoaded()
 	}
 	return nil, false
 }
@@ -4146,6 +4188,8 @@ func (m *VirtualizationProviderMutation) OldField(ctx context.Context, name stri
 		return m.OldProviderVersion(ctx)
 	case virtualizationprovider.FieldConfigBytes:
 		return m.OldConfigBytes(ctx)
+	case virtualizationprovider.FieldIsLoaded:
+		return m.OldIsLoaded(ctx)
 	}
 	return nil, fmt.Errorf("unknown VirtualizationProvider field %s", name)
 }
@@ -4182,6 +4226,13 @@ func (m *VirtualizationProviderMutation) SetField(name string, value ent.Value) 
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetConfigBytes(v)
+		return nil
+	case virtualizationprovider.FieldIsLoaded:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIsLoaded(v)
 		return nil
 	}
 	return fmt.Errorf("unknown VirtualizationProvider field %s", name)
@@ -4243,6 +4294,9 @@ func (m *VirtualizationProviderMutation) ResetField(name string) error {
 		return nil
 	case virtualizationprovider.FieldConfigBytes:
 		m.ResetConfigBytes()
+		return nil
+	case virtualizationprovider.FieldIsLoaded:
+		m.ResetIsLoaded()
 		return nil
 	}
 	return fmt.Errorf("unknown VirtualizationProvider field %s", name)

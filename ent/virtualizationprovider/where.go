@@ -74,6 +74,11 @@ func ConfigBytes(v []byte) predicate.VirtualizationProvider {
 	return predicate.VirtualizationProvider(sql.FieldEQ(FieldConfigBytes, v))
 }
 
+// IsLoaded applies equality check predicate on the "is_loaded" field. It's identical to IsLoadedEQ.
+func IsLoaded(v bool) predicate.VirtualizationProvider {
+	return predicate.VirtualizationProvider(sql.FieldEQ(FieldIsLoaded, v))
+}
+
 // DisplayNameEQ applies the EQ predicate on the "display_name" field.
 func DisplayNameEQ(v string) predicate.VirtualizationProvider {
 	return predicate.VirtualizationProvider(sql.FieldEQ(FieldDisplayName, v))
@@ -307,6 +312,16 @@ func ConfigBytesLT(v []byte) predicate.VirtualizationProvider {
 // ConfigBytesLTE applies the LTE predicate on the "config_bytes" field.
 func ConfigBytesLTE(v []byte) predicate.VirtualizationProvider {
 	return predicate.VirtualizationProvider(sql.FieldLTE(FieldConfigBytes, v))
+}
+
+// IsLoadedEQ applies the EQ predicate on the "is_loaded" field.
+func IsLoadedEQ(v bool) predicate.VirtualizationProvider {
+	return predicate.VirtualizationProvider(sql.FieldEQ(FieldIsLoaded, v))
+}
+
+// IsLoadedNEQ applies the NEQ predicate on the "is_loaded" field.
+func IsLoadedNEQ(v bool) predicate.VirtualizationProvider {
+	return predicate.VirtualizationProvider(sql.FieldNEQ(FieldIsLoaded, v))
 }
 
 // HasBlueprints applies the HasEdge predicate on the "blueprints" edge.

@@ -45,6 +45,12 @@ func (vpc *VirtualizationProviderCreate) SetConfigBytes(b []byte) *Virtualizatio
 	return vpc
 }
 
+// SetIsLoaded sets the "is_loaded" field.
+func (vpc *VirtualizationProviderCreate) SetIsLoaded(b bool) *VirtualizationProviderCreate {
+	vpc.mutation.SetIsLoaded(b)
+	return vpc
+}
+
 // SetID sets the "id" field.
 func (vpc *VirtualizationProviderCreate) SetID(u uuid.UUID) *VirtualizationProviderCreate {
 	vpc.mutation.SetID(u)
@@ -129,6 +135,9 @@ func (vpc *VirtualizationProviderCreate) check() error {
 	if _, ok := vpc.mutation.ConfigBytes(); !ok {
 		return &ValidationError{Name: "config_bytes", err: errors.New(`ent: missing required field "VirtualizationProvider.config_bytes"`)}
 	}
+	if _, ok := vpc.mutation.IsLoaded(); !ok {
+		return &ValidationError{Name: "is_loaded", err: errors.New(`ent: missing required field "VirtualizationProvider.is_loaded"`)}
+	}
 	return nil
 }
 
@@ -179,6 +188,10 @@ func (vpc *VirtualizationProviderCreate) createSpec() (*VirtualizationProvider, 
 	if value, ok := vpc.mutation.ConfigBytes(); ok {
 		_spec.SetField(virtualizationprovider.FieldConfigBytes, field.TypeBytes, value)
 		_node.ConfigBytes = value
+	}
+	if value, ok := vpc.mutation.IsLoaded(); ok {
+		_spec.SetField(virtualizationprovider.FieldIsLoaded, field.TypeBool, value)
+		_node.IsLoaded = value
 	}
 	if nodes := vpc.mutation.BlueprintsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

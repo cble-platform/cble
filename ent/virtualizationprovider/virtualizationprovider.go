@@ -21,6 +21,8 @@ const (
 	FieldProviderVersion = "provider_version"
 	// FieldConfigBytes holds the string denoting the config_bytes field in the database.
 	FieldConfigBytes = "config_bytes"
+	// FieldIsLoaded holds the string denoting the is_loaded field in the database.
+	FieldIsLoaded = "is_loaded"
 	// EdgeBlueprints holds the string denoting the blueprints edge name in mutations.
 	EdgeBlueprints = "blueprints"
 	// Table holds the table name of the virtualizationprovider in the database.
@@ -41,6 +43,7 @@ var Columns = []string{
 	FieldProviderGitURL,
 	FieldProviderVersion,
 	FieldConfigBytes,
+	FieldIsLoaded,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -79,6 +82,11 @@ func ByProviderGitURL(opts ...sql.OrderTermOption) OrderOption {
 // ByProviderVersion orders the results by the provider_version field.
 func ByProviderVersion(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProviderVersion, opts...).ToFunc()
+}
+
+// ByIsLoaded orders the results by the is_loaded field.
+func ByIsLoaded(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsLoaded, opts...).ToFunc()
 }
 
 // ByBlueprintsCount orders the results by blueprints count.

@@ -25,6 +25,8 @@ type VirtualizationProvider struct {
 	ProviderVersion string `json:"provider_version,omitempty"`
 	// ConfigBytes holds the value of the "config_bytes" field.
 	ConfigBytes []byte `json:"config_bytes,omitempty"`
+	// IsLoaded holds the value of the "is_loaded" field.
+	IsLoaded bool `json:"is_loaded,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the VirtualizationProviderQuery when eager-loading is set.
 	Edges        VirtualizationProviderEdges `json:"edges"`
@@ -56,6 +58,8 @@ func (*VirtualizationProvider) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case virtualizationprovider.FieldConfigBytes:
 			values[i] = new([]byte)
+		case virtualizationprovider.FieldIsLoaded:
+			values[i] = new(sql.NullBool)
 		case virtualizationprovider.FieldDisplayName, virtualizationprovider.FieldProviderGitURL, virtualizationprovider.FieldProviderVersion:
 			values[i] = new(sql.NullString)
 		case virtualizationprovider.FieldID:
@@ -104,6 +108,12 @@ func (vp *VirtualizationProvider) assignValues(columns []string, values []any) e
 				return fmt.Errorf("unexpected type %T for field config_bytes", values[i])
 			} else if value != nil {
 				vp.ConfigBytes = *value
+			}
+		case virtualizationprovider.FieldIsLoaded:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field is_loaded", values[i])
+			} else if value.Valid {
+				vp.IsLoaded = value.Bool
 			}
 		default:
 			vp.selectValues.Set(columns[i], values[i])
@@ -157,6 +167,9 @@ func (vp *VirtualizationProvider) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("config_bytes=")
 	builder.WriteString(fmt.Sprintf("%v", vp.ConfigBytes))
+	builder.WriteString(", ")
+	builder.WriteString("is_loaded=")
+	builder.WriteString(fmt.Sprintf("%v", vp.IsLoaded))
 	builder.WriteByte(')')
 	return builder.String()
 }
