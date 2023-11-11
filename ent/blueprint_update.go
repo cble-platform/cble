@@ -14,7 +14,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/group"
 	"github.com/cble-platform/cble-backend/ent/predicate"
-	"github.com/cble-platform/cble-backend/ent/virtualizationprovider"
+	"github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/google/uuid"
 )
 
@@ -54,15 +54,15 @@ func (bu *BlueprintUpdate) SetParentGroup(g *Group) *BlueprintUpdate {
 	return bu.SetParentGroupID(g.ID)
 }
 
-// SetVirtualizationProviderID sets the "virtualization_provider" edge to the VirtualizationProvider entity by ID.
-func (bu *BlueprintUpdate) SetVirtualizationProviderID(id uuid.UUID) *BlueprintUpdate {
-	bu.mutation.SetVirtualizationProviderID(id)
+// SetProviderID sets the "provider" edge to the Provider entity by ID.
+func (bu *BlueprintUpdate) SetProviderID(id uuid.UUID) *BlueprintUpdate {
+	bu.mutation.SetProviderID(id)
 	return bu
 }
 
-// SetVirtualizationProvider sets the "virtualization_provider" edge to the VirtualizationProvider entity.
-func (bu *BlueprintUpdate) SetVirtualizationProvider(v *VirtualizationProvider) *BlueprintUpdate {
-	return bu.SetVirtualizationProviderID(v.ID)
+// SetProvider sets the "provider" edge to the Provider entity.
+func (bu *BlueprintUpdate) SetProvider(p *Provider) *BlueprintUpdate {
+	return bu.SetProviderID(p.ID)
 }
 
 // AddDeploymentIDs adds the "deployments" edge to the Deployment entity by IDs.
@@ -91,9 +91,9 @@ func (bu *BlueprintUpdate) ClearParentGroup() *BlueprintUpdate {
 	return bu
 }
 
-// ClearVirtualizationProvider clears the "virtualization_provider" edge to the VirtualizationProvider entity.
-func (bu *BlueprintUpdate) ClearVirtualizationProvider() *BlueprintUpdate {
-	bu.mutation.ClearVirtualizationProvider()
+// ClearProvider clears the "provider" edge to the Provider entity.
+func (bu *BlueprintUpdate) ClearProvider() *BlueprintUpdate {
+	bu.mutation.ClearProvider()
 	return bu
 }
 
@@ -150,8 +150,8 @@ func (bu *BlueprintUpdate) check() error {
 	if _, ok := bu.mutation.ParentGroupID(); bu.mutation.ParentGroupCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Blueprint.parent_group"`)
 	}
-	if _, ok := bu.mutation.VirtualizationProviderID(); bu.mutation.VirtualizationProviderCleared() && !ok {
-		return errors.New(`ent: clearing a required unique edge "Blueprint.virtualization_provider"`)
+	if _, ok := bu.mutation.ProviderID(); bu.mutation.ProviderCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Blueprint.provider"`)
 	}
 	return nil
 }
@@ -203,28 +203,28 @@ func (bu *BlueprintUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if bu.mutation.VirtualizationProviderCleared() {
+	if bu.mutation.ProviderCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   blueprint.VirtualizationProviderTable,
-			Columns: []string{blueprint.VirtualizationProviderColumn},
+			Table:   blueprint.ProviderTable,
+			Columns: []string{blueprint.ProviderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(virtualizationprovider.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(provider.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := bu.mutation.VirtualizationProviderIDs(); len(nodes) > 0 {
+	if nodes := bu.mutation.ProviderIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   blueprint.VirtualizationProviderTable,
-			Columns: []string{blueprint.VirtualizationProviderColumn},
+			Table:   blueprint.ProviderTable,
+			Columns: []string{blueprint.ProviderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(virtualizationprovider.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(provider.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -320,15 +320,15 @@ func (buo *BlueprintUpdateOne) SetParentGroup(g *Group) *BlueprintUpdateOne {
 	return buo.SetParentGroupID(g.ID)
 }
 
-// SetVirtualizationProviderID sets the "virtualization_provider" edge to the VirtualizationProvider entity by ID.
-func (buo *BlueprintUpdateOne) SetVirtualizationProviderID(id uuid.UUID) *BlueprintUpdateOne {
-	buo.mutation.SetVirtualizationProviderID(id)
+// SetProviderID sets the "provider" edge to the Provider entity by ID.
+func (buo *BlueprintUpdateOne) SetProviderID(id uuid.UUID) *BlueprintUpdateOne {
+	buo.mutation.SetProviderID(id)
 	return buo
 }
 
-// SetVirtualizationProvider sets the "virtualization_provider" edge to the VirtualizationProvider entity.
-func (buo *BlueprintUpdateOne) SetVirtualizationProvider(v *VirtualizationProvider) *BlueprintUpdateOne {
-	return buo.SetVirtualizationProviderID(v.ID)
+// SetProvider sets the "provider" edge to the Provider entity.
+func (buo *BlueprintUpdateOne) SetProvider(p *Provider) *BlueprintUpdateOne {
+	return buo.SetProviderID(p.ID)
 }
 
 // AddDeploymentIDs adds the "deployments" edge to the Deployment entity by IDs.
@@ -357,9 +357,9 @@ func (buo *BlueprintUpdateOne) ClearParentGroup() *BlueprintUpdateOne {
 	return buo
 }
 
-// ClearVirtualizationProvider clears the "virtualization_provider" edge to the VirtualizationProvider entity.
-func (buo *BlueprintUpdateOne) ClearVirtualizationProvider() *BlueprintUpdateOne {
-	buo.mutation.ClearVirtualizationProvider()
+// ClearProvider clears the "provider" edge to the Provider entity.
+func (buo *BlueprintUpdateOne) ClearProvider() *BlueprintUpdateOne {
+	buo.mutation.ClearProvider()
 	return buo
 }
 
@@ -429,8 +429,8 @@ func (buo *BlueprintUpdateOne) check() error {
 	if _, ok := buo.mutation.ParentGroupID(); buo.mutation.ParentGroupCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Blueprint.parent_group"`)
 	}
-	if _, ok := buo.mutation.VirtualizationProviderID(); buo.mutation.VirtualizationProviderCleared() && !ok {
-		return errors.New(`ent: clearing a required unique edge "Blueprint.virtualization_provider"`)
+	if _, ok := buo.mutation.ProviderID(); buo.mutation.ProviderCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Blueprint.provider"`)
 	}
 	return nil
 }
@@ -499,28 +499,28 @@ func (buo *BlueprintUpdateOne) sqlSave(ctx context.Context) (_node *Blueprint, e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if buo.mutation.VirtualizationProviderCleared() {
+	if buo.mutation.ProviderCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   blueprint.VirtualizationProviderTable,
-			Columns: []string{blueprint.VirtualizationProviderColumn},
+			Table:   blueprint.ProviderTable,
+			Columns: []string{blueprint.ProviderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(virtualizationprovider.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(provider.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := buo.mutation.VirtualizationProviderIDs(); len(nodes) > 0 {
+	if nodes := buo.mutation.ProviderIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   blueprint.VirtualizationProviderTable,
-			Columns: []string{blueprint.VirtualizationProviderColumn},
+			Table:   blueprint.ProviderTable,
+			Columns: []string{blueprint.ProviderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(virtualizationprovider.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(provider.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

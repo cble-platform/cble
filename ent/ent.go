@@ -17,8 +17,8 @@ import (
 	"github.com/cble-platform/cble-backend/ent/group"
 	"github.com/cble-platform/cble-backend/ent/permission"
 	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
+	"github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/cble-platform/cble-backend/ent/user"
-	"github.com/cble-platform/cble-backend/ent/virtualizationprovider"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -79,13 +79,13 @@ var (
 func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			blueprint.Table:              blueprint.ValidColumn,
-			deployment.Table:             deployment.ValidColumn,
-			group.Table:                  group.ValidColumn,
-			permission.Table:             permission.ValidColumn,
-			permissionpolicy.Table:       permissionpolicy.ValidColumn,
-			user.Table:                   user.ValidColumn,
-			virtualizationprovider.Table: virtualizationprovider.ValidColumn,
+			blueprint.Table:        blueprint.ValidColumn,
+			deployment.Table:       deployment.ValidColumn,
+			group.Table:            group.ValidColumn,
+			permission.Table:       permission.ValidColumn,
+			permissionpolicy.Table: permissionpolicy.ValidColumn,
+			provider.Table:         provider.ValidColumn,
+			user.Table:             user.ValidColumn,
 		})
 	})
 	return columnCheck(table, column)

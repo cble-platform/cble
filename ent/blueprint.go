@@ -10,7 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/group"
-	"github.com/cble-platform/cble-backend/ent/virtualizationprovider"
+	"github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/google/uuid"
 )
 
@@ -25,18 +25,18 @@ type Blueprint struct {
 	BlueprintTemplate []byte `json:"blueprint_template,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the BlueprintQuery when eager-loading is set.
-	Edges                             BlueprintEdges `json:"edges"`
-	blueprint_parent_group            *uuid.UUID
-	blueprint_virtualization_provider *uuid.UUID
-	selectValues                      sql.SelectValues
+	Edges                  BlueprintEdges `json:"edges"`
+	blueprint_parent_group *uuid.UUID
+	blueprint_provider     *uuid.UUID
+	selectValues           sql.SelectValues
 }
 
 // BlueprintEdges holds the relations/edges for other nodes in the graph.
 type BlueprintEdges struct {
 	// ParentGroup holds the value of the parent_group edge.
 	ParentGroup *Group `json:"parent_group,omitempty"`
-	// VirtualizationProvider holds the value of the virtualization_provider edge.
-	VirtualizationProvider *VirtualizationProvider `json:"virtualization_provider,omitempty"`
+	// Provider holds the value of the provider edge.
+	Provider *Provider `json:"provider,omitempty"`
 	// Deployments holds the value of the deployments edge.
 	Deployments []*Deployment `json:"deployments,omitempty"`
 	// loadedTypes holds the information for reporting if a
@@ -57,17 +57,17 @@ func (e BlueprintEdges) ParentGroupOrErr() (*Group, error) {
 	return nil, &NotLoadedError{edge: "parent_group"}
 }
 
-// VirtualizationProviderOrErr returns the VirtualizationProvider value or an error if the edge
+// ProviderOrErr returns the Provider value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e BlueprintEdges) VirtualizationProviderOrErr() (*VirtualizationProvider, error) {
+func (e BlueprintEdges) ProviderOrErr() (*Provider, error) {
 	if e.loadedTypes[1] {
-		if e.VirtualizationProvider == nil {
+		if e.Provider == nil {
 			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: virtualizationprovider.Label}
+			return nil, &NotFoundError{label: provider.Label}
 		}
-		return e.VirtualizationProvider, nil
+		return e.Provider, nil
 	}
-	return nil, &NotLoadedError{edge: "virtualization_provider"}
+	return nil, &NotLoadedError{edge: "provider"}
 }
 
 // DeploymentsOrErr returns the Deployments value or an error if the edge
@@ -92,7 +92,7 @@ func (*Blueprint) scanValues(columns []string) ([]any, error) {
 			values[i] = new(uuid.UUID)
 		case blueprint.ForeignKeys[0]: // blueprint_parent_group
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case blueprint.ForeignKeys[1]: // blueprint_virtualization_provider
+		case blueprint.ForeignKeys[1]: // blueprint_provider
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
@@ -136,10 +136,10 @@ func (b *Blueprint) assignValues(columns []string, values []any) error {
 			}
 		case blueprint.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
-				return fmt.Errorf("unexpected type %T for field blueprint_virtualization_provider", values[i])
+				return fmt.Errorf("unexpected type %T for field blueprint_provider", values[i])
 			} else if value.Valid {
-				b.blueprint_virtualization_provider = new(uuid.UUID)
-				*b.blueprint_virtualization_provider = *value.S.(*uuid.UUID)
+				b.blueprint_provider = new(uuid.UUID)
+				*b.blueprint_provider = *value.S.(*uuid.UUID)
 			}
 		default:
 			b.selectValues.Set(columns[i], values[i])
@@ -159,9 +159,9 @@ func (b *Blueprint) QueryParentGroup() *GroupQuery {
 	return NewBlueprintClient(b.config).QueryParentGroup(b)
 }
 
-// QueryVirtualizationProvider queries the "virtualization_provider" edge of the Blueprint entity.
-func (b *Blueprint) QueryVirtualizationProvider() *VirtualizationProviderQuery {
-	return NewBlueprintClient(b.config).QueryVirtualizationProvider(b)
+// QueryProvider queries the "provider" edge of the Blueprint entity.
+func (b *Blueprint) QueryProvider() *ProviderQuery {
+	return NewBlueprintClient(b.config).QueryProvider(b)
 }
 
 // QueryDeployments queries the "deployments" edge of the Blueprint entity.

@@ -43,13 +43,13 @@ func RepoTagExists(url, tagName string) bool {
 	return false
 }
 
-// Confirms the Virtualization Provider has its git config setup properly.
-func ValidateVirtualizationProviderGit(entProvider *ent.VirtualizationProvider) bool {
+// Confirms the Provider has its git config setup properly.
+func ValidateProviderGit(entProvider *ent.Provider) bool {
 	return RepoTagExists(entProvider.ProviderGitURL, entProvider.ProviderVersion)
 }
 
-// Clones the repo associated with a Virtualization Provider.
-func CloneVirtualizationProvider(repoPath string, entProvider *ent.VirtualizationProvider) error {
+// Clones the repo associated with a Provider.
+func CloneProvider(repoPath string, entProvider *ent.Provider) error {
 	_, err := git.PlainClone(repoPath, false, &git.CloneOptions{
 		URL:               entProvider.ProviderGitURL,
 		ReferenceName:     plumbing.ReferenceName(entProvider.ProviderVersion),
@@ -58,8 +58,8 @@ func CloneVirtualizationProvider(repoPath string, entProvider *ent.Virtualizatio
 	return err
 }
 
-// Checks out a version of a Virtualization Provider.
-func CheckoutVirtualizationProvider(repoPath string, entProvider *ent.VirtualizationProvider) error {
+// Checks out a version of a Provider.
+func CheckoutProvider(repoPath string, entProvider *ent.Provider) error {
 	// Open the local repo and get worktree
 	repo, err := git.PlainOpen(repoPath)
 	if err != nil {

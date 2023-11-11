@@ -29,7 +29,7 @@ func (Blueprint) Edges() []ent.Edge {
 		edge.To("parent_group", Group.Type).
 			Unique().
 			Required(),
-		edge.To("virtualization_provider", VirtualizationProvider.Type).
+		edge.To("provider", Provider.Type).
 			Unique().
 			Required(),
 

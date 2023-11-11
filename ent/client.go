@@ -21,8 +21,8 @@ import (
 	"github.com/cble-platform/cble-backend/ent/group"
 	"github.com/cble-platform/cble-backend/ent/permission"
 	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
+	"github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/cble-platform/cble-backend/ent/user"
-	"github.com/cble-platform/cble-backend/ent/virtualizationprovider"
 )
 
 // Client is the client that holds all ent builders.
@@ -40,10 +40,10 @@ type Client struct {
 	Permission *PermissionClient
 	// PermissionPolicy is the client for interacting with the PermissionPolicy builders.
 	PermissionPolicy *PermissionPolicyClient
+	// Provider is the client for interacting with the Provider builders.
+	Provider *ProviderClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
-	// VirtualizationProvider is the client for interacting with the VirtualizationProvider builders.
-	VirtualizationProvider *VirtualizationProviderClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -62,8 +62,8 @@ func (c *Client) init() {
 	c.Group = NewGroupClient(c.config)
 	c.Permission = NewPermissionClient(c.config)
 	c.PermissionPolicy = NewPermissionPolicyClient(c.config)
+	c.Provider = NewProviderClient(c.config)
 	c.User = NewUserClient(c.config)
-	c.VirtualizationProvider = NewVirtualizationProviderClient(c.config)
 }
 
 type (
@@ -147,15 +147,15 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:                    ctx,
-		config:                 cfg,
-		Blueprint:              NewBlueprintClient(cfg),
-		Deployment:             NewDeploymentClient(cfg),
-		Group:                  NewGroupClient(cfg),
-		Permission:             NewPermissionClient(cfg),
-		PermissionPolicy:       NewPermissionPolicyClient(cfg),
-		User:                   NewUserClient(cfg),
-		VirtualizationProvider: NewVirtualizationProviderClient(cfg),
+		ctx:              ctx,
+		config:           cfg,
+		Blueprint:        NewBlueprintClient(cfg),
+		Deployment:       NewDeploymentClient(cfg),
+		Group:            NewGroupClient(cfg),
+		Permission:       NewPermissionClient(cfg),
+		PermissionPolicy: NewPermissionPolicyClient(cfg),
+		Provider:         NewProviderClient(cfg),
+		User:             NewUserClient(cfg),
 	}, nil
 }
 
@@ -173,15 +173,15 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:                    ctx,
-		config:                 cfg,
-		Blueprint:              NewBlueprintClient(cfg),
-		Deployment:             NewDeploymentClient(cfg),
-		Group:                  NewGroupClient(cfg),
-		Permission:             NewPermissionClient(cfg),
-		PermissionPolicy:       NewPermissionPolicyClient(cfg),
-		User:                   NewUserClient(cfg),
-		VirtualizationProvider: NewVirtualizationProviderClient(cfg),
+		ctx:              ctx,
+		config:           cfg,
+		Blueprint:        NewBlueprintClient(cfg),
+		Deployment:       NewDeploymentClient(cfg),
+		Group:            NewGroupClient(cfg),
+		Permission:       NewPermissionClient(cfg),
+		PermissionPolicy: NewPermissionPolicyClient(cfg),
+		Provider:         NewProviderClient(cfg),
+		User:             NewUserClient(cfg),
 	}, nil
 }
 
@@ -211,8 +211,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Blueprint, c.Deployment, c.Group, c.Permission, c.PermissionPolicy, c.User,
-		c.VirtualizationProvider,
+		c.Blueprint, c.Deployment, c.Group, c.Permission, c.PermissionPolicy,
+		c.Provider, c.User,
 	} {
 		n.Use(hooks...)
 	}
@@ -222,8 +222,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Blueprint, c.Deployment, c.Group, c.Permission, c.PermissionPolicy, c.User,
-		c.VirtualizationProvider,
+		c.Blueprint, c.Deployment, c.Group, c.Permission, c.PermissionPolicy,
+		c.Provider, c.User,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -242,10 +242,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Permission.mutate(ctx, m)
 	case *PermissionPolicyMutation:
 		return c.PermissionPolicy.mutate(ctx, m)
+	case *ProviderMutation:
+		return c.Provider.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
-	case *VirtualizationProviderMutation:
-		return c.VirtualizationProvider.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
 	}
@@ -375,15 +375,15 @@ func (c *BlueprintClient) QueryParentGroup(b *Blueprint) *GroupQuery {
 	return query
 }
 
-// QueryVirtualizationProvider queries the virtualization_provider edge of a Blueprint.
-func (c *BlueprintClient) QueryVirtualizationProvider(b *Blueprint) *VirtualizationProviderQuery {
-	query := (&VirtualizationProviderClient{config: c.config}).Query()
+// QueryProvider queries the provider edge of a Blueprint.
+func (c *BlueprintClient) QueryProvider(b *Blueprint) *ProviderQuery {
+	query := (&ProviderClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := b.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(blueprint.Table, blueprint.FieldID, id),
-			sqlgraph.To(virtualizationprovider.Table, virtualizationprovider.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, blueprint.VirtualizationProviderTable, blueprint.VirtualizationProviderColumn),
+			sqlgraph.To(provider.Table, provider.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, blueprint.ProviderTable, blueprint.ProviderColumn),
 		)
 		fromV = sqlgraph.Neighbors(b.driver.Dialect(), step)
 		return fromV, nil
@@ -1124,6 +1124,155 @@ func (c *PermissionPolicyClient) mutate(ctx context.Context, m *PermissionPolicy
 	}
 }
 
+// ProviderClient is a client for the Provider schema.
+type ProviderClient struct {
+	config
+}
+
+// NewProviderClient returns a client for the Provider from the given config.
+func NewProviderClient(c config) *ProviderClient {
+	return &ProviderClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `provider.Hooks(f(g(h())))`.
+func (c *ProviderClient) Use(hooks ...Hook) {
+	c.hooks.Provider = append(c.hooks.Provider, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `provider.Intercept(f(g(h())))`.
+func (c *ProviderClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Provider = append(c.inters.Provider, interceptors...)
+}
+
+// Create returns a builder for creating a Provider entity.
+func (c *ProviderClient) Create() *ProviderCreate {
+	mutation := newProviderMutation(c.config, OpCreate)
+	return &ProviderCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Provider entities.
+func (c *ProviderClient) CreateBulk(builders ...*ProviderCreate) *ProviderCreateBulk {
+	return &ProviderCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ProviderClient) MapCreateBulk(slice any, setFunc func(*ProviderCreate, int)) *ProviderCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ProviderCreateBulk{err: fmt.Errorf("calling to ProviderClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ProviderCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ProviderCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Provider.
+func (c *ProviderClient) Update() *ProviderUpdate {
+	mutation := newProviderMutation(c.config, OpUpdate)
+	return &ProviderUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ProviderClient) UpdateOne(pr *Provider) *ProviderUpdateOne {
+	mutation := newProviderMutation(c.config, OpUpdateOne, withProvider(pr))
+	return &ProviderUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ProviderClient) UpdateOneID(id uuid.UUID) *ProviderUpdateOne {
+	mutation := newProviderMutation(c.config, OpUpdateOne, withProviderID(id))
+	return &ProviderUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Provider.
+func (c *ProviderClient) Delete() *ProviderDelete {
+	mutation := newProviderMutation(c.config, OpDelete)
+	return &ProviderDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ProviderClient) DeleteOne(pr *Provider) *ProviderDeleteOne {
+	return c.DeleteOneID(pr.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ProviderClient) DeleteOneID(id uuid.UUID) *ProviderDeleteOne {
+	builder := c.Delete().Where(provider.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ProviderDeleteOne{builder}
+}
+
+// Query returns a query builder for Provider.
+func (c *ProviderClient) Query() *ProviderQuery {
+	return &ProviderQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeProvider},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Provider entity by its id.
+func (c *ProviderClient) Get(ctx context.Context, id uuid.UUID) (*Provider, error) {
+	return c.Query().Where(provider.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ProviderClient) GetX(ctx context.Context, id uuid.UUID) *Provider {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryBlueprints queries the blueprints edge of a Provider.
+func (c *ProviderClient) QueryBlueprints(pr *Provider) *BlueprintQuery {
+	query := (&BlueprintClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(provider.Table, provider.FieldID, id),
+			sqlgraph.To(blueprint.Table, blueprint.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, provider.BlueprintsTable, provider.BlueprintsColumn),
+		)
+		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ProviderClient) Hooks() []Hook {
+	return c.hooks.Provider
+}
+
+// Interceptors returns the client interceptors.
+func (c *ProviderClient) Interceptors() []Interceptor {
+	return c.inters.Provider
+}
+
+func (c *ProviderClient) mutate(ctx context.Context, m *ProviderMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ProviderCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ProviderUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ProviderUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ProviderDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Provider mutation op: %q", m.Op())
+	}
+}
+
 // UserClient is a client for the User schema.
 type UserClient struct {
 	config
@@ -1289,163 +1438,14 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 	}
 }
 
-// VirtualizationProviderClient is a client for the VirtualizationProvider schema.
-type VirtualizationProviderClient struct {
-	config
-}
-
-// NewVirtualizationProviderClient returns a client for the VirtualizationProvider from the given config.
-func NewVirtualizationProviderClient(c config) *VirtualizationProviderClient {
-	return &VirtualizationProviderClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `virtualizationprovider.Hooks(f(g(h())))`.
-func (c *VirtualizationProviderClient) Use(hooks ...Hook) {
-	c.hooks.VirtualizationProvider = append(c.hooks.VirtualizationProvider, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `virtualizationprovider.Intercept(f(g(h())))`.
-func (c *VirtualizationProviderClient) Intercept(interceptors ...Interceptor) {
-	c.inters.VirtualizationProvider = append(c.inters.VirtualizationProvider, interceptors...)
-}
-
-// Create returns a builder for creating a VirtualizationProvider entity.
-func (c *VirtualizationProviderClient) Create() *VirtualizationProviderCreate {
-	mutation := newVirtualizationProviderMutation(c.config, OpCreate)
-	return &VirtualizationProviderCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of VirtualizationProvider entities.
-func (c *VirtualizationProviderClient) CreateBulk(builders ...*VirtualizationProviderCreate) *VirtualizationProviderCreateBulk {
-	return &VirtualizationProviderCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *VirtualizationProviderClient) MapCreateBulk(slice any, setFunc func(*VirtualizationProviderCreate, int)) *VirtualizationProviderCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &VirtualizationProviderCreateBulk{err: fmt.Errorf("calling to VirtualizationProviderClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*VirtualizationProviderCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &VirtualizationProviderCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for VirtualizationProvider.
-func (c *VirtualizationProviderClient) Update() *VirtualizationProviderUpdate {
-	mutation := newVirtualizationProviderMutation(c.config, OpUpdate)
-	return &VirtualizationProviderUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *VirtualizationProviderClient) UpdateOne(vp *VirtualizationProvider) *VirtualizationProviderUpdateOne {
-	mutation := newVirtualizationProviderMutation(c.config, OpUpdateOne, withVirtualizationProvider(vp))
-	return &VirtualizationProviderUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *VirtualizationProviderClient) UpdateOneID(id uuid.UUID) *VirtualizationProviderUpdateOne {
-	mutation := newVirtualizationProviderMutation(c.config, OpUpdateOne, withVirtualizationProviderID(id))
-	return &VirtualizationProviderUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for VirtualizationProvider.
-func (c *VirtualizationProviderClient) Delete() *VirtualizationProviderDelete {
-	mutation := newVirtualizationProviderMutation(c.config, OpDelete)
-	return &VirtualizationProviderDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *VirtualizationProviderClient) DeleteOne(vp *VirtualizationProvider) *VirtualizationProviderDeleteOne {
-	return c.DeleteOneID(vp.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *VirtualizationProviderClient) DeleteOneID(id uuid.UUID) *VirtualizationProviderDeleteOne {
-	builder := c.Delete().Where(virtualizationprovider.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &VirtualizationProviderDeleteOne{builder}
-}
-
-// Query returns a query builder for VirtualizationProvider.
-func (c *VirtualizationProviderClient) Query() *VirtualizationProviderQuery {
-	return &VirtualizationProviderQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeVirtualizationProvider},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a VirtualizationProvider entity by its id.
-func (c *VirtualizationProviderClient) Get(ctx context.Context, id uuid.UUID) (*VirtualizationProvider, error) {
-	return c.Query().Where(virtualizationprovider.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *VirtualizationProviderClient) GetX(ctx context.Context, id uuid.UUID) *VirtualizationProvider {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryBlueprints queries the blueprints edge of a VirtualizationProvider.
-func (c *VirtualizationProviderClient) QueryBlueprints(vp *VirtualizationProvider) *BlueprintQuery {
-	query := (&BlueprintClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := vp.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(virtualizationprovider.Table, virtualizationprovider.FieldID, id),
-			sqlgraph.To(blueprint.Table, blueprint.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, virtualizationprovider.BlueprintsTable, virtualizationprovider.BlueprintsColumn),
-		)
-		fromV = sqlgraph.Neighbors(vp.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *VirtualizationProviderClient) Hooks() []Hook {
-	return c.hooks.VirtualizationProvider
-}
-
-// Interceptors returns the client interceptors.
-func (c *VirtualizationProviderClient) Interceptors() []Interceptor {
-	return c.inters.VirtualizationProvider
-}
-
-func (c *VirtualizationProviderClient) mutate(ctx context.Context, m *VirtualizationProviderMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&VirtualizationProviderCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&VirtualizationProviderUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&VirtualizationProviderUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&VirtualizationProviderDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown VirtualizationProvider mutation op: %q", m.Op())
-	}
-}
-
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Blueprint, Deployment, Group, Permission, PermissionPolicy, User,
-		VirtualizationProvider []ent.Hook
+		Blueprint, Deployment, Group, Permission, PermissionPolicy, Provider,
+		User []ent.Hook
 	}
 	inters struct {
-		Blueprint, Deployment, Group, Permission, PermissionPolicy, User,
-		VirtualizationProvider []ent.Interceptor
+		Blueprint, Deployment, Group, Permission, PermissionPolicy, Provider,
+		User []ent.Interceptor
 	}
 )

@@ -15,21 +15,21 @@ import (
 	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/group"
 	"github.com/cble-platform/cble-backend/ent/predicate"
-	"github.com/cble-platform/cble-backend/ent/virtualizationprovider"
+	"github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/google/uuid"
 )
 
 // BlueprintQuery is the builder for querying Blueprint entities.
 type BlueprintQuery struct {
 	config
-	ctx                        *QueryContext
-	order                      []blueprint.OrderOption
-	inters                     []Interceptor
-	predicates                 []predicate.Blueprint
-	withParentGroup            *GroupQuery
-	withVirtualizationProvider *VirtualizationProviderQuery
-	withDeployments            *DeploymentQuery
-	withFKs                    bool
+	ctx             *QueryContext
+	order           []blueprint.OrderOption
+	inters          []Interceptor
+	predicates      []predicate.Blueprint
+	withParentGroup *GroupQuery
+	withProvider    *ProviderQuery
+	withDeployments *DeploymentQuery
+	withFKs         bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -88,9 +88,9 @@ func (bq *BlueprintQuery) QueryParentGroup() *GroupQuery {
 	return query
 }
 
-// QueryVirtualizationProvider chains the current query on the "virtualization_provider" edge.
-func (bq *BlueprintQuery) QueryVirtualizationProvider() *VirtualizationProviderQuery {
-	query := (&VirtualizationProviderClient{config: bq.config}).Query()
+// QueryProvider chains the current query on the "provider" edge.
+func (bq *BlueprintQuery) QueryProvider() *ProviderQuery {
+	query := (&ProviderClient{config: bq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := bq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -101,8 +101,8 @@ func (bq *BlueprintQuery) QueryVirtualizationProvider() *VirtualizationProviderQ
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(blueprint.Table, blueprint.FieldID, selector),
-			sqlgraph.To(virtualizationprovider.Table, virtualizationprovider.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, blueprint.VirtualizationProviderTable, blueprint.VirtualizationProviderColumn),
+			sqlgraph.To(provider.Table, provider.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, blueprint.ProviderTable, blueprint.ProviderColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(bq.driver.Dialect(), step)
 		return fromU, nil
@@ -319,14 +319,14 @@ func (bq *BlueprintQuery) Clone() *BlueprintQuery {
 		return nil
 	}
 	return &BlueprintQuery{
-		config:                     bq.config,
-		ctx:                        bq.ctx.Clone(),
-		order:                      append([]blueprint.OrderOption{}, bq.order...),
-		inters:                     append([]Interceptor{}, bq.inters...),
-		predicates:                 append([]predicate.Blueprint{}, bq.predicates...),
-		withParentGroup:            bq.withParentGroup.Clone(),
-		withVirtualizationProvider: bq.withVirtualizationProvider.Clone(),
-		withDeployments:            bq.withDeployments.Clone(),
+		config:          bq.config,
+		ctx:             bq.ctx.Clone(),
+		order:           append([]blueprint.OrderOption{}, bq.order...),
+		inters:          append([]Interceptor{}, bq.inters...),
+		predicates:      append([]predicate.Blueprint{}, bq.predicates...),
+		withParentGroup: bq.withParentGroup.Clone(),
+		withProvider:    bq.withProvider.Clone(),
+		withDeployments: bq.withDeployments.Clone(),
 		// clone intermediate query.
 		sql:  bq.sql.Clone(),
 		path: bq.path,
@@ -344,14 +344,14 @@ func (bq *BlueprintQuery) WithParentGroup(opts ...func(*GroupQuery)) *BlueprintQ
 	return bq
 }
 
-// WithVirtualizationProvider tells the query-builder to eager-load the nodes that are connected to
-// the "virtualization_provider" edge. The optional arguments are used to configure the query builder of the edge.
-func (bq *BlueprintQuery) WithVirtualizationProvider(opts ...func(*VirtualizationProviderQuery)) *BlueprintQuery {
-	query := (&VirtualizationProviderClient{config: bq.config}).Query()
+// WithProvider tells the query-builder to eager-load the nodes that are connected to
+// the "provider" edge. The optional arguments are used to configure the query builder of the edge.
+func (bq *BlueprintQuery) WithProvider(opts ...func(*ProviderQuery)) *BlueprintQuery {
+	query := (&ProviderClient{config: bq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	bq.withVirtualizationProvider = query
+	bq.withProvider = query
 	return bq
 }
 
@@ -447,11 +447,11 @@ func (bq *BlueprintQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Bl
 		_spec       = bq.querySpec()
 		loadedTypes = [3]bool{
 			bq.withParentGroup != nil,
-			bq.withVirtualizationProvider != nil,
+			bq.withProvider != nil,
 			bq.withDeployments != nil,
 		}
 	)
-	if bq.withParentGroup != nil || bq.withVirtualizationProvider != nil {
+	if bq.withParentGroup != nil || bq.withProvider != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -481,9 +481,9 @@ func (bq *BlueprintQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Bl
 			return nil, err
 		}
 	}
-	if query := bq.withVirtualizationProvider; query != nil {
-		if err := bq.loadVirtualizationProvider(ctx, query, nodes, nil,
-			func(n *Blueprint, e *VirtualizationProvider) { n.Edges.VirtualizationProvider = e }); err != nil {
+	if query := bq.withProvider; query != nil {
+		if err := bq.loadProvider(ctx, query, nodes, nil,
+			func(n *Blueprint, e *Provider) { n.Edges.Provider = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -529,14 +529,14 @@ func (bq *BlueprintQuery) loadParentGroup(ctx context.Context, query *GroupQuery
 	}
 	return nil
 }
-func (bq *BlueprintQuery) loadVirtualizationProvider(ctx context.Context, query *VirtualizationProviderQuery, nodes []*Blueprint, init func(*Blueprint), assign func(*Blueprint, *VirtualizationProvider)) error {
+func (bq *BlueprintQuery) loadProvider(ctx context.Context, query *ProviderQuery, nodes []*Blueprint, init func(*Blueprint), assign func(*Blueprint, *Provider)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Blueprint)
 	for i := range nodes {
-		if nodes[i].blueprint_virtualization_provider == nil {
+		if nodes[i].blueprint_provider == nil {
 			continue
 		}
-		fk := *nodes[i].blueprint_virtualization_provider
+		fk := *nodes[i].blueprint_provider
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -545,7 +545,7 @@ func (bq *BlueprintQuery) loadVirtualizationProvider(ctx context.Context, query 
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(virtualizationprovider.IDIn(ids...))
+	query.Where(provider.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
@@ -553,7 +553,7 @@ func (bq *BlueprintQuery) loadVirtualizationProvider(ctx context.Context, query 
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "blueprint_virtualization_provider" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "blueprint_provider" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

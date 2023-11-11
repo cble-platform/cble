@@ -21,8 +21,8 @@ type Permission func(*sql.Selector)
 // PermissionPolicy is the predicate function for permissionpolicy builders.
 type PermissionPolicy func(*sql.Selector)
 
+// Provider is the predicate function for provider builders.
+type Provider func(*sql.Selector)
+
 // User is the predicate function for user builders.
 type User func(*sql.Selector)
-
-// VirtualizationProvider is the predicate function for virtualizationprovider builders.
-type VirtualizationProvider func(*sql.Selector)

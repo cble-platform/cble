@@ -6,7 +6,7 @@ type Blueprint {
   blueprintTemplate: String!
 
   parentGroup: Group!
-  virtualizationProvider: VirtualizationProvider!
+  Provider: Provider!
   deployments: [Deployment]!
 }
 
@@ -59,7 +59,7 @@ type User {
   deployments: [Deployment]!
 }
 
-type VirtualizationProvider {
+type Provider {
   id: ID!
   displayName: String!
   providerGitUrl: String!
@@ -70,10 +70,25 @@ type VirtualizationProvider {
 }
 
 type Query {
+  # List users
   users: [User!]!
+  # Get a user
+  user(id: ID!): User!
+  # List groups
+  groups: [Group!]!
+  # Get a group
+  group(id: ID!): Group!
+  # List providers
+  Providers: [Provider!]!
+  # Get a provider
+  Provider(id: ID!): Provider!
+  # List blueprints
+  blueprints: [Blueprint!]!
+  # Get a blueprint
+  blueprint(id: ID!): Blueprint!
 }
 
-input VirtualizationProviderInput {
+input ProviderInput {
   displayName: String!
   providerGitUrl: String!
   providerVersion: String!
@@ -81,6 +96,12 @@ input VirtualizationProviderInput {
 }
 
 type Mutation {
-  createVirtualizationProvider(input: VirtualizationProviderInput!): VirtualizationProvider!
-  loadVirtualizationProvider(id: ID!): VirtualizationProvider!
+  # Create a provider
+  createProvider(input: ProviderInput!): Provider!
+  # Update a provider
+  updateProvider(id: ID!, input: ProviderInput!): Provider!
+  # Delete a provider
+  deleteProvider(id: ID!): Boolean!
+  # Load a provider to connect it to CBLE
+  loadProvider(id: ID!): Provider!
 }

@@ -103,16 +103,16 @@ func (ps *CBLEServer) RunProviderServers(ctx context.Context, wg *sync.WaitGroup
 			logrus.Debugf("Running provider server for %s", providerId)
 			providerUuid, err := uuid.Parse(providerId)
 			if err != nil {
-				logrus.Errorf("failed start provider server: failed to parse virtualization provider UUID %s", providerId)
+				logrus.Errorf("failed start provider server: failed to parse provider UUID %s", providerId)
 				continue
 			}
-			entVirtualizationProvider, err := ps.entClient.VirtualizationProvider.Get(ctx, providerUuid)
+			entProvider, err := ps.entClient.Provider.Get(ctx, providerUuid)
 			if err != nil {
-				logrus.Errorf("failed start provider server: failed to find virtualization provider with ID %s", providerId)
+				logrus.Errorf("failed start provider server: failed to find provider with ID %s", providerId)
 				continue
 			}
 			// Ensure the provider is downloaded/updates
-			err = ps.downloadProvider(entVirtualizationProvider)
+			err = ps.downloadProvider(entProvider)
 			if err != nil {
 				logrus.Errorf("failed to start provider server: failed to download/update provider: %v", err)
 				continue
@@ -120,7 +120,7 @@ func (ps *CBLEServer) RunProviderServers(ctx context.Context, wg *sync.WaitGroup
 			// Create an individual shutdown channel for this provider
 			ps.serverShutdown.Store(providerId, make(chan bool, 1))
 			// Run the provider server in a go routine
-			go ps.runProvider(ctx, entVirtualizationProvider)
+			go ps.runProvider(ctx, entProvider)
 		case <-ctx.Done():
 			logrus.Warn("Gracefully shutting down provider server runtime...")
 			return
@@ -155,10 +155,10 @@ func (ps *CBLEServer) RunProviderClients(ctx context.Context, wg *sync.WaitGroup
 	}
 }
 
-func (ps *CBLEServer) SendCommandToProvider(ctx context.Context, entVirtualizationProvider *ent.VirtualizationProvider, command *ProviderCommand) error {
-	commandQueue, ok := ps.commandQueues.Load(entVirtualizationProvider.ID.String())
+func (ps *CBLEServer) SendCommandToProvider(ctx context.Context, entProvider *ent.Provider, command *ProviderCommand) error {
+	commandQueue, ok := ps.commandQueues.Load(entProvider.ID.String())
 	if !ok {
-		return fmt.Errorf("no command queue registered for provider %s", entVirtualizationProvider.ID.String())
+		return fmt.Errorf("no command queue registered for provider %s", entProvider.ID.String())
 	}
 	commandQueue.(chan ProviderCommand) <- *command
 	return nil
@@ -178,14 +178,14 @@ func (ps *CBLEServer) RegisterProvider(ctx context.Context, request *cbleGRPC.Re
 		return nil, fmt.Errorf("provider with same ID (%s) already registered", request.Id)
 	}
 	// Check this is a valid UUID
-	virtualizationProviderUuid, err := uuid.Parse(request.Id)
+	providerUuid, err := uuid.Parse(request.Id)
 	if err != nil {
 		return nil, fmt.Errorf("provider did not supply a valid ID: %v", err)
 	}
-	// Check this UUID maps to a valid ENT virtualization provider
-	entVirtualizationProvider, err := ps.entClient.VirtualizationProvider.Get(ctx, virtualizationProviderUuid)
+	// Check this UUID maps to a valid ENT provider
+	entProvider, err := ps.entClient.Provider.Get(ctx, providerUuid)
 	if err != nil {
-		return nil, fmt.Errorf("virtualization provider not found with ID %s: %v", request.Id, err)
+		return nil, fmt.Errorf("provider not found with ID %s: %v", request.Id, err)
 	}
 	// Generate random UUID for socket
 	socketId := uuid.NewString()
@@ -201,9 +201,9 @@ func (ps *CBLEServer) RegisterProvider(ctx context.Context, request *cbleGRPC.Re
 	// Add provider to the queue to be connected to
 	ps.connectionQueue <- request.Id
 	// Set the provider as loaded in ENT
-	err = entVirtualizationProvider.Update().SetIsLoaded(true).Exec(ctx)
+	err = entProvider.Update().SetIsLoaded(true).Exec(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to set virtualization provider is_loaded state: %v", err)
+		return nil, fmt.Errorf("failed to set provider is_loaded state: %v", err)
 	}
 	// Reply to the provider
 	return &cbleGRPC.RegistrationReply{
@@ -222,14 +222,14 @@ func (ps *CBLEServer) UnregisterProvider(ctx context.Context, request *cbleGRPC.
 		}, nil
 	}
 	// Check this is a valid UUID
-	virtualizationProviderUuid, err := uuid.Parse(request.Id)
+	providerUuid, err := uuid.Parse(request.Id)
 	if err != nil {
 		return nil, fmt.Errorf("provider did not supply a valid ID: %v", err)
 	}
-	// Check this UUID maps to a valid ENT virtualization provider
-	entVirtualizationProvider, err := ps.entClient.VirtualizationProvider.Get(ctx, virtualizationProviderUuid)
+	// Check this UUID maps to a valid ENT provider
+	entProvider, err := ps.entClient.Provider.Get(ctx, providerUuid)
 	if err != nil {
-		return nil, fmt.Errorf("virtualization provider not found with ID %s: %v", request.Id, err)
+		return nil, fmt.Errorf("provider not found with ID %s: %v", request.Id, err)
 	}
 	// Make sure the unregister request is coming with the right ID... super basic security check :)
 	if prov.(RegisteredProvider).ID != request.Id {
@@ -240,9 +240,9 @@ func (ps *CBLEServer) UnregisterProvider(ctx context.Context, request *cbleGRPC.
 	// If all that passes, unregister the provider
 	ps.registeredProviders.Delete(request.Id)
 	// Set the provider as loaded in ENT
-	err = entVirtualizationProvider.Update().SetIsLoaded(false).Exec(ctx)
+	err = entProvider.Update().SetIsLoaded(false).Exec(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to set virtualization provider is_loaded state: %v", err)
+		return nil, fmt.Errorf("failed to set provider is_loaded state: %v", err)
 	}
 	return &cbleGRPC.UnregistrationReply{
 		Status: common.RPCStatus_SUCCESS,

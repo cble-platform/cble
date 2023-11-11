@@ -8,12 +8,12 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/cble-platform/cble-backend/ent/virtualizationprovider"
+	"github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/google/uuid"
 )
 
-// VirtualizationProvider is the model entity for the VirtualizationProvider schema.
-type VirtualizationProvider struct {
+// Provider is the model entity for the Provider schema.
+type Provider struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
@@ -28,13 +28,13 @@ type VirtualizationProvider struct {
 	// IsLoaded holds the value of the "is_loaded" field.
 	IsLoaded bool `json:"is_loaded,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the VirtualizationProviderQuery when eager-loading is set.
-	Edges        VirtualizationProviderEdges `json:"edges"`
+	// The values are being populated by the ProviderQuery when eager-loading is set.
+	Edges        ProviderEdges `json:"edges"`
 	selectValues sql.SelectValues
 }
 
-// VirtualizationProviderEdges holds the relations/edges for other nodes in the graph.
-type VirtualizationProviderEdges struct {
+// ProviderEdges holds the relations/edges for other nodes in the graph.
+type ProviderEdges struct {
 	// Blueprints holds the value of the blueprints edge.
 	Blueprints []*Blueprint `json:"blueprints,omitempty"`
 	// loadedTypes holds the information for reporting if a
@@ -44,7 +44,7 @@ type VirtualizationProviderEdges struct {
 
 // BlueprintsOrErr returns the Blueprints value or an error if the edge
 // was not loaded in eager-loading.
-func (e VirtualizationProviderEdges) BlueprintsOrErr() ([]*Blueprint, error) {
+func (e ProviderEdges) BlueprintsOrErr() ([]*Blueprint, error) {
 	if e.loadedTypes[0] {
 		return e.Blueprints, nil
 	}
@@ -52,17 +52,17 @@ func (e VirtualizationProviderEdges) BlueprintsOrErr() ([]*Blueprint, error) {
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*VirtualizationProvider) scanValues(columns []string) ([]any, error) {
+func (*Provider) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case virtualizationprovider.FieldConfigBytes:
+		case provider.FieldConfigBytes:
 			values[i] = new([]byte)
-		case virtualizationprovider.FieldIsLoaded:
+		case provider.FieldIsLoaded:
 			values[i] = new(sql.NullBool)
-		case virtualizationprovider.FieldDisplayName, virtualizationprovider.FieldProviderGitURL, virtualizationprovider.FieldProviderVersion:
+		case provider.FieldDisplayName, provider.FieldProviderGitURL, provider.FieldProviderVersion:
 			values[i] = new(sql.NullString)
-		case virtualizationprovider.FieldID:
+		case provider.FieldID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -72,107 +72,107 @@ func (*VirtualizationProvider) scanValues(columns []string) ([]any, error) {
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
-// to the VirtualizationProvider fields.
-func (vp *VirtualizationProvider) assignValues(columns []string, values []any) error {
+// to the Provider fields.
+func (pr *Provider) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
 	for i := range columns {
 		switch columns[i] {
-		case virtualizationprovider.FieldID:
+		case provider.FieldID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
-				vp.ID = *value
+				pr.ID = *value
 			}
-		case virtualizationprovider.FieldDisplayName:
+		case provider.FieldDisplayName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field display_name", values[i])
 			} else if value.Valid {
-				vp.DisplayName = value.String
+				pr.DisplayName = value.String
 			}
-		case virtualizationprovider.FieldProviderGitURL:
+		case provider.FieldProviderGitURL:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field provider_git_url", values[i])
 			} else if value.Valid {
-				vp.ProviderGitURL = value.String
+				pr.ProviderGitURL = value.String
 			}
-		case virtualizationprovider.FieldProviderVersion:
+		case provider.FieldProviderVersion:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field provider_version", values[i])
 			} else if value.Valid {
-				vp.ProviderVersion = value.String
+				pr.ProviderVersion = value.String
 			}
-		case virtualizationprovider.FieldConfigBytes:
+		case provider.FieldConfigBytes:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field config_bytes", values[i])
 			} else if value != nil {
-				vp.ConfigBytes = *value
+				pr.ConfigBytes = *value
 			}
-		case virtualizationprovider.FieldIsLoaded:
+		case provider.FieldIsLoaded:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field is_loaded", values[i])
 			} else if value.Valid {
-				vp.IsLoaded = value.Bool
+				pr.IsLoaded = value.Bool
 			}
 		default:
-			vp.selectValues.Set(columns[i], values[i])
+			pr.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
 }
 
-// Value returns the ent.Value that was dynamically selected and assigned to the VirtualizationProvider.
+// Value returns the ent.Value that was dynamically selected and assigned to the Provider.
 // This includes values selected through modifiers, order, etc.
-func (vp *VirtualizationProvider) Value(name string) (ent.Value, error) {
-	return vp.selectValues.Get(name)
+func (pr *Provider) Value(name string) (ent.Value, error) {
+	return pr.selectValues.Get(name)
 }
 
-// QueryBlueprints queries the "blueprints" edge of the VirtualizationProvider entity.
-func (vp *VirtualizationProvider) QueryBlueprints() *BlueprintQuery {
-	return NewVirtualizationProviderClient(vp.config).QueryBlueprints(vp)
+// QueryBlueprints queries the "blueprints" edge of the Provider entity.
+func (pr *Provider) QueryBlueprints() *BlueprintQuery {
+	return NewProviderClient(pr.config).QueryBlueprints(pr)
 }
 
-// Update returns a builder for updating this VirtualizationProvider.
-// Note that you need to call VirtualizationProvider.Unwrap() before calling this method if this VirtualizationProvider
+// Update returns a builder for updating this Provider.
+// Note that you need to call Provider.Unwrap() before calling this method if this Provider
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (vp *VirtualizationProvider) Update() *VirtualizationProviderUpdateOne {
-	return NewVirtualizationProviderClient(vp.config).UpdateOne(vp)
+func (pr *Provider) Update() *ProviderUpdateOne {
+	return NewProviderClient(pr.config).UpdateOne(pr)
 }
 
-// Unwrap unwraps the VirtualizationProvider entity that was returned from a transaction after it was closed,
+// Unwrap unwraps the Provider entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (vp *VirtualizationProvider) Unwrap() *VirtualizationProvider {
-	_tx, ok := vp.config.driver.(*txDriver)
+func (pr *Provider) Unwrap() *Provider {
+	_tx, ok := pr.config.driver.(*txDriver)
 	if !ok {
-		panic("ent: VirtualizationProvider is not a transactional entity")
+		panic("ent: Provider is not a transactional entity")
 	}
-	vp.config.driver = _tx.drv
-	return vp
+	pr.config.driver = _tx.drv
+	return pr
 }
 
 // String implements the fmt.Stringer.
-func (vp *VirtualizationProvider) String() string {
+func (pr *Provider) String() string {
 	var builder strings.Builder
-	builder.WriteString("VirtualizationProvider(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", vp.ID))
+	builder.WriteString("Provider(")
+	builder.WriteString(fmt.Sprintf("id=%v, ", pr.ID))
 	builder.WriteString("display_name=")
-	builder.WriteString(vp.DisplayName)
+	builder.WriteString(pr.DisplayName)
 	builder.WriteString(", ")
 	builder.WriteString("provider_git_url=")
-	builder.WriteString(vp.ProviderGitURL)
+	builder.WriteString(pr.ProviderGitURL)
 	builder.WriteString(", ")
 	builder.WriteString("provider_version=")
-	builder.WriteString(vp.ProviderVersion)
+	builder.WriteString(pr.ProviderVersion)
 	builder.WriteString(", ")
 	builder.WriteString("config_bytes=")
-	builder.WriteString(fmt.Sprintf("%v", vp.ConfigBytes))
+	builder.WriteString(fmt.Sprintf("%v", pr.ConfigBytes))
 	builder.WriteString(", ")
 	builder.WriteString("is_loaded=")
-	builder.WriteString(fmt.Sprintf("%v", vp.IsLoaded))
+	builder.WriteString(fmt.Sprintf("%v", pr.IsLoaded))
 	builder.WriteByte(')')
 	return builder.String()
 }
 
-// VirtualizationProviders is a parsable slice of VirtualizationProvider.
-type VirtualizationProviders []*VirtualizationProvider
+// Providers is a parsable slice of Provider.
+type Providers []*Provider

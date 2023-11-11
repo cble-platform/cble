@@ -7,13 +7,13 @@ import (
 	"github.com/google/uuid"
 )
 
-// VirtualizationProvider holds the schema definition for the VirtualizationProvider entity.
-type VirtualizationProvider struct {
+// Provider holds the schema definition for the Provider entity.
+type Provider struct {
 	ent.Schema
 }
 
-// Fields of the VirtualizationProvider.
-func (VirtualizationProvider) Fields() []ent.Field {
+// Fields of the Provider.
+func (Provider) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).
 			Immutable().
@@ -26,10 +26,10 @@ func (VirtualizationProvider) Fields() []ent.Field {
 	}
 }
 
-// Edges of the VirtualizationProvider.
-func (VirtualizationProvider) Edges() []ent.Edge {
+// Edges of the Provider.
+func (Provider) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("blueprints", Blueprint.Type).
-			Ref("virtualization_provider"),
+			Ref("provider"),
 	}
 }

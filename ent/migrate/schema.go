@@ -14,7 +14,7 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "blueprint_template", Type: field.TypeBytes},
 		{Name: "blueprint_parent_group", Type: field.TypeUUID},
-		{Name: "blueprint_virtualization_provider", Type: field.TypeUUID},
+		{Name: "blueprint_provider", Type: field.TypeUUID},
 	}
 	// BlueprintsTable holds the schema information for the "blueprints" table.
 	BlueprintsTable = &schema.Table{
@@ -29,9 +29,9 @@ var (
 				OnDelete:   schema.NoAction,
 			},
 			{
-				Symbol:     "blueprints_virtualization_providers_virtualization_provider",
+				Symbol:     "blueprints_providers_provider",
 				Columns:    []*schema.Column{BlueprintsColumns[4]},
-				RefColumns: []*schema.Column{VirtualizationProvidersColumns[0]},
+				RefColumns: []*schema.Column{ProvidersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 		},
@@ -126,6 +126,21 @@ var (
 			},
 		},
 	}
+	// ProvidersColumns holds the columns for the "providers" table.
+	ProvidersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "display_name", Type: field.TypeString},
+		{Name: "provider_git_url", Type: field.TypeString},
+		{Name: "provider_version", Type: field.TypeString},
+		{Name: "config_bytes", Type: field.TypeBytes},
+		{Name: "is_loaded", Type: field.TypeBool, Default: false},
+	}
+	// ProvidersTable holds the schema information for the "providers" table.
+	ProvidersTable = &schema.Table{
+		Name:       "providers",
+		Columns:    ProvidersColumns,
+		PrimaryKey: []*schema.Column{ProvidersColumns[0]},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -140,21 +155,6 @@ var (
 		Name:       "users",
 		Columns:    UsersColumns,
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
-	}
-	// VirtualizationProvidersColumns holds the columns for the "virtualization_providers" table.
-	VirtualizationProvidersColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
-		{Name: "display_name", Type: field.TypeString},
-		{Name: "provider_git_url", Type: field.TypeString},
-		{Name: "provider_version", Type: field.TypeString},
-		{Name: "config_bytes", Type: field.TypeBytes},
-		{Name: "is_loaded", Type: field.TypeBool, Default: false},
-	}
-	// VirtualizationProvidersTable holds the schema information for the "virtualization_providers" table.
-	VirtualizationProvidersTable = &schema.Table{
-		Name:       "virtualization_providers",
-		Columns:    VirtualizationProvidersColumns,
-		PrimaryKey: []*schema.Column{VirtualizationProvidersColumns[0]},
 	}
 	// UserGroupsColumns holds the columns for the "user_groups" table.
 	UserGroupsColumns = []*schema.Column{
@@ -188,15 +188,15 @@ var (
 		GroupsTable,
 		PermissionsTable,
 		PermissionPoliciesTable,
+		ProvidersTable,
 		UsersTable,
-		VirtualizationProvidersTable,
 		UserGroupsTable,
 	}
 )
 
 func init() {
 	BlueprintsTable.ForeignKeys[0].RefTable = GroupsTable
-	BlueprintsTable.ForeignKeys[1].RefTable = VirtualizationProvidersTable
+	BlueprintsTable.ForeignKeys[1].RefTable = ProvidersTable
 	DeploymentsTable.ForeignKeys[0].RefTable = BlueprintsTable
 	DeploymentsTable.ForeignKeys[1].RefTable = UsersTable
 	GroupsTable.ForeignKeys[0].RefTable = GroupsTable

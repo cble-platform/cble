@@ -19,8 +19,8 @@ const (
 	FieldBlueprintTemplate = "blueprint_template"
 	// EdgeParentGroup holds the string denoting the parent_group edge name in mutations.
 	EdgeParentGroup = "parent_group"
-	// EdgeVirtualizationProvider holds the string denoting the virtualization_provider edge name in mutations.
-	EdgeVirtualizationProvider = "virtualization_provider"
+	// EdgeProvider holds the string denoting the provider edge name in mutations.
+	EdgeProvider = "provider"
 	// EdgeDeployments holds the string denoting the deployments edge name in mutations.
 	EdgeDeployments = "deployments"
 	// Table holds the table name of the blueprint in the database.
@@ -32,13 +32,13 @@ const (
 	ParentGroupInverseTable = "groups"
 	// ParentGroupColumn is the table column denoting the parent_group relation/edge.
 	ParentGroupColumn = "blueprint_parent_group"
-	// VirtualizationProviderTable is the table that holds the virtualization_provider relation/edge.
-	VirtualizationProviderTable = "blueprints"
-	// VirtualizationProviderInverseTable is the table name for the VirtualizationProvider entity.
-	// It exists in this package in order to avoid circular dependency with the "virtualizationprovider" package.
-	VirtualizationProviderInverseTable = "virtualization_providers"
-	// VirtualizationProviderColumn is the table column denoting the virtualization_provider relation/edge.
-	VirtualizationProviderColumn = "blueprint_virtualization_provider"
+	// ProviderTable is the table that holds the provider relation/edge.
+	ProviderTable = "blueprints"
+	// ProviderInverseTable is the table name for the Provider entity.
+	// It exists in this package in order to avoid circular dependency with the "provider" package.
+	ProviderInverseTable = "providers"
+	// ProviderColumn is the table column denoting the provider relation/edge.
+	ProviderColumn = "blueprint_provider"
 	// DeploymentsTable is the table that holds the deployments relation/edge.
 	DeploymentsTable = "deployments"
 	// DeploymentsInverseTable is the table name for the Deployment entity.
@@ -59,7 +59,7 @@ var Columns = []string{
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"blueprint_parent_group",
-	"blueprint_virtualization_provider",
+	"blueprint_provider",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -102,10 +102,10 @@ func ByParentGroupField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
-// ByVirtualizationProviderField orders the results by virtualization_provider field.
-func ByVirtualizationProviderField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByProviderField orders the results by provider field.
+func ByProviderField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newVirtualizationProviderStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborTerms(s, newProviderStep(), sql.OrderByField(field, opts...))
 	}
 }
 
@@ -129,11 +129,11 @@ func newParentGroupStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2O, false, ParentGroupTable, ParentGroupColumn),
 	)
 }
-func newVirtualizationProviderStep() *sqlgraph.Step {
+func newProviderStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(VirtualizationProviderInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, VirtualizationProviderTable, VirtualizationProviderColumn),
+		sqlgraph.To(ProviderInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, ProviderTable, ProviderColumn),
 	)
 }
 func newDeploymentsStep() *sqlgraph.Step {

@@ -22,10 +22,10 @@ type Tx struct {
 	Permission *PermissionClient
 	// PermissionPolicy is the client for interacting with the PermissionPolicy builders.
 	PermissionPolicy *PermissionPolicyClient
+	// Provider is the client for interacting with the Provider builders.
+	Provider *ProviderClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
-	// VirtualizationProvider is the client for interacting with the VirtualizationProvider builders.
-	VirtualizationProvider *VirtualizationProviderClient
 
 	// lazily loaded.
 	client     *Client
@@ -162,8 +162,8 @@ func (tx *Tx) init() {
 	tx.Group = NewGroupClient(tx.config)
 	tx.Permission = NewPermissionClient(tx.config)
 	tx.PermissionPolicy = NewPermissionPolicyClient(tx.config)
+	tx.Provider = NewProviderClient(tx.config)
 	tx.User = NewUserClient(tx.config)
-	tx.VirtualizationProvider = NewVirtualizationProviderClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

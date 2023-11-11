@@ -192,21 +192,21 @@ func HasParentGroupWith(preds ...predicate.Group) predicate.Blueprint {
 	})
 }
 
-// HasVirtualizationProvider applies the HasEdge predicate on the "virtualization_provider" edge.
-func HasVirtualizationProvider() predicate.Blueprint {
+// HasProvider applies the HasEdge predicate on the "provider" edge.
+func HasProvider() predicate.Blueprint {
 	return predicate.Blueprint(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, VirtualizationProviderTable, VirtualizationProviderColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, ProviderTable, ProviderColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasVirtualizationProviderWith applies the HasEdge predicate on the "virtualization_provider" edge with a given conditions (other predicates).
-func HasVirtualizationProviderWith(preds ...predicate.VirtualizationProvider) predicate.Blueprint {
+// HasProviderWith applies the HasEdge predicate on the "provider" edge with a given conditions (other predicates).
+func HasProviderWith(preds ...predicate.Provider) predicate.Blueprint {
 	return predicate.Blueprint(func(s *sql.Selector) {
-		step := newVirtualizationProviderStep()
+		step := newProviderStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

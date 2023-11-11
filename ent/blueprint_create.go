@@ -12,7 +12,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/group"
-	"github.com/cble-platform/cble-backend/ent/virtualizationprovider"
+	"github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/google/uuid"
 )
 
@@ -60,15 +60,15 @@ func (bc *BlueprintCreate) SetParentGroup(g *Group) *BlueprintCreate {
 	return bc.SetParentGroupID(g.ID)
 }
 
-// SetVirtualizationProviderID sets the "virtualization_provider" edge to the VirtualizationProvider entity by ID.
-func (bc *BlueprintCreate) SetVirtualizationProviderID(id uuid.UUID) *BlueprintCreate {
-	bc.mutation.SetVirtualizationProviderID(id)
+// SetProviderID sets the "provider" edge to the Provider entity by ID.
+func (bc *BlueprintCreate) SetProviderID(id uuid.UUID) *BlueprintCreate {
+	bc.mutation.SetProviderID(id)
 	return bc
 }
 
-// SetVirtualizationProvider sets the "virtualization_provider" edge to the VirtualizationProvider entity.
-func (bc *BlueprintCreate) SetVirtualizationProvider(v *VirtualizationProvider) *BlueprintCreate {
-	return bc.SetVirtualizationProviderID(v.ID)
+// SetProvider sets the "provider" edge to the Provider entity.
+func (bc *BlueprintCreate) SetProvider(p *Provider) *BlueprintCreate {
+	return bc.SetProviderID(p.ID)
 }
 
 // AddDeploymentIDs adds the "deployments" edge to the Deployment entity by IDs.
@@ -138,8 +138,8 @@ func (bc *BlueprintCreate) check() error {
 	if _, ok := bc.mutation.ParentGroupID(); !ok {
 		return &ValidationError{Name: "parent_group", err: errors.New(`ent: missing required edge "Blueprint.parent_group"`)}
 	}
-	if _, ok := bc.mutation.VirtualizationProviderID(); !ok {
-		return &ValidationError{Name: "virtualization_provider", err: errors.New(`ent: missing required edge "Blueprint.virtualization_provider"`)}
+	if _, ok := bc.mutation.ProviderID(); !ok {
+		return &ValidationError{Name: "provider", err: errors.New(`ent: missing required edge "Blueprint.provider"`)}
 	}
 	return nil
 }
@@ -201,21 +201,21 @@ func (bc *BlueprintCreate) createSpec() (*Blueprint, *sqlgraph.CreateSpec) {
 		_node.blueprint_parent_group = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := bc.mutation.VirtualizationProviderIDs(); len(nodes) > 0 {
+	if nodes := bc.mutation.ProviderIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   blueprint.VirtualizationProviderTable,
-			Columns: []string{blueprint.VirtualizationProviderColumn},
+			Table:   blueprint.ProviderTable,
+			Columns: []string{blueprint.ProviderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(virtualizationprovider.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(provider.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.blueprint_virtualization_provider = &nodes[0]
+		_node.blueprint_provider = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := bc.mutation.DeploymentsIDs(); len(nodes) > 0 {

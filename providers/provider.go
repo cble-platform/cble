@@ -48,27 +48,27 @@ type ProviderCommand struct {
 	DestroyRequest *providerGRPC.DestroyRequest
 }
 
-func (ps *CBLEServer) downloadProvider(entVirtualizationProvider *ent.VirtualizationProvider) error {
-	providerRepoPath := path.Join(ps.providersConfig.CacheDir, entVirtualizationProvider.ID.String(), "source")
-	logrus.WithFields(logrus.Fields{"repo_path": providerRepoPath}).Debugf("Downloading provider %s", entVirtualizationProvider.ID.String())
+func (ps *CBLEServer) downloadProvider(entProvider *ent.Provider) error {
+	providerRepoPath := path.Join(ps.providersConfig.CacheDir, entProvider.ID.String(), "source")
+	logrus.WithFields(logrus.Fields{"repo_path": providerRepoPath}).Debugf("Downloading provider %s", entProvider.ID.String())
 
 	// Clone/checkout the provider from git
 	if _, err := os.Stat(providerRepoPath); os.IsNotExist(err) {
 		// Provider dir doesn't exist so clone repo
-		err := git.CloneVirtualizationProvider(providerRepoPath, entVirtualizationProvider)
+		err := git.CloneProvider(providerRepoPath, entProvider)
 		if err != nil {
 			return fmt.Errorf("failed to clone provider repo: %v", err)
 		}
 	} else {
 		// Provider dir exists so just checkout new version
-		err := git.CheckoutVirtualizationProvider(providerRepoPath, entVirtualizationProvider)
+		err := git.CheckoutProvider(providerRepoPath, entProvider)
 		if err != nil {
 			return fmt.Errorf("failed to checkout provider repo: %v", err)
 		}
 	}
 
-	providerBinaryPath := path.Join(ps.providersConfig.CacheDir, entVirtualizationProvider.ID.String(), "provider")
-	logrus.WithFields(logrus.Fields{"binary_path": providerBinaryPath}).Debugf("Compiling provider %s", entVirtualizationProvider.ID.String())
+	providerBinaryPath := path.Join(ps.providersConfig.CacheDir, entProvider.ID.String(), "provider")
+	logrus.WithFields(logrus.Fields{"binary_path": providerBinaryPath}).Debugf("Compiling provider %s", entProvider.ID.String())
 
 	// Build the provider into a binary
 	cmd := exec.Command("sh", "-c", fmt.Sprintf("go get ./... && go build -o %s %s", providerBinaryPath, providerRepoPath))
@@ -85,8 +85,8 @@ func (ps *CBLEServer) downloadProvider(entVirtualizationProvider *ent.Virtualiza
 }
 
 // Runs a provider binary. Should be run as a go routine
-func (ps *CBLEServer) runProvider(ctx context.Context, entVirtualizationProvider *ent.VirtualizationProvider) {
-	providerBinaryPath := path.Join(ps.providersConfig.CacheDir, entVirtualizationProvider.ID.String(), "provider")
+func (ps *CBLEServer) runProvider(ctx context.Context, entProvider *ent.Provider) {
+	providerBinaryPath := path.Join(ps.providersConfig.CacheDir, entProvider.ID.String(), "provider")
 
 	// Check the provider is compiled
 	if _, err := os.Stat(providerBinaryPath); os.IsNotExist(err) {
@@ -95,16 +95,16 @@ func (ps *CBLEServer) runProvider(ctx context.Context, entVirtualizationProvider
 		return
 	}
 
-	logrus.Debugf("Executing provider server binary for %s", entVirtualizationProvider.ID.String())
+	logrus.Debugf("Executing provider server binary for %s", entProvider.ID.String())
 
 	// Start the binary with the provider ID as argument
-	cmd := exec.Command(providerBinaryPath, entVirtualizationProvider.ID.String())
+	cmd := exec.Command(providerBinaryPath, entProvider.ID.String())
 	if err := cmd.Start(); err != nil {
 		logrus.Errorf("failed to run provider server: failed to start provider: %v", err)
 		return
 	}
 
-	providerShutdown, ok := ps.serverShutdown.Load(entVirtualizationProvider.ID.String())
+	providerShutdown, ok := ps.serverShutdown.Load(entProvider.ID.String())
 	if !ok {
 		logrus.Errorf("failed to retrieve server shutdown channel")
 	}
@@ -112,11 +112,11 @@ func (ps *CBLEServer) runProvider(ctx context.Context, entVirtualizationProvider
 	for {
 		select {
 		case <-ctx.Done():
-			logrus.Warnf("Gracefully shutting down Provider %s", entVirtualizationProvider.DisplayName)
+			logrus.Warnf("Gracefully shutting down Provider %s", entProvider.DisplayName)
 			cmd.Process.Signal(syscall.SIGTERM)
 			return
 		case <-providerShutdown.(chan bool):
-			logrus.Warnf("Gracefully shutting down Provider %s", entVirtualizationProvider.DisplayName)
+			logrus.Warnf("Gracefully shutting down Provider %s", entProvider.DisplayName)
 			cmd.Process.Signal(syscall.SIGTERM)
 			return
 		}

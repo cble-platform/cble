@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-type VirtualizationProviderInput struct {
+type ProviderInput struct {
 	DisplayName     string `json:"displayName"`
 	ProviderGitURL  string `json:"providerGitUrl"`
 	ProviderVersion string `json:"providerVersion"`
