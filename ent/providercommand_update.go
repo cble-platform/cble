@@ -11,7 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/cble-backend/ent/blueprint"
+	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/predicate"
 	"github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/cble-platform/cble-backend/ent/providercommand"
@@ -94,23 +94,23 @@ func (pcu *ProviderCommandUpdate) SetProvider(p *Provider) *ProviderCommandUpdat
 	return pcu.SetProviderID(p.ID)
 }
 
-// SetBlueprintID sets the "blueprint" edge to the Blueprint entity by ID.
-func (pcu *ProviderCommandUpdate) SetBlueprintID(id uuid.UUID) *ProviderCommandUpdate {
-	pcu.mutation.SetBlueprintID(id)
+// SetDeploymentID sets the "deployment" edge to the Deployment entity by ID.
+func (pcu *ProviderCommandUpdate) SetDeploymentID(id uuid.UUID) *ProviderCommandUpdate {
+	pcu.mutation.SetDeploymentID(id)
 	return pcu
 }
 
-// SetNillableBlueprintID sets the "blueprint" edge to the Blueprint entity by ID if the given value is not nil.
-func (pcu *ProviderCommandUpdate) SetNillableBlueprintID(id *uuid.UUID) *ProviderCommandUpdate {
+// SetNillableDeploymentID sets the "deployment" edge to the Deployment entity by ID if the given value is not nil.
+func (pcu *ProviderCommandUpdate) SetNillableDeploymentID(id *uuid.UUID) *ProviderCommandUpdate {
 	if id != nil {
-		pcu = pcu.SetBlueprintID(*id)
+		pcu = pcu.SetDeploymentID(*id)
 	}
 	return pcu
 }
 
-// SetBlueprint sets the "blueprint" edge to the Blueprint entity.
-func (pcu *ProviderCommandUpdate) SetBlueprint(b *Blueprint) *ProviderCommandUpdate {
-	return pcu.SetBlueprintID(b.ID)
+// SetDeployment sets the "deployment" edge to the Deployment entity.
+func (pcu *ProviderCommandUpdate) SetDeployment(d *Deployment) *ProviderCommandUpdate {
+	return pcu.SetDeploymentID(d.ID)
 }
 
 // Mutation returns the ProviderCommandMutation object of the builder.
@@ -124,9 +124,9 @@ func (pcu *ProviderCommandUpdate) ClearProvider() *ProviderCommandUpdate {
 	return pcu
 }
 
-// ClearBlueprint clears the "blueprint" edge to the Blueprint entity.
-func (pcu *ProviderCommandUpdate) ClearBlueprint() *ProviderCommandUpdate {
-	pcu.mutation.ClearBlueprint()
+// ClearDeployment clears the "deployment" edge to the Deployment entity.
+func (pcu *ProviderCommandUpdate) ClearDeployment() *ProviderCommandUpdate {
+	pcu.mutation.ClearDeployment()
 	return pcu
 }
 
@@ -234,28 +234,28 @@ func (pcu *ProviderCommandUpdate) sqlSave(ctx context.Context) (n int, err error
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if pcu.mutation.BlueprintCleared() {
+	if pcu.mutation.DeploymentCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   providercommand.BlueprintTable,
-			Columns: []string{providercommand.BlueprintColumn},
+			Table:   providercommand.DeploymentTable,
+			Columns: []string{providercommand.DeploymentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blueprint.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(deployment.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pcu.mutation.BlueprintIDs(); len(nodes) > 0 {
+	if nodes := pcu.mutation.DeploymentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   providercommand.BlueprintTable,
-			Columns: []string{providercommand.BlueprintColumn},
+			Table:   providercommand.DeploymentTable,
+			Columns: []string{providercommand.DeploymentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blueprint.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(deployment.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -346,23 +346,23 @@ func (pcuo *ProviderCommandUpdateOne) SetProvider(p *Provider) *ProviderCommandU
 	return pcuo.SetProviderID(p.ID)
 }
 
-// SetBlueprintID sets the "blueprint" edge to the Blueprint entity by ID.
-func (pcuo *ProviderCommandUpdateOne) SetBlueprintID(id uuid.UUID) *ProviderCommandUpdateOne {
-	pcuo.mutation.SetBlueprintID(id)
+// SetDeploymentID sets the "deployment" edge to the Deployment entity by ID.
+func (pcuo *ProviderCommandUpdateOne) SetDeploymentID(id uuid.UUID) *ProviderCommandUpdateOne {
+	pcuo.mutation.SetDeploymentID(id)
 	return pcuo
 }
 
-// SetNillableBlueprintID sets the "blueprint" edge to the Blueprint entity by ID if the given value is not nil.
-func (pcuo *ProviderCommandUpdateOne) SetNillableBlueprintID(id *uuid.UUID) *ProviderCommandUpdateOne {
+// SetNillableDeploymentID sets the "deployment" edge to the Deployment entity by ID if the given value is not nil.
+func (pcuo *ProviderCommandUpdateOne) SetNillableDeploymentID(id *uuid.UUID) *ProviderCommandUpdateOne {
 	if id != nil {
-		pcuo = pcuo.SetBlueprintID(*id)
+		pcuo = pcuo.SetDeploymentID(*id)
 	}
 	return pcuo
 }
 
-// SetBlueprint sets the "blueprint" edge to the Blueprint entity.
-func (pcuo *ProviderCommandUpdateOne) SetBlueprint(b *Blueprint) *ProviderCommandUpdateOne {
-	return pcuo.SetBlueprintID(b.ID)
+// SetDeployment sets the "deployment" edge to the Deployment entity.
+func (pcuo *ProviderCommandUpdateOne) SetDeployment(d *Deployment) *ProviderCommandUpdateOne {
+	return pcuo.SetDeploymentID(d.ID)
 }
 
 // Mutation returns the ProviderCommandMutation object of the builder.
@@ -376,9 +376,9 @@ func (pcuo *ProviderCommandUpdateOne) ClearProvider() *ProviderCommandUpdateOne 
 	return pcuo
 }
 
-// ClearBlueprint clears the "blueprint" edge to the Blueprint entity.
-func (pcuo *ProviderCommandUpdateOne) ClearBlueprint() *ProviderCommandUpdateOne {
-	pcuo.mutation.ClearBlueprint()
+// ClearDeployment clears the "deployment" edge to the Deployment entity.
+func (pcuo *ProviderCommandUpdateOne) ClearDeployment() *ProviderCommandUpdateOne {
+	pcuo.mutation.ClearDeployment()
 	return pcuo
 }
 
@@ -516,28 +516,28 @@ func (pcuo *ProviderCommandUpdateOne) sqlSave(ctx context.Context) (_node *Provi
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if pcuo.mutation.BlueprintCleared() {
+	if pcuo.mutation.DeploymentCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   providercommand.BlueprintTable,
-			Columns: []string{providercommand.BlueprintColumn},
+			Table:   providercommand.DeploymentTable,
+			Columns: []string{providercommand.DeploymentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blueprint.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(deployment.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pcuo.mutation.BlueprintIDs(); len(nodes) > 0 {
+	if nodes := pcuo.mutation.DeploymentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   providercommand.BlueprintTable,
-			Columns: []string{providercommand.BlueprintColumn},
+			Table:   providercommand.DeploymentTable,
+			Columns: []string{providercommand.DeploymentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blueprint.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(deployment.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

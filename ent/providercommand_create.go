@@ -10,7 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/cble-backend/ent/blueprint"
+	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/cble-platform/cble-backend/ent/providercommand"
 	"github.com/google/uuid"
@@ -88,23 +88,23 @@ func (pcc *ProviderCommandCreate) SetProvider(p *Provider) *ProviderCommandCreat
 	return pcc.SetProviderID(p.ID)
 }
 
-// SetBlueprintID sets the "blueprint" edge to the Blueprint entity by ID.
-func (pcc *ProviderCommandCreate) SetBlueprintID(id uuid.UUID) *ProviderCommandCreate {
-	pcc.mutation.SetBlueprintID(id)
+// SetDeploymentID sets the "deployment" edge to the Deployment entity by ID.
+func (pcc *ProviderCommandCreate) SetDeploymentID(id uuid.UUID) *ProviderCommandCreate {
+	pcc.mutation.SetDeploymentID(id)
 	return pcc
 }
 
-// SetNillableBlueprintID sets the "blueprint" edge to the Blueprint entity by ID if the given value is not nil.
-func (pcc *ProviderCommandCreate) SetNillableBlueprintID(id *uuid.UUID) *ProviderCommandCreate {
+// SetNillableDeploymentID sets the "deployment" edge to the Deployment entity by ID if the given value is not nil.
+func (pcc *ProviderCommandCreate) SetNillableDeploymentID(id *uuid.UUID) *ProviderCommandCreate {
 	if id != nil {
-		pcc = pcc.SetBlueprintID(*id)
+		pcc = pcc.SetDeploymentID(*id)
 	}
 	return pcc
 }
 
-// SetBlueprint sets the "blueprint" edge to the Blueprint entity.
-func (pcc *ProviderCommandCreate) SetBlueprint(b *Blueprint) *ProviderCommandCreate {
-	return pcc.SetBlueprintID(b.ID)
+// SetDeployment sets the "deployment" edge to the Deployment entity.
+func (pcc *ProviderCommandCreate) SetDeployment(d *Deployment) *ProviderCommandCreate {
+	return pcc.SetDeploymentID(d.ID)
 }
 
 // Mutation returns the ProviderCommandMutation object of the builder.
@@ -237,21 +237,21 @@ func (pcc *ProviderCommandCreate) createSpec() (*ProviderCommand, *sqlgraph.Crea
 		_node.provider_command_provider = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := pcc.mutation.BlueprintIDs(); len(nodes) > 0 {
+	if nodes := pcc.mutation.DeploymentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   providercommand.BlueprintTable,
-			Columns: []string{providercommand.BlueprintColumn},
+			Table:   providercommand.DeploymentTable,
+			Columns: []string{providercommand.DeploymentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blueprint.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(deployment.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.provider_command_blueprint = &nodes[0]
+		_node.provider_command_deployment = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

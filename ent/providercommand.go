@@ -9,7 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/cble-platform/cble-backend/ent/blueprint"
+	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/cble-platform/cble-backend/ent/providercommand"
 	"github.com/google/uuid"
@@ -30,18 +30,18 @@ type ProviderCommand struct {
 	EndTime time.Time `json:"end_time,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ProviderCommandQuery when eager-loading is set.
-	Edges                      ProviderCommandEdges `json:"edges"`
-	provider_command_provider  *uuid.UUID
-	provider_command_blueprint *uuid.UUID
-	selectValues               sql.SelectValues
+	Edges                       ProviderCommandEdges `json:"edges"`
+	provider_command_provider   *uuid.UUID
+	provider_command_deployment *uuid.UUID
+	selectValues                sql.SelectValues
 }
 
 // ProviderCommandEdges holds the relations/edges for other nodes in the graph.
 type ProviderCommandEdges struct {
 	// Provider holds the value of the provider edge.
 	Provider *Provider `json:"provider,omitempty"`
-	// Blueprint holds the value of the blueprint edge.
-	Blueprint *Blueprint `json:"blueprint,omitempty"`
+	// Deployment holds the value of the deployment edge.
+	Deployment *Deployment `json:"deployment,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
@@ -60,17 +60,17 @@ func (e ProviderCommandEdges) ProviderOrErr() (*Provider, error) {
 	return nil, &NotLoadedError{edge: "provider"}
 }
 
-// BlueprintOrErr returns the Blueprint value or an error if the edge
+// DeploymentOrErr returns the Deployment value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e ProviderCommandEdges) BlueprintOrErr() (*Blueprint, error) {
+func (e ProviderCommandEdges) DeploymentOrErr() (*Deployment, error) {
 	if e.loadedTypes[1] {
-		if e.Blueprint == nil {
+		if e.Deployment == nil {
 			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: blueprint.Label}
+			return nil, &NotFoundError{label: deployment.Label}
 		}
-		return e.Blueprint, nil
+		return e.Deployment, nil
 	}
-	return nil, &NotLoadedError{edge: "blueprint"}
+	return nil, &NotLoadedError{edge: "deployment"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -86,7 +86,7 @@ func (*ProviderCommand) scanValues(columns []string) ([]any, error) {
 			values[i] = new(uuid.UUID)
 		case providercommand.ForeignKeys[0]: // provider_command_provider
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case providercommand.ForeignKeys[1]: // provider_command_blueprint
+		case providercommand.ForeignKeys[1]: // provider_command_deployment
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
@@ -142,10 +142,10 @@ func (pc *ProviderCommand) assignValues(columns []string, values []any) error {
 			}
 		case providercommand.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
-				return fmt.Errorf("unexpected type %T for field provider_command_blueprint", values[i])
+				return fmt.Errorf("unexpected type %T for field provider_command_deployment", values[i])
 			} else if value.Valid {
-				pc.provider_command_blueprint = new(uuid.UUID)
-				*pc.provider_command_blueprint = *value.S.(*uuid.UUID)
+				pc.provider_command_deployment = new(uuid.UUID)
+				*pc.provider_command_deployment = *value.S.(*uuid.UUID)
 			}
 		default:
 			pc.selectValues.Set(columns[i], values[i])
@@ -165,9 +165,9 @@ func (pc *ProviderCommand) QueryProvider() *ProviderQuery {
 	return NewProviderCommandClient(pc.config).QueryProvider(pc)
 }
 
-// QueryBlueprint queries the "blueprint" edge of the ProviderCommand entity.
-func (pc *ProviderCommand) QueryBlueprint() *BlueprintQuery {
-	return NewProviderCommandClient(pc.config).QueryBlueprint(pc)
+// QueryDeployment queries the "deployment" edge of the ProviderCommand entity.
+func (pc *ProviderCommand) QueryDeployment() *DeploymentQuery {
+	return NewProviderCommandClient(pc.config).QueryDeployment(pc)
 }
 
 // Update returns a builder for updating this ProviderCommand.

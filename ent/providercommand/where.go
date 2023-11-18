@@ -229,21 +229,21 @@ func HasProviderWith(preds ...predicate.Provider) predicate.ProviderCommand {
 	})
 }
 
-// HasBlueprint applies the HasEdge predicate on the "blueprint" edge.
-func HasBlueprint() predicate.ProviderCommand {
+// HasDeployment applies the HasEdge predicate on the "deployment" edge.
+func HasDeployment() predicate.ProviderCommand {
 	return predicate.ProviderCommand(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, BlueprintTable, BlueprintColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, DeploymentTable, DeploymentColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasBlueprintWith applies the HasEdge predicate on the "blueprint" edge with a given conditions (other predicates).
-func HasBlueprintWith(preds ...predicate.Blueprint) predicate.ProviderCommand {
+// HasDeploymentWith applies the HasEdge predicate on the "deployment" edge with a given conditions (other predicates).
+func HasDeploymentWith(preds ...predicate.Deployment) predicate.ProviderCommand {
 	return predicate.ProviderCommand(func(s *sql.Selector) {
-		step := newBlueprintStep()
+		step := newDeploymentStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

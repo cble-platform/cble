@@ -1405,15 +1405,15 @@ func (c *ProviderCommandClient) QueryProvider(pc *ProviderCommand) *ProviderQuer
 	return query
 }
 
-// QueryBlueprint queries the blueprint edge of a ProviderCommand.
-func (c *ProviderCommandClient) QueryBlueprint(pc *ProviderCommand) *BlueprintQuery {
-	query := (&BlueprintClient{config: c.config}).Query()
+// QueryDeployment queries the deployment edge of a ProviderCommand.
+func (c *ProviderCommandClient) QueryDeployment(pc *ProviderCommand) *DeploymentQuery {
+	query := (&DeploymentClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := pc.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(providercommand.Table, providercommand.FieldID, id),
-			sqlgraph.To(blueprint.Table, blueprint.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, providercommand.BlueprintTable, providercommand.BlueprintColumn),
+			sqlgraph.To(deployment.Table, deployment.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, providercommand.DeploymentTable, providercommand.DeploymentColumn),
 		)
 		fromV = sqlgraph.Neighbors(pc.driver.Dialect(), step)
 		return fromV, nil

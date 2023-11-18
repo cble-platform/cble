@@ -10,7 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/cble-backend/ent/blueprint"
+	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/predicate"
 	"github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/cble-platform/cble-backend/ent/providercommand"
@@ -20,13 +20,13 @@ import (
 // ProviderCommandQuery is the builder for querying ProviderCommand entities.
 type ProviderCommandQuery struct {
 	config
-	ctx           *QueryContext
-	order         []providercommand.OrderOption
-	inters        []Interceptor
-	predicates    []predicate.ProviderCommand
-	withProvider  *ProviderQuery
-	withBlueprint *BlueprintQuery
-	withFKs       bool
+	ctx            *QueryContext
+	order          []providercommand.OrderOption
+	inters         []Interceptor
+	predicates     []predicate.ProviderCommand
+	withProvider   *ProviderQuery
+	withDeployment *DeploymentQuery
+	withFKs        bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -85,9 +85,9 @@ func (pcq *ProviderCommandQuery) QueryProvider() *ProviderQuery {
 	return query
 }
 
-// QueryBlueprint chains the current query on the "blueprint" edge.
-func (pcq *ProviderCommandQuery) QueryBlueprint() *BlueprintQuery {
-	query := (&BlueprintClient{config: pcq.config}).Query()
+// QueryDeployment chains the current query on the "deployment" edge.
+func (pcq *ProviderCommandQuery) QueryDeployment() *DeploymentQuery {
+	query := (&DeploymentClient{config: pcq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := pcq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -98,8 +98,8 @@ func (pcq *ProviderCommandQuery) QueryBlueprint() *BlueprintQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(providercommand.Table, providercommand.FieldID, selector),
-			sqlgraph.To(blueprint.Table, blueprint.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, providercommand.BlueprintTable, providercommand.BlueprintColumn),
+			sqlgraph.To(deployment.Table, deployment.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, providercommand.DeploymentTable, providercommand.DeploymentColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pcq.driver.Dialect(), step)
 		return fromU, nil
@@ -294,13 +294,13 @@ func (pcq *ProviderCommandQuery) Clone() *ProviderCommandQuery {
 		return nil
 	}
 	return &ProviderCommandQuery{
-		config:        pcq.config,
-		ctx:           pcq.ctx.Clone(),
-		order:         append([]providercommand.OrderOption{}, pcq.order...),
-		inters:        append([]Interceptor{}, pcq.inters...),
-		predicates:    append([]predicate.ProviderCommand{}, pcq.predicates...),
-		withProvider:  pcq.withProvider.Clone(),
-		withBlueprint: pcq.withBlueprint.Clone(),
+		config:         pcq.config,
+		ctx:            pcq.ctx.Clone(),
+		order:          append([]providercommand.OrderOption{}, pcq.order...),
+		inters:         append([]Interceptor{}, pcq.inters...),
+		predicates:     append([]predicate.ProviderCommand{}, pcq.predicates...),
+		withProvider:   pcq.withProvider.Clone(),
+		withDeployment: pcq.withDeployment.Clone(),
 		// clone intermediate query.
 		sql:  pcq.sql.Clone(),
 		path: pcq.path,
@@ -318,14 +318,14 @@ func (pcq *ProviderCommandQuery) WithProvider(opts ...func(*ProviderQuery)) *Pro
 	return pcq
 }
 
-// WithBlueprint tells the query-builder to eager-load the nodes that are connected to
-// the "blueprint" edge. The optional arguments are used to configure the query builder of the edge.
-func (pcq *ProviderCommandQuery) WithBlueprint(opts ...func(*BlueprintQuery)) *ProviderCommandQuery {
-	query := (&BlueprintClient{config: pcq.config}).Query()
+// WithDeployment tells the query-builder to eager-load the nodes that are connected to
+// the "deployment" edge. The optional arguments are used to configure the query builder of the edge.
+func (pcq *ProviderCommandQuery) WithDeployment(opts ...func(*DeploymentQuery)) *ProviderCommandQuery {
+	query := (&DeploymentClient{config: pcq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	pcq.withBlueprint = query
+	pcq.withDeployment = query
 	return pcq
 }
 
@@ -410,10 +410,10 @@ func (pcq *ProviderCommandQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 		_spec       = pcq.querySpec()
 		loadedTypes = [2]bool{
 			pcq.withProvider != nil,
-			pcq.withBlueprint != nil,
+			pcq.withDeployment != nil,
 		}
 	)
-	if pcq.withProvider != nil || pcq.withBlueprint != nil {
+	if pcq.withProvider != nil || pcq.withDeployment != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -443,9 +443,9 @@ func (pcq *ProviderCommandQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 			return nil, err
 		}
 	}
-	if query := pcq.withBlueprint; query != nil {
-		if err := pcq.loadBlueprint(ctx, query, nodes, nil,
-			func(n *ProviderCommand, e *Blueprint) { n.Edges.Blueprint = e }); err != nil {
+	if query := pcq.withDeployment; query != nil {
+		if err := pcq.loadDeployment(ctx, query, nodes, nil,
+			func(n *ProviderCommand, e *Deployment) { n.Edges.Deployment = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -484,14 +484,14 @@ func (pcq *ProviderCommandQuery) loadProvider(ctx context.Context, query *Provid
 	}
 	return nil
 }
-func (pcq *ProviderCommandQuery) loadBlueprint(ctx context.Context, query *BlueprintQuery, nodes []*ProviderCommand, init func(*ProviderCommand), assign func(*ProviderCommand, *Blueprint)) error {
+func (pcq *ProviderCommandQuery) loadDeployment(ctx context.Context, query *DeploymentQuery, nodes []*ProviderCommand, init func(*ProviderCommand), assign func(*ProviderCommand, *Deployment)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*ProviderCommand)
 	for i := range nodes {
-		if nodes[i].provider_command_blueprint == nil {
+		if nodes[i].provider_command_deployment == nil {
 			continue
 		}
-		fk := *nodes[i].provider_command_blueprint
+		fk := *nodes[i].provider_command_deployment
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -500,7 +500,7 @@ func (pcq *ProviderCommandQuery) loadBlueprint(ctx context.Context, query *Bluep
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(blueprint.IDIn(ids...))
+	query.Where(deployment.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
@@ -508,7 +508,7 @@ func (pcq *ProviderCommandQuery) loadBlueprint(ctx context.Context, query *Bluep
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "provider_command_blueprint" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "provider_command_deployment" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

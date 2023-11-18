@@ -3668,21 +3668,21 @@ func (m *ProviderMutation) ResetEdge(name string) error {
 // ProviderCommandMutation represents an operation that mutates the ProviderCommand nodes in the graph.
 type ProviderCommandMutation struct {
 	config
-	op               Op
-	typ              string
-	id               *uuid.UUID
-	command_type     *providercommand.CommandType
-	status           *providercommand.Status
-	start_time       *time.Time
-	end_time         *time.Time
-	clearedFields    map[string]struct{}
-	provider         *uuid.UUID
-	clearedprovider  bool
-	blueprint        *uuid.UUID
-	clearedblueprint bool
-	done             bool
-	oldValue         func(context.Context) (*ProviderCommand, error)
-	predicates       []predicate.ProviderCommand
+	op                Op
+	typ               string
+	id                *uuid.UUID
+	command_type      *providercommand.CommandType
+	status            *providercommand.Status
+	start_time        *time.Time
+	end_time          *time.Time
+	clearedFields     map[string]struct{}
+	provider          *uuid.UUID
+	clearedprovider   bool
+	deployment        *uuid.UUID
+	cleareddeployment bool
+	done              bool
+	oldValue          func(context.Context) (*ProviderCommand, error)
+	predicates        []predicate.ProviderCommand
 }
 
 var _ ent.Mutation = (*ProviderCommandMutation)(nil)
@@ -3998,43 +3998,43 @@ func (m *ProviderCommandMutation) ResetProvider() {
 	m.clearedprovider = false
 }
 
-// SetBlueprintID sets the "blueprint" edge to the Blueprint entity by id.
-func (m *ProviderCommandMutation) SetBlueprintID(id uuid.UUID) {
-	m.blueprint = &id
+// SetDeploymentID sets the "deployment" edge to the Deployment entity by id.
+func (m *ProviderCommandMutation) SetDeploymentID(id uuid.UUID) {
+	m.deployment = &id
 }
 
-// ClearBlueprint clears the "blueprint" edge to the Blueprint entity.
-func (m *ProviderCommandMutation) ClearBlueprint() {
-	m.clearedblueprint = true
+// ClearDeployment clears the "deployment" edge to the Deployment entity.
+func (m *ProviderCommandMutation) ClearDeployment() {
+	m.cleareddeployment = true
 }
 
-// BlueprintCleared reports if the "blueprint" edge to the Blueprint entity was cleared.
-func (m *ProviderCommandMutation) BlueprintCleared() bool {
-	return m.clearedblueprint
+// DeploymentCleared reports if the "deployment" edge to the Deployment entity was cleared.
+func (m *ProviderCommandMutation) DeploymentCleared() bool {
+	return m.cleareddeployment
 }
 
-// BlueprintID returns the "blueprint" edge ID in the mutation.
-func (m *ProviderCommandMutation) BlueprintID() (id uuid.UUID, exists bool) {
-	if m.blueprint != nil {
-		return *m.blueprint, true
+// DeploymentID returns the "deployment" edge ID in the mutation.
+func (m *ProviderCommandMutation) DeploymentID() (id uuid.UUID, exists bool) {
+	if m.deployment != nil {
+		return *m.deployment, true
 	}
 	return
 }
 
-// BlueprintIDs returns the "blueprint" edge IDs in the mutation.
+// DeploymentIDs returns the "deployment" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// BlueprintID instead. It exists only for internal usage by the builders.
-func (m *ProviderCommandMutation) BlueprintIDs() (ids []uuid.UUID) {
-	if id := m.blueprint; id != nil {
+// DeploymentID instead. It exists only for internal usage by the builders.
+func (m *ProviderCommandMutation) DeploymentIDs() (ids []uuid.UUID) {
+	if id := m.deployment; id != nil {
 		ids = append(ids, *id)
 	}
 	return
 }
 
-// ResetBlueprint resets all changes to the "blueprint" edge.
-func (m *ProviderCommandMutation) ResetBlueprint() {
-	m.blueprint = nil
-	m.clearedblueprint = false
+// ResetDeployment resets all changes to the "deployment" edge.
+func (m *ProviderCommandMutation) ResetDeployment() {
+	m.deployment = nil
+	m.cleareddeployment = false
 }
 
 // Where appends a list predicates to the ProviderCommandMutation builder.
@@ -4240,8 +4240,8 @@ func (m *ProviderCommandMutation) AddedEdges() []string {
 	if m.provider != nil {
 		edges = append(edges, providercommand.EdgeProvider)
 	}
-	if m.blueprint != nil {
-		edges = append(edges, providercommand.EdgeBlueprint)
+	if m.deployment != nil {
+		edges = append(edges, providercommand.EdgeDeployment)
 	}
 	return edges
 }
@@ -4254,8 +4254,8 @@ func (m *ProviderCommandMutation) AddedIDs(name string) []ent.Value {
 		if id := m.provider; id != nil {
 			return []ent.Value{*id}
 		}
-	case providercommand.EdgeBlueprint:
-		if id := m.blueprint; id != nil {
+	case providercommand.EdgeDeployment:
+		if id := m.deployment; id != nil {
 			return []ent.Value{*id}
 		}
 	}
@@ -4280,8 +4280,8 @@ func (m *ProviderCommandMutation) ClearedEdges() []string {
 	if m.clearedprovider {
 		edges = append(edges, providercommand.EdgeProvider)
 	}
-	if m.clearedblueprint {
-		edges = append(edges, providercommand.EdgeBlueprint)
+	if m.cleareddeployment {
+		edges = append(edges, providercommand.EdgeDeployment)
 	}
 	return edges
 }
@@ -4292,8 +4292,8 @@ func (m *ProviderCommandMutation) EdgeCleared(name string) bool {
 	switch name {
 	case providercommand.EdgeProvider:
 		return m.clearedprovider
-	case providercommand.EdgeBlueprint:
-		return m.clearedblueprint
+	case providercommand.EdgeDeployment:
+		return m.cleareddeployment
 	}
 	return false
 }
@@ -4305,8 +4305,8 @@ func (m *ProviderCommandMutation) ClearEdge(name string) error {
 	case providercommand.EdgeProvider:
 		m.ClearProvider()
 		return nil
-	case providercommand.EdgeBlueprint:
-		m.ClearBlueprint()
+	case providercommand.EdgeDeployment:
+		m.ClearDeployment()
 		return nil
 	}
 	return fmt.Errorf("unknown ProviderCommand unique edge %s", name)
@@ -4319,8 +4319,8 @@ func (m *ProviderCommandMutation) ResetEdge(name string) error {
 	case providercommand.EdgeProvider:
 		m.ResetProvider()
 		return nil
-	case providercommand.EdgeBlueprint:
-		m.ResetBlueprint()
+	case providercommand.EdgeDeployment:
+		m.ResetDeployment()
 		return nil
 	}
 	return fmt.Errorf("unknown ProviderCommand edge %s", name)

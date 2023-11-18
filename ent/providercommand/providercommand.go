@@ -25,8 +25,8 @@ const (
 	FieldEndTime = "end_time"
 	// EdgeProvider holds the string denoting the provider edge name in mutations.
 	EdgeProvider = "provider"
-	// EdgeBlueprint holds the string denoting the blueprint edge name in mutations.
-	EdgeBlueprint = "blueprint"
+	// EdgeDeployment holds the string denoting the deployment edge name in mutations.
+	EdgeDeployment = "deployment"
 	// Table holds the table name of the providercommand in the database.
 	Table = "provider_commands"
 	// ProviderTable is the table that holds the provider relation/edge.
@@ -36,13 +36,13 @@ const (
 	ProviderInverseTable = "providers"
 	// ProviderColumn is the table column denoting the provider relation/edge.
 	ProviderColumn = "provider_command_provider"
-	// BlueprintTable is the table that holds the blueprint relation/edge.
-	BlueprintTable = "provider_commands"
-	// BlueprintInverseTable is the table name for the Blueprint entity.
-	// It exists in this package in order to avoid circular dependency with the "blueprint" package.
-	BlueprintInverseTable = "blueprints"
-	// BlueprintColumn is the table column denoting the blueprint relation/edge.
-	BlueprintColumn = "provider_command_blueprint"
+	// DeploymentTable is the table that holds the deployment relation/edge.
+	DeploymentTable = "provider_commands"
+	// DeploymentInverseTable is the table name for the Deployment entity.
+	// It exists in this package in order to avoid circular dependency with the "deployment" package.
+	DeploymentInverseTable = "deployments"
+	// DeploymentColumn is the table column denoting the deployment relation/edge.
+	DeploymentColumn = "provider_command_deployment"
 )
 
 // Columns holds all SQL columns for providercommand fields.
@@ -58,7 +58,7 @@ var Columns = []string{
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"provider_command_provider",
-	"provider_command_blueprint",
+	"provider_command_deployment",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -165,10 +165,10 @@ func ByProviderField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
-// ByBlueprintField orders the results by blueprint field.
-func ByBlueprintField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByDeploymentField orders the results by deployment field.
+func ByDeploymentField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newBlueprintStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborTerms(s, newDeploymentStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newProviderStep() *sqlgraph.Step {
@@ -178,10 +178,10 @@ func newProviderStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2O, false, ProviderTable, ProviderColumn),
 	)
 }
-func newBlueprintStep() *sqlgraph.Step {
+func newDeploymentStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(BlueprintInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, BlueprintTable, BlueprintColumn),
+		sqlgraph.To(DeploymentInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, DeploymentTable, DeploymentColumn),
 	)
 }

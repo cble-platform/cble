@@ -31,7 +31,7 @@ func (ProviderCommand) Edges() []ent.Edge {
 		edge.To("provider", Provider.Type).
 			Unique().
 			Required(),
-		edge.To("blueprint", Blueprint.Type).
+		edge.To("deployment", Deployment.Type).
 			Unique(),
 	}
 }

@@ -149,7 +149,7 @@ var (
 		{Name: "start_time", Type: field.TypeTime, Nullable: true},
 		{Name: "end_time", Type: field.TypeTime, Nullable: true},
 		{Name: "provider_command_provider", Type: field.TypeUUID},
-		{Name: "provider_command_blueprint", Type: field.TypeUUID, Nullable: true},
+		{Name: "provider_command_deployment", Type: field.TypeUUID, Nullable: true},
 	}
 	// ProviderCommandsTable holds the schema information for the "provider_commands" table.
 	ProviderCommandsTable = &schema.Table{
@@ -164,9 +164,9 @@ var (
 				OnDelete:   schema.NoAction,
 			},
 			{
-				Symbol:     "provider_commands_blueprints_blueprint",
+				Symbol:     "provider_commands_deployments_deployment",
 				Columns:    []*schema.Column{ProviderCommandsColumns[6]},
-				RefColumns: []*schema.Column{BlueprintsColumns[0]},
+				RefColumns: []*schema.Column{DeploymentsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
@@ -234,7 +234,7 @@ func init() {
 	PermissionPoliciesTable.ForeignKeys[0].RefTable = PermissionsTable
 	PermissionPoliciesTable.ForeignKeys[1].RefTable = GroupsTable
 	ProviderCommandsTable.ForeignKeys[0].RefTable = ProvidersTable
-	ProviderCommandsTable.ForeignKeys[1].RefTable = BlueprintsTable
+	ProviderCommandsTable.ForeignKeys[1].RefTable = DeploymentsTable
 	UserGroupsTable.ForeignKeys[0].RefTable = UsersTable
 	UserGroupsTable.ForeignKeys[1].RefTable = GroupsTable
 }
