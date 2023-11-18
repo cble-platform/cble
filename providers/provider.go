@@ -54,12 +54,14 @@ func (ps *CBLEServer) downloadProvider(entProvider *ent.Provider) error {
 
 	// Clone/checkout the provider from git
 	if _, err := os.Stat(providerRepoPath); os.IsNotExist(err) {
+		logrus.Debugf("Provider does not exist, cloning repo")
 		// Provider dir doesn't exist so clone repo
 		err := git.CloneProvider(providerRepoPath, entProvider)
 		if err != nil {
 			return fmt.Errorf("failed to clone provider repo: %v", err)
 		}
 	} else {
+		logrus.Debugf("Provider exists, checking out version")
 		// Provider dir exists so just checkout new version
 		err := git.CheckoutProvider(providerRepoPath, entProvider)
 		if err != nil {
@@ -85,7 +87,7 @@ func (ps *CBLEServer) downloadProvider(entProvider *ent.Provider) error {
 }
 
 // Runs a provider binary. Should be run as a go routine
-func (ps *CBLEServer) runProvider(ctx context.Context, entProvider *ent.Provider) {
+func (ps *CBLEServer) runProvider(ctx context.Context, entProvider *ent.Provider, shutdown chan bool) {
 	providerBinaryPath := path.Join(ps.providersConfig.CacheDir, entProvider.ID.String(), "provider")
 
 	// Check the provider is compiled
@@ -104,18 +106,13 @@ func (ps *CBLEServer) runProvider(ctx context.Context, entProvider *ent.Provider
 		return
 	}
 
-	providerShutdown, ok := ps.serverShutdown.Load(entProvider.ID.String())
-	if !ok {
-		logrus.Errorf("failed to retrieve server shutdown channel")
-	}
-
 	for {
 		select {
 		case <-ctx.Done():
 			logrus.Warnf("Gracefully shutting down Provider %s", entProvider.DisplayName)
 			cmd.Process.Signal(syscall.SIGTERM)
 			return
-		case <-providerShutdown.(chan bool):
+		case <-shutdown:
 			logrus.Warnf("Gracefully shutting down Provider %s", entProvider.DisplayName)
 			cmd.Process.Signal(syscall.SIGTERM)
 			return

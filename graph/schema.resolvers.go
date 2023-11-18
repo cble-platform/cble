@@ -12,6 +12,7 @@ import (
 	"github.com/cble-platform/cble-backend/graph/generated"
 	"github.com/cble-platform/cble-backend/graph/model"
 	"github.com/google/uuid"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 // ID is the resolver for the id field.
@@ -113,7 +114,7 @@ func (r *mutationResolver) CreateProvider(ctx context.Context, input model.Provi
 		SetConfigBytes([]byte(input.ConfigBytes)).
 		Save(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create provider: %v", err)
+		return nil, gqlerror.Errorf("failed to create provider: %v", err)
 	}
 
 	return entProvider, nil
@@ -121,27 +122,97 @@ func (r *mutationResolver) CreateProvider(ctx context.Context, input model.Provi
 
 // UpdateProvider is the resolver for the updateProvider field.
 func (r *mutationResolver) UpdateProvider(ctx context.Context, id string, input model.ProviderInput) (*ent.Provider, error) {
-	panic(fmt.Errorf("not implemented: UpdateProvider - updateProvider"))
+	// Convert ID string to UUID
+	providerUuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
+	}
+	// Start an ENT transaction
+	tx, err := r.ent.Tx(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to open transaction: %v", err)
+	}
+	txClient := tx.Client()
+	// Update the provider
+	entProvider, err := txClient.Provider.UpdateOneID(providerUuid).
+		SetDisplayName(input.DisplayName).
+		SetProviderGitURL(input.ProviderGitURL).
+		SetProviderVersion(input.ProviderVersion).
+		SetConfigBytes([]byte(input.ConfigBytes)).
+		Save(ctx)
+	if err != nil {
+		tx.Rollback()
+		return nil, gqlerror.Errorf("failed to update provider: %v", err)
+	}
+	return entProvider, nil
 }
 
 // DeleteProvider is the resolver for the deleteProvider field.
 func (r *mutationResolver) DeleteProvider(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteProvider - deleteProvider"))
+	// Convert ID string to UUID
+	providerUuid, err := uuid.Parse(id)
+	if err != nil {
+		return false, gqlerror.Errorf("id is not valid UUID: %v", err)
+	}
+	// Start an ENT transaction
+	tx, err := r.ent.Tx(ctx)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to open transaction: %v", err)
+	}
+	txClient := tx.Client()
+	// Check if the provider is loaded
+	entProvider, err := txClient.Provider.Get(ctx, providerUuid)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to query provider with ID: %v", err)
+	}
+	// Don't allow deleting a loaded provider
+	if entProvider.IsLoaded {
+		return false, gqlerror.Errorf("cannot delete a provider while it is loaded")
+	}
+	// Delete the provider otherwise
+	err = txClient.Provider.DeleteOneID(providerUuid).Exec(ctx)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to delete provider: %v", err)
+	}
+
+	return true, nil
 }
 
 // LoadProvider is the resolver for the loadProvider field.
 func (r *mutationResolver) LoadProvider(ctx context.Context, id string) (*ent.Provider, error) {
+	// Check the provider exists
 	providerUuid, err := uuid.Parse(id)
 	if err != nil {
-		return nil, fmt.Errorf("id is not valid UUID: %v", err)
+		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
 	}
 	entProvider, err := r.ent.Provider.Get(ctx, providerUuid)
 	if err != nil {
-		return nil, fmt.Errorf("could not find provider with id %s", id)
+		return nil, gqlerror.Errorf("could not find provider with id %s", id)
 	}
 
 	// Queue the provider to load
 	r.cbleServer.QueueLoadProvider(id)
+
+	return entProvider, nil
+}
+
+// UnloadProvider is the resolver for the unloadProvider field.
+func (r *mutationResolver) UnloadProvider(ctx context.Context, id string) (*ent.Provider, error) {
+	// Check the provider exists
+	providerUuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
+	}
+	entProvider, err := r.ent.Provider.Get(ctx, providerUuid)
+	if err != nil {
+		return nil, gqlerror.Errorf("could not find provider with id %s", id)
+	}
+
+	// Queue the provider to unload
+	err = r.cbleServer.QueueUnloadProvider(id)
+	if err != nil {
+		return entProvider, fmt.Errorf("failed to unload provider: %v", err)
+	}
 
 	return entProvider, nil
 }
@@ -186,17 +257,17 @@ func (r *permissionPolicyResolver) Group(ctx context.Context, obj *ent.Permissio
 
 // ID is the resolver for the id field.
 func (r *providerResolver) ID(ctx context.Context, obj *ent.Provider) (string, error) {
-	panic(fmt.Errorf("not implemented: ID - id"))
+	return obj.ID.String(), nil
 }
 
 // ConfigBytes is the resolver for the configBytes field.
 func (r *providerResolver) ConfigBytes(ctx context.Context, obj *ent.Provider) (string, error) {
-	panic(fmt.Errorf("not implemented: ConfigBytes - configBytes"))
+	return string(obj.ConfigBytes), nil
 }
 
 // Blueprints is the resolver for the blueprints field.
 func (r *providerResolver) Blueprints(ctx context.Context, obj *ent.Provider) ([]*ent.Blueprint, error) {
-	panic(fmt.Errorf("not implemented: Blueprints - blueprints"))
+	return obj.QueryBlueprints().All(ctx)
 }
 
 // Users is the resolver for the users field.
@@ -206,37 +277,53 @@ func (r *queryResolver) Users(ctx context.Context) ([]*ent.User, error) {
 
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*ent.User, error) {
-	panic(fmt.Errorf("not implemented: User - user"))
+	userUuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
+	}
+	return r.ent.User.Get(ctx, userUuid)
 }
 
 // Groups is the resolver for the groups field.
 func (r *queryResolver) Groups(ctx context.Context) ([]*ent.Group, error) {
-	panic(fmt.Errorf("not implemented: Groups - groups"))
+	return r.ent.Group.Query().All(ctx)
 }
 
 // Group is the resolver for the group field.
 func (r *queryResolver) Group(ctx context.Context, id string) (*ent.Group, error) {
-	panic(fmt.Errorf("not implemented: Group - group"))
+	groupUuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
+	}
+	return r.ent.Group.Get(ctx, groupUuid)
 }
 
 // Providers is the resolver for the Providers field.
 func (r *queryResolver) Providers(ctx context.Context) ([]*ent.Provider, error) {
-	panic(fmt.Errorf("not implemented: Providers - Providers"))
+	return r.ent.Provider.Query().All(ctx)
 }
 
 // Provider is the resolver for the Provider field.
 func (r *queryResolver) Provider(ctx context.Context, id string) (*ent.Provider, error) {
-	panic(fmt.Errorf("not implemented: Provider - Provider"))
+	providerUuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
+	}
+	return r.ent.Provider.Get(ctx, providerUuid)
 }
 
 // Blueprints is the resolver for the blueprints field.
 func (r *queryResolver) Blueprints(ctx context.Context) ([]*ent.Blueprint, error) {
-	panic(fmt.Errorf("not implemented: Blueprints - blueprints"))
+	return r.ent.Blueprint.Query().All(ctx)
 }
 
 // Blueprint is the resolver for the blueprint field.
 func (r *queryResolver) Blueprint(ctx context.Context, id string) (*ent.Blueprint, error) {
-	panic(fmt.Errorf("not implemented: Blueprint - blueprint"))
+	blueprintUuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
+	}
+	return r.ent.Blueprint.Get(ctx, blueprintUuid)
 }
 
 // ID is the resolver for the id field.

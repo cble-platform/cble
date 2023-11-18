@@ -83,6 +83,7 @@ type ComplexityRoot struct {
 		CreateProvider func(childComplexity int, input model.ProviderInput) int
 		DeleteProvider func(childComplexity int, id string) int
 		LoadProvider   func(childComplexity int, id string) int
+		UnloadProvider func(childComplexity int, id string) int
 		UpdateProvider func(childComplexity int, id string, input model.ProviderInput) int
 	}
 
@@ -104,6 +105,7 @@ type ComplexityRoot struct {
 		ConfigBytes     func(childComplexity int) int
 		DisplayName     func(childComplexity int) int
 		ID              func(childComplexity int) int
+		IsLoaded        func(childComplexity int) int
 		ProviderGitURL  func(childComplexity int) int
 		ProviderVersion func(childComplexity int) int
 	}
@@ -157,6 +159,7 @@ type MutationResolver interface {
 	UpdateProvider(ctx context.Context, id string, input model.ProviderInput) (*ent.Provider, error)
 	DeleteProvider(ctx context.Context, id string) (bool, error)
 	LoadProvider(ctx context.Context, id string) (*ent.Provider, error)
+	UnloadProvider(ctx context.Context, id string) (*ent.Provider, error)
 }
 type PermissionResolver interface {
 	ID(ctx context.Context, obj *ent.Permission) (string, error)
@@ -173,6 +176,7 @@ type ProviderResolver interface {
 	ID(ctx context.Context, obj *ent.Provider) (string, error)
 
 	ConfigBytes(ctx context.Context, obj *ent.Provider) (string, error)
+
 	Blueprints(ctx context.Context, obj *ent.Provider) ([]*ent.Blueprint, error)
 }
 type QueryResolver interface {
@@ -359,6 +363,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.LoadProvider(childComplexity, args["id"].(string)), true
 
+	case "Mutation.unloadProvider":
+		if e.complexity.Mutation.UnloadProvider == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_unloadProvider_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UnloadProvider(childComplexity, args["id"].(string)), true
+
 	case "Mutation.updateProvider":
 		if e.complexity.Mutation.UpdateProvider == nil {
 			break
@@ -448,6 +464,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Provider.ID(childComplexity), true
 
+	case "Provider.isLoaded":
+		if e.complexity.Provider.IsLoaded == nil {
+			break
+		}
+
+		return e.complexity.Provider.IsLoaded(childComplexity), true
+
 	case "Provider.providerGitUrl":
 		if e.complexity.Provider.ProviderGitURL == nil {
 			break
@@ -500,19 +523,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Groups(childComplexity), true
 
-	case "Query.Provider":
+	case "Query.provider":
 		if e.complexity.Query.Provider == nil {
 			break
 		}
 
-		args, err := ec.field_Query_Provider_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_provider_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
 		return e.complexity.Query.Provider(childComplexity, args["id"].(string)), true
 
-	case "Query.Providers":
+	case "Query.providers":
 		if e.complexity.Query.Providers == nil {
 			break
 		}
@@ -760,26 +783,43 @@ type Provider {
   providerGitUrl: String!
   providerVersion: String!
   configBytes: String!
+  isLoaded: Boolean!
 
   blueprints: [Blueprint]
 }
 
 type Query {
-  # List users
+  """
+  List users
+  """
   users: [User!]!
-  # Get a user
+  """
+  Get a user
+  """
   user(id: ID!): User!
-  # List groups
+  """
+  List groups
+  """
   groups: [Group!]!
-  # Get a group
+  """
+  Get a group
+  """
   group(id: ID!): Group!
-  # List providers
-  Providers: [Provider!]!
-  # Get a provider
-  Provider(id: ID!): Provider!
-  # List blueprints
+  """
+  List providers
+  """
+  providers: [Provider!]!
+  """
+  Get a provider
+  """
+  provider(id: ID!): Provider!
+  """
+  List blueprints
+  """
   blueprints: [Blueprint!]!
-  # Get a blueprint
+  """
+  Get a blueprint
+  """
   blueprint(id: ID!): Blueprint!
 }
 
@@ -791,14 +831,26 @@ input ProviderInput {
 }
 
 type Mutation {
-  # Create a provider
+  """
+  Create a provider
+  """
   createProvider(input: ProviderInput!): Provider!
-  # Update a provider
+  """
+  Update a provider
+  """
   updateProvider(id: ID!, input: ProviderInput!): Provider!
-  # Delete a provider
+  """
+  Delete a provider
+  """
   deleteProvider(id: ID!): Boolean!
-  # Load a provider to connect it to CBLE
+  """
+  Load a provider to connect it to CBLE
+  """
   loadProvider(id: ID!): Provider!
+  """
+  Unload a provider to disconnect it from CBLE
+  """
+  unloadProvider(id: ID!): Provider!
 }
 `, BuiltIn: false},
 }
@@ -853,6 +905,21 @@ func (ec *executionContext) field_Mutation_loadProvider_args(ctx context.Context
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_unloadProvider_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_updateProvider_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -874,21 +941,6 @@ func (ec *executionContext) field_Mutation_updateProvider_args(ctx context.Conte
 		}
 	}
 	args["input"] = arg1
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_Provider_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["id"] = arg0
 	return args, nil
 }
 
@@ -923,6 +975,21 @@ func (ec *executionContext) field_Query_blueprint_args(ctx context.Context, rawA
 }
 
 func (ec *executionContext) field_Query_group_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_provider_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -1231,6 +1298,8 @@ func (ec *executionContext) fieldContext_Blueprint_Provider(ctx context.Context,
 				return ec.fieldContext_Provider_providerVersion(ctx, field)
 			case "configBytes":
 				return ec.fieldContext_Provider_configBytes(ctx, field)
+			case "isLoaded":
+				return ec.fieldContext_Provider_isLoaded(ctx, field)
 			case "blueprints":
 				return ec.fieldContext_Provider_blueprints(ctx, field)
 			}
@@ -1868,6 +1937,8 @@ func (ec *executionContext) fieldContext_Mutation_createProvider(ctx context.Con
 				return ec.fieldContext_Provider_providerVersion(ctx, field)
 			case "configBytes":
 				return ec.fieldContext_Provider_configBytes(ctx, field)
+			case "isLoaded":
+				return ec.fieldContext_Provider_isLoaded(ctx, field)
 			case "blueprints":
 				return ec.fieldContext_Provider_blueprints(ctx, field)
 			}
@@ -1937,6 +2008,8 @@ func (ec *executionContext) fieldContext_Mutation_updateProvider(ctx context.Con
 				return ec.fieldContext_Provider_providerVersion(ctx, field)
 			case "configBytes":
 				return ec.fieldContext_Provider_configBytes(ctx, field)
+			case "isLoaded":
+				return ec.fieldContext_Provider_isLoaded(ctx, field)
 			case "blueprints":
 				return ec.fieldContext_Provider_blueprints(ctx, field)
 			}
@@ -2061,6 +2134,8 @@ func (ec *executionContext) fieldContext_Mutation_loadProvider(ctx context.Conte
 				return ec.fieldContext_Provider_providerVersion(ctx, field)
 			case "configBytes":
 				return ec.fieldContext_Provider_configBytes(ctx, field)
+			case "isLoaded":
+				return ec.fieldContext_Provider_isLoaded(ctx, field)
 			case "blueprints":
 				return ec.fieldContext_Provider_blueprints(ctx, field)
 			}
@@ -2075,6 +2150,77 @@ func (ec *executionContext) fieldContext_Mutation_loadProvider(ctx context.Conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_loadProvider_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_unloadProvider(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_unloadProvider(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UnloadProvider(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Provider)
+	fc.Result = res
+	return ec.marshalNProvider2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐProvider(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_unloadProvider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Provider_id(ctx, field)
+			case "displayName":
+				return ec.fieldContext_Provider_displayName(ctx, field)
+			case "providerGitUrl":
+				return ec.fieldContext_Provider_providerGitUrl(ctx, field)
+			case "providerVersion":
+				return ec.fieldContext_Provider_providerVersion(ctx, field)
+			case "configBytes":
+				return ec.fieldContext_Provider_configBytes(ctx, field)
+			case "isLoaded":
+				return ec.fieldContext_Provider_isLoaded(ctx, field)
+			case "blueprints":
+				return ec.fieldContext_Provider_blueprints(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Provider", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_unloadProvider_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -2637,6 +2783,50 @@ func (ec *executionContext) fieldContext_Provider_configBytes(ctx context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Provider_isLoaded(ctx context.Context, field graphql.CollectedField, obj *ent.Provider) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Provider_isLoaded(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IsLoaded, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Provider_isLoaded(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Provider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Provider_blueprints(ctx context.Context, field graphql.CollectedField, obj *ent.Provider) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Provider_blueprints(ctx, field)
 	if err != nil {
@@ -2954,8 +3144,8 @@ func (ec *executionContext) fieldContext_Query_group(ctx context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_Providers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_Providers(ctx, field)
+func (ec *executionContext) _Query_providers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_providers(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -2985,7 +3175,7 @@ func (ec *executionContext) _Query_Providers(ctx context.Context, field graphql.
 	return ec.marshalNProvider2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐProviderᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_Providers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_providers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -3003,6 +3193,8 @@ func (ec *executionContext) fieldContext_Query_Providers(ctx context.Context, fi
 				return ec.fieldContext_Provider_providerVersion(ctx, field)
 			case "configBytes":
 				return ec.fieldContext_Provider_configBytes(ctx, field)
+			case "isLoaded":
+				return ec.fieldContext_Provider_isLoaded(ctx, field)
 			case "blueprints":
 				return ec.fieldContext_Provider_blueprints(ctx, field)
 			}
@@ -3012,8 +3204,8 @@ func (ec *executionContext) fieldContext_Query_Providers(ctx context.Context, fi
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_Provider(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_Provider(ctx, field)
+func (ec *executionContext) _Query_provider(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_provider(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -3043,7 +3235,7 @@ func (ec *executionContext) _Query_Provider(ctx context.Context, field graphql.C
 	return ec.marshalNProvider2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐProvider(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_Provider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_provider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -3061,6 +3253,8 @@ func (ec *executionContext) fieldContext_Query_Provider(ctx context.Context, fie
 				return ec.fieldContext_Provider_providerVersion(ctx, field)
 			case "configBytes":
 				return ec.fieldContext_Provider_configBytes(ctx, field)
+			case "isLoaded":
+				return ec.fieldContext_Provider_isLoaded(ctx, field)
 			case "blueprints":
 				return ec.fieldContext_Provider_blueprints(ctx, field)
 			}
@@ -3074,7 +3268,7 @@ func (ec *executionContext) fieldContext_Query_Provider(ctx context.Context, fie
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_Provider_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_provider_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -6154,6 +6348,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "unloadProvider":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_unloadProvider(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6558,6 +6759,11 @@ func (ec *executionContext) _Provider(ctx context.Context, sel ast.SelectionSet,
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "isLoaded":
+			out.Values[i] = ec._Provider_isLoaded(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "blueprints":
 			field := field
 
@@ -6721,7 +6927,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "Providers":
+		case "providers":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -6730,7 +6936,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_Providers(ctx, field)
+				res = ec._Query_providers(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -6743,7 +6949,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "Provider":
+		case "provider":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -6752,7 +6958,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_Provider(ctx, field)
+				res = ec._Query_provider(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

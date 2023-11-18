@@ -65,26 +65,43 @@ type Provider {
   providerGitUrl: String!
   providerVersion: String!
   configBytes: String!
+  isLoaded: Boolean!
 
   blueprints: [Blueprint]
 }
 
 type Query {
-  # List users
+  """
+  List users
+  """
   users: [User!]!
-  # Get a user
+  """
+  Get a user
+  """
   user(id: ID!): User!
-  # List groups
+  """
+  List groups
+  """
   groups: [Group!]!
-  # Get a group
+  """
+  Get a group
+  """
   group(id: ID!): Group!
-  # List providers
-  Providers: [Provider!]!
-  # Get a provider
-  Provider(id: ID!): Provider!
-  # List blueprints
+  """
+  List providers
+  """
+  providers: [Provider!]!
+  """
+  Get a provider
+  """
+  provider(id: ID!): Provider!
+  """
+  List blueprints
+  """
   blueprints: [Blueprint!]!
-  # Get a blueprint
+  """
+  Get a blueprint
+  """
   blueprint(id: ID!): Blueprint!
 }
 
@@ -96,12 +113,24 @@ input ProviderInput {
 }
 
 type Mutation {
-  # Create a provider
+  """
+  Create a provider
+  """
   createProvider(input: ProviderInput!): Provider!
-  # Update a provider
+  """
+  Update a provider
+  """
   updateProvider(id: ID!, input: ProviderInput!): Provider!
-  # Delete a provider
+  """
+  Delete a provider
+  """
   deleteProvider(id: ID!): Boolean!
-  # Load a provider to connect it to CBLE
+  """
+  Load a provider to connect it to CBLE
+  """
   loadProvider(id: ID!): Provider!
+  """
+  Unload a provider to disconnect it from CBLE
+  """
+  unloadProvider(id: ID!): Provider!
 }
