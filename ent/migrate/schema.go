@@ -141,6 +141,36 @@ var (
 		Columns:    ProvidersColumns,
 		PrimaryKey: []*schema.Column{ProvidersColumns[0]},
 	}
+	// ProviderCommandsColumns holds the columns for the "provider_commands" table.
+	ProviderCommandsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "command_type", Type: field.TypeEnum, Enums: []string{"CONFIGURE", "DEPLOY", "DESTROY"}},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"FAILED", "SUCCEEDED", "INPROGRESS", "DESTROYED"}},
+		{Name: "start_time", Type: field.TypeTime, Nullable: true},
+		{Name: "end_time", Type: field.TypeTime, Nullable: true},
+		{Name: "provider_command_provider", Type: field.TypeUUID},
+		{Name: "provider_command_blueprint", Type: field.TypeUUID, Nullable: true},
+	}
+	// ProviderCommandsTable holds the schema information for the "provider_commands" table.
+	ProviderCommandsTable = &schema.Table{
+		Name:       "provider_commands",
+		Columns:    ProviderCommandsColumns,
+		PrimaryKey: []*schema.Column{ProviderCommandsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "provider_commands_providers_provider",
+				Columns:    []*schema.Column{ProviderCommandsColumns[5]},
+				RefColumns: []*schema.Column{ProvidersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "provider_commands_blueprints_blueprint",
+				Columns:    []*schema.Column{ProviderCommandsColumns[6]},
+				RefColumns: []*schema.Column{BlueprintsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -189,6 +219,7 @@ var (
 		PermissionsTable,
 		PermissionPoliciesTable,
 		ProvidersTable,
+		ProviderCommandsTable,
 		UsersTable,
 		UserGroupsTable,
 	}
@@ -202,6 +233,8 @@ func init() {
 	GroupsTable.ForeignKeys[0].RefTable = GroupsTable
 	PermissionPoliciesTable.ForeignKeys[0].RefTable = PermissionsTable
 	PermissionPoliciesTable.ForeignKeys[1].RefTable = GroupsTable
+	ProviderCommandsTable.ForeignKeys[0].RefTable = ProvidersTable
+	ProviderCommandsTable.ForeignKeys[1].RefTable = BlueprintsTable
 	UserGroupsTable.ForeignKeys[0].RefTable = UsersTable
 	UserGroupsTable.ForeignKeys[1].RefTable = GroupsTable
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/permission"
 	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
 	"github.com/cble-platform/cble-backend/ent/provider"
+	"github.com/cble-platform/cble-backend/ent/providercommand"
 	"github.com/cble-platform/cble-backend/ent/schema"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
@@ -74,6 +75,12 @@ func init() {
 	providerDescID := providerFields[0].Descriptor()
 	// provider.DefaultID holds the default value on creation for the id field.
 	provider.DefaultID = providerDescID.Default.(func() uuid.UUID)
+	providercommandFields := schema.ProviderCommand{}.Fields()
+	_ = providercommandFields
+	// providercommandDescID is the schema descriptor for id field.
+	providercommandDescID := providercommandFields[0].Descriptor()
+	// providercommand.DefaultID holds the default value on creation for the id field.
+	providercommand.DefaultID = providercommandDescID.Default.(func() uuid.UUID)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescID is the schema descriptor for id field.

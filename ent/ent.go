@@ -18,6 +18,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/permission"
 	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
 	"github.com/cble-platform/cble-backend/ent/provider"
+	"github.com/cble-platform/cble-backend/ent/providercommand"
 	"github.com/cble-platform/cble-backend/ent/user"
 )
 
@@ -85,6 +86,7 @@ func checkColumn(table, column string) error {
 			permission.Table:       permission.ValidColumn,
 			permissionpolicy.Table: permissionpolicy.ValidColumn,
 			provider.Table:         provider.ValidColumn,
+			providercommand.Table:  providercommand.ValidColumn,
 			user.Table:             user.ValidColumn,
 		})
 	})

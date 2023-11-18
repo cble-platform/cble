@@ -24,6 +24,8 @@ type Tx struct {
 	PermissionPolicy *PermissionPolicyClient
 	// Provider is the client for interacting with the Provider builders.
 	Provider *ProviderClient
+	// ProviderCommand is the client for interacting with the ProviderCommand builders.
+	ProviderCommand *ProviderCommandClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 
@@ -163,6 +165,7 @@ func (tx *Tx) init() {
 	tx.Permission = NewPermissionClient(tx.config)
 	tx.PermissionPolicy = NewPermissionPolicyClient(tx.config)
 	tx.Provider = NewProviderClient(tx.config)
+	tx.ProviderCommand = NewProviderCommandClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
 
