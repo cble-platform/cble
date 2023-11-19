@@ -19,9 +19,11 @@ func (ProviderCommand) Fields() []ent.Field {
 			Immutable().
 			Default(uuid.New),
 		field.Enum("command_type").Values("CONFIGURE", "DEPLOY", "DESTROY"),
-		field.Enum("status").Values("FAILED", "SUCCEEDED", "INPROGRESS", "DESTROYED"),
+		field.Enum("status").Values("QUEUED", "FAILED", "SUCCEEDED", "INPROGRESS").Default("QUEUED"),
 		field.Time("start_time").Optional(),
 		field.Time("end_time").Optional(),
+		field.String("output").Default(""),
+		field.String("error").Default(""),
 	}
 }
 

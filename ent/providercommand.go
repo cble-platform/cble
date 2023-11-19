@@ -28,6 +28,10 @@ type ProviderCommand struct {
 	StartTime time.Time `json:"start_time,omitempty"`
 	// EndTime holds the value of the "end_time" field.
 	EndTime time.Time `json:"end_time,omitempty"`
+	// Output holds the value of the "output" field.
+	Output string `json:"output,omitempty"`
+	// Error holds the value of the "error" field.
+	Error string `json:"error,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ProviderCommandQuery when eager-loading is set.
 	Edges                       ProviderCommandEdges `json:"edges"`
@@ -78,7 +82,7 @@ func (*ProviderCommand) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case providercommand.FieldCommandType, providercommand.FieldStatus:
+		case providercommand.FieldCommandType, providercommand.FieldStatus, providercommand.FieldOutput, providercommand.FieldError:
 			values[i] = new(sql.NullString)
 		case providercommand.FieldStartTime, providercommand.FieldEndTime:
 			values[i] = new(sql.NullTime)
@@ -132,6 +136,18 @@ func (pc *ProviderCommand) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field end_time", values[i])
 			} else if value.Valid {
 				pc.EndTime = value.Time
+			}
+		case providercommand.FieldOutput:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field output", values[i])
+			} else if value.Valid {
+				pc.Output = value.String
+			}
+		case providercommand.FieldError:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field error", values[i])
+			} else if value.Valid {
+				pc.Error = value.String
 			}
 		case providercommand.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -204,6 +220,12 @@ func (pc *ProviderCommand) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("end_time=")
 	builder.WriteString(pc.EndTime.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("output=")
+	builder.WriteString(pc.Output)
+	builder.WriteString(", ")
+	builder.WriteString("error=")
+	builder.WriteString(pc.Error)
 	builder.WriteByte(')')
 	return builder.String()
 }

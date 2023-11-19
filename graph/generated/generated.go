@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
@@ -46,6 +47,7 @@ type ResolverRoot interface {
 	Permission() PermissionResolver
 	PermissionPolicy() PermissionPolicyResolver
 	Provider() ProviderResolver
+	ProviderCommand() ProviderCommandResolver
 	Query() QueryResolver
 	User() UserResolver
 }
@@ -80,11 +82,15 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateProvider func(childComplexity int, input model.ProviderInput) int
-		DeleteProvider func(childComplexity int, id string) int
-		LoadProvider   func(childComplexity int, id string) int
-		UnloadProvider func(childComplexity int, id string) int
-		UpdateProvider func(childComplexity int, id string, input model.ProviderInput) int
+		CreateBlueprint   func(childComplexity int, input model.BlueprintInput) int
+		CreateProvider    func(childComplexity int, input model.ProviderInput) int
+		DeleteProvider    func(childComplexity int, id string) int
+		DeployBlueprint   func(childComplexity int, id string) int
+		DestroyDeployment func(childComplexity int, id string) int
+		LoadProvider      func(childComplexity int, id string) int
+		UnloadProvider    func(childComplexity int, id string) int
+		UpdateBlueprint   func(childComplexity int, id string, input model.BlueprintInput) int
+		UpdateProvider    func(childComplexity int, id string, input model.ProviderInput) int
 	}
 
 	Permission struct {
@@ -110,15 +116,27 @@ type ComplexityRoot struct {
 		ProviderVersion func(childComplexity int) int
 	}
 
+	ProviderCommand struct {
+		CommandType func(childComplexity int) int
+		EndTime     func(childComplexity int) int
+		Error       func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Output      func(childComplexity int) int
+		StartTime   func(childComplexity int) int
+		Status      func(childComplexity int) int
+	}
+
 	Query struct {
-		Blueprint  func(childComplexity int, id string) int
-		Blueprints func(childComplexity int) int
-		Group      func(childComplexity int, id string) int
-		Groups     func(childComplexity int) int
-		Provider   func(childComplexity int, id string) int
-		Providers  func(childComplexity int) int
-		User       func(childComplexity int, id string) int
-		Users      func(childComplexity int) int
+		Blueprint        func(childComplexity int, id string) int
+		Blueprints       func(childComplexity int) int
+		Group            func(childComplexity int, id string) int
+		Groups           func(childComplexity int) int
+		Provider         func(childComplexity int, id string) int
+		ProviderCommand  func(childComplexity int, id string) int
+		ProviderCommands func(childComplexity int) int
+		Providers        func(childComplexity int) int
+		User             func(childComplexity int, id string) int
+		Users            func(childComplexity int) int
 	}
 
 	User struct {
@@ -158,8 +176,12 @@ type MutationResolver interface {
 	CreateProvider(ctx context.Context, input model.ProviderInput) (*ent.Provider, error)
 	UpdateProvider(ctx context.Context, id string, input model.ProviderInput) (*ent.Provider, error)
 	DeleteProvider(ctx context.Context, id string) (bool, error)
+	CreateBlueprint(ctx context.Context, input model.BlueprintInput) (*ent.Blueprint, error)
+	UpdateBlueprint(ctx context.Context, id string, input model.BlueprintInput) (*ent.Blueprint, error)
 	LoadProvider(ctx context.Context, id string) (*ent.Provider, error)
 	UnloadProvider(ctx context.Context, id string) (*ent.Provider, error)
+	DeployBlueprint(ctx context.Context, id string) (*ent.Deployment, error)
+	DestroyDeployment(ctx context.Context, id string) (*ent.Deployment, error)
 }
 type PermissionResolver interface {
 	ID(ctx context.Context, obj *ent.Permission) (string, error)
@@ -179,6 +201,11 @@ type ProviderResolver interface {
 
 	Blueprints(ctx context.Context, obj *ent.Provider) ([]*ent.Blueprint, error)
 }
+type ProviderCommandResolver interface {
+	ID(ctx context.Context, obj *ent.ProviderCommand) (string, error)
+	CommandType(ctx context.Context, obj *ent.ProviderCommand) (model.CommandType, error)
+	Status(ctx context.Context, obj *ent.ProviderCommand) (model.CommandStatus, error)
+}
 type QueryResolver interface {
 	Users(ctx context.Context) ([]*ent.User, error)
 	User(ctx context.Context, id string) (*ent.User, error)
@@ -186,6 +213,8 @@ type QueryResolver interface {
 	Group(ctx context.Context, id string) (*ent.Group, error)
 	Providers(ctx context.Context) ([]*ent.Provider, error)
 	Provider(ctx context.Context, id string) (*ent.Provider, error)
+	ProviderCommands(ctx context.Context) ([]*ent.ProviderCommand, error)
+	ProviderCommand(ctx context.Context, id string) (*ent.ProviderCommand, error)
 	Blueprints(ctx context.Context) ([]*ent.Blueprint, error)
 	Blueprint(ctx context.Context, id string) (*ent.Blueprint, error)
 }
@@ -250,7 +279,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Blueprint.ParentGroup(childComplexity), true
 
-	case "Blueprint.Provider":
+	case "Blueprint.provider":
 		if e.complexity.Blueprint.Provider == nil {
 			break
 		}
@@ -327,6 +356,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Group.Users(childComplexity), true
 
+	case "Mutation.createBlueprint":
+		if e.complexity.Mutation.CreateBlueprint == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createBlueprint_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateBlueprint(childComplexity, args["input"].(model.BlueprintInput)), true
+
 	case "Mutation.createProvider":
 		if e.complexity.Mutation.CreateProvider == nil {
 			break
@@ -351,6 +392,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DeleteProvider(childComplexity, args["id"].(string)), true
 
+	case "Mutation.deployBlueprint":
+		if e.complexity.Mutation.DeployBlueprint == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deployBlueprint_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeployBlueprint(childComplexity, args["id"].(string)), true
+
+	case "Mutation.destroyDeployment":
+		if e.complexity.Mutation.DestroyDeployment == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_destroyDeployment_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DestroyDeployment(childComplexity, args["id"].(string)), true
+
 	case "Mutation.loadProvider":
 		if e.complexity.Mutation.LoadProvider == nil {
 			break
@@ -374,6 +439,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UnloadProvider(childComplexity, args["id"].(string)), true
+
+	case "Mutation.updateBlueprint":
+		if e.complexity.Mutation.UpdateBlueprint == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateBlueprint_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateBlueprint(childComplexity, args["id"].(string), args["input"].(model.BlueprintInput)), true
 
 	case "Mutation.updateProvider":
 		if e.complexity.Mutation.UpdateProvider == nil {
@@ -485,6 +562,55 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Provider.ProviderVersion(childComplexity), true
 
+	case "ProviderCommand.commandType":
+		if e.complexity.ProviderCommand.CommandType == nil {
+			break
+		}
+
+		return e.complexity.ProviderCommand.CommandType(childComplexity), true
+
+	case "ProviderCommand.endTime":
+		if e.complexity.ProviderCommand.EndTime == nil {
+			break
+		}
+
+		return e.complexity.ProviderCommand.EndTime(childComplexity), true
+
+	case "ProviderCommand.error":
+		if e.complexity.ProviderCommand.Error == nil {
+			break
+		}
+
+		return e.complexity.ProviderCommand.Error(childComplexity), true
+
+	case "ProviderCommand.id":
+		if e.complexity.ProviderCommand.ID == nil {
+			break
+		}
+
+		return e.complexity.ProviderCommand.ID(childComplexity), true
+
+	case "ProviderCommand.output":
+		if e.complexity.ProviderCommand.Output == nil {
+			break
+		}
+
+		return e.complexity.ProviderCommand.Output(childComplexity), true
+
+	case "ProviderCommand.startTime":
+		if e.complexity.ProviderCommand.StartTime == nil {
+			break
+		}
+
+		return e.complexity.ProviderCommand.StartTime(childComplexity), true
+
+	case "ProviderCommand.status":
+		if e.complexity.ProviderCommand.Status == nil {
+			break
+		}
+
+		return e.complexity.ProviderCommand.Status(childComplexity), true
+
 	case "Query.blueprint":
 		if e.complexity.Query.Blueprint == nil {
 			break
@@ -534,6 +660,25 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Provider(childComplexity, args["id"].(string)), true
+
+	case "Query.providerCommand":
+		if e.complexity.Query.ProviderCommand == nil {
+			break
+		}
+
+		args, err := ec.field_Query_providerCommand_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.ProviderCommand(childComplexity, args["id"].(string)), true
+
+	case "Query.providerCommands":
+		if e.complexity.Query.ProviderCommands == nil {
+			break
+		}
+
+		return e.complexity.Query.ProviderCommands(childComplexity), true
 
 	case "Query.providers":
 		if e.complexity.Query.Providers == nil {
@@ -618,6 +763,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputBlueprintInput,
 		ec.unmarshalInputProviderInput,
 	)
 	first := true
@@ -724,7 +870,7 @@ type Blueprint {
   blueprintTemplate: String!
 
   parentGroup: Group!
-  Provider: Provider!
+  provider: Provider!
   deployments: [Deployment]!
 }
 
@@ -788,6 +934,29 @@ type Provider {
   blueprints: [Blueprint]
 }
 
+enum CommandType {
+  CONFIGURE
+  DEPLOY
+  DESTROY
+}
+
+enum CommandStatus {
+  QUEUED
+  FAILED
+  SUCCEEDED
+  INPROGRESS
+}
+
+type ProviderCommand {
+  id: ID!
+  commandType: CommandType!
+  status: CommandStatus!
+  startTime: Time
+  endTime: Time
+  output: String!
+  error: String!
+}
+
 type Query {
   """
   List users
@@ -814,6 +983,14 @@ type Query {
   """
   provider(id: ID!): Provider!
   """
+  List provider commands
+  """
+  providerCommands: [ProviderCommand!]!
+  """
+  Get a provider command
+  """
+  providerCommand(id: ID!): ProviderCommand!
+  """
   List blueprints
   """
   blueprints: [Blueprint!]!
@@ -821,6 +998,14 @@ type Query {
   Get a blueprint
   """
   blueprint(id: ID!): Blueprint!
+}
+
+input BlueprintInput {
+  name: String!
+  blueprintTemplate: String!
+
+  parentGroupId: ID!
+  providerId: ID!
 }
 
 input ProviderInput {
@@ -831,6 +1016,10 @@ input ProviderInput {
 }
 
 type Mutation {
+  ########
+  # CRUD #
+  ########
+
   """
   Create a provider
   """
@@ -844,6 +1033,19 @@ type Mutation {
   """
   deleteProvider(id: ID!): Boolean!
   """
+  Create a blueprint
+  """
+  createBlueprint(input: BlueprintInput!): Blueprint!
+  """
+  Update a blueprint
+  """
+  updateBlueprint(id: ID!, input: BlueprintInput!): Blueprint!
+
+  #############
+  # PROVIDERS #
+  #############
+
+  """
   Load a provider to connect it to CBLE
   """
   loadProvider(id: ID!): Provider!
@@ -851,6 +1053,19 @@ type Mutation {
   Unload a provider to disconnect it from CBLE
   """
   unloadProvider(id: ID!): Provider!
+
+  ##############
+  # DEPLOYMENT #
+  ##############
+
+  """
+  Deploy a blueprint
+  """
+  deployBlueprint(id: ID!): Deployment!
+  """
+  Destroy a deployment
+  """
+  destroyDeployment(id: ID!): Deployment!
 }
 `, BuiltIn: false},
 }
@@ -859,6 +1074,21 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_createBlueprint_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.BlueprintInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNBlueprintInput2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐBlueprintInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_createProvider_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -876,6 +1106,36 @@ func (ec *executionContext) field_Mutation_createProvider_args(ctx context.Conte
 }
 
 func (ec *executionContext) field_Mutation_deleteProvider_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deployBlueprint_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_destroyDeployment_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -917,6 +1177,30 @@ func (ec *executionContext) field_Mutation_unloadProvider_args(ctx context.Conte
 		}
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateBlueprint_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 model.BlueprintInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg1, err = ec.unmarshalNBlueprintInput2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐBlueprintInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg1
 	return args, nil
 }
 
@@ -975,6 +1259,21 @@ func (ec *executionContext) field_Query_blueprint_args(ctx context.Context, rawA
 }
 
 func (ec *executionContext) field_Query_group_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_providerCommand_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -1249,8 +1548,8 @@ func (ec *executionContext) fieldContext_Blueprint_parentGroup(ctx context.Conte
 	return fc, nil
 }
 
-func (ec *executionContext) _Blueprint_Provider(ctx context.Context, field graphql.CollectedField, obj *ent.Blueprint) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Blueprint_Provider(ctx, field)
+func (ec *executionContext) _Blueprint_provider(ctx context.Context, field graphql.CollectedField, obj *ent.Blueprint) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Blueprint_provider(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1280,7 +1579,7 @@ func (ec *executionContext) _Blueprint_Provider(ctx context.Context, field graph
 	return ec.marshalNProvider2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐProvider(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Blueprint_Provider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Blueprint_provider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Blueprint",
 		Field:      field,
@@ -1452,8 +1751,8 @@ func (ec *executionContext) fieldContext_Deployment_blueprint(ctx context.Contex
 				return ec.fieldContext_Blueprint_blueprintTemplate(ctx, field)
 			case "parentGroup":
 				return ec.fieldContext_Blueprint_parentGroup(ctx, field)
-			case "Provider":
-				return ec.fieldContext_Blueprint_Provider(ctx, field)
+			case "provider":
+				return ec.fieldContext_Blueprint_provider(ctx, field)
 			case "deployments":
 				return ec.fieldContext_Blueprint_deployments(ctx, field)
 			}
@@ -1877,8 +2176,8 @@ func (ec *executionContext) fieldContext_Group_blueprints(ctx context.Context, f
 				return ec.fieldContext_Blueprint_blueprintTemplate(ctx, field)
 			case "parentGroup":
 				return ec.fieldContext_Blueprint_parentGroup(ctx, field)
-			case "Provider":
-				return ec.fieldContext_Blueprint_Provider(ctx, field)
+			case "provider":
+				return ec.fieldContext_Blueprint_provider(ctx, field)
 			case "deployments":
 				return ec.fieldContext_Blueprint_deployments(ctx, field)
 			}
@@ -2085,6 +2384,144 @@ func (ec *executionContext) fieldContext_Mutation_deleteProvider(ctx context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_createBlueprint(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createBlueprint(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateBlueprint(rctx, fc.Args["input"].(model.BlueprintInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Blueprint)
+	fc.Result = res
+	return ec.marshalNBlueprint2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐBlueprint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createBlueprint(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Blueprint_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Blueprint_name(ctx, field)
+			case "blueprintTemplate":
+				return ec.fieldContext_Blueprint_blueprintTemplate(ctx, field)
+			case "parentGroup":
+				return ec.fieldContext_Blueprint_parentGroup(ctx, field)
+			case "provider":
+				return ec.fieldContext_Blueprint_provider(ctx, field)
+			case "deployments":
+				return ec.fieldContext_Blueprint_deployments(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Blueprint", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createBlueprint_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateBlueprint(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateBlueprint(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateBlueprint(rctx, fc.Args["id"].(string), fc.Args["input"].(model.BlueprintInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Blueprint)
+	fc.Result = res
+	return ec.marshalNBlueprint2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐBlueprint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateBlueprint(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Blueprint_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Blueprint_name(ctx, field)
+			case "blueprintTemplate":
+				return ec.fieldContext_Blueprint_blueprintTemplate(ctx, field)
+			case "parentGroup":
+				return ec.fieldContext_Blueprint_parentGroup(ctx, field)
+			case "provider":
+				return ec.fieldContext_Blueprint_provider(ctx, field)
+			case "deployments":
+				return ec.fieldContext_Blueprint_deployments(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Blueprint", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateBlueprint_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_loadProvider(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_loadProvider(ctx, field)
 	if err != nil {
@@ -2221,6 +2658,132 @@ func (ec *executionContext) fieldContext_Mutation_unloadProvider(ctx context.Con
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_unloadProvider_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deployBlueprint(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deployBlueprint(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeployBlueprint(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Deployment)
+	fc.Result = res
+	return ec.marshalNDeployment2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeployment(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deployBlueprint(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Deployment_id(ctx, field)
+			case "blueprint":
+				return ec.fieldContext_Deployment_blueprint(ctx, field)
+			case "requester":
+				return ec.fieldContext_Deployment_requester(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Deployment", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deployBlueprint_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_destroyDeployment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_destroyDeployment(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DestroyDeployment(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Deployment)
+	fc.Result = res
+	return ec.marshalNDeployment2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeployment(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_destroyDeployment(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Deployment_id(ctx, field)
+			case "blueprint":
+				return ec.fieldContext_Deployment_blueprint(ctx, field)
+			case "requester":
+				return ec.fieldContext_Deployment_requester(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Deployment", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_destroyDeployment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -2871,12 +3434,314 @@ func (ec *executionContext) fieldContext_Provider_blueprints(ctx context.Context
 				return ec.fieldContext_Blueprint_blueprintTemplate(ctx, field)
 			case "parentGroup":
 				return ec.fieldContext_Blueprint_parentGroup(ctx, field)
-			case "Provider":
-				return ec.fieldContext_Blueprint_Provider(ctx, field)
+			case "provider":
+				return ec.fieldContext_Blueprint_provider(ctx, field)
 			case "deployments":
 				return ec.fieldContext_Blueprint_deployments(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Blueprint", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProviderCommand_id(ctx context.Context, field graphql.CollectedField, obj *ent.ProviderCommand) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ProviderCommand_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ProviderCommand().ID(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ProviderCommand_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProviderCommand",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProviderCommand_commandType(ctx context.Context, field graphql.CollectedField, obj *ent.ProviderCommand) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ProviderCommand_commandType(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ProviderCommand().CommandType(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.CommandType)
+	fc.Result = res
+	return ec.marshalNCommandType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐCommandType(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ProviderCommand_commandType(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProviderCommand",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CommandType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProviderCommand_status(ctx context.Context, field graphql.CollectedField, obj *ent.ProviderCommand) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ProviderCommand_status(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ProviderCommand().Status(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.CommandStatus)
+	fc.Result = res
+	return ec.marshalNCommandStatus2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐCommandStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ProviderCommand_status(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProviderCommand",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CommandStatus does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProviderCommand_startTime(ctx context.Context, field graphql.CollectedField, obj *ent.ProviderCommand) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ProviderCommand_startTime(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StartTime, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalOTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ProviderCommand_startTime(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProviderCommand",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProviderCommand_endTime(ctx context.Context, field graphql.CollectedField, obj *ent.ProviderCommand) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ProviderCommand_endTime(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EndTime, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalOTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ProviderCommand_endTime(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProviderCommand",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProviderCommand_output(ctx context.Context, field graphql.CollectedField, obj *ent.ProviderCommand) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ProviderCommand_output(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Output, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ProviderCommand_output(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProviderCommand",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProviderCommand_error(ctx context.Context, field graphql.CollectedField, obj *ent.ProviderCommand) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ProviderCommand_error(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Error, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ProviderCommand_error(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProviderCommand",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3275,6 +4140,137 @@ func (ec *executionContext) fieldContext_Query_provider(ctx context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_providerCommands(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_providerCommands(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().ProviderCommands(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.ProviderCommand)
+	fc.Result = res
+	return ec.marshalNProviderCommand2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐProviderCommandᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_providerCommands(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ProviderCommand_id(ctx, field)
+			case "commandType":
+				return ec.fieldContext_ProviderCommand_commandType(ctx, field)
+			case "status":
+				return ec.fieldContext_ProviderCommand_status(ctx, field)
+			case "startTime":
+				return ec.fieldContext_ProviderCommand_startTime(ctx, field)
+			case "endTime":
+				return ec.fieldContext_ProviderCommand_endTime(ctx, field)
+			case "output":
+				return ec.fieldContext_ProviderCommand_output(ctx, field)
+			case "error":
+				return ec.fieldContext_ProviderCommand_error(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ProviderCommand", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_providerCommand(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_providerCommand(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().ProviderCommand(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.ProviderCommand)
+	fc.Result = res
+	return ec.marshalNProviderCommand2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐProviderCommand(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_providerCommand(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ProviderCommand_id(ctx, field)
+			case "commandType":
+				return ec.fieldContext_ProviderCommand_commandType(ctx, field)
+			case "status":
+				return ec.fieldContext_ProviderCommand_status(ctx, field)
+			case "startTime":
+				return ec.fieldContext_ProviderCommand_startTime(ctx, field)
+			case "endTime":
+				return ec.fieldContext_ProviderCommand_endTime(ctx, field)
+			case "output":
+				return ec.fieldContext_ProviderCommand_output(ctx, field)
+			case "error":
+				return ec.fieldContext_ProviderCommand_error(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ProviderCommand", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_providerCommand_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_blueprints(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_blueprints(ctx, field)
 	if err != nil {
@@ -3322,8 +4318,8 @@ func (ec *executionContext) fieldContext_Query_blueprints(ctx context.Context, f
 				return ec.fieldContext_Blueprint_blueprintTemplate(ctx, field)
 			case "parentGroup":
 				return ec.fieldContext_Blueprint_parentGroup(ctx, field)
-			case "Provider":
-				return ec.fieldContext_Blueprint_Provider(ctx, field)
+			case "provider":
+				return ec.fieldContext_Blueprint_provider(ctx, field)
 			case "deployments":
 				return ec.fieldContext_Blueprint_deployments(ctx, field)
 			}
@@ -3380,8 +4376,8 @@ func (ec *executionContext) fieldContext_Query_blueprint(ctx context.Context, fi
 				return ec.fieldContext_Blueprint_blueprintTemplate(ctx, field)
 			case "parentGroup":
 				return ec.fieldContext_Blueprint_parentGroup(ctx, field)
-			case "Provider":
-				return ec.fieldContext_Blueprint_Provider(ctx, field)
+			case "provider":
+				return ec.fieldContext_Blueprint_provider(ctx, field)
 			case "deployments":
 				return ec.fieldContext_Blueprint_deployments(ctx, field)
 			}
@@ -5636,6 +6632,62 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputBlueprintInput(ctx context.Context, obj interface{}) (model.BlueprintInput, error) {
+	var it model.BlueprintInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "blueprintTemplate", "parentGroupId", "providerId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "blueprintTemplate":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("blueprintTemplate"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BlueprintTemplate = data
+		case "parentGroupId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("parentGroupId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ParentGroupID = data
+		case "providerId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProviderID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputProviderInput(ctx context.Context, obj interface{}) (model.ProviderInput, error) {
 	var it model.ProviderInput
 	asMap := map[string]interface{}{}
@@ -5824,7 +6876,7 @@ func (ec *executionContext) _Blueprint(ctx context.Context, sel ast.SelectionSet
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "Provider":
+		case "provider":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -5833,7 +6885,7 @@ func (ec *executionContext) _Blueprint(ctx context.Context, sel ast.SelectionSet
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Blueprint_Provider(ctx, field, obj)
+				res = ec._Blueprint_provider(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -6341,6 +7393,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "createBlueprint":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createBlueprint(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateBlueprint":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateBlueprint(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "loadProvider":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_loadProvider(ctx, field)
@@ -6351,6 +7417,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "unloadProvider":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_unloadProvider(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deployBlueprint":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deployBlueprint(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "destroyDeployment":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_destroyDeployment(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -6820,6 +7900,162 @@ func (ec *executionContext) _Provider(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
+var providerCommandImplementors = []string{"ProviderCommand"}
+
+func (ec *executionContext) _ProviderCommand(ctx context.Context, sel ast.SelectionSet, obj *ent.ProviderCommand) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, providerCommandImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ProviderCommand")
+		case "id":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ProviderCommand_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "commandType":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ProviderCommand_commandType(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "status":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ProviderCommand_status(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "startTime":
+			out.Values[i] = ec._ProviderCommand_startTime(ctx, field, obj)
+		case "endTime":
+			out.Values[i] = ec._ProviderCommand_endTime(ctx, field, obj)
+		case "output":
+			out.Values[i] = ec._ProviderCommand_output(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "error":
+			out.Values[i] = ec._ProviderCommand_error(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -6959,6 +8195,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_provider(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "providerCommands":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_providerCommands(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "providerCommand":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_providerCommand(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -7592,6 +8872,11 @@ func (ec *executionContext) marshalNBlueprint2ᚖgithubᚗcomᚋcbleᚑplatform�
 	return ec._Blueprint(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNBlueprintInput2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐBlueprintInput(ctx context.Context, v interface{}) (model.BlueprintInput, error) {
+	res, err := ec.unmarshalInputBlueprintInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -7605,6 +8890,30 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNCommandStatus2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐCommandStatus(ctx context.Context, v interface{}) (model.CommandStatus, error) {
+	var res model.CommandStatus
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCommandStatus2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐCommandStatus(ctx context.Context, sel ast.SelectionSet, v model.CommandStatus) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNCommandType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐCommandType(ctx context.Context, v interface{}) (model.CommandType, error) {
+	var res model.CommandType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCommandType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐCommandType(ctx context.Context, sel ast.SelectionSet, v model.CommandType) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNDeployment2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeployment(ctx context.Context, sel ast.SelectionSet, v ent.Deployment) graphql.Marshaler {
+	return ec._Deployment(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNDeployment2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeployment(ctx context.Context, sel ast.SelectionSet, v []*ent.Deployment) graphql.Marshaler {
@@ -7643,6 +8952,16 @@ func (ec *executionContext) marshalNDeployment2ᚕᚖgithubᚗcomᚋcbleᚑplatf
 	wg.Wait()
 
 	return ret
+}
+
+func (ec *executionContext) marshalNDeployment2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeployment(ctx context.Context, sel ast.SelectionSet, v *ent.Deployment) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Deployment(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNGroup2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx context.Context, sel ast.SelectionSet, v ent.Group) graphql.Marshaler {
@@ -7836,6 +9155,64 @@ func (ec *executionContext) marshalNProvider2ᚖgithubᚗcomᚋcbleᚑplatform�
 		return graphql.Null
 	}
 	return ec._Provider(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNProviderCommand2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐProviderCommand(ctx context.Context, sel ast.SelectionSet, v ent.ProviderCommand) graphql.Marshaler {
+	return ec._ProviderCommand(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNProviderCommand2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐProviderCommandᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.ProviderCommand) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNProviderCommand2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐProviderCommand(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNProviderCommand2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐProviderCommand(ctx context.Context, sel ast.SelectionSet, v *ent.ProviderCommand) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ProviderCommand(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNProviderInput2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐProviderInput(ctx context.Context, v interface{}) (model.ProviderInput, error) {
@@ -8369,6 +9746,16 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 		return graphql.Null
 	}
 	res := graphql.MarshalString(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOTime2timeᚐTime(ctx context.Context, v interface{}) (time.Time, error) {
+	res, err := graphql.UnmarshalTime(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTime2timeᚐTime(ctx context.Context, sel ast.SelectionSet, v time.Time) graphql.Marshaler {
+	res := graphql.MarshalTime(v)
 	return res
 }
 

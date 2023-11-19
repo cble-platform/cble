@@ -27,8 +27,6 @@ type CBLEServer struct {
 	// Shutdown channels for each provider
 	serverShutdown *sync.Map
 
-	// Channels to send commands to individual providers
-	commandQueues *sync.Map
 	// Send clientShutdown signal to individual routines
 	clientShutdown *sync.Map
 
@@ -50,7 +48,6 @@ func NewServer(entClient *ent.Client, providersConfig *config.ProvidersConfig) *
 		providersConfig:     providersConfig,
 		providerServerQueue: make(chan string),
 		serverShutdown:      new(sync.Map),
-		commandQueues:       new(sync.Map),
 		clientShutdown:      new(sync.Map),
 		registeredProviders: new(sync.Map),
 		connectionQueue:     make(chan string, 10),
@@ -143,26 +140,12 @@ func (ps *CBLEServer) RunProviderClients(ctx context.Context, wg *sync.WaitGroup
 				logrus.Errorf("attempted to start provider connection without a shutdown channel (%s)", providerId)
 				continue
 			}
-			commandQueue, ok := ps.commandQueues.Load(providerId)
-			if !ok {
-				logrus.Errorf("attempted to start provider connection without a command queue (%s)", providerId)
-				continue
-			}
-			go ps.startProviderConnection(ctx, shutdownChan.(chan bool), providerId, commandQueue.(chan ProviderCommand))
+			go ps.startProviderConnection(ctx, shutdownChan.(chan bool), providerId)
 		case <-ctx.Done():
 			logrus.Warn("Gracefully shutting down provider client runtime...")
 			return
 		}
 	}
-}
-
-func (ps *CBLEServer) SendCommandToProvider(ctx context.Context, entProvider *ent.Provider, command *ProviderCommand) error {
-	commandQueue, ok := ps.commandQueues.Load(entProvider.ID.String())
-	if !ok {
-		return fmt.Errorf("no command queue registered for provider %s", entProvider.ID.String())
-	}
-	commandQueue.(chan ProviderCommand) <- *command
-	return nil
 }
 
 func (ps *CBLEServer) QueueLoadProvider(id string) {
@@ -216,9 +199,8 @@ func (ps *CBLEServer) RegisterProvider(ctx context.Context, request *cbleGRPC.Re
 		SocketID: socketId,
 		Features: request.Features,
 	})
-	// Create shutdown and command queue for provider
+	// Create shutdown queue for provider
 	ps.clientShutdown.Store(request.Id, make(chan bool))
-	ps.commandQueues.Store(request.Id, make(chan ProviderCommand, 100)) // TODO: measeure the necessary queue buffer size to better help concurrency
 	// Add provider to the queue to be connected to
 	ps.connectionQueue <- request.Id
 	// Set the provider as loaded in ENT

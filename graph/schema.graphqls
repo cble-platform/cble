@@ -6,7 +6,7 @@ type Blueprint {
   blueprintTemplate: String!
 
   parentGroup: Group!
-  Provider: Provider!
+  provider: Provider!
   deployments: [Deployment]!
 }
 
@@ -70,6 +70,29 @@ type Provider {
   blueprints: [Blueprint]
 }
 
+enum CommandType {
+  CONFIGURE
+  DEPLOY
+  DESTROY
+}
+
+enum CommandStatus {
+  QUEUED
+  FAILED
+  SUCCEEDED
+  INPROGRESS
+}
+
+type ProviderCommand {
+  id: ID!
+  commandType: CommandType!
+  status: CommandStatus!
+  startTime: Time
+  endTime: Time
+  output: String!
+  error: String!
+}
+
 type Query {
   """
   List users
@@ -96,6 +119,14 @@ type Query {
   """
   provider(id: ID!): Provider!
   """
+  List provider commands
+  """
+  providerCommands: [ProviderCommand!]!
+  """
+  Get a provider command
+  """
+  providerCommand(id: ID!): ProviderCommand!
+  """
   List blueprints
   """
   blueprints: [Blueprint!]!
@@ -103,6 +134,14 @@ type Query {
   Get a blueprint
   """
   blueprint(id: ID!): Blueprint!
+}
+
+input BlueprintInput {
+  name: String!
+  blueprintTemplate: String!
+
+  parentGroupId: ID!
+  providerId: ID!
 }
 
 input ProviderInput {
@@ -113,6 +152,10 @@ input ProviderInput {
 }
 
 type Mutation {
+  ########
+  # CRUD #
+  ########
+
   """
   Create a provider
   """
@@ -126,6 +169,19 @@ type Mutation {
   """
   deleteProvider(id: ID!): Boolean!
   """
+  Create a blueprint
+  """
+  createBlueprint(input: BlueprintInput!): Blueprint!
+  """
+  Update a blueprint
+  """
+  updateBlueprint(id: ID!, input: BlueprintInput!): Blueprint!
+
+  #############
+  # PROVIDERS #
+  #############
+
+  """
   Load a provider to connect it to CBLE
   """
   loadProvider(id: ID!): Provider!
@@ -133,4 +189,17 @@ type Mutation {
   Unload a provider to disconnect it from CBLE
   """
   unloadProvider(id: ID!): Provider!
+
+  ##############
+  # DEPLOYMENT #
+  ##############
+
+  """
+  Deploy a blueprint
+  """
+  deployBlueprint(id: ID!): Deployment!
+  """
+  Destroy a deployment
+  """
+  destroyDeployment(id: ID!): Deployment!
 }

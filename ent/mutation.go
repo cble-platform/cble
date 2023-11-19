@@ -3675,6 +3675,8 @@ type ProviderCommandMutation struct {
 	status            *providercommand.Status
 	start_time        *time.Time
 	end_time          *time.Time
+	output            *string
+	error             *string
 	clearedFields     map[string]struct{}
 	provider          *uuid.UUID
 	clearedprovider   bool
@@ -3959,6 +3961,78 @@ func (m *ProviderCommandMutation) ResetEndTime() {
 	delete(m.clearedFields, providercommand.FieldEndTime)
 }
 
+// SetOutput sets the "output" field.
+func (m *ProviderCommandMutation) SetOutput(s string) {
+	m.output = &s
+}
+
+// Output returns the value of the "output" field in the mutation.
+func (m *ProviderCommandMutation) Output() (r string, exists bool) {
+	v := m.output
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOutput returns the old "output" field's value of the ProviderCommand entity.
+// If the ProviderCommand object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProviderCommandMutation) OldOutput(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOutput is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOutput requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOutput: %w", err)
+	}
+	return oldValue.Output, nil
+}
+
+// ResetOutput resets all changes to the "output" field.
+func (m *ProviderCommandMutation) ResetOutput() {
+	m.output = nil
+}
+
+// SetError sets the "error" field.
+func (m *ProviderCommandMutation) SetError(s string) {
+	m.error = &s
+}
+
+// Error returns the value of the "error" field in the mutation.
+func (m *ProviderCommandMutation) Error() (r string, exists bool) {
+	v := m.error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldError returns the old "error" field's value of the ProviderCommand entity.
+// If the ProviderCommand object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProviderCommandMutation) OldError(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldError: %w", err)
+	}
+	return oldValue.Error, nil
+}
+
+// ResetError resets all changes to the "error" field.
+func (m *ProviderCommandMutation) ResetError() {
+	m.error = nil
+}
+
 // SetProviderID sets the "provider" edge to the Provider entity by id.
 func (m *ProviderCommandMutation) SetProviderID(id uuid.UUID) {
 	m.provider = &id
@@ -4071,7 +4145,7 @@ func (m *ProviderCommandMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ProviderCommandMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 6)
 	if m.command_type != nil {
 		fields = append(fields, providercommand.FieldCommandType)
 	}
@@ -4083,6 +4157,12 @@ func (m *ProviderCommandMutation) Fields() []string {
 	}
 	if m.end_time != nil {
 		fields = append(fields, providercommand.FieldEndTime)
+	}
+	if m.output != nil {
+		fields = append(fields, providercommand.FieldOutput)
+	}
+	if m.error != nil {
+		fields = append(fields, providercommand.FieldError)
 	}
 	return fields
 }
@@ -4100,6 +4180,10 @@ func (m *ProviderCommandMutation) Field(name string) (ent.Value, bool) {
 		return m.StartTime()
 	case providercommand.FieldEndTime:
 		return m.EndTime()
+	case providercommand.FieldOutput:
+		return m.Output()
+	case providercommand.FieldError:
+		return m.Error()
 	}
 	return nil, false
 }
@@ -4117,6 +4201,10 @@ func (m *ProviderCommandMutation) OldField(ctx context.Context, name string) (en
 		return m.OldStartTime(ctx)
 	case providercommand.FieldEndTime:
 		return m.OldEndTime(ctx)
+	case providercommand.FieldOutput:
+		return m.OldOutput(ctx)
+	case providercommand.FieldError:
+		return m.OldError(ctx)
 	}
 	return nil, fmt.Errorf("unknown ProviderCommand field %s", name)
 }
@@ -4153,6 +4241,20 @@ func (m *ProviderCommandMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetEndTime(v)
+		return nil
+	case providercommand.FieldOutput:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOutput(v)
+		return nil
+	case providercommand.FieldError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetError(v)
 		return nil
 	}
 	return fmt.Errorf("unknown ProviderCommand field %s", name)
@@ -4229,6 +4331,12 @@ func (m *ProviderCommandMutation) ResetField(name string) error {
 		return nil
 	case providercommand.FieldEndTime:
 		m.ResetEndTime()
+		return nil
+	case providercommand.FieldOutput:
+		m.ResetOutput()
+		return nil
+	case providercommand.FieldError:
+		m.ResetError()
 		return nil
 	}
 	return fmt.Errorf("unknown ProviderCommand field %s", name)

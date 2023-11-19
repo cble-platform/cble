@@ -23,6 +23,10 @@ const (
 	FieldStartTime = "start_time"
 	// FieldEndTime holds the string denoting the end_time field in the database.
 	FieldEndTime = "end_time"
+	// FieldOutput holds the string denoting the output field in the database.
+	FieldOutput = "output"
+	// FieldError holds the string denoting the error field in the database.
+	FieldError = "error"
 	// EdgeProvider holds the string denoting the provider edge name in mutations.
 	EdgeProvider = "provider"
 	// EdgeDeployment holds the string denoting the deployment edge name in mutations.
@@ -52,6 +56,8 @@ var Columns = []string{
 	FieldStatus,
 	FieldStartTime,
 	FieldEndTime,
+	FieldOutput,
+	FieldError,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "provider_commands"
@@ -77,6 +83,10 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultOutput holds the default value on creation for the "output" field.
+	DefaultOutput string
+	// DefaultError holds the default value on creation for the "error" field.
+	DefaultError string
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -108,12 +118,15 @@ func CommandTypeValidator(ct CommandType) error {
 // Status defines the type for the "status" enum field.
 type Status string
 
+// StatusQUEUED is the default value of the Status enum.
+const DefaultStatus = StatusQUEUED
+
 // Status values.
 const (
+	StatusQUEUED     Status = "QUEUED"
 	StatusFAILED     Status = "FAILED"
 	StatusSUCCEEDED  Status = "SUCCEEDED"
 	StatusINPROGRESS Status = "INPROGRESS"
-	StatusDESTROYED  Status = "DESTROYED"
 )
 
 func (s Status) String() string {
@@ -123,7 +136,7 @@ func (s Status) String() string {
 // StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
 func StatusValidator(s Status) error {
 	switch s {
-	case StatusFAILED, StatusSUCCEEDED, StatusINPROGRESS, StatusDESTROYED:
+	case StatusQUEUED, StatusFAILED, StatusSUCCEEDED, StatusINPROGRESS:
 		return nil
 	default:
 		return fmt.Errorf("providercommand: invalid enum value for status field: %q", s)
@@ -156,6 +169,16 @@ func ByStartTime(opts ...sql.OrderTermOption) OrderOption {
 // ByEndTime orders the results by the end_time field.
 func ByEndTime(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEndTime, opts...).ToFunc()
+}
+
+// ByOutput orders the results by the output field.
+func ByOutput(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOutput, opts...).ToFunc()
+}
+
+// ByError orders the results by the error field.
+func ByError(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldError, opts...).ToFunc()
 }
 
 // ByProviderField orders the results by provider field.

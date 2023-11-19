@@ -77,6 +77,14 @@ func init() {
 	provider.DefaultID = providerDescID.Default.(func() uuid.UUID)
 	providercommandFields := schema.ProviderCommand{}.Fields()
 	_ = providercommandFields
+	// providercommandDescOutput is the schema descriptor for output field.
+	providercommandDescOutput := providercommandFields[5].Descriptor()
+	// providercommand.DefaultOutput holds the default value on creation for the output field.
+	providercommand.DefaultOutput = providercommandDescOutput.Default.(string)
+	// providercommandDescError is the schema descriptor for error field.
+	providercommandDescError := providercommandFields[6].Descriptor()
+	// providercommand.DefaultError holds the default value on creation for the error field.
+	providercommand.DefaultError = providercommandDescError.Default.(string)
 	// providercommandDescID is the schema descriptor for id field.
 	providercommandDescID := providercommandFields[0].Descriptor()
 	// providercommand.DefaultID holds the default value on creation for the id field.

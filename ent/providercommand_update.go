@@ -43,6 +43,14 @@ func (pcu *ProviderCommandUpdate) SetStatus(pr providercommand.Status) *Provider
 	return pcu
 }
 
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (pcu *ProviderCommandUpdate) SetNillableStatus(pr *providercommand.Status) *ProviderCommandUpdate {
+	if pr != nil {
+		pcu.SetStatus(*pr)
+	}
+	return pcu
+}
+
 // SetStartTime sets the "start_time" field.
 func (pcu *ProviderCommandUpdate) SetStartTime(t time.Time) *ProviderCommandUpdate {
 	pcu.mutation.SetStartTime(t)
@@ -80,6 +88,34 @@ func (pcu *ProviderCommandUpdate) SetNillableEndTime(t *time.Time) *ProviderComm
 // ClearEndTime clears the value of the "end_time" field.
 func (pcu *ProviderCommandUpdate) ClearEndTime() *ProviderCommandUpdate {
 	pcu.mutation.ClearEndTime()
+	return pcu
+}
+
+// SetOutput sets the "output" field.
+func (pcu *ProviderCommandUpdate) SetOutput(s string) *ProviderCommandUpdate {
+	pcu.mutation.SetOutput(s)
+	return pcu
+}
+
+// SetNillableOutput sets the "output" field if the given value is not nil.
+func (pcu *ProviderCommandUpdate) SetNillableOutput(s *string) *ProviderCommandUpdate {
+	if s != nil {
+		pcu.SetOutput(*s)
+	}
+	return pcu
+}
+
+// SetError sets the "error" field.
+func (pcu *ProviderCommandUpdate) SetError(s string) *ProviderCommandUpdate {
+	pcu.mutation.SetError(s)
+	return pcu
+}
+
+// SetNillableError sets the "error" field if the given value is not nil.
+func (pcu *ProviderCommandUpdate) SetNillableError(s *string) *ProviderCommandUpdate {
+	if s != nil {
+		pcu.SetError(*s)
+	}
 	return pcu
 }
 
@@ -205,6 +241,12 @@ func (pcu *ProviderCommandUpdate) sqlSave(ctx context.Context) (n int, err error
 	if pcu.mutation.EndTimeCleared() {
 		_spec.ClearField(providercommand.FieldEndTime, field.TypeTime)
 	}
+	if value, ok := pcu.mutation.Output(); ok {
+		_spec.SetField(providercommand.FieldOutput, field.TypeString, value)
+	}
+	if value, ok := pcu.mutation.Error(); ok {
+		_spec.SetField(providercommand.FieldError, field.TypeString, value)
+	}
 	if pcu.mutation.ProviderCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -295,6 +337,14 @@ func (pcuo *ProviderCommandUpdateOne) SetStatus(pr providercommand.Status) *Prov
 	return pcuo
 }
 
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (pcuo *ProviderCommandUpdateOne) SetNillableStatus(pr *providercommand.Status) *ProviderCommandUpdateOne {
+	if pr != nil {
+		pcuo.SetStatus(*pr)
+	}
+	return pcuo
+}
+
 // SetStartTime sets the "start_time" field.
 func (pcuo *ProviderCommandUpdateOne) SetStartTime(t time.Time) *ProviderCommandUpdateOne {
 	pcuo.mutation.SetStartTime(t)
@@ -332,6 +382,34 @@ func (pcuo *ProviderCommandUpdateOne) SetNillableEndTime(t *time.Time) *Provider
 // ClearEndTime clears the value of the "end_time" field.
 func (pcuo *ProviderCommandUpdateOne) ClearEndTime() *ProviderCommandUpdateOne {
 	pcuo.mutation.ClearEndTime()
+	return pcuo
+}
+
+// SetOutput sets the "output" field.
+func (pcuo *ProviderCommandUpdateOne) SetOutput(s string) *ProviderCommandUpdateOne {
+	pcuo.mutation.SetOutput(s)
+	return pcuo
+}
+
+// SetNillableOutput sets the "output" field if the given value is not nil.
+func (pcuo *ProviderCommandUpdateOne) SetNillableOutput(s *string) *ProviderCommandUpdateOne {
+	if s != nil {
+		pcuo.SetOutput(*s)
+	}
+	return pcuo
+}
+
+// SetError sets the "error" field.
+func (pcuo *ProviderCommandUpdateOne) SetError(s string) *ProviderCommandUpdateOne {
+	pcuo.mutation.SetError(s)
+	return pcuo
+}
+
+// SetNillableError sets the "error" field if the given value is not nil.
+func (pcuo *ProviderCommandUpdateOne) SetNillableError(s *string) *ProviderCommandUpdateOne {
+	if s != nil {
+		pcuo.SetError(*s)
+	}
 	return pcuo
 }
 
@@ -486,6 +564,12 @@ func (pcuo *ProviderCommandUpdateOne) sqlSave(ctx context.Context) (_node *Provi
 	}
 	if pcuo.mutation.EndTimeCleared() {
 		_spec.ClearField(providercommand.FieldEndTime, field.TypeTime)
+	}
+	if value, ok := pcuo.mutation.Output(); ok {
+		_spec.SetField(providercommand.FieldOutput, field.TypeString, value)
+	}
+	if value, ok := pcuo.mutation.Error(); ok {
+		_spec.SetField(providercommand.FieldError, field.TypeString, value)
 	}
 	if pcuo.mutation.ProviderCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -6,12 +6,18 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 	"syscall"
+	"time"
 
 	"github.com/cble-platform/cble-backend/ent"
+	"github.com/cble-platform/cble-backend/ent/provider"
+	"github.com/cble-platform/cble-backend/ent/providercommand"
 	"github.com/cble-platform/cble-backend/internal/git"
 	providerGRPC "github.com/cble-platform/cble-provider-grpc/pkg/provider"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type DeploymentState int
@@ -30,23 +36,6 @@ const (
 	CommandDEPLOY    CommandType = 2
 	CommandDESTROY   CommandType = 3
 )
-
-type ProviderCommand struct {
-	// Type of command
-	Type CommandType
-
-	// Channel to send error messages back over
-	err chan error
-	// Channel to send reply back over
-	reply chan interface{}
-
-	// Used for CONFIGURE
-	ConfigureRequest *providerGRPC.ConfigureRequest
-	// Used for DEPLOY
-	DeployRequest *providerGRPC.DeployRequest
-	// Used for DESTROY
-	DestroyRequest *providerGRPC.DestroyRequest
-}
 
 func (ps *CBLEServer) downloadProvider(entProvider *ent.Provider) error {
 	providerRepoPath := path.Join(ps.providersConfig.CacheDir, entProvider.ID.String(), "source")
@@ -120,8 +109,8 @@ func (ps *CBLEServer) runProvider(ctx context.Context, entProvider *ent.Provider
 	}
 }
 
-func (ps *CBLEServer) startProviderConnection(ctx context.Context, shutdown chan bool, providerKey string, commandQueue chan ProviderCommand) {
-	provider, exists := ps.registeredProviders.Load(providerKey)
+func (ps *CBLEServer) startProviderConnection(ctx context.Context, shutdown chan bool, providerKey string) {
+	registeredProvider, exists := ps.registeredProviders.Load(providerKey)
 	if !exists {
 		logrus.Errorf("attempted to start provider on non-registered provider (%s)", providerKey)
 		return
@@ -131,7 +120,7 @@ func (ps *CBLEServer) startProviderConnection(ctx context.Context, shutdown chan
 		// TODO: implement TLS for provider connections
 		TLS:      false,
 		CAFile:   "",
-		SocketID: provider.(RegisteredProvider).SocketID,
+		SocketID: registeredProvider.(RegisteredProvider).SocketID,
 	}
 	providerConn, err := providerGRPC.Connect(providerOpts)
 	if err != nil {
@@ -144,58 +133,250 @@ func (ps *CBLEServer) startProviderConnection(ctx context.Context, shutdown chan
 		return
 	}
 
+	// Convert provider ID to UUID for ENT queries
+	providerUuid, err := uuid.Parse(providerKey)
+	if err != nil {
+		logrus.Errorf("failed to parse provider key \"%s\" when starting provider connection: %v", providerKey, err)
+		return
+	}
+
 	// Provider connection event loop
 	for {
 		select {
-		case command := <-commandQueue:
-			go ps.handleProviderCommand(ctx, client, &command)
 		case <-shutdown:
 			logrus.Warnf("Gracefully shutting down provider client %s", providerKey)
 			return
 		case <-ctx.Done():
 			logrus.Warnf("Gracefully shutting down provider client %s", providerKey)
 			return
+		default:
+			// If not cancelling, query ent for all queued commands for this provider
+			entCommands, err := ps.entClient.ProviderCommand.Query().Where(
+				providercommand.And(
+					providercommand.StatusEQ(providercommand.StatusQUEUED),
+					providercommand.HasProviderWith(provider.IDEQ(providerUuid)),
+				),
+			).All(ctx)
+			if err != nil {
+				logrus.Errorf("failed to query commands for provider \"%s\": %v", providerKey, err)
+				continue
+			}
+
+			// Run all of the commands in go routines
+			for _, entCommand := range entCommands {
+				go ps.handleProviderCommand(ctx, client, entCommand)
+			}
+
+			// Wait 10 seconds before querying again
+			time.Sleep(10 * time.Second)
 		}
 	}
 }
 
-func (ps *CBLEServer) handleProviderCommand(ctx context.Context, client providerGRPC.ProviderClient, command *ProviderCommand) {
-	switch command.Type {
-	case CommandCONFIGURE:
-		// Check the configuration request is populated
-		if command.ConfigureRequest == nil {
-			command.err <- fmt.Errorf("configure request is nil")
+func (ps *CBLEServer) handleProviderCommand(ctx context.Context, client providerGRPC.ProviderClient, entCommand *ent.ProviderCommand) {
+	// Set the command start time and mark as in progress
+	err := entCommand.Update().SetStatus(providercommand.StatusINPROGRESS).SetStartTime(time.Now()).Exec(ctx)
+	if err != nil {
+		logrus.Errorf("failed to set command status to in progress and start time to time.Now()")
+		// Proceed as this isn't a critical failure
+	}
+
+	switch entCommand.CommandType {
+	case providercommand.CommandTypeCONFIGURE:
+		// Get the provider associated with command
+		entProvider, err := entCommand.QueryProvider().Only(ctx)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to query provider from command", err)
 			return
 		}
+
+		// Generate the configuration command
+		configureCommand := &providerGRPC.ConfigureRequest{
+			Config: entProvider.ConfigBytes,
+		}
+
 		// Send the configuration request
-		reply, err := client.Configure(ctx, command.ConfigureRequest)
+		reply, err := client.Configure(ctx, configureCommand)
 		if err != nil {
-			command.err <- err
-		}
-		command.reply <- reply
-	case CommandDEPLOY:
-		// Check the deployment request is populated
-		if command.DeployRequest == nil {
-			command.err <- fmt.Errorf("deploy request is nil")
+			failCommand(ctx, entCommand, "failed to call provider configure", err)
 			return
 		}
+
+		// Update the output of the command
+		err = entCommand.Update().
+			SetStatus(providercommand.StatusSUCCEEDED).
+			SetOutput(fmt.Sprintf("RPC status is:\n%s", reply.Status.String())).
+			SetEndTime(time.Now()).
+			Exec(ctx)
+		if err != nil {
+			logrus.Errorf("failed to update command state and output")
+		}
+
+	case providercommand.CommandTypeDEPLOY:
+		// Get the deployment and blueprint associated with command
+		entDeployment, err := entCommand.QueryDeployment().Only(ctx)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to query deployment from command", err)
+			return
+		}
+		entBlueprint, err := entDeployment.QueryBlueprint().Only(ctx)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to query blueprint from deployment", err)
+			return
+		}
+
+		// Convert maps into protobuf-friendly structs
+		templateVarsStruct, err := structpb.NewStruct(entDeployment.TemplateVars)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to parse template vars into structpb", err)
+			return
+		}
+		deploymentVarsStruct, err := structpb.NewStruct(entDeployment.DeploymentVars)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to parse deployment vars into structpb", err)
+			return
+		}
+		// Deployment state is of type map[string]int and needs to be converted to map[string]interface{}
+		deploymentState := make(map[string]interface{}, len(entDeployment.DeploymentState))
+		for k, v := range entDeployment.DeploymentState {
+			deploymentState[k] = v
+		}
+		deploymentStateStruct, err := structpb.NewStruct(deploymentState)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to parse deployment state into structpb", err)
+			return
+		}
+
+		// Generate the deployment command
+		deployCommand := &providerGRPC.DeployRequest{
+			DeploymentId:    entDeployment.ID.String(),
+			Blueprint:       entBlueprint.BlueprintTemplate,
+			TemplateVars:    templateVarsStruct,
+			DeploymentState: deploymentStateStruct,
+			DeploymentVars:  deploymentVarsStruct,
+		}
+
 		// Send the deploy request
-		reply, err := client.Deploy(ctx, command.DeployRequest)
+		reply, err := client.Deploy(ctx, deployCommand)
 		if err != nil {
-			command.err <- err
-		}
-		command.reply <- reply
-	case CommandDESTROY:
-		// Check the destroy request is populated
-		if command.DestroyRequest == nil {
-			command.err <- fmt.Errorf("destroy request is nil")
+			failCommand(ctx, entCommand, "failed to call provider deploy", err)
 			return
 		}
-		// Send the destroy request
-		reply, err := client.Destroy(ctx, command.DestroyRequest)
-		if err != nil {
-			command.err <- err
+
+		// Convert deployment state from map[string]interface{} to map[string]int
+		newDeploymentState := make(map[string]int, len(reply.DeploymentState.AsMap()))
+		for k, v := range reply.DeploymentState.AsMap() {
+			newDeploymentState[k] = v.(int)
 		}
-		command.reply <- reply
+
+		// Update the deployment with the resulting state and variables
+		err = entDeployment.Update().
+			SetDeploymentState(newDeploymentState).
+			SetDeploymentVars(reply.DeploymentVars.AsMap()).
+			Exec(ctx)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to update deployment state and vars", err)
+			return
+		}
+
+		// Update the output of the command
+		err = entCommand.Update().
+			SetStatus(providercommand.StatusSUCCEEDED).
+			SetOutput(fmt.Sprintf("RPC status is:\n%s", reply.Status.String())).
+			SetError(fmt.Sprintf("Errors:\n%s", strings.Join(reply.Errors, "\n"))).
+			SetEndTime(time.Now()).
+			Exec(ctx)
+		if err != nil {
+			logrus.Errorf("failed to update command state and output")
+		}
+
+	case providercommand.CommandTypeDESTROY:
+		// Get the deployment and blueprint associated with command
+		entDeployment, err := entCommand.QueryDeployment().Only(ctx)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to query deployment from command", err)
+			return
+		}
+		entBlueprint, err := entDeployment.QueryBlueprint().Only(ctx)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to query blueprint from deployment", err)
+			return
+		}
+
+		// Convert maps into protobuf-friendly structs
+		templateVarsStruct, err := structpb.NewStruct(entDeployment.TemplateVars)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to parse template vars into structpb", err)
+			return
+		}
+		deploymentVarsStruct, err := structpb.NewStruct(entDeployment.DeploymentVars)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to parse deployment vars into structpb", err)
+			return
+		}
+		// Deployment state is of type map[string]int and needs to be converted to map[string]interface{}
+		deploymentState := make(map[string]interface{}, len(entDeployment.DeploymentState))
+		for k, v := range entDeployment.DeploymentState {
+			deploymentState[k] = v
+		}
+		deploymentStateStruct, err := structpb.NewStruct(deploymentState)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to parse deployment state into structpb", err)
+			return
+		}
+
+		// Generate the deployment command
+		destroyCommand := &providerGRPC.DestroyRequest{
+			DeploymentId:    entDeployment.ID.String(),
+			Blueprint:       entBlueprint.BlueprintTemplate,
+			TemplateVars:    templateVarsStruct,
+			DeploymentState: deploymentStateStruct,
+			DeploymentVars:  deploymentVarsStruct,
+		}
+
+		// Send the destroy request
+		reply, err := client.Destroy(ctx, destroyCommand)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to call provider destroy", err)
+			return
+		}
+
+		// Convert deployment state from map[string]interface{} to map[string]int
+		newDeploymentState := make(map[string]int, len(reply.DeploymentState.AsMap()))
+		for k, v := range reply.DeploymentState.AsMap() {
+			newDeploymentState[k] = v.(int)
+		}
+
+		// Update the deployment with the resulting state and variables
+		err = entDeployment.Update().
+			SetDeploymentState(newDeploymentState).
+			SetDeploymentVars(reply.DeploymentVars.AsMap()).
+			Exec(ctx)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to update deployment state and vars", err)
+			return
+		}
+
+		// Update the output of the command
+		err = entCommand.Update().
+			SetStatus(providercommand.StatusSUCCEEDED).
+			SetOutput(fmt.Sprintf("RPC status is:\n%s", reply.Status.String())).
+			SetError(fmt.Sprintf("Errors:\n%s", strings.Join(reply.Errors, "\n"))).
+			SetEndTime(time.Now()).
+			Exec(ctx)
+		if err != nil {
+			logrus.Errorf("failed to update command state and output")
+		}
+	}
+}
+
+func failCommand(ctx context.Context, entCommand *ent.ProviderCommand, message string, err error) {
+	updateErr := entCommand.Update().
+		SetStatus(providercommand.StatusFAILED).
+		SetError(fmt.Sprintf("%s: %v", message, err)).
+		SetEndTime(time.Now()).
+		Exec(ctx)
+	if updateErr != nil {
+		logrus.Errorf("failed to update command state and error: %v", updateErr)
 	}
 }

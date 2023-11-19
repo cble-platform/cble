@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/cble-platform/cble-backend/ent"
+	"github.com/cble-platform/cble-backend/ent/providercommand"
 	"github.com/cble-platform/cble-backend/graph/generated"
 	"github.com/cble-platform/cble-backend/graph/model"
 	"github.com/google/uuid"
@@ -178,6 +179,16 @@ func (r *mutationResolver) DeleteProvider(ctx context.Context, id string) (bool,
 	return true, nil
 }
 
+// CreateBlueprint is the resolver for the createBlueprint field.
+func (r *mutationResolver) CreateBlueprint(ctx context.Context, input model.BlueprintInput) (*ent.Blueprint, error) {
+	panic(fmt.Errorf("not implemented: CreateBlueprint - createBlueprint"))
+}
+
+// UpdateBlueprint is the resolver for the updateBlueprint field.
+func (r *mutationResolver) UpdateBlueprint(ctx context.Context, id string, input model.BlueprintInput) (*ent.Blueprint, error) {
+	panic(fmt.Errorf("not implemented: UpdateBlueprint - updateBlueprint"))
+}
+
 // LoadProvider is the resolver for the loadProvider field.
 func (r *mutationResolver) LoadProvider(ctx context.Context, id string) (*ent.Provider, error) {
 	// Check the provider exists
@@ -192,6 +203,15 @@ func (r *mutationResolver) LoadProvider(ctx context.Context, id string) (*ent.Pr
 
 	// Queue the provider to load
 	r.cbleServer.QueueLoadProvider(id)
+
+	// Queue a configure task for initial provider configuration
+	err = r.ent.ProviderCommand.Create().
+		SetCommandType(providercommand.CommandTypeCONFIGURE).
+		SetProvider(entProvider).
+		Exec(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to create initial provider CONFIGURE command: %v", err)
+	}
 
 	return entProvider, nil
 }
@@ -215,6 +235,16 @@ func (r *mutationResolver) UnloadProvider(ctx context.Context, id string) (*ent.
 	}
 
 	return entProvider, nil
+}
+
+// DeployBlueprint is the resolver for the deployBlueprint field.
+func (r *mutationResolver) DeployBlueprint(ctx context.Context, id string) (*ent.Deployment, error) {
+	panic(fmt.Errorf("not implemented: DeployBlueprint - deployBlueprint"))
+}
+
+// DestroyDeployment is the resolver for the destroyDeployment field.
+func (r *mutationResolver) DestroyDeployment(ctx context.Context, id string) (*ent.Deployment, error) {
+	panic(fmt.Errorf("not implemented: DestroyDeployment - destroyDeployment"))
 }
 
 // ID is the resolver for the id field.
@@ -270,6 +300,21 @@ func (r *providerResolver) Blueprints(ctx context.Context, obj *ent.Provider) ([
 	return obj.QueryBlueprints().All(ctx)
 }
 
+// ID is the resolver for the id field.
+func (r *providerCommandResolver) ID(ctx context.Context, obj *ent.ProviderCommand) (string, error) {
+	return obj.ID.String(), nil
+}
+
+// CommandType is the resolver for the commandType field.
+func (r *providerCommandResolver) CommandType(ctx context.Context, obj *ent.ProviderCommand) (model.CommandType, error) {
+	return model.CommandType(obj.CommandType), nil
+}
+
+// Status is the resolver for the status field.
+func (r *providerCommandResolver) Status(ctx context.Context, obj *ent.ProviderCommand) (model.CommandStatus, error) {
+	return model.CommandStatus(obj.Status), nil
+}
+
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context) ([]*ent.User, error) {
 	return r.ent.User.Query().All(ctx)
@@ -310,6 +355,20 @@ func (r *queryResolver) Provider(ctx context.Context, id string) (*ent.Provider,
 		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
 	}
 	return r.ent.Provider.Get(ctx, providerUuid)
+}
+
+// ProviderCommands is the resolver for the providerCommands field.
+func (r *queryResolver) ProviderCommands(ctx context.Context) ([]*ent.ProviderCommand, error) {
+	return r.ent.ProviderCommand.Query().All(ctx)
+}
+
+// ProviderCommand is the resolver for the providerCommand field.
+func (r *queryResolver) ProviderCommand(ctx context.Context, id string) (*ent.ProviderCommand, error) {
+	providerCommandUuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
+	}
+	return r.ent.ProviderCommand.Get(ctx, providerCommandUuid)
 }
 
 // Blueprints is the resolver for the blueprints field.
@@ -364,6 +423,11 @@ func (r *Resolver) PermissionPolicy() generated.PermissionPolicyResolver {
 // Provider returns generated.ProviderResolver implementation.
 func (r *Resolver) Provider() generated.ProviderResolver { return &providerResolver{r} }
 
+// ProviderCommand returns generated.ProviderCommandResolver implementation.
+func (r *Resolver) ProviderCommand() generated.ProviderCommandResolver {
+	return &providerCommandResolver{r}
+}
+
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
@@ -377,5 +441,6 @@ type mutationResolver struct{ *Resolver }
 type permissionResolver struct{ *Resolver }
 type permissionPolicyResolver struct{ *Resolver }
 type providerResolver struct{ *Resolver }
+type providerCommandResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
