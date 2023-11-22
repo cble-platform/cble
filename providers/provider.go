@@ -14,27 +14,11 @@ import (
 	"github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/cble-platform/cble-backend/ent/providercommand"
 	"github.com/cble-platform/cble-backend/internal/git"
+	"github.com/cble-platform/cble-provider-grpc/pkg/common"
 	providerGRPC "github.com/cble-platform/cble-provider-grpc/pkg/provider"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
-)
-
-type DeploymentState int
-
-const (
-	DeployFAILED     DeploymentState = -1
-	DeploySUCCEEDED  DeploymentState = 0
-	DeployINPROGRESS DeploymentState = 1
-	DeployDESTROYED  DeploymentState = 2
-)
-
-type CommandType int
-
-const (
-	CommandCONFIGURE CommandType = 1
-	CommandDEPLOY    CommandType = 2
-	CommandDESTROY   CommandType = 3
 )
 
 func (ps *CBLEServer) downloadProvider(entProvider *ent.Provider) error {
@@ -115,6 +99,8 @@ func (ps *CBLEServer) startProviderConnection(ctx context.Context, shutdown chan
 		logrus.Errorf("attempted to start provider on non-registered provider (%s)", providerKey)
 		return
 	}
+
+	logrus.Debugf("starting provider connection to provider %s with socket ID %s", providerKey, registeredProvider.(RegisteredProvider).SocketID)
 
 	providerOpts := &providerGRPC.ProviderClientOptions{
 		// TODO: implement TLS for provider connections
@@ -236,7 +222,7 @@ func (ps *CBLEServer) handleProviderCommand(ctx context.Context, client provider
 			failCommand(ctx, entCommand, "failed to parse deployment vars into structpb", err)
 			return
 		}
-		// Deployment state is of type map[string]int and needs to be converted to map[string]interface{}
+		// Deployment state is of type map[string]string and needs to be converted to map[string]interface{}
 		deploymentState := make(map[string]interface{}, len(entDeployment.DeploymentState))
 		for k, v := range entDeployment.DeploymentState {
 			deploymentState[k] = v
@@ -263,10 +249,15 @@ func (ps *CBLEServer) handleProviderCommand(ctx context.Context, client provider
 			return
 		}
 
-		// Convert deployment state from map[string]interface{} to map[string]int
-		newDeploymentState := make(map[string]int, len(reply.DeploymentState.AsMap()))
+		// Convert deployment state from map[string]interface{} to map[string]string
+		newDeploymentState := make(map[string]string, len(reply.DeploymentState.AsMap()))
 		for k, v := range reply.DeploymentState.AsMap() {
-			newDeploymentState[k] = v.(int)
+			stateVal, ok := v.(string)
+			if ok {
+				newDeploymentState[k] = stateVal
+			} else {
+				logrus.Warnf("deployment state value of %v is not string type as expected", v)
+			}
 		}
 
 		// Update the deployment with the resulting state and variables
@@ -279,9 +270,17 @@ func (ps *CBLEServer) handleProviderCommand(ctx context.Context, client provider
 			return
 		}
 
+		var status providercommand.Status
+		switch reply.Status {
+		case common.RPCStatus_FAILURE:
+			status = providercommand.StatusFAILED
+		default:
+			status = providercommand.StatusSUCCEEDED
+		}
+
 		// Update the output of the command
 		err = entCommand.Update().
-			SetStatus(providercommand.StatusSUCCEEDED).
+			SetStatus(status).
 			SetOutput(fmt.Sprintf("RPC status is:\n%s", reply.Status.String())).
 			SetError(fmt.Sprintf("Errors:\n%s", strings.Join(reply.Errors, "\n"))).
 			SetEndTime(time.Now()).
@@ -314,7 +313,7 @@ func (ps *CBLEServer) handleProviderCommand(ctx context.Context, client provider
 			failCommand(ctx, entCommand, "failed to parse deployment vars into structpb", err)
 			return
 		}
-		// Deployment state is of type map[string]int and needs to be converted to map[string]interface{}
+		// Deployment state is of type map[string]string and needs to be converted to map[string]interface{}
 		deploymentState := make(map[string]interface{}, len(entDeployment.DeploymentState))
 		for k, v := range entDeployment.DeploymentState {
 			deploymentState[k] = v
@@ -341,10 +340,15 @@ func (ps *CBLEServer) handleProviderCommand(ctx context.Context, client provider
 			return
 		}
 
-		// Convert deployment state from map[string]interface{} to map[string]int
-		newDeploymentState := make(map[string]int, len(reply.DeploymentState.AsMap()))
+		// Convert deployment state from map[string]interface{} to map[string]string
+		newDeploymentState := make(map[string]string, len(reply.DeploymentState.AsMap()))
 		for k, v := range reply.DeploymentState.AsMap() {
-			newDeploymentState[k] = v.(int)
+			stateVal, ok := v.(string)
+			if ok {
+				newDeploymentState[k] = stateVal
+			} else {
+				logrus.Warnf("deployment state value of %v is not string type as expected", v)
+			}
 		}
 
 		// Update the deployment with the resulting state and variables
@@ -357,9 +361,17 @@ func (ps *CBLEServer) handleProviderCommand(ctx context.Context, client provider
 			return
 		}
 
+		var status providercommand.Status
+		switch reply.Status {
+		case common.RPCStatus_FAILURE:
+			status = providercommand.StatusFAILED
+		default:
+			status = providercommand.StatusSUCCEEDED
+		}
+
 		// Update the output of the command
 		err = entCommand.Update().
-			SetStatus(providercommand.StatusSUCCEEDED).
+			SetStatus(status).
 			SetOutput(fmt.Sprintf("RPC status is:\n%s", reply.Status.String())).
 			SetError(fmt.Sprintf("Errors:\n%s", strings.Join(reply.Errors, "\n"))).
 			SetEndTime(time.Now()).
