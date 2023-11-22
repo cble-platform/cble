@@ -129,21 +129,14 @@ func (r *mutationResolver) UpdateProvider(ctx context.Context, id string, input 
 	if err != nil {
 		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
 	}
-	// Start an ENT transaction
-	tx, err := r.ent.Tx(ctx)
-	if err != nil {
-		return nil, gqlerror.Errorf("failed to open transaction: %v", err)
-	}
-	txClient := tx.Client()
 	// Update the provider
-	entProvider, err := txClient.Provider.UpdateOneID(providerUuid).
+	entProvider, err := r.ent.Provider.UpdateOneID(providerUuid).
 		SetDisplayName(input.DisplayName).
 		SetProviderGitURL(input.ProviderGitURL).
 		SetProviderVersion(input.ProviderVersion).
 		SetConfigBytes([]byte(input.ConfigBytes)).
 		Save(ctx)
 	if err != nil {
-		tx.Rollback()
 		return nil, gqlerror.Errorf("failed to update provider: %v", err)
 	}
 	return entProvider, nil
@@ -156,14 +149,8 @@ func (r *mutationResolver) DeleteProvider(ctx context.Context, id string) (bool,
 	if err != nil {
 		return false, gqlerror.Errorf("id is not valid UUID: %v", err)
 	}
-	// Start an ENT transaction
-	tx, err := r.ent.Tx(ctx)
-	if err != nil {
-		return false, gqlerror.Errorf("failed to open transaction: %v", err)
-	}
-	txClient := tx.Client()
 	// Check if the provider is loaded
-	entProvider, err := txClient.Provider.Get(ctx, providerUuid)
+	entProvider, err := r.ent.Provider.Get(ctx, providerUuid)
 	if err != nil {
 		return false, gqlerror.Errorf("failed to query provider with ID: %v", err)
 	}
@@ -172,7 +159,7 @@ func (r *mutationResolver) DeleteProvider(ctx context.Context, id string) (bool,
 		return false, gqlerror.Errorf("cannot delete a provider while it is loaded")
 	}
 	// Delete the provider otherwise
-	err = txClient.Provider.DeleteOneID(providerUuid).Exec(ctx)
+	err = r.ent.Provider.DeleteOneID(providerUuid).Exec(ctx)
 	if err != nil {
 		return false, gqlerror.Errorf("failed to delete provider: %v", err)
 	}
