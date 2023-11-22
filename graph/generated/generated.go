@@ -82,6 +82,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
+		ConfigureProvider func(childComplexity int, id string) int
 		CreateBlueprint   func(childComplexity int, input model.BlueprintInput) int
 		CreateProvider    func(childComplexity int, input model.ProviderInput) int
 		DeleteProvider    func(childComplexity int, id string) int
@@ -180,6 +181,7 @@ type MutationResolver interface {
 	UpdateBlueprint(ctx context.Context, id string, input model.BlueprintInput) (*ent.Blueprint, error)
 	LoadProvider(ctx context.Context, id string) (*ent.Provider, error)
 	UnloadProvider(ctx context.Context, id string) (*ent.Provider, error)
+	ConfigureProvider(ctx context.Context, id string) (*ent.Provider, error)
 	DeployBlueprint(ctx context.Context, id string) (*ent.Deployment, error)
 	DestroyDeployment(ctx context.Context, id string) (*ent.Deployment, error)
 }
@@ -355,6 +357,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Group.Users(childComplexity), true
+
+	case "Mutation.configureProvider":
+		if e.complexity.Mutation.ConfigureProvider == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_configureProvider_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ConfigureProvider(childComplexity, args["id"].(string)), true
 
 	case "Mutation.createBlueprint":
 		if e.complexity.Mutation.CreateBlueprint == nil {
@@ -1053,6 +1067,10 @@ type Mutation {
   Unload a provider to disconnect it from CBLE
   """
   unloadProvider(id: ID!): Provider!
+  """
+  Applies the stored configuration to the provider
+  """
+  configureProvider(id: ID!): Provider!
 
   ##############
   # DEPLOYMENT #
@@ -1074,6 +1092,21 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_configureProvider_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_createBlueprint_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -2658,6 +2691,77 @@ func (ec *executionContext) fieldContext_Mutation_unloadProvider(ctx context.Con
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_unloadProvider_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_configureProvider(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_configureProvider(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ConfigureProvider(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Provider)
+	fc.Result = res
+	return ec.marshalNProvider2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐProvider(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_configureProvider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Provider_id(ctx, field)
+			case "displayName":
+				return ec.fieldContext_Provider_displayName(ctx, field)
+			case "providerGitUrl":
+				return ec.fieldContext_Provider_providerGitUrl(ctx, field)
+			case "providerVersion":
+				return ec.fieldContext_Provider_providerVersion(ctx, field)
+			case "configBytes":
+				return ec.fieldContext_Provider_configBytes(ctx, field)
+			case "isLoaded":
+				return ec.fieldContext_Provider_isLoaded(ctx, field)
+			case "blueprints":
+				return ec.fieldContext_Provider_blueprints(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Provider", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_configureProvider_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -7417,6 +7521,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "unloadProvider":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_unloadProvider(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "configureProvider":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_configureProvider(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

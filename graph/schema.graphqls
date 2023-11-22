@@ -189,6 +189,10 @@ type Mutation {
   Unload a provider to disconnect it from CBLE
   """
   unloadProvider(id: ID!): Provider!
+  """
+  Applies the stored configuration to the provider
+  """
+  configureProvider(id: ID!): Provider!
 
   ##############
   # DEPLOYMENT #
