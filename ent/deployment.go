@@ -25,7 +25,7 @@ type Deployment struct {
 	// DeploymentVars holds the value of the "deployment_vars" field.
 	DeploymentVars map[string]interface{} `json:"deployment_vars,omitempty"`
 	// DeploymentState holds the value of the "deployment_state" field.
-	DeploymentState map[string]int `json:"deployment_state,omitempty"`
+	DeploymentState map[string]string `json:"deployment_state,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DeploymentQuery when eager-loading is set.
 	Edges                DeploymentEdges `json:"edges"`

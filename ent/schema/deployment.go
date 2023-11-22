@@ -22,8 +22,8 @@ func (Deployment) Fields() []ent.Field {
 			Default(make(map[string]interface{})),
 		field.JSON("deployment_vars", map[string]interface{}{}).
 			Default(make(map[string]interface{})),
-		field.JSON("deployment_state", map[string]int{}).
-			Default(make(map[string]int)),
+		field.JSON("deployment_state", map[string]string{}).
+			Default(make(map[string]string)),
 	}
 }
 

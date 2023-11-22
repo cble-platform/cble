@@ -43,7 +43,7 @@ func (du *DeploymentUpdate) SetDeploymentVars(m map[string]interface{}) *Deploym
 }
 
 // SetDeploymentState sets the "deployment_state" field.
-func (du *DeploymentUpdate) SetDeploymentState(m map[string]int) *DeploymentUpdate {
+func (du *DeploymentUpdate) SetDeploymentState(m map[string]string) *DeploymentUpdate {
 	du.mutation.SetDeploymentState(m)
 	return du
 }
@@ -237,7 +237,7 @@ func (duo *DeploymentUpdateOne) SetDeploymentVars(m map[string]interface{}) *Dep
 }
 
 // SetDeploymentState sets the "deployment_state" field.
-func (duo *DeploymentUpdateOne) SetDeploymentState(m map[string]int) *DeploymentUpdateOne {
+func (duo *DeploymentUpdateOne) SetDeploymentState(m map[string]string) *DeploymentUpdateOne {
 	duo.mutation.SetDeploymentState(m)
 	return duo
 }

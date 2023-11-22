@@ -647,7 +647,7 @@ type DeploymentMutation struct {
 	id               *uuid.UUID
 	template_vars    *map[string]interface{}
 	deployment_vars  *map[string]interface{}
-	deployment_state *map[string]int
+	deployment_state *map[string]string
 	clearedFields    map[string]struct{}
 	blueprint        *uuid.UUID
 	clearedblueprint bool
@@ -835,12 +835,12 @@ func (m *DeploymentMutation) ResetDeploymentVars() {
 }
 
 // SetDeploymentState sets the "deployment_state" field.
-func (m *DeploymentMutation) SetDeploymentState(value map[string]int) {
+func (m *DeploymentMutation) SetDeploymentState(value map[string]string) {
 	m.deployment_state = &value
 }
 
 // DeploymentState returns the value of the "deployment_state" field in the mutation.
-func (m *DeploymentMutation) DeploymentState() (r map[string]int, exists bool) {
+func (m *DeploymentMutation) DeploymentState() (r map[string]string, exists bool) {
 	v := m.deployment_state
 	if v == nil {
 		return
@@ -851,7 +851,7 @@ func (m *DeploymentMutation) DeploymentState() (r map[string]int, exists bool) {
 // OldDeploymentState returns the old "deployment_state" field's value of the Deployment entity.
 // If the Deployment object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DeploymentMutation) OldDeploymentState(ctx context.Context) (v map[string]int, err error) {
+func (m *DeploymentMutation) OldDeploymentState(ctx context.Context) (v map[string]string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldDeploymentState is only allowed on UpdateOne operations")
 	}
@@ -1045,7 +1045,7 @@ func (m *DeploymentMutation) SetField(name string, value ent.Value) error {
 		m.SetDeploymentVars(v)
 		return nil
 	case deployment.FieldDeploymentState:
-		v, ok := value.(map[string]int)
+		v, ok := value.(map[string]string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
