@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -17,6 +18,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
 	"github.com/cble-platform/cble-backend/ent/predicate"
 	"github.com/cble-platform/cble-backend/ent/provider"
+	"github.com/cble-platform/cble-backend/ent/providercommand"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
 )
@@ -36,6 +38,7 @@ const (
 	TypePermission       = "Permission"
 	TypePermissionPolicy = "PermissionPolicy"
 	TypeProvider         = "Provider"
+	TypeProviderCommand  = "ProviderCommand"
 	TypeUser             = "User"
 )
 
@@ -644,7 +647,7 @@ type DeploymentMutation struct {
 	id               *uuid.UUID
 	template_vars    *map[string]interface{}
 	deployment_vars  *map[string]interface{}
-	deployment_state *map[string]int
+	deployment_state *map[string]string
 	clearedFields    map[string]struct{}
 	blueprint        *uuid.UUID
 	clearedblueprint bool
@@ -832,12 +835,12 @@ func (m *DeploymentMutation) ResetDeploymentVars() {
 }
 
 // SetDeploymentState sets the "deployment_state" field.
-func (m *DeploymentMutation) SetDeploymentState(value map[string]int) {
+func (m *DeploymentMutation) SetDeploymentState(value map[string]string) {
 	m.deployment_state = &value
 }
 
 // DeploymentState returns the value of the "deployment_state" field in the mutation.
-func (m *DeploymentMutation) DeploymentState() (r map[string]int, exists bool) {
+func (m *DeploymentMutation) DeploymentState() (r map[string]string, exists bool) {
 	v := m.deployment_state
 	if v == nil {
 		return
@@ -848,7 +851,7 @@ func (m *DeploymentMutation) DeploymentState() (r map[string]int, exists bool) {
 // OldDeploymentState returns the old "deployment_state" field's value of the Deployment entity.
 // If the Deployment object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DeploymentMutation) OldDeploymentState(ctx context.Context) (v map[string]int, err error) {
+func (m *DeploymentMutation) OldDeploymentState(ctx context.Context) (v map[string]string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldDeploymentState is only allowed on UpdateOne operations")
 	}
@@ -1042,7 +1045,7 @@ func (m *DeploymentMutation) SetField(name string, value ent.Value) error {
 		m.SetDeploymentVars(v)
 		return nil
 	case deployment.FieldDeploymentState:
-		v, ok := value.(map[string]int)
+		v, ok := value.(map[string]string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -3660,6 +3663,775 @@ func (m *ProviderMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Provider edge %s", name)
+}
+
+// ProviderCommandMutation represents an operation that mutates the ProviderCommand nodes in the graph.
+type ProviderCommandMutation struct {
+	config
+	op                Op
+	typ               string
+	id                *uuid.UUID
+	command_type      *providercommand.CommandType
+	status            *providercommand.Status
+	start_time        *time.Time
+	end_time          *time.Time
+	output            *string
+	error             *string
+	clearedFields     map[string]struct{}
+	provider          *uuid.UUID
+	clearedprovider   bool
+	deployment        *uuid.UUID
+	cleareddeployment bool
+	done              bool
+	oldValue          func(context.Context) (*ProviderCommand, error)
+	predicates        []predicate.ProviderCommand
+}
+
+var _ ent.Mutation = (*ProviderCommandMutation)(nil)
+
+// providercommandOption allows management of the mutation configuration using functional options.
+type providercommandOption func(*ProviderCommandMutation)
+
+// newProviderCommandMutation creates new mutation for the ProviderCommand entity.
+func newProviderCommandMutation(c config, op Op, opts ...providercommandOption) *ProviderCommandMutation {
+	m := &ProviderCommandMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeProviderCommand,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withProviderCommandID sets the ID field of the mutation.
+func withProviderCommandID(id uuid.UUID) providercommandOption {
+	return func(m *ProviderCommandMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ProviderCommand
+		)
+		m.oldValue = func(ctx context.Context) (*ProviderCommand, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ProviderCommand.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withProviderCommand sets the old ProviderCommand of the mutation.
+func withProviderCommand(node *ProviderCommand) providercommandOption {
+	return func(m *ProviderCommandMutation) {
+		m.oldValue = func(context.Context) (*ProviderCommand, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ProviderCommandMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ProviderCommandMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of ProviderCommand entities.
+func (m *ProviderCommandMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ProviderCommandMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ProviderCommandMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ProviderCommand.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCommandType sets the "command_type" field.
+func (m *ProviderCommandMutation) SetCommandType(pt providercommand.CommandType) {
+	m.command_type = &pt
+}
+
+// CommandType returns the value of the "command_type" field in the mutation.
+func (m *ProviderCommandMutation) CommandType() (r providercommand.CommandType, exists bool) {
+	v := m.command_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCommandType returns the old "command_type" field's value of the ProviderCommand entity.
+// If the ProviderCommand object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProviderCommandMutation) OldCommandType(ctx context.Context) (v providercommand.CommandType, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCommandType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCommandType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCommandType: %w", err)
+	}
+	return oldValue.CommandType, nil
+}
+
+// ResetCommandType resets all changes to the "command_type" field.
+func (m *ProviderCommandMutation) ResetCommandType() {
+	m.command_type = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *ProviderCommandMutation) SetStatus(pr providercommand.Status) {
+	m.status = &pr
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *ProviderCommandMutation) Status() (r providercommand.Status, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the ProviderCommand entity.
+// If the ProviderCommand object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProviderCommandMutation) OldStatus(ctx context.Context) (v providercommand.Status, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *ProviderCommandMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetStartTime sets the "start_time" field.
+func (m *ProviderCommandMutation) SetStartTime(t time.Time) {
+	m.start_time = &t
+}
+
+// StartTime returns the value of the "start_time" field in the mutation.
+func (m *ProviderCommandMutation) StartTime() (r time.Time, exists bool) {
+	v := m.start_time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStartTime returns the old "start_time" field's value of the ProviderCommand entity.
+// If the ProviderCommand object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProviderCommandMutation) OldStartTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStartTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStartTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStartTime: %w", err)
+	}
+	return oldValue.StartTime, nil
+}
+
+// ClearStartTime clears the value of the "start_time" field.
+func (m *ProviderCommandMutation) ClearStartTime() {
+	m.start_time = nil
+	m.clearedFields[providercommand.FieldStartTime] = struct{}{}
+}
+
+// StartTimeCleared returns if the "start_time" field was cleared in this mutation.
+func (m *ProviderCommandMutation) StartTimeCleared() bool {
+	_, ok := m.clearedFields[providercommand.FieldStartTime]
+	return ok
+}
+
+// ResetStartTime resets all changes to the "start_time" field.
+func (m *ProviderCommandMutation) ResetStartTime() {
+	m.start_time = nil
+	delete(m.clearedFields, providercommand.FieldStartTime)
+}
+
+// SetEndTime sets the "end_time" field.
+func (m *ProviderCommandMutation) SetEndTime(t time.Time) {
+	m.end_time = &t
+}
+
+// EndTime returns the value of the "end_time" field in the mutation.
+func (m *ProviderCommandMutation) EndTime() (r time.Time, exists bool) {
+	v := m.end_time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEndTime returns the old "end_time" field's value of the ProviderCommand entity.
+// If the ProviderCommand object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProviderCommandMutation) OldEndTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEndTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEndTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEndTime: %w", err)
+	}
+	return oldValue.EndTime, nil
+}
+
+// ClearEndTime clears the value of the "end_time" field.
+func (m *ProviderCommandMutation) ClearEndTime() {
+	m.end_time = nil
+	m.clearedFields[providercommand.FieldEndTime] = struct{}{}
+}
+
+// EndTimeCleared returns if the "end_time" field was cleared in this mutation.
+func (m *ProviderCommandMutation) EndTimeCleared() bool {
+	_, ok := m.clearedFields[providercommand.FieldEndTime]
+	return ok
+}
+
+// ResetEndTime resets all changes to the "end_time" field.
+func (m *ProviderCommandMutation) ResetEndTime() {
+	m.end_time = nil
+	delete(m.clearedFields, providercommand.FieldEndTime)
+}
+
+// SetOutput sets the "output" field.
+func (m *ProviderCommandMutation) SetOutput(s string) {
+	m.output = &s
+}
+
+// Output returns the value of the "output" field in the mutation.
+func (m *ProviderCommandMutation) Output() (r string, exists bool) {
+	v := m.output
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOutput returns the old "output" field's value of the ProviderCommand entity.
+// If the ProviderCommand object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProviderCommandMutation) OldOutput(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOutput is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOutput requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOutput: %w", err)
+	}
+	return oldValue.Output, nil
+}
+
+// ResetOutput resets all changes to the "output" field.
+func (m *ProviderCommandMutation) ResetOutput() {
+	m.output = nil
+}
+
+// SetError sets the "error" field.
+func (m *ProviderCommandMutation) SetError(s string) {
+	m.error = &s
+}
+
+// Error returns the value of the "error" field in the mutation.
+func (m *ProviderCommandMutation) Error() (r string, exists bool) {
+	v := m.error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldError returns the old "error" field's value of the ProviderCommand entity.
+// If the ProviderCommand object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProviderCommandMutation) OldError(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldError: %w", err)
+	}
+	return oldValue.Error, nil
+}
+
+// ResetError resets all changes to the "error" field.
+func (m *ProviderCommandMutation) ResetError() {
+	m.error = nil
+}
+
+// SetProviderID sets the "provider" edge to the Provider entity by id.
+func (m *ProviderCommandMutation) SetProviderID(id uuid.UUID) {
+	m.provider = &id
+}
+
+// ClearProvider clears the "provider" edge to the Provider entity.
+func (m *ProviderCommandMutation) ClearProvider() {
+	m.clearedprovider = true
+}
+
+// ProviderCleared reports if the "provider" edge to the Provider entity was cleared.
+func (m *ProviderCommandMutation) ProviderCleared() bool {
+	return m.clearedprovider
+}
+
+// ProviderID returns the "provider" edge ID in the mutation.
+func (m *ProviderCommandMutation) ProviderID() (id uuid.UUID, exists bool) {
+	if m.provider != nil {
+		return *m.provider, true
+	}
+	return
+}
+
+// ProviderIDs returns the "provider" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ProviderID instead. It exists only for internal usage by the builders.
+func (m *ProviderCommandMutation) ProviderIDs() (ids []uuid.UUID) {
+	if id := m.provider; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetProvider resets all changes to the "provider" edge.
+func (m *ProviderCommandMutation) ResetProvider() {
+	m.provider = nil
+	m.clearedprovider = false
+}
+
+// SetDeploymentID sets the "deployment" edge to the Deployment entity by id.
+func (m *ProviderCommandMutation) SetDeploymentID(id uuid.UUID) {
+	m.deployment = &id
+}
+
+// ClearDeployment clears the "deployment" edge to the Deployment entity.
+func (m *ProviderCommandMutation) ClearDeployment() {
+	m.cleareddeployment = true
+}
+
+// DeploymentCleared reports if the "deployment" edge to the Deployment entity was cleared.
+func (m *ProviderCommandMutation) DeploymentCleared() bool {
+	return m.cleareddeployment
+}
+
+// DeploymentID returns the "deployment" edge ID in the mutation.
+func (m *ProviderCommandMutation) DeploymentID() (id uuid.UUID, exists bool) {
+	if m.deployment != nil {
+		return *m.deployment, true
+	}
+	return
+}
+
+// DeploymentIDs returns the "deployment" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// DeploymentID instead. It exists only for internal usage by the builders.
+func (m *ProviderCommandMutation) DeploymentIDs() (ids []uuid.UUID) {
+	if id := m.deployment; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetDeployment resets all changes to the "deployment" edge.
+func (m *ProviderCommandMutation) ResetDeployment() {
+	m.deployment = nil
+	m.cleareddeployment = false
+}
+
+// Where appends a list predicates to the ProviderCommandMutation builder.
+func (m *ProviderCommandMutation) Where(ps ...predicate.ProviderCommand) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ProviderCommandMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ProviderCommandMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ProviderCommand, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ProviderCommandMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ProviderCommandMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ProviderCommand).
+func (m *ProviderCommandMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ProviderCommandMutation) Fields() []string {
+	fields := make([]string, 0, 6)
+	if m.command_type != nil {
+		fields = append(fields, providercommand.FieldCommandType)
+	}
+	if m.status != nil {
+		fields = append(fields, providercommand.FieldStatus)
+	}
+	if m.start_time != nil {
+		fields = append(fields, providercommand.FieldStartTime)
+	}
+	if m.end_time != nil {
+		fields = append(fields, providercommand.FieldEndTime)
+	}
+	if m.output != nil {
+		fields = append(fields, providercommand.FieldOutput)
+	}
+	if m.error != nil {
+		fields = append(fields, providercommand.FieldError)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ProviderCommandMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case providercommand.FieldCommandType:
+		return m.CommandType()
+	case providercommand.FieldStatus:
+		return m.Status()
+	case providercommand.FieldStartTime:
+		return m.StartTime()
+	case providercommand.FieldEndTime:
+		return m.EndTime()
+	case providercommand.FieldOutput:
+		return m.Output()
+	case providercommand.FieldError:
+		return m.Error()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ProviderCommandMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case providercommand.FieldCommandType:
+		return m.OldCommandType(ctx)
+	case providercommand.FieldStatus:
+		return m.OldStatus(ctx)
+	case providercommand.FieldStartTime:
+		return m.OldStartTime(ctx)
+	case providercommand.FieldEndTime:
+		return m.OldEndTime(ctx)
+	case providercommand.FieldOutput:
+		return m.OldOutput(ctx)
+	case providercommand.FieldError:
+		return m.OldError(ctx)
+	}
+	return nil, fmt.Errorf("unknown ProviderCommand field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ProviderCommandMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case providercommand.FieldCommandType:
+		v, ok := value.(providercommand.CommandType)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCommandType(v)
+		return nil
+	case providercommand.FieldStatus:
+		v, ok := value.(providercommand.Status)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case providercommand.FieldStartTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStartTime(v)
+		return nil
+	case providercommand.FieldEndTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEndTime(v)
+		return nil
+	case providercommand.FieldOutput:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOutput(v)
+		return nil
+	case providercommand.FieldError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetError(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ProviderCommand field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ProviderCommandMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ProviderCommandMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ProviderCommandMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown ProviderCommand numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ProviderCommandMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(providercommand.FieldStartTime) {
+		fields = append(fields, providercommand.FieldStartTime)
+	}
+	if m.FieldCleared(providercommand.FieldEndTime) {
+		fields = append(fields, providercommand.FieldEndTime)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ProviderCommandMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ProviderCommandMutation) ClearField(name string) error {
+	switch name {
+	case providercommand.FieldStartTime:
+		m.ClearStartTime()
+		return nil
+	case providercommand.FieldEndTime:
+		m.ClearEndTime()
+		return nil
+	}
+	return fmt.Errorf("unknown ProviderCommand nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ProviderCommandMutation) ResetField(name string) error {
+	switch name {
+	case providercommand.FieldCommandType:
+		m.ResetCommandType()
+		return nil
+	case providercommand.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case providercommand.FieldStartTime:
+		m.ResetStartTime()
+		return nil
+	case providercommand.FieldEndTime:
+		m.ResetEndTime()
+		return nil
+	case providercommand.FieldOutput:
+		m.ResetOutput()
+		return nil
+	case providercommand.FieldError:
+		m.ResetError()
+		return nil
+	}
+	return fmt.Errorf("unknown ProviderCommand field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ProviderCommandMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.provider != nil {
+		edges = append(edges, providercommand.EdgeProvider)
+	}
+	if m.deployment != nil {
+		edges = append(edges, providercommand.EdgeDeployment)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ProviderCommandMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case providercommand.EdgeProvider:
+		if id := m.provider; id != nil {
+			return []ent.Value{*id}
+		}
+	case providercommand.EdgeDeployment:
+		if id := m.deployment; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ProviderCommandMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ProviderCommandMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ProviderCommandMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedprovider {
+		edges = append(edges, providercommand.EdgeProvider)
+	}
+	if m.cleareddeployment {
+		edges = append(edges, providercommand.EdgeDeployment)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ProviderCommandMutation) EdgeCleared(name string) bool {
+	switch name {
+	case providercommand.EdgeProvider:
+		return m.clearedprovider
+	case providercommand.EdgeDeployment:
+		return m.cleareddeployment
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ProviderCommandMutation) ClearEdge(name string) error {
+	switch name {
+	case providercommand.EdgeProvider:
+		m.ClearProvider()
+		return nil
+	case providercommand.EdgeDeployment:
+		m.ClearDeployment()
+		return nil
+	}
+	return fmt.Errorf("unknown ProviderCommand unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ProviderCommandMutation) ResetEdge(name string) error {
+	switch name {
+	case providercommand.EdgeProvider:
+		m.ResetProvider()
+		return nil
+	case providercommand.EdgeDeployment:
+		m.ResetDeployment()
+		return nil
+	}
+	return fmt.Errorf("unknown ProviderCommand edge %s", name)
 }
 
 // UserMutation represents an operation that mutates the User nodes in the graph.

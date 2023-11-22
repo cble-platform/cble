@@ -35,7 +35,7 @@ func (dc *DeploymentCreate) SetDeploymentVars(m map[string]interface{}) *Deploym
 }
 
 // SetDeploymentState sets the "deployment_state" field.
-func (dc *DeploymentCreate) SetDeploymentState(m map[string]int) *DeploymentCreate {
+func (dc *DeploymentCreate) SetDeploymentState(m map[string]string) *DeploymentCreate {
 	dc.mutation.SetDeploymentState(m)
 	return dc
 }

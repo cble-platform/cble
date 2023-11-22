@@ -8,10 +8,13 @@ import (
 	"context"
 	"fmt"
 
+	"entgo.io/ent/dialect/sql"
 	"github.com/cble-platform/cble-backend/ent"
+	"github.com/cble-platform/cble-backend/ent/providercommand"
 	"github.com/cble-platform/cble-backend/graph/generated"
 	"github.com/cble-platform/cble-backend/graph/model"
 	"github.com/google/uuid"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 // ID is the resolver for the id field.
@@ -113,7 +116,7 @@ func (r *mutationResolver) CreateProvider(ctx context.Context, input model.Provi
 		SetConfigBytes([]byte(input.ConfigBytes)).
 		Save(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create provider: %v", err)
+		return nil, gqlerror.Errorf("failed to create provider: %v", err)
 	}
 
 	return entProvider, nil
@@ -121,29 +124,262 @@ func (r *mutationResolver) CreateProvider(ctx context.Context, input model.Provi
 
 // UpdateProvider is the resolver for the updateProvider field.
 func (r *mutationResolver) UpdateProvider(ctx context.Context, id string, input model.ProviderInput) (*ent.Provider, error) {
-	panic(fmt.Errorf("not implemented: UpdateProvider - updateProvider"))
+	// Convert ID string to UUID
+	providerUuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
+	}
+	// Update the provider
+	entProvider, err := r.ent.Provider.UpdateOneID(providerUuid).
+		SetDisplayName(input.DisplayName).
+		SetProviderGitURL(input.ProviderGitURL).
+		SetProviderVersion(input.ProviderVersion).
+		SetConfigBytes([]byte(input.ConfigBytes)).
+		Save(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to update provider: %v", err)
+	}
+	return entProvider, nil
 }
 
 // DeleteProvider is the resolver for the deleteProvider field.
 func (r *mutationResolver) DeleteProvider(ctx context.Context, id string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteProvider - deleteProvider"))
+	// Convert ID string to UUID
+	providerUuid, err := uuid.Parse(id)
+	if err != nil {
+		return false, gqlerror.Errorf("id is not valid UUID: %v", err)
+	}
+	// Check if the provider is loaded
+	entProvider, err := r.ent.Provider.Get(ctx, providerUuid)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to query provider with ID: %v", err)
+	}
+	// Don't allow deleting a loaded provider
+	if entProvider.IsLoaded {
+		return false, gqlerror.Errorf("cannot delete a provider while it is loaded")
+	}
+	// Delete the provider otherwise
+	err = r.ent.Provider.DeleteOneID(providerUuid).Exec(ctx)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to delete provider: %v", err)
+	}
+
+	return true, nil
+}
+
+// CreateBlueprint is the resolver for the createBlueprint field.
+func (r *mutationResolver) CreateBlueprint(ctx context.Context, input model.BlueprintInput) (*ent.Blueprint, error) {
+	// Convert ID strings into UUIDs
+	parentGroupUuid, err := uuid.Parse(input.ParentGroupID)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to parse parent group ID as UUID: %v", err)
+	}
+	providerUuid, err := uuid.Parse(input.ProviderID)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to parse provider ID as UUID: %v", err)
+	}
+	// Get the edge objects
+	entParentGroup, err := r.ent.Group.Get(ctx, parentGroupUuid)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query parent group by ID: %v", err)
+	}
+	entProvider, err := r.ent.Provider.Get(ctx, providerUuid)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query provider by ID: %v", err)
+	}
+	entBlueprint, err := r.ent.Blueprint.Create().
+		SetName(input.Name).
+		SetBlueprintTemplate([]byte(input.BlueprintTemplate)).
+		SetParentGroup(entParentGroup).
+		SetProvider(entProvider).
+		Save(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to create blueprint: %v", err)
+	}
+
+	return entBlueprint, nil
+}
+
+// UpdateBlueprint is the resolver for the updateBlueprint field.
+func (r *mutationResolver) UpdateBlueprint(ctx context.Context, id string, input model.BlueprintInput) (*ent.Blueprint, error) {
+	// Get the object from ENT
+	blueprintUuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to parse blueprint ID as UUID: %v", err)
+	}
+	entBlueprint, err := r.ent.Blueprint.Get(ctx, blueprintUuid)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query blueprint: %v", err)
+	}
+
+	// Convert ID strings into UUIDs
+	parentGroupUuid, err := uuid.Parse(input.ParentGroupID)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to parse parent group ID as UUID: %v", err)
+	}
+	providerUuid, err := uuid.Parse(input.ProviderID)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to parse provider ID as UUID: %v", err)
+	}
+
+	// Get the edge objects
+	entParentGroup, err := r.ent.Group.Get(ctx, parentGroupUuid)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query parent group by ID: %v", err)
+	}
+	entProvider, err := r.ent.Provider.Get(ctx, providerUuid)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query provider by ID: %v", err)
+	}
+	entBlueprint, err = entBlueprint.Update().
+		SetName(input.Name).
+		SetBlueprintTemplate([]byte(input.BlueprintTemplate)).
+		SetParentGroup(entParentGroup).
+		SetProvider(entProvider).
+		Save(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to update blueprint: %v", err)
+	}
+
+	return entBlueprint, nil
 }
 
 // LoadProvider is the resolver for the loadProvider field.
 func (r *mutationResolver) LoadProvider(ctx context.Context, id string) (*ent.Provider, error) {
+	// Check the provider exists
 	providerUuid, err := uuid.Parse(id)
 	if err != nil {
-		return nil, fmt.Errorf("id is not valid UUID: %v", err)
+		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
 	}
 	entProvider, err := r.ent.Provider.Get(ctx, providerUuid)
 	if err != nil {
-		return nil, fmt.Errorf("could not find provider with id %s", id)
+		return nil, gqlerror.Errorf("could not find provider with id %s", id)
 	}
 
 	// Queue the provider to load
 	r.cbleServer.QueueLoadProvider(id)
 
 	return entProvider, nil
+}
+
+// UnloadProvider is the resolver for the unloadProvider field.
+func (r *mutationResolver) UnloadProvider(ctx context.Context, id string) (*ent.Provider, error) {
+	// Check the provider exists
+	providerUuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
+	}
+	entProvider, err := r.ent.Provider.Get(ctx, providerUuid)
+	if err != nil {
+		return nil, gqlerror.Errorf("could not find provider with id %s", id)
+	}
+
+	// Queue the provider to unload
+	err = r.cbleServer.QueueUnloadProvider(id)
+	if err != nil {
+		return entProvider, fmt.Errorf("failed to unload provider: %v", err)
+	}
+
+	return entProvider, nil
+}
+
+// ConfigureProvider is the resolver for the configureProvider field.
+func (r *mutationResolver) ConfigureProvider(ctx context.Context, id string) (*ent.Provider, error) {
+	// Convert ID string to UUID
+	providerUuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
+	}
+	entProvider, err := r.ent.Provider.Get(ctx, providerUuid)
+	if err != nil {
+		return nil, gqlerror.Errorf("could not find provider with id %s: %v", id, err)
+	}
+
+	// Queue a configure command for provider configuration
+	err = r.ent.ProviderCommand.Create().
+		SetCommandType(providercommand.CommandTypeCONFIGURE).
+		SetProvider(entProvider).
+		Exec(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to create initial provider CONFIGURE command: %v", err)
+	}
+
+	return entProvider, nil
+}
+
+// DeployBlueprint is the resolver for the deployBlueprint field.
+func (r *mutationResolver) DeployBlueprint(ctx context.Context, id string) (*ent.Deployment, error) {
+	// Check the blueprint exists
+	blueprintUuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
+	}
+	entBlueprint, err := r.ent.Blueprint.Get(ctx, blueprintUuid)
+	if err != nil {
+		return nil, gqlerror.Errorf("could not find blueprint with id %s", id)
+	}
+	entProvider, err := entBlueprint.QueryProvider().Only(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query provider from blueprint: %v", err)
+	}
+
+	// TODO: remove this requester placeholder
+	entUser, err := r.ent.User.Query().First(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to get first user: %v", err)
+	}
+
+	// Create the deployment
+	entDeployment, err := r.ent.Deployment.Create().
+		SetBlueprint(entBlueprint).
+		SetRequester(entUser).
+		Save(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to create deployment from blueprint: %v", err)
+	}
+
+	// Queue a deployment command for blueprint
+	err = r.ent.ProviderCommand.Create().
+		SetCommandType(providercommand.CommandTypeDEPLOY).
+		SetProvider(entProvider).
+		SetDeployment(entDeployment).
+		Exec(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to create deployment DEPLOY command: %v", err)
+	}
+
+	return entDeployment, nil
+}
+
+// DestroyDeployment is the resolver for the destroyDeployment field.
+func (r *mutationResolver) DestroyDeployment(ctx context.Context, id string) (*ent.Deployment, error) {
+	// Check the blueprint exists
+	deploymentUuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
+	}
+
+	// Get the deployment
+	entDeployment, err := r.ent.Deployment.Get(ctx, deploymentUuid)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to create deployment from blueprint: %v", err)
+	}
+	entProvider, err := entDeployment.QueryBlueprint().QueryProvider().Only(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query provider from deployment: %v", err)
+	}
+
+	// Queue a destroy command for blueprint
+	err = r.ent.ProviderCommand.Create().
+		SetCommandType(providercommand.CommandTypeDESTROY).
+		SetProvider(entProvider).
+		SetDeployment(entDeployment).
+		Exec(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to create deployment DESTROY command: %v", err)
+	}
+
+	return entDeployment, nil
 }
 
 // ID is the resolver for the id field.
@@ -186,17 +422,32 @@ func (r *permissionPolicyResolver) Group(ctx context.Context, obj *ent.Permissio
 
 // ID is the resolver for the id field.
 func (r *providerResolver) ID(ctx context.Context, obj *ent.Provider) (string, error) {
-	panic(fmt.Errorf("not implemented: ID - id"))
+	return obj.ID.String(), nil
 }
 
 // ConfigBytes is the resolver for the configBytes field.
 func (r *providerResolver) ConfigBytes(ctx context.Context, obj *ent.Provider) (string, error) {
-	panic(fmt.Errorf("not implemented: ConfigBytes - configBytes"))
+	return string(obj.ConfigBytes), nil
 }
 
 // Blueprints is the resolver for the blueprints field.
 func (r *providerResolver) Blueprints(ctx context.Context, obj *ent.Provider) ([]*ent.Blueprint, error) {
-	panic(fmt.Errorf("not implemented: Blueprints - blueprints"))
+	return obj.QueryBlueprints().All(ctx)
+}
+
+// ID is the resolver for the id field.
+func (r *providerCommandResolver) ID(ctx context.Context, obj *ent.ProviderCommand) (string, error) {
+	return obj.ID.String(), nil
+}
+
+// CommandType is the resolver for the commandType field.
+func (r *providerCommandResolver) CommandType(ctx context.Context, obj *ent.ProviderCommand) (model.CommandType, error) {
+	return model.CommandType(obj.CommandType), nil
+}
+
+// Status is the resolver for the status field.
+func (r *providerCommandResolver) Status(ctx context.Context, obj *ent.ProviderCommand) (model.CommandStatus, error) {
+	return model.CommandStatus(obj.Status), nil
 }
 
 // Users is the resolver for the users field.
@@ -206,37 +457,67 @@ func (r *queryResolver) Users(ctx context.Context) ([]*ent.User, error) {
 
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*ent.User, error) {
-	panic(fmt.Errorf("not implemented: User - user"))
+	userUuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
+	}
+	return r.ent.User.Get(ctx, userUuid)
 }
 
 // Groups is the resolver for the groups field.
 func (r *queryResolver) Groups(ctx context.Context) ([]*ent.Group, error) {
-	panic(fmt.Errorf("not implemented: Groups - groups"))
+	return r.ent.Group.Query().All(ctx)
 }
 
 // Group is the resolver for the group field.
 func (r *queryResolver) Group(ctx context.Context, id string) (*ent.Group, error) {
-	panic(fmt.Errorf("not implemented: Group - group"))
+	groupUuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
+	}
+	return r.ent.Group.Get(ctx, groupUuid)
 }
 
 // Providers is the resolver for the Providers field.
 func (r *queryResolver) Providers(ctx context.Context) ([]*ent.Provider, error) {
-	panic(fmt.Errorf("not implemented: Providers - Providers"))
+	return r.ent.Provider.Query().All(ctx)
 }
 
 // Provider is the resolver for the Provider field.
 func (r *queryResolver) Provider(ctx context.Context, id string) (*ent.Provider, error) {
-	panic(fmt.Errorf("not implemented: Provider - Provider"))
+	providerUuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
+	}
+	return r.ent.Provider.Get(ctx, providerUuid)
+}
+
+// ProviderCommands is the resolver for the providerCommands field.
+func (r *queryResolver) ProviderCommands(ctx context.Context) ([]*ent.ProviderCommand, error) {
+	return r.ent.ProviderCommand.Query().Order(providercommand.ByStartTime(sql.OrderDesc())).All(ctx)
+}
+
+// ProviderCommand is the resolver for the providerCommand field.
+func (r *queryResolver) ProviderCommand(ctx context.Context, id string) (*ent.ProviderCommand, error) {
+	providerCommandUuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
+	}
+	return r.ent.ProviderCommand.Get(ctx, providerCommandUuid)
 }
 
 // Blueprints is the resolver for the blueprints field.
 func (r *queryResolver) Blueprints(ctx context.Context) ([]*ent.Blueprint, error) {
-	panic(fmt.Errorf("not implemented: Blueprints - blueprints"))
+	return r.ent.Blueprint.Query().All(ctx)
 }
 
 // Blueprint is the resolver for the blueprint field.
 func (r *queryResolver) Blueprint(ctx context.Context, id string) (*ent.Blueprint, error) {
-	panic(fmt.Errorf("not implemented: Blueprint - blueprint"))
+	blueprintUuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
+	}
+	return r.ent.Blueprint.Get(ctx, blueprintUuid)
 }
 
 // ID is the resolver for the id field.
@@ -277,6 +558,11 @@ func (r *Resolver) PermissionPolicy() generated.PermissionPolicyResolver {
 // Provider returns generated.ProviderResolver implementation.
 func (r *Resolver) Provider() generated.ProviderResolver { return &providerResolver{r} }
 
+// ProviderCommand returns generated.ProviderCommandResolver implementation.
+func (r *Resolver) ProviderCommand() generated.ProviderCommandResolver {
+	return &providerCommandResolver{r}
+}
+
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
@@ -290,5 +576,6 @@ type mutationResolver struct{ *Resolver }
 type permissionResolver struct{ *Resolver }
 type permissionPolicyResolver struct{ *Resolver }
 type providerResolver struct{ *Resolver }
+type providerCommandResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }

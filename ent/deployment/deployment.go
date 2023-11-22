@@ -77,7 +77,7 @@ var (
 	// DefaultDeploymentVars holds the default value on creation for the "deployment_vars" field.
 	DefaultDeploymentVars map[string]interface{}
 	// DefaultDeploymentState holds the default value on creation for the "deployment_state" field.
-	DefaultDeploymentState map[string]int
+	DefaultDeploymentState map[string]string
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )

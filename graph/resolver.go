@@ -1,6 +1,9 @@
 package graph
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/graph/generated"
@@ -41,4 +44,27 @@ func NewSchema(client *ent.Client, cbleServer *providers.CBLEServer) graphql.Exe
 	// 	return nil, auth.PERMISSION_DENIED_GQL_ERROR
 	// }
 	return generated.NewExecutableSchema(c)
+}
+
+func WithTx(ctx context.Context, client *ent.Client, fn func(tx *ent.Tx) error) error {
+	tx, err := client.Tx(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if v := recover(); v != nil {
+			tx.Rollback()
+			panic(v)
+		}
+	}()
+	if err := fn(tx); err != nil {
+		if rerr := tx.Rollback(); rerr != nil {
+			err = fmt.Errorf("%w: rolling back transaction: %v", err, rerr)
+		}
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("committing transaction: %w", err)
+	}
+	return nil
 }

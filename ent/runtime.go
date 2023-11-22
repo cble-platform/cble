@@ -9,6 +9,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/permission"
 	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
 	"github.com/cble-platform/cble-backend/ent/provider"
+	"github.com/cble-platform/cble-backend/ent/providercommand"
 	"github.com/cble-platform/cble-backend/ent/schema"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
@@ -37,7 +38,7 @@ func init() {
 	// deploymentDescDeploymentState is the schema descriptor for deployment_state field.
 	deploymentDescDeploymentState := deploymentFields[3].Descriptor()
 	// deployment.DefaultDeploymentState holds the default value on creation for the deployment_state field.
-	deployment.DefaultDeploymentState = deploymentDescDeploymentState.Default.(map[string]int)
+	deployment.DefaultDeploymentState = deploymentDescDeploymentState.Default.(map[string]string)
 	// deploymentDescID is the schema descriptor for id field.
 	deploymentDescID := deploymentFields[0].Descriptor()
 	// deployment.DefaultID holds the default value on creation for the id field.
@@ -74,6 +75,20 @@ func init() {
 	providerDescID := providerFields[0].Descriptor()
 	// provider.DefaultID holds the default value on creation for the id field.
 	provider.DefaultID = providerDescID.Default.(func() uuid.UUID)
+	providercommandFields := schema.ProviderCommand{}.Fields()
+	_ = providercommandFields
+	// providercommandDescOutput is the schema descriptor for output field.
+	providercommandDescOutput := providercommandFields[5].Descriptor()
+	// providercommand.DefaultOutput holds the default value on creation for the output field.
+	providercommand.DefaultOutput = providercommandDescOutput.Default.(string)
+	// providercommandDescError is the schema descriptor for error field.
+	providercommandDescError := providercommandFields[6].Descriptor()
+	// providercommand.DefaultError holds the default value on creation for the error field.
+	providercommand.DefaultError = providercommandDescError.Default.(string)
+	// providercommandDescID is the schema descriptor for id field.
+	providercommandDescID := providercommandFields[0].Descriptor()
+	// providercommand.DefaultID holds the default value on creation for the id field.
+	providercommand.DefaultID = providercommandDescID.Default.(func() uuid.UUID)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescID is the schema descriptor for id field.

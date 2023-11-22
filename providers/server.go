@@ -8,6 +8,7 @@ import (
 
 	"github.com/cble-platform/cble-backend/config"
 	"github.com/cble-platform/cble-backend/ent"
+	"github.com/cble-platform/cble-backend/ent/providercommand"
 	cbleGRPC "github.com/cble-platform/cble-provider-grpc/pkg/cble"
 	"github.com/cble-platform/cble-provider-grpc/pkg/common"
 	"github.com/google/uuid"
@@ -27,8 +28,6 @@ type CBLEServer struct {
 	// Shutdown channels for each provider
 	serverShutdown *sync.Map
 
-	// Channels to send commands to individual providers
-	commandQueues *sync.Map
 	// Send clientShutdown signal to individual routines
 	clientShutdown *sync.Map
 
@@ -48,9 +47,8 @@ func NewServer(entClient *ent.Client, providersConfig *config.ProvidersConfig) *
 	return &CBLEServer{
 		entClient:           entClient,
 		providersConfig:     providersConfig,
-		providerServerQueue: make(chan string, 10),
+		providerServerQueue: make(chan string),
 		serverShutdown:      new(sync.Map),
-		commandQueues:       new(sync.Map),
 		clientShutdown:      new(sync.Map),
 		registeredProviders: new(sync.Map),
 		connectionQueue:     make(chan string, 10),
@@ -118,9 +116,10 @@ func (ps *CBLEServer) RunProviderServers(ctx context.Context, wg *sync.WaitGroup
 				continue
 			}
 			// Create an individual shutdown channel for this provider
-			ps.serverShutdown.Store(providerId, make(chan bool, 1))
+			shutdownChan := make(chan bool)
+			ps.serverShutdown.Store(providerId, shutdownChan)
 			// Run the provider server in a go routine
-			go ps.runProvider(ctx, entProvider)
+			go ps.runProvider(ctx, entProvider, shutdownChan)
 		case <-ctx.Done():
 			logrus.Warn("Gracefully shutting down provider server runtime...")
 			return
@@ -142,12 +141,7 @@ func (ps *CBLEServer) RunProviderClients(ctx context.Context, wg *sync.WaitGroup
 				logrus.Errorf("attempted to start provider connection without a shutdown channel (%s)", providerId)
 				continue
 			}
-			commandQueue, ok := ps.commandQueues.Load(providerId)
-			if !ok {
-				logrus.Errorf("attempted to start provider connection without a command queue (%s)", providerId)
-				continue
-			}
-			go ps.startProviderConnection(ctx, shutdownChan.(chan bool), providerId, commandQueue.(chan ProviderCommand))
+			go ps.startProviderConnection(ctx, shutdownChan.(chan bool), providerId)
 		case <-ctx.Done():
 			logrus.Warn("Gracefully shutting down provider client runtime...")
 			return
@@ -155,18 +149,29 @@ func (ps *CBLEServer) RunProviderClients(ctx context.Context, wg *sync.WaitGroup
 	}
 }
 
-func (ps *CBLEServer) SendCommandToProvider(ctx context.Context, entProvider *ent.Provider, command *ProviderCommand) error {
-	commandQueue, ok := ps.commandQueues.Load(entProvider.ID.String())
-	if !ok {
-		return fmt.Errorf("no command queue registered for provider %s", entProvider.ID.String())
-	}
-	commandQueue.(chan ProviderCommand) <- *command
-	return nil
+func (ps *CBLEServer) QueueLoadProvider(id string) {
+	logrus.Debugf("Loading provider %s", id)
+	ps.providerServerQueue <- id
 }
 
-func (ps *CBLEServer) QueueLoadProvider(id string) {
-	logrus.Debugf("Queueing provider %s", id)
-	ps.providerServerQueue <- id
+func (ps *CBLEServer) QueueUnloadProvider(id string) error {
+	logrus.Debugf("Unloading provider %s", id)
+	// Check that the client shutdown channel exists
+	clientShutdown, ok := ps.clientShutdown.Load(id)
+	if !ok {
+		return fmt.Errorf("provider client has no shutdown channel")
+	}
+	// Check that the server shutdown channel exists
+	serverShutdown, ok := ps.serverShutdown.Load(id)
+	if !ok {
+		return fmt.Errorf("provider server has no shutdown channel")
+	}
+	// Send the shutdown signal to the provider client
+	clientShutdown.(chan bool) <- true
+	time.Sleep(500 * time.Millisecond) // Wait 0.5sec for client to shutdown to prevent race conditions
+	// Send the shutdown signal to the provider server
+	serverShutdown.(chan bool) <- true
+	return nil
 }
 
 // func (ps *CBLEServer) StopAllProviders(ctx context.Context) {}
@@ -195,9 +200,8 @@ func (ps *CBLEServer) RegisterProvider(ctx context.Context, request *cbleGRPC.Re
 		SocketID: socketId,
 		Features: request.Features,
 	})
-	// Create shutdown and command queue for provider
-	ps.clientShutdown.Store(request.Id, make(chan bool, 1))
-	ps.commandQueues.Store(request.Id, make(chan ProviderCommand, 100)) // TODO: measeure the necessary queue buffer size to better help concurrency
+	// Create shutdown queue for provider
+	ps.clientShutdown.Store(request.Id, make(chan bool))
 	// Add provider to the queue to be connected to
 	ps.connectionQueue <- request.Id
 	// Set the provider as loaded in ENT
@@ -205,6 +209,16 @@ func (ps *CBLEServer) RegisterProvider(ctx context.Context, request *cbleGRPC.Re
 	if err != nil {
 		return nil, fmt.Errorf("failed to set provider is_loaded state: %v", err)
 	}
+	// Add a configure task to load the provider configuration
+	err = ps.entClient.ProviderCommand.Create().
+		SetCommandType(providercommand.CommandTypeCONFIGURE).
+		SetProvider(entProvider).
+		Exec(ctx)
+	if err != nil {
+		// Log failure but still reply to provider
+		logrus.Errorf("failed to create initial provider CONFIGURE command for provider %s: %v", request.Id, err)
+	}
+	logrus.Debugf("requesting provider %s start listening on socket ID %s", request.Id, socketId)
 	// Reply to the provider
 	return &cbleGRPC.RegistrationReply{
 		Status:   common.RPCStatus_SUCCESS,

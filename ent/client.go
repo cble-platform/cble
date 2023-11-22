@@ -22,6 +22,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/permission"
 	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
 	"github.com/cble-platform/cble-backend/ent/provider"
+	"github.com/cble-platform/cble-backend/ent/providercommand"
 	"github.com/cble-platform/cble-backend/ent/user"
 )
 
@@ -42,6 +43,8 @@ type Client struct {
 	PermissionPolicy *PermissionPolicyClient
 	// Provider is the client for interacting with the Provider builders.
 	Provider *ProviderClient
+	// ProviderCommand is the client for interacting with the ProviderCommand builders.
+	ProviderCommand *ProviderCommandClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -63,6 +66,7 @@ func (c *Client) init() {
 	c.Permission = NewPermissionClient(c.config)
 	c.PermissionPolicy = NewPermissionPolicyClient(c.config)
 	c.Provider = NewProviderClient(c.config)
+	c.ProviderCommand = NewProviderCommandClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -155,6 +159,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Permission:       NewPermissionClient(cfg),
 		PermissionPolicy: NewPermissionPolicyClient(cfg),
 		Provider:         NewProviderClient(cfg),
+		ProviderCommand:  NewProviderCommandClient(cfg),
 		User:             NewUserClient(cfg),
 	}, nil
 }
@@ -181,6 +186,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Permission:       NewPermissionClient(cfg),
 		PermissionPolicy: NewPermissionPolicyClient(cfg),
 		Provider:         NewProviderClient(cfg),
+		ProviderCommand:  NewProviderCommandClient(cfg),
 		User:             NewUserClient(cfg),
 	}, nil
 }
@@ -212,7 +218,7 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.Blueprint, c.Deployment, c.Group, c.Permission, c.PermissionPolicy,
-		c.Provider, c.User,
+		c.Provider, c.ProviderCommand, c.User,
 	} {
 		n.Use(hooks...)
 	}
@@ -223,7 +229,7 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.Blueprint, c.Deployment, c.Group, c.Permission, c.PermissionPolicy,
-		c.Provider, c.User,
+		c.Provider, c.ProviderCommand, c.User,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -244,6 +250,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.PermissionPolicy.mutate(ctx, m)
 	case *ProviderMutation:
 		return c.Provider.mutate(ctx, m)
+	case *ProviderCommandMutation:
+		return c.ProviderCommand.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
 	default:
@@ -1273,6 +1281,171 @@ func (c *ProviderClient) mutate(ctx context.Context, m *ProviderMutation) (Value
 	}
 }
 
+// ProviderCommandClient is a client for the ProviderCommand schema.
+type ProviderCommandClient struct {
+	config
+}
+
+// NewProviderCommandClient returns a client for the ProviderCommand from the given config.
+func NewProviderCommandClient(c config) *ProviderCommandClient {
+	return &ProviderCommandClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `providercommand.Hooks(f(g(h())))`.
+func (c *ProviderCommandClient) Use(hooks ...Hook) {
+	c.hooks.ProviderCommand = append(c.hooks.ProviderCommand, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `providercommand.Intercept(f(g(h())))`.
+func (c *ProviderCommandClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ProviderCommand = append(c.inters.ProviderCommand, interceptors...)
+}
+
+// Create returns a builder for creating a ProviderCommand entity.
+func (c *ProviderCommandClient) Create() *ProviderCommandCreate {
+	mutation := newProviderCommandMutation(c.config, OpCreate)
+	return &ProviderCommandCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ProviderCommand entities.
+func (c *ProviderCommandClient) CreateBulk(builders ...*ProviderCommandCreate) *ProviderCommandCreateBulk {
+	return &ProviderCommandCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ProviderCommandClient) MapCreateBulk(slice any, setFunc func(*ProviderCommandCreate, int)) *ProviderCommandCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ProviderCommandCreateBulk{err: fmt.Errorf("calling to ProviderCommandClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ProviderCommandCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ProviderCommandCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ProviderCommand.
+func (c *ProviderCommandClient) Update() *ProviderCommandUpdate {
+	mutation := newProviderCommandMutation(c.config, OpUpdate)
+	return &ProviderCommandUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ProviderCommandClient) UpdateOne(pc *ProviderCommand) *ProviderCommandUpdateOne {
+	mutation := newProviderCommandMutation(c.config, OpUpdateOne, withProviderCommand(pc))
+	return &ProviderCommandUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ProviderCommandClient) UpdateOneID(id uuid.UUID) *ProviderCommandUpdateOne {
+	mutation := newProviderCommandMutation(c.config, OpUpdateOne, withProviderCommandID(id))
+	return &ProviderCommandUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ProviderCommand.
+func (c *ProviderCommandClient) Delete() *ProviderCommandDelete {
+	mutation := newProviderCommandMutation(c.config, OpDelete)
+	return &ProviderCommandDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ProviderCommandClient) DeleteOne(pc *ProviderCommand) *ProviderCommandDeleteOne {
+	return c.DeleteOneID(pc.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ProviderCommandClient) DeleteOneID(id uuid.UUID) *ProviderCommandDeleteOne {
+	builder := c.Delete().Where(providercommand.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ProviderCommandDeleteOne{builder}
+}
+
+// Query returns a query builder for ProviderCommand.
+func (c *ProviderCommandClient) Query() *ProviderCommandQuery {
+	return &ProviderCommandQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeProviderCommand},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ProviderCommand entity by its id.
+func (c *ProviderCommandClient) Get(ctx context.Context, id uuid.UUID) (*ProviderCommand, error) {
+	return c.Query().Where(providercommand.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ProviderCommandClient) GetX(ctx context.Context, id uuid.UUID) *ProviderCommand {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryProvider queries the provider edge of a ProviderCommand.
+func (c *ProviderCommandClient) QueryProvider(pc *ProviderCommand) *ProviderQuery {
+	query := (&ProviderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(providercommand.Table, providercommand.FieldID, id),
+			sqlgraph.To(provider.Table, provider.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, providercommand.ProviderTable, providercommand.ProviderColumn),
+		)
+		fromV = sqlgraph.Neighbors(pc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryDeployment queries the deployment edge of a ProviderCommand.
+func (c *ProviderCommandClient) QueryDeployment(pc *ProviderCommand) *DeploymentQuery {
+	query := (&DeploymentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(providercommand.Table, providercommand.FieldID, id),
+			sqlgraph.To(deployment.Table, deployment.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, providercommand.DeploymentTable, providercommand.DeploymentColumn),
+		)
+		fromV = sqlgraph.Neighbors(pc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ProviderCommandClient) Hooks() []Hook {
+	return c.hooks.ProviderCommand
+}
+
+// Interceptors returns the client interceptors.
+func (c *ProviderCommandClient) Interceptors() []Interceptor {
+	return c.inters.ProviderCommand
+}
+
+func (c *ProviderCommandClient) mutate(ctx context.Context, m *ProviderCommandMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ProviderCommandCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ProviderCommandUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ProviderCommandUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ProviderCommandDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ProviderCommand mutation op: %q", m.Op())
+	}
+}
+
 // UserClient is a client for the User schema.
 type UserClient struct {
 	config
@@ -1442,10 +1615,10 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 type (
 	hooks struct {
 		Blueprint, Deployment, Group, Permission, PermissionPolicy, Provider,
-		User []ent.Hook
+		ProviderCommand, User []ent.Hook
 	}
 	inters struct {
 		Blueprint, Deployment, Group, Permission, PermissionPolicy, Provider,
-		User []ent.Interceptor
+		ProviderCommand, User []ent.Interceptor
 	}
 )
