@@ -12,10 +12,12 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/cble-platform/cble-backend/auth"
 	"github.com/cble-platform/cble-backend/config"
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/graph"
 	"github.com/cble-platform/cble-backend/providers"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
@@ -74,17 +76,48 @@ func playgroundHandler() gin.HandlerFunc {
 }
 
 func New(config *config.Config, client *ent.Client, cbleServer *providers.CBLEServer) *CBLEWebserver {
+	// Use default gin route settings
 	r := gin.Default()
 
-	api := r.Group("/api")
-
-	gql := api.Group("/graphql")
-
-	gql.Any("/query", graphqlHandler(config, client, cbleServer))
+	// Set the gin mode based on debug value
 	if config.Debug {
-		gql.Any("/playground", playgroundHandler())
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
 	}
 
+	// Set up CORS (see https://github.com/gin-contrib/cors)
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     config.Server.AllowedOrigins,
+		AllowMethods:     []string{"GET", "POST", "OPTIONS", "DELETE"},
+		AllowHeaders:     []string{"Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization", "accept", "origin", "Cache-Control", "X-Requested-With"},
+		AllowCredentials: true,
+	}))
+
+	// General API route group
+	api := r.Group("/api")
+
+	// Authentication route group (/api/auth)
+	authGroup := api.Group("/auth")
+	// Login endpoint
+	authGroup.POST("/login", auth.Login(config, client))
+	// Logout endpoint
+	authGroup.DELETE("/logout", auth.Logout(config))
+
+	// GraphQL route group (/api/graphql)
+	gqlGroup := api.Group("/graphql")
+	// Inject gin context into graphql context
+	gqlGroup.Use(graph.GinContextToContextMiddleware())
+	// Authenticate all graphql requests
+	gqlGroup.Use(auth.AuthMiddleware(config, client))
+	// Direct all graphql queries to graphql handler
+	gqlGroup.Any("/query", graphqlHandler(config, client, cbleServer))
+	// Only enable graphql playground on debug
+	if config.Debug {
+		gqlGroup.Any("/playground", playgroundHandler())
+	}
+
+	// Set up http server for gin (allows interactive shutdown)
 	srv := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", config.Server.Hostname, config.Server.Port),
 		Handler: r,

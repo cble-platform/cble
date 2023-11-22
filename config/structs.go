@@ -6,13 +6,14 @@ type Config struct {
 	Database       DatabaseConfig       `yaml:"database"`
 	Initialization InitializationConfig `yaml:"initialization"`
 	Providers      ProvidersConfig      `yaml:"providers,omitempty"`
+	Auth           AuthConfig           `yaml:"auth"`
 }
 
 type ServerConfig struct {
 	Hostname         string   `yaml:"hostname"`
 	Port             int      `yaml:"port"`
 	SSL              bool     `yaml:"ssl"`
-	AllowedOrigins   []string `yaml:"allowed_origins,omitempty"`
+	AllowedOrigins   []string `yaml:"origins,omitempty"`
 	GQlTrace         bool     `yaml:"gql_trace,omitempty"`
 	GQlIntrospection bool     `yaml:"gql_introspection,omitempty"`
 }
@@ -41,4 +42,9 @@ type DefaultAdminConfig struct {
 
 type ProvidersConfig struct {
 	CacheDir string `yaml:"cache"`
+}
+
+type AuthConfig struct {
+	JWTKey         string `yaml:"jwt_key"`
+	SessionTimeout int    `yaml:"session_timeout"`
 }
