@@ -48,17 +48,6 @@ type PermissionPolicy {
   group: Group!
 }
 
-type User {
-  id: ID!
-  username: String!
-  email: String!
-  firstName: String!
-  lastName: String!
-
-  groups: [Group]!
-  deployments: [Deployment]!
-}
-
 type Provider {
   id: ID!
   displayName: String!
@@ -91,6 +80,17 @@ type ProviderCommand {
   endTime: Time
   output: String!
   error: String!
+}
+
+type User {
+  id: ID!
+  username: String!
+  email: String!
+  firstName: String!
+  lastName: String!
+
+  groups: [Group]!
+  deployments: [Deployment]!
 }
 
 type Query {
@@ -151,11 +151,39 @@ input ProviderInput {
   configBytes: String!
 }
 
+input UserInput {
+  username: String!
+  email: String!
+  firstName: String!
+  lastName: String!
+}
+
 type Mutation {
+  ##################
+  # AUTHENTICATION #
+  ##################
+
+  """
+  Change current user's password
+  """
+  selfChangePassword(currentPassword: String!, newPassword: String!): Boolean!
+
   ########
   # CRUD #
   ########
 
+  """
+  Create a user
+  """
+  createUser(input: UserInput!): User!
+  """
+  Update a user
+  """
+  updateUser(id: ID!, input: UserInput!): User!
+  """
+  Delete a user
+  """
+  deleteUser(id: ID!): Boolean!
   """
   Create a provider
   """

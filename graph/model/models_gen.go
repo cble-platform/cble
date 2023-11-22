@@ -22,6 +22,13 @@ type ProviderInput struct {
 	ConfigBytes     string `json:"configBytes"`
 }
 
+type UserInput struct {
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+}
+
 type CommandStatus string
 
 const (

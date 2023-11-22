@@ -8,8 +8,10 @@ require (
 	github.com/cble-platform/cble-provider-grpc v0.1.2
 	github.com/crewjam/saml v0.4.14
 	github.com/fatih/color v1.16.0
+	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-git/go-git/v5 v5.10.0
+	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/uuid v1.4.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/gwatts/gin-adapter v1.0.0
@@ -17,6 +19,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.18
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/pflag v1.0.5
+	github.com/vektah/gqlparser v1.3.1
 	github.com/vektah/gqlparser/v2 v2.5.10
 	golang.org/x/crypto v0.15.0
 	google.golang.org/protobuf v1.31.0
@@ -50,7 +53,6 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.16.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
-	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
