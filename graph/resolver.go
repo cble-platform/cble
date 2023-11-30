@@ -5,8 +5,10 @@ import (
 	"fmt"
 
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/cble-platform/cble-backend/auth"
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/graph/generated"
+	"github.com/cble-platform/cble-backend/internal/permissionengine"
 	"github.com/cble-platform/cble-backend/providers"
 )
 
@@ -17,19 +19,35 @@ import (
 //go:generate go run github.com/99designs/gqlgen generate
 
 type Resolver struct {
-	ent        *ent.Client
-	cbleServer *providers.CBLEServer
+	ent              *ent.Client
+	cbleServer       *providers.CBLEServer
+	permissionEngine *permissionengine.PermissionEngine
 	// redis *redis.Client
 }
 
 // NewSchema creates a graphql executable schema.
-func NewSchema(client *ent.Client, cbleServer *providers.CBLEServer) graphql.ExecutableSchema {
+func NewSchema(client *ent.Client, cbleServer *providers.CBLEServer, permissionEngine *permissionengine.PermissionEngine) graphql.ExecutableSchema {
 	c := generated.Config{
 		Resolvers: &Resolver{
-			ent:        client,
-			cbleServer: cbleServer,
+			ent:              client,
+			cbleServer:       cbleServer,
+			permissionEngine: permissionEngine,
 			// rdb:           rdb,
 		},
+	}
+	c.Directives.Permission = func(ctx context.Context, obj interface{}, next graphql.Resolver, key string) (interface{}, error) {
+		currentUser, err := auth.ForContext(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("user not authenticated")
+		}
+		hasPermission, err := permissionEngine.RequestPermission(ctx, currentUser, key)
+		if err != nil {
+			return nil, err
+		}
+		if hasPermission {
+			return next(ctx)
+		}
+		return nil, fmt.Errorf("user does not have permission %s", key)
 	}
 	// c.Directives.HasRole = func(ctx context.Context, obj interface{}, next graphql.Resolver, roles []*model.UserRole) (res interface{}, err error) {
 	// 	currentUser, err := auth.ForContext(ctx)

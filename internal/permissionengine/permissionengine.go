@@ -44,7 +44,14 @@ func (pe *PermissionEngine) RegisterPermission(ctx context.Context, key string, 
 		// Some other component registered this same permission, return an error
 		return nil, fmt.Errorf("failed to register permission: component \"%s\" has already registered permission \"%s\"", entPermission.Component, entPermission.Key)
 	} else {
-		// This permission has already been registered by this component, so return it
+		// This permission has already been registered by this component
+		if entPermission.Description != description {
+			// If the descriptions don't match, update it
+			entPermission, err = entPermission.Update().SetDescription(description).Save(ctx)
+			if err != nil {
+				return entPermission, fmt.Errorf("failed to update permission description: %v", err)
+			}
+		}
 		return entPermission, nil
 	}
 }

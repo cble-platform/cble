@@ -264,6 +264,11 @@ func (r *mutationResolver) UpdateBlueprint(ctx context.Context, id string, input
 	return entBlueprint, nil
 }
 
+// DeleteBlueprint is the resolver for the deleteBlueprint field.
+func (r *mutationResolver) DeleteBlueprint(ctx context.Context, id string) (bool, error) {
+	panic(fmt.Errorf("not implemented: DeleteBlueprint - deleteBlueprint"))
+}
+
 // LoadProvider is the resolver for the loadProvider field.
 func (r *mutationResolver) LoadProvider(ctx context.Context, id string) (*ent.Provider, error) {
 	// Check the provider exists
@@ -538,6 +543,16 @@ func (r *queryResolver) Blueprint(ctx context.Context, id string) (*ent.Blueprin
 		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
 	}
 	return r.ent.Blueprint.Get(ctx, blueprintUuid)
+}
+
+// Deployments is the resolver for the deployments field.
+func (r *queryResolver) Deployments(ctx context.Context) ([]*ent.Deployment, error) {
+	panic(fmt.Errorf("not implemented: Deployments - deployments"))
+}
+
+// Deployment is the resolver for the deployment field.
+func (r *queryResolver) Deployment(ctx context.Context, id string) (*ent.Deployment, error) {
+	panic(fmt.Errorf("not implemented: Deployment - deployment"))
 }
 
 // ID is the resolver for the id field.
