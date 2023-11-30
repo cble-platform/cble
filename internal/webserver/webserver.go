@@ -16,6 +16,7 @@ import (
 	"github.com/cble-platform/cble-backend/config"
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/graph"
+	"github.com/cble-platform/cble-backend/internal/permissionengine"
 	"github.com/cble-platform/cble-backend/providers"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -28,13 +29,13 @@ type CBLEWebserver struct {
 	config    *config.Config
 }
 
-func graphqlHandler(config *config.Config, client *ent.Client, cbleServer *providers.CBLEServer) gin.HandlerFunc {
+func graphqlHandler(config *config.Config, client *ent.Client, cbleServer *providers.CBLEServer, permissionEngine *permissionengine.PermissionEngine) gin.HandlerFunc {
 	cors_urls := []string{"http://localhost", "http://localhost:8080", "http://localhost:3000"}
 	if len(config.Server.AllowedOrigins) > 0 {
 		cors_urls = config.Server.AllowedOrigins
 	}
 
-	srv := handler.New(graph.NewSchema(client, cbleServer))
+	srv := handler.New(graph.NewSchema(client, cbleServer, permissionEngine))
 
 	srv.AddTransport(&transport.Websocket{
 		KeepAlivePingInterval: 10 * time.Second,
@@ -75,7 +76,7 @@ func playgroundHandler() gin.HandlerFunc {
 	}
 }
 
-func New(config *config.Config, client *ent.Client, cbleServer *providers.CBLEServer) *CBLEWebserver {
+func New(config *config.Config, client *ent.Client, cbleServer *providers.CBLEServer, permissionEngine *permissionengine.PermissionEngine) *CBLEWebserver {
 	// Use default gin route settings
 	r := gin.Default()
 
@@ -111,7 +112,7 @@ func New(config *config.Config, client *ent.Client, cbleServer *providers.CBLESe
 	// Authenticate all graphql requests
 	gqlGroup.Use(auth.AuthMiddleware(config, client))
 	// Direct all graphql queries to graphql handler
-	gqlGroup.Any("/query", graphqlHandler(config, client, cbleServer))
+	gqlGroup.Any("/query", graphqlHandler(config, client, cbleServer, permissionEngine))
 	// Only enable graphql playground on debug
 	if config.Debug {
 		gqlGroup.Any("/playground", playgroundHandler())

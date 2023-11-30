@@ -93,47 +93,57 @@ type User {
   deployments: [Deployment]!
 }
 
+directive @permission(key: String!) on FIELD_DEFINITION
+
 type Query {
   """
-  List users
+  List users (requires permission `com.cble.users.list`)
   """
-  users: [User!]!
+  users: [User!]! @permission(key: "com.cble.users.list")
   """
-  Get a user
+  Get a user (requires permission `com.cble.users.read`)
   """
-  user(id: ID!): User!
+  user(id: ID!): User! @permission(key: "com.cble.users.read")
   """
-  List groups
+  List groups (requires permission `com.cble.groups.list`)
   """
-  groups: [Group!]!
+  groups: [Group!]! @permission(key: "com.cble.groups.list")
   """
-  Get a group
+  Get a group (requires permission `com.cble.groups.read`)
   """
-  group(id: ID!): Group!
+  group(id: ID!): Group! @permission(key: "com.cble.groups.read")
   """
-  List providers
+  List providers (requires permission `com.cble.providers.list`)
   """
-  providers: [Provider!]!
+  providers: [Provider!]! @permission(key: "com.cble.providers.list")
   """
-  Get a provider
+  Get a provider (requires permission `com.cble.providers.read`)
   """
-  provider(id: ID!): Provider!
+  provider(id: ID!): Provider! @permission(key: "com.cble.providers.read")
   """
-  List provider commands
+  List provider commands (requires permission `com.cble.providercommands.list`)
   """
-  providerCommands: [ProviderCommand!]!
+  providerCommands: [ProviderCommand!]! @permission(key: "com.cble.providercommands.list")
   """
-  Get a provider command
+  Get a provider command (requires permission `com.cble.providercommands.read`)
   """
-  providerCommand(id: ID!): ProviderCommand!
+  providerCommand(id: ID!): ProviderCommand! @permission(key: "com.cble.providercommands.read")
   """
-  List blueprints
+  List blueprints (requires permission `com.cble.blueprints.list`)
   """
-  blueprints: [Blueprint!]!
+  blueprints: [Blueprint!]! @permission(key: "com.cble.blueprints.list")
   """
-  Get a blueprint
+  Get a blueprint (requires permission `com.cble.blueprints.read`)
   """
-  blueprint(id: ID!): Blueprint!
+  blueprint(id: ID!): Blueprint! @permission(key: "com.cble.blueprints.read")
+  """
+  List deployments (requires permission `com.cble.deployments.list`)
+  """
+  deployments: [Deployment!]! @permission(key: "com.cble.deployments.list")
+  """
+  Get a deployment (requires permission `com.cble.deployments.read`)
+  """
+  deployment(id: ID!): Deployment! @permission(key: "com.cble.deployments.read")
 }
 
 input BlueprintInput {
@@ -173,65 +183,69 @@ type Mutation {
   ########
 
   """
-  Create a user
+  Create a user (requires permission `com.cble.users.create`)
   """
-  createUser(input: UserInput!): User!
+  createUser(input: UserInput!): User! @permission(key: "com.cble.users.create")
   """
-  Update a user
+  Update a user (requires permission `com.cble.users.update`)
   """
-  updateUser(id: ID!, input: UserInput!): User!
+  updateUser(id: ID!, input: UserInput!): User! @permission(key: "com.cble.users.update")
   """
-  Delete a user
+  Delete a user (requires permission `com.cble.users.delete`)
   """
-  deleteUser(id: ID!): Boolean!
+  deleteUser(id: ID!): Boolean! @permission(key: "com.cble.users.delete")
   """
-  Create a provider
+  Create a provider (requires permission `com.cble.providers.create`)
   """
-  createProvider(input: ProviderInput!): Provider!
+  createProvider(input: ProviderInput!): Provider! @permission(key: "com.cble.providers.create")
   """
-  Update a provider
+  Update a provider (requires permission `com.cble.providers.update`)
   """
-  updateProvider(id: ID!, input: ProviderInput!): Provider!
+  updateProvider(id: ID!, input: ProviderInput!): Provider! @permission(key: "com.cble.providers.update")
   """
-  Delete a provider
+  Delete a provider (requires permission `com.cble.providers.delete`)
   """
-  deleteProvider(id: ID!): Boolean!
+  deleteProvider(id: ID!): Boolean! @permission(key: "com.cble.providers.delete")
   """
-  Create a blueprint
+  Create a blueprint (requires permission `com.cble.blueprints.create`)
   """
-  createBlueprint(input: BlueprintInput!): Blueprint!
+  createBlueprint(input: BlueprintInput!): Blueprint! @permission(key: "com.cble.blueprints.create")
   """
-  Update a blueprint
+  Update a blueprint (requires permission `com.cble.blueprints.update`)
   """
-  updateBlueprint(id: ID!, input: BlueprintInput!): Blueprint!
+  updateBlueprint(id: ID!, input: BlueprintInput!): Blueprint! @permission(key: "com.cble.blueprints.update")
+  """
+  Delete a blueprint (requires permission `com.cble.blueprints.delete`)
+  """
+  deleteBlueprint(id: ID!): Boolean! @permission(key: "com.cble.blueprints.delete")
 
   #############
   # PROVIDERS #
   #############
 
   """
-  Load a provider to connect it to CBLE
+  Load a provider to connect it to CBLE (requires permission `com.cble.providers.load`)
   """
-  loadProvider(id: ID!): Provider!
+  loadProvider(id: ID!): Provider! @permission(key: "com.cble.providers.load")
   """
-  Unload a provider to disconnect it from CBLE
+  Unload a provider to disconnect it from CBLE (requires permission `com.cble.providers.unload`)
   """
-  unloadProvider(id: ID!): Provider!
+  unloadProvider(id: ID!): Provider! @permission(key: "com.cble.providers.unload")
   """
-  Applies the stored configuration to the provider
+  Applies the stored configuration to the provider (requires permission `com.cble.providers.configure`)
   """
-  configureProvider(id: ID!): Provider!
+  configureProvider(id: ID!): Provider! @permission(key: "com.cble.providers.configure")
 
   ##############
   # DEPLOYMENT #
   ##############
 
   """
-  Deploy a blueprint
+  Deploy a blueprint (requires permission `com.cble.blueprints.deploy`)
   """
-  deployBlueprint(id: ID!): Deployment!
+  deployBlueprint(id: ID!): Deployment! @permission(key: "com.cble.blueprints.deploy")
   """
-  Destroy a deployment
+  Destroy a deployment (requires permission `com.cble.deployments.destroy`)
   """
-  destroyDeployment(id: ID!): Deployment!
+  destroyDeployment(id: ID!): Deployment! @permission(key: "com.cble.deployments.destroy")
 }
