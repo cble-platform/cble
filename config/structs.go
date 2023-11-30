@@ -30,6 +30,13 @@ type DatabaseConfig struct {
 type InitializationConfig struct {
 	DefaultAdmin DefaultAdminConfig `yaml:"default_admin"`
 	AdminGroup   string             `yaml:"admin_group"`
+	Permissions  []PermissionConfig `yaml:"permissions,omitempty"`
+}
+
+type PermissionConfig struct {
+	Key         string `yaml:"key"`
+	Component   string `yaml:"component,omitempty"`
+	Description string `yaml:"description,omitempty"`
 }
 
 type DefaultAdminConfig struct {

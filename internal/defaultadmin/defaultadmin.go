@@ -1,4 +1,4 @@
-package utils
+package defaultadmin
 
 import (
 	"context"
@@ -7,12 +7,14 @@ import (
 	"github.com/cble-platform/cble-backend/config"
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/ent/group"
+	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
 	"github.com/cble-platform/cble-backend/ent/user"
+	"github.com/cble-platform/cble-backend/internal/permissionengine"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func InitializeDefaultAdminUserGroup(ctx context.Context, client *ent.Client, cbleConfig *config.Config) error {
+func InitializeDefaultAdminUserGroup(ctx context.Context, client *ent.Client, pe *permissionengine.PermissionEngine, cbleConfig *config.Config) error {
 	// Ensure the built-in admin group exists
 	cbleAdminGroup, err := client.Group.Query().Where(
 		group.NameEQ(cbleConfig.Initialization.AdminGroup),
@@ -72,6 +74,19 @@ func InitializeDefaultAdminUserGroup(ctx context.Context, client *ent.Client, cb
 				return fmt.Errorf("failed to create default admin: %v", err)
 			}
 			logrus.Info("Created default admin user")
+		}
+	}
+
+	// Give this admin group every permission
+	entPermissions, err := client.Permission.Query().All(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to query all permissions")
+	}
+	for _, entPermission := range entPermissions {
+		_, err := pe.SetPermissionPolicy(ctx, permissionpolicy.TypeALLOW, entPermission, cbleAdminGroup)
+		if err != nil {
+			// Log non-fatal errors
+			logrus.Errorf("failed to grant permission %s to default admin group", entPermission.Key)
 		}
 	}
 

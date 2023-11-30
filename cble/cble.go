@@ -7,8 +7,8 @@ import (
 
 	"github.com/cble-platform/cble-backend/config"
 	"github.com/cble-platform/cble-backend/internal/database"
+	"github.com/cble-platform/cble-backend/internal/defaultadmin"
 	"github.com/cble-platform/cble-backend/internal/permissionengine"
-	"github.com/cble-platform/cble-backend/internal/utils"
 	"github.com/cble-platform/cble-backend/internal/webserver"
 	"github.com/cble-platform/cble-backend/providers"
 	"github.com/sirupsen/logrus"
@@ -57,7 +57,7 @@ func NewServer(ctx context.Context, configFile string) (*CBLEServer, error) {
 	// Webserver //
 	//-----------//
 
-	w := webserver.New(cbleConfig, client, grpcServer)
+	w := webserver.New(cbleConfig, client, grpcServer, pe)
 
 	return &CBLEServer{
 		Config:           cbleConfig,
@@ -74,9 +74,20 @@ func (s *CBLEServer) Initialize(ctx context.Context) error {
 	// Default Admin //
 	//---------------//
 
-	err := utils.InitializeDefaultAdminUserGroup(ctx, s.Ent, s.Config)
+	err := defaultadmin.InitializeDefaultAdminUserGroup(ctx, s.Ent, s.PermissionEngine, s.Config)
 	if err != nil {
 		return fmt.Errorf("failed to initialize default admin user/group")
+	}
+
+	//-------------//
+	// Permissions //
+	//-------------//
+
+	for _, perm := range s.Config.Initialization.Permissions {
+		_, err := s.PermissionEngine.RegisterPermission(ctx, perm.Key, perm.Component, perm.Description)
+		if err != nil {
+			logrus.Warnf("failed to register permission %s: %v", perm.Key, err)
+		}
 	}
 
 	return nil
