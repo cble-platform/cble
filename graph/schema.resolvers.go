@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"entgo.io/ent/dialect/sql"
+	"github.com/cble-platform/cble-backend/auth"
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/ent/providercommand"
 	"github.com/cble-platform/cble-backend/graph/generated"
@@ -348,10 +349,9 @@ func (r *mutationResolver) DeployBlueprint(ctx context.Context, id string) (*ent
 		return nil, gqlerror.Errorf("failed to query provider from blueprint: %v", err)
 	}
 
-	// TODO: remove this requester placeholder
-	entUser, err := r.ent.User.Query().First(ctx)
+	entUser, err := auth.ForContext(ctx)
 	if err != nil {
-		return nil, gqlerror.Errorf("failed to get first user: %v", err)
+		return nil, gqlerror.Errorf("failed to get user from context: %v", err)
 	}
 
 	// Create the deployment
@@ -473,6 +473,11 @@ func (r *providerCommandResolver) CommandType(ctx context.Context, obj *ent.Prov
 // Status is the resolver for the status field.
 func (r *providerCommandResolver) Status(ctx context.Context, obj *ent.ProviderCommand) (model.CommandStatus, error) {
 	return model.CommandStatus(obj.Status), nil
+}
+
+// Me is the resolver for the me field.
+func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
+	return auth.ForContext(ctx)
 }
 
 // Users is the resolver for the users field.
@@ -614,3 +619,16 @@ type providerResolver struct{ *Resolver }
 type providerCommandResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//     it when you're done.
+//   - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *deploymentResolver) TemplateVars(ctx context.Context, obj *ent.Deployment) (map[string]string, error) {
+	panic(fmt.Errorf("not implemented: TemplateVars - templateVars"))
+}
+func (r *deploymentResolver) DeploymentVars(ctx context.Context, obj *ent.Deployment) (map[string]string, error) {
+	panic(fmt.Errorf("not implemented: DeploymentVars - deploymentVars"))
+}

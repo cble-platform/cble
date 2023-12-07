@@ -57,3 +57,6 @@ models:
   Map:
     model:
       - github.com/99designs/gqlgen/graphql.Map
+  StrMap:
+    model:
+      - github.com/cble-platform/cble-backend/graph/model.StrMap

@@ -1,4 +1,6 @@
 scalar Time
+scalar Map
+scalar StrMap
 
 type Blueprint {
   id: ID!
@@ -12,6 +14,9 @@ type Blueprint {
 
 type Deployment {
   id: ID!
+  templateVars: Map!
+  deploymentVars: Map!
+  deploymentState: StrMap!
 
   blueprint: Blueprint!
   requester: User!
@@ -96,6 +101,10 @@ type User {
 directive @permission(key: String!) on FIELD_DEFINITION
 
 type Query {
+  """
+  Get current user
+  """
+  me: User!
   """
   List users (requires permission `com.cble.users.list`)
   """

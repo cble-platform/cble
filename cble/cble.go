@@ -70,15 +70,6 @@ func NewServer(ctx context.Context, configFile string) (*CBLEServer, error) {
 
 // Initialize should be called before Run
 func (s *CBLEServer) Initialize(ctx context.Context) error {
-	//---------------//
-	// Default Admin //
-	//---------------//
-
-	err := defaultadmin.InitializeDefaultAdminUserGroup(ctx, s.Ent, s.PermissionEngine, s.Config)
-	if err != nil {
-		return fmt.Errorf("failed to initialize default admin user/group")
-	}
-
 	//-------------//
 	// Permissions //
 	//-------------//
@@ -88,6 +79,15 @@ func (s *CBLEServer) Initialize(ctx context.Context) error {
 		if err != nil {
 			logrus.Warnf("failed to register permission %s: %v", perm.Key, err)
 		}
+	}
+
+	//---------------//
+	// Default Admin //
+	//---------------//
+
+	err := defaultadmin.InitializeDefaultAdminUserGroup(ctx, s.Ent, s.PermissionEngine, s.Config)
+	if err != nil {
+		return fmt.Errorf("failed to initialize default admin user/group")
 	}
 
 	return nil

@@ -31,6 +31,19 @@ func InitializeDefaultAdminUserGroup(ctx context.Context, client *ent.Client, pe
 		}
 	}
 
+	// Give this admin group every permission
+	entPermissions, err := client.Permission.Query().All(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to query all permissions")
+	}
+	for _, entPermission := range entPermissions {
+		_, err := pe.SetPermissionPolicy(ctx, permissionpolicy.TypeALLOW, entPermission, cbleAdminGroup)
+		if err != nil {
+			// Log non-fatal errors
+			logrus.Errorf("failed to grant permission %s to default admin group", entPermission.Key)
+		}
+	}
+
 	// Check if there are any admins in existence with the built in admin group
 	if anyAdminExists, err := client.User.Query().Where(
 		user.And(
@@ -74,19 +87,6 @@ func InitializeDefaultAdminUserGroup(ctx context.Context, client *ent.Client, pe
 				return fmt.Errorf("failed to create default admin: %v", err)
 			}
 			logrus.Info("Created default admin user")
-		}
-	}
-
-	// Give this admin group every permission
-	entPermissions, err := client.Permission.Query().All(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to query all permissions")
-	}
-	for _, entPermission := range entPermissions {
-		_, err := pe.SetPermissionPolicy(ctx, permissionpolicy.TypeALLOW, entPermission, cbleAdminGroup)
-		if err != nil {
-			// Log non-fatal errors
-			logrus.Errorf("failed to grant permission %s to default admin group", entPermission.Key)
 		}
 	}
 
