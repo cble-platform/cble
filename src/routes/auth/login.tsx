@@ -1,21 +1,11 @@
 import { LockOutlined } from "@mui/icons-material";
-import {
-  Avatar,
-  Box,
-  Button,
-  Checkbox,
-  CircularProgress,
-  Container,
-  FormControlLabel,
-  Grid,
-  Link,
-  TextField,
-  Typography,
-} from "@mui/material";
-import { useState } from "react";
+import { Avatar, Box, IconButton, Checkbox, Container, FormControlLabel, Grid, Link, TextField, Typography } from "@mui/material";
+import { useContext, useState } from "react";
 import { Login as ApiLogin } from "../../api/auth";
 import { useNavigate } from "react-router-dom";
 import { LoadingButton } from "@mui/lab";
+import { ThemeContext } from "../../theme";
+import { Brightness4, Brightness7, BrightnessAuto } from "@mui/icons-material";
 
 export default function Login() {
   const [loginData, setLoginData] = useState<{
@@ -24,6 +14,7 @@ export default function Login() {
   }>({ username: "", password: "" });
   const [loginLoading, setLoginLoading] = useState<boolean>(false);
   const navigate = useNavigate();
+  const { themePreference, setThemePreference } = useContext(ThemeContext);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -45,6 +36,23 @@ export default function Login() {
 
   return (
     <Container component="main" maxWidth="xs">
+      <IconButton
+        color="inherit"
+        onClick={() => {
+          if (themePreference === "light") setThemePreference("dark");
+          else if (themePreference === "dark") setThemePreference("auto");
+          else setThemePreference("light");
+        }}
+        sx={{
+          position: "absolute",
+          top: "1rem",
+          right: "1rem",
+        }}
+      >
+        {themePreference === "light" && <Brightness4 />}
+        {themePreference === "dark" && <Brightness7 />}
+        {themePreference === "auto" && <BrightnessAuto />}
+      </IconButton>
       <Box
         sx={{
           // marginTop: 8,
