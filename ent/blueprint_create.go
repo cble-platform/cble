@@ -29,6 +29,12 @@ func (bc *BlueprintCreate) SetName(s string) *BlueprintCreate {
 	return bc
 }
 
+// SetDescription sets the "description" field.
+func (bc *BlueprintCreate) SetDescription(s string) *BlueprintCreate {
+	bc.mutation.SetDescription(s)
+	return bc
+}
+
 // SetBlueprintTemplate sets the "blueprint_template" field.
 func (bc *BlueprintCreate) SetBlueprintTemplate(b []byte) *BlueprintCreate {
 	bc.mutation.SetBlueprintTemplate(b)
@@ -132,6 +138,9 @@ func (bc *BlueprintCreate) check() error {
 	if _, ok := bc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Blueprint.name"`)}
 	}
+	if _, ok := bc.mutation.Description(); !ok {
+		return &ValidationError{Name: "description", err: errors.New(`ent: missing required field "Blueprint.description"`)}
+	}
 	if _, ok := bc.mutation.BlueprintTemplate(); !ok {
 		return &ValidationError{Name: "blueprint_template", err: errors.New(`ent: missing required field "Blueprint.blueprint_template"`)}
 	}
@@ -179,6 +188,10 @@ func (bc *BlueprintCreate) createSpec() (*Blueprint, *sqlgraph.CreateSpec) {
 	if value, ok := bc.mutation.Name(); ok {
 		_spec.SetField(blueprint.FieldName, field.TypeString, value)
 		_node.Name = value
+	}
+	if value, ok := bc.mutation.Description(); ok {
+		_spec.SetField(blueprint.FieldDescription, field.TypeString, value)
+		_node.Description = value
 	}
 	if value, ok := bc.mutation.BlueprintTemplate(); ok {
 		_spec.SetField(blueprint.FieldBlueprintTemplate, field.TypeBytes, value)

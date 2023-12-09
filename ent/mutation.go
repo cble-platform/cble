@@ -49,6 +49,7 @@ type BlueprintMutation struct {
 	typ                 string
 	id                  *uuid.UUID
 	name                *string
+	description         *string
 	blueprint_template  *[]byte
 	clearedFields       map[string]struct{}
 	parent_group        *uuid.UUID
@@ -201,6 +202,42 @@ func (m *BlueprintMutation) OldName(ctx context.Context) (v string, err error) {
 // ResetName resets all changes to the "name" field.
 func (m *BlueprintMutation) ResetName() {
 	m.name = nil
+}
+
+// SetDescription sets the "description" field.
+func (m *BlueprintMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *BlueprintMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the Blueprint entity.
+// If the Blueprint object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BlueprintMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *BlueprintMutation) ResetDescription() {
+	m.description = nil
 }
 
 // SetBlueprintTemplate sets the "blueprint_template" field.
@@ -405,9 +442,12 @@ func (m *BlueprintMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BlueprintMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.name != nil {
 		fields = append(fields, blueprint.FieldName)
+	}
+	if m.description != nil {
+		fields = append(fields, blueprint.FieldDescription)
 	}
 	if m.blueprint_template != nil {
 		fields = append(fields, blueprint.FieldBlueprintTemplate)
@@ -422,6 +462,8 @@ func (m *BlueprintMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case blueprint.FieldName:
 		return m.Name()
+	case blueprint.FieldDescription:
+		return m.Description()
 	case blueprint.FieldBlueprintTemplate:
 		return m.BlueprintTemplate()
 	}
@@ -435,6 +477,8 @@ func (m *BlueprintMutation) OldField(ctx context.Context, name string) (ent.Valu
 	switch name {
 	case blueprint.FieldName:
 		return m.OldName(ctx)
+	case blueprint.FieldDescription:
+		return m.OldDescription(ctx)
 	case blueprint.FieldBlueprintTemplate:
 		return m.OldBlueprintTemplate(ctx)
 	}
@@ -452,6 +496,13 @@ func (m *BlueprintMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
+		return nil
+	case blueprint.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
 		return nil
 	case blueprint.FieldBlueprintTemplate:
 		v, ok := value.([]byte)
@@ -511,6 +562,9 @@ func (m *BlueprintMutation) ResetField(name string) error {
 	switch name {
 	case blueprint.FieldName:
 		m.ResetName()
+		return nil
+	case blueprint.FieldDescription:
+		m.ResetDescription()
 		return nil
 	case blueprint.FieldBlueprintTemplate:
 		m.ResetBlueprintTemplate()
@@ -645,6 +699,7 @@ type DeploymentMutation struct {
 	op               Op
 	typ              string
 	id               *uuid.UUID
+	name             *string
 	template_vars    *map[string]interface{}
 	deployment_vars  *map[string]interface{}
 	deployment_state *map[string]string
@@ -760,6 +815,42 @@ func (m *DeploymentMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
+}
+
+// SetName sets the "name" field.
+func (m *DeploymentMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *DeploymentMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Deployment entity.
+// If the Deployment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DeploymentMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *DeploymentMutation) ResetName() {
+	m.name = nil
 }
 
 // SetTemplateVars sets the "template_vars" field.
@@ -982,7 +1073,10 @@ func (m *DeploymentMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *DeploymentMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
+	if m.name != nil {
+		fields = append(fields, deployment.FieldName)
+	}
 	if m.template_vars != nil {
 		fields = append(fields, deployment.FieldTemplateVars)
 	}
@@ -1000,6 +1094,8 @@ func (m *DeploymentMutation) Fields() []string {
 // schema.
 func (m *DeploymentMutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case deployment.FieldName:
+		return m.Name()
 	case deployment.FieldTemplateVars:
 		return m.TemplateVars()
 	case deployment.FieldDeploymentVars:
@@ -1015,6 +1111,8 @@ func (m *DeploymentMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *DeploymentMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case deployment.FieldName:
+		return m.OldName(ctx)
 	case deployment.FieldTemplateVars:
 		return m.OldTemplateVars(ctx)
 	case deployment.FieldDeploymentVars:
@@ -1030,6 +1128,13 @@ func (m *DeploymentMutation) OldField(ctx context.Context, name string) (ent.Val
 // type.
 func (m *DeploymentMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case deployment.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
 	case deployment.FieldTemplateVars:
 		v, ok := value.(map[string]interface{})
 		if !ok {
@@ -1100,6 +1205,9 @@ func (m *DeploymentMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *DeploymentMutation) ResetField(name string) error {
 	switch name {
+	case deployment.FieldName:
+		m.ResetName()
+		return nil
 	case deployment.FieldTemplateVars:
 		m.ResetTemplateVars()
 		return nil

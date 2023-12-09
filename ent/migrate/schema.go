@@ -12,6 +12,7 @@ var (
 	BlueprintsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "name", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString},
 		{Name: "blueprint_template", Type: field.TypeBytes},
 		{Name: "blueprint_parent_group", Type: field.TypeUUID},
 		{Name: "blueprint_provider", Type: field.TypeUUID},
@@ -24,13 +25,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "blueprints_groups_parent_group",
-				Columns:    []*schema.Column{BlueprintsColumns[3]},
+				Columns:    []*schema.Column{BlueprintsColumns[4]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "blueprints_providers_provider",
-				Columns:    []*schema.Column{BlueprintsColumns[4]},
+				Columns:    []*schema.Column{BlueprintsColumns[5]},
 				RefColumns: []*schema.Column{ProvidersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -39,6 +40,7 @@ var (
 	// DeploymentsColumns holds the columns for the "deployments" table.
 	DeploymentsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
+		{Name: "name", Type: field.TypeString},
 		{Name: "template_vars", Type: field.TypeJSON},
 		{Name: "deployment_vars", Type: field.TypeJSON},
 		{Name: "deployment_state", Type: field.TypeJSON},
@@ -53,13 +55,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "deployments_blueprints_blueprint",
-				Columns:    []*schema.Column{DeploymentsColumns[4]},
+				Columns:    []*schema.Column{DeploymentsColumns[5]},
 				RefColumns: []*schema.Column{BlueprintsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "deployments_users_requester",
-				Columns:    []*schema.Column{DeploymentsColumns[5]},
+				Columns:    []*schema.Column{DeploymentsColumns[6]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},

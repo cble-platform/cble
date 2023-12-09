@@ -54,6 +54,76 @@ func IDLTE(id uuid.UUID) predicate.Deployment {
 	return predicate.Deployment(sql.FieldLTE(FieldID, id))
 }
 
+// Name applies equality check predicate on the "name" field. It's identical to NameEQ.
+func Name(v string) predicate.Deployment {
+	return predicate.Deployment(sql.FieldEQ(FieldName, v))
+}
+
+// NameEQ applies the EQ predicate on the "name" field.
+func NameEQ(v string) predicate.Deployment {
+	return predicate.Deployment(sql.FieldEQ(FieldName, v))
+}
+
+// NameNEQ applies the NEQ predicate on the "name" field.
+func NameNEQ(v string) predicate.Deployment {
+	return predicate.Deployment(sql.FieldNEQ(FieldName, v))
+}
+
+// NameIn applies the In predicate on the "name" field.
+func NameIn(vs ...string) predicate.Deployment {
+	return predicate.Deployment(sql.FieldIn(FieldName, vs...))
+}
+
+// NameNotIn applies the NotIn predicate on the "name" field.
+func NameNotIn(vs ...string) predicate.Deployment {
+	return predicate.Deployment(sql.FieldNotIn(FieldName, vs...))
+}
+
+// NameGT applies the GT predicate on the "name" field.
+func NameGT(v string) predicate.Deployment {
+	return predicate.Deployment(sql.FieldGT(FieldName, v))
+}
+
+// NameGTE applies the GTE predicate on the "name" field.
+func NameGTE(v string) predicate.Deployment {
+	return predicate.Deployment(sql.FieldGTE(FieldName, v))
+}
+
+// NameLT applies the LT predicate on the "name" field.
+func NameLT(v string) predicate.Deployment {
+	return predicate.Deployment(sql.FieldLT(FieldName, v))
+}
+
+// NameLTE applies the LTE predicate on the "name" field.
+func NameLTE(v string) predicate.Deployment {
+	return predicate.Deployment(sql.FieldLTE(FieldName, v))
+}
+
+// NameContains applies the Contains predicate on the "name" field.
+func NameContains(v string) predicate.Deployment {
+	return predicate.Deployment(sql.FieldContains(FieldName, v))
+}
+
+// NameHasPrefix applies the HasPrefix predicate on the "name" field.
+func NameHasPrefix(v string) predicate.Deployment {
+	return predicate.Deployment(sql.FieldHasPrefix(FieldName, v))
+}
+
+// NameHasSuffix applies the HasSuffix predicate on the "name" field.
+func NameHasSuffix(v string) predicate.Deployment {
+	return predicate.Deployment(sql.FieldHasSuffix(FieldName, v))
+}
+
+// NameEqualFold applies the EqualFold predicate on the "name" field.
+func NameEqualFold(v string) predicate.Deployment {
+	return predicate.Deployment(sql.FieldEqualFold(FieldName, v))
+}
+
+// NameContainsFold applies the ContainsFold predicate on the "name" field.
+func NameContainsFold(v string) predicate.Deployment {
+	return predicate.Deployment(sql.FieldContainsFold(FieldName, v))
+}
+
 // HasBlueprint applies the HasEdge predicate on the "blueprint" edge.
 func HasBlueprint() predicate.Deployment {
 	return predicate.Deployment(func(s *sql.Selector) {

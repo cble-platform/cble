@@ -30,6 +30,12 @@ func (du *DeploymentUpdate) Where(ps ...predicate.Deployment) *DeploymentUpdate 
 	return du
 }
 
+// SetName sets the "name" field.
+func (du *DeploymentUpdate) SetName(s string) *DeploymentUpdate {
+	du.mutation.SetName(s)
+	return du
+}
+
 // SetTemplateVars sets the "template_vars" field.
 func (du *DeploymentUpdate) SetTemplateVars(m map[string]interface{}) *DeploymentUpdate {
 	du.mutation.SetTemplateVars(m)
@@ -137,6 +143,9 @@ func (du *DeploymentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := du.mutation.Name(); ok {
+		_spec.SetField(deployment.FieldName, field.TypeString, value)
+	}
 	if value, ok := du.mutation.TemplateVars(); ok {
 		_spec.SetField(deployment.FieldTemplateVars, field.TypeJSON, value)
 	}
@@ -222,6 +231,12 @@ type DeploymentUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *DeploymentMutation
+}
+
+// SetName sets the "name" field.
+func (duo *DeploymentUpdateOne) SetName(s string) *DeploymentUpdateOne {
+	duo.mutation.SetName(s)
+	return duo
 }
 
 // SetTemplateVars sets the "template_vars" field.
@@ -360,6 +375,9 @@ func (duo *DeploymentUpdateOne) sqlSave(ctx context.Context) (_node *Deployment,
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := duo.mutation.Name(); ok {
+		_spec.SetField(deployment.FieldName, field.TypeString, value)
 	}
 	if value, ok := duo.mutation.TemplateVars(); ok {
 		_spec.SetField(deployment.FieldTemplateVars, field.TypeJSON, value)

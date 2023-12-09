@@ -13,6 +13,8 @@ const (
 	Label = "deployment"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldName holds the string denoting the name field in the database.
+	FieldName = "name"
 	// FieldTemplateVars holds the string denoting the template_vars field in the database.
 	FieldTemplateVars = "template_vars"
 	// FieldDeploymentVars holds the string denoting the deployment_vars field in the database.
@@ -44,6 +46,7 @@ const (
 // Columns holds all SQL columns for deployment fields.
 var Columns = []string{
 	FieldID,
+	FieldName,
 	FieldTemplateVars,
 	FieldDeploymentVars,
 	FieldDeploymentState,
@@ -88,6 +91,11 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByName orders the results by the name field.
+func ByName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldName, opts...).ToFunc()
 }
 
 // ByBlueprintField orders the results by blueprint field.

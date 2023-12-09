@@ -22,6 +22,12 @@ type DeploymentCreate struct {
 	hooks    []Hook
 }
 
+// SetName sets the "name" field.
+func (dc *DeploymentCreate) SetName(s string) *DeploymentCreate {
+	dc.mutation.SetName(s)
+	return dc
+}
+
 // SetTemplateVars sets the "template_vars" field.
 func (dc *DeploymentCreate) SetTemplateVars(m map[string]interface{}) *DeploymentCreate {
 	dc.mutation.SetTemplateVars(m)
@@ -131,6 +137,9 @@ func (dc *DeploymentCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (dc *DeploymentCreate) check() error {
+	if _, ok := dc.mutation.Name(); !ok {
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Deployment.name"`)}
+	}
 	if _, ok := dc.mutation.TemplateVars(); !ok {
 		return &ValidationError{Name: "template_vars", err: errors.New(`ent: missing required field "Deployment.template_vars"`)}
 	}
@@ -180,6 +189,10 @@ func (dc *DeploymentCreate) createSpec() (*Deployment, *sqlgraph.CreateSpec) {
 	if id, ok := dc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
+	}
+	if value, ok := dc.mutation.Name(); ok {
+		_spec.SetField(deployment.FieldName, field.TypeString, value)
+		_node.Name = value
 	}
 	if value, ok := dc.mutation.TemplateVars(); ok {
 		_spec.SetField(deployment.FieldTemplateVars, field.TypeJSON, value)

@@ -15,6 +15,8 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
 	// FieldBlueprintTemplate holds the string denoting the blueprint_template field in the database.
 	FieldBlueprintTemplate = "blueprint_template"
 	// EdgeParentGroup holds the string denoting the parent_group edge name in mutations.
@@ -52,6 +54,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldName,
+	FieldDescription,
 	FieldBlueprintTemplate,
 }
 
@@ -93,6 +96,11 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByName orders the results by the name field.
 func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// ByDescription orders the results by the description field.
+func ByDescription(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDescription, opts...).ToFunc()
 }
 
 // ByParentGroupField orders the results by parent_group field.

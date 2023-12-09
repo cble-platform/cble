@@ -28,15 +28,15 @@ func init() {
 	deploymentFields := schema.Deployment{}.Fields()
 	_ = deploymentFields
 	// deploymentDescTemplateVars is the schema descriptor for template_vars field.
-	deploymentDescTemplateVars := deploymentFields[1].Descriptor()
+	deploymentDescTemplateVars := deploymentFields[2].Descriptor()
 	// deployment.DefaultTemplateVars holds the default value on creation for the template_vars field.
 	deployment.DefaultTemplateVars = deploymentDescTemplateVars.Default.(map[string]interface{})
 	// deploymentDescDeploymentVars is the schema descriptor for deployment_vars field.
-	deploymentDescDeploymentVars := deploymentFields[2].Descriptor()
+	deploymentDescDeploymentVars := deploymentFields[3].Descriptor()
 	// deployment.DefaultDeploymentVars holds the default value on creation for the deployment_vars field.
 	deployment.DefaultDeploymentVars = deploymentDescDeploymentVars.Default.(map[string]interface{})
 	// deploymentDescDeploymentState is the schema descriptor for deployment_state field.
-	deploymentDescDeploymentState := deploymentFields[3].Descriptor()
+	deploymentDescDeploymentState := deploymentFields[4].Descriptor()
 	// deployment.DefaultDeploymentState holds the default value on creation for the deployment_state field.
 	deployment.DefaultDeploymentState = deploymentDescDeploymentState.Default.(map[string]string)
 	// deploymentDescID is the schema descriptor for id field.

@@ -21,6 +21,8 @@ type Blueprint struct {
 	ID uuid.UUID `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
+	// Description holds the value of the "description" field.
+	Description string `json:"description,omitempty"`
 	// BlueprintTemplate holds the value of the "blueprint_template" field.
 	BlueprintTemplate []byte `json:"blueprint_template,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -86,7 +88,7 @@ func (*Blueprint) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case blueprint.FieldBlueprintTemplate:
 			values[i] = new([]byte)
-		case blueprint.FieldName:
+		case blueprint.FieldName, blueprint.FieldDescription:
 			values[i] = new(sql.NullString)
 		case blueprint.FieldID:
 			values[i] = new(uuid.UUID)
@@ -120,6 +122,12 @@ func (b *Blueprint) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
 				b.Name = value.String
+			}
+		case blueprint.FieldDescription:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field description", values[i])
+			} else if value.Valid {
+				b.Description = value.String
 			}
 		case blueprint.FieldBlueprintTemplate:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -194,6 +202,9 @@ func (b *Blueprint) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", b.ID))
 	builder.WriteString("name=")
 	builder.WriteString(b.Name)
+	builder.WriteString(", ")
+	builder.WriteString("description=")
+	builder.WriteString(b.Description)
 	builder.WriteString(", ")
 	builder.WriteString("blueprint_template=")
 	builder.WriteString(fmt.Sprintf("%v", b.BlueprintTemplate))

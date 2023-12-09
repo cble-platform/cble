@@ -37,6 +37,12 @@ func (bu *BlueprintUpdate) SetName(s string) *BlueprintUpdate {
 	return bu
 }
 
+// SetDescription sets the "description" field.
+func (bu *BlueprintUpdate) SetDescription(s string) *BlueprintUpdate {
+	bu.mutation.SetDescription(s)
+	return bu
+}
+
 // SetBlueprintTemplate sets the "blueprint_template" field.
 func (bu *BlueprintUpdate) SetBlueprintTemplate(b []byte) *BlueprintUpdate {
 	bu.mutation.SetBlueprintTemplate(b)
@@ -171,6 +177,9 @@ func (bu *BlueprintUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := bu.mutation.Name(); ok {
 		_spec.SetField(blueprint.FieldName, field.TypeString, value)
 	}
+	if value, ok := bu.mutation.Description(); ok {
+		_spec.SetField(blueprint.FieldDescription, field.TypeString, value)
+	}
 	if value, ok := bu.mutation.BlueprintTemplate(); ok {
 		_spec.SetField(blueprint.FieldBlueprintTemplate, field.TypeBytes, value)
 	}
@@ -300,6 +309,12 @@ type BlueprintUpdateOne struct {
 // SetName sets the "name" field.
 func (buo *BlueprintUpdateOne) SetName(s string) *BlueprintUpdateOne {
 	buo.mutation.SetName(s)
+	return buo
+}
+
+// SetDescription sets the "description" field.
+func (buo *BlueprintUpdateOne) SetDescription(s string) *BlueprintUpdateOne {
+	buo.mutation.SetDescription(s)
 	return buo
 }
 
@@ -466,6 +481,9 @@ func (buo *BlueprintUpdateOne) sqlSave(ctx context.Context) (_node *Blueprint, e
 	}
 	if value, ok := buo.mutation.Name(); ok {
 		_spec.SetField(blueprint.FieldName, field.TypeString, value)
+	}
+	if value, ok := buo.mutation.Description(); ok {
+		_spec.SetField(blueprint.FieldDescription, field.TypeString, value)
 	}
 	if value, ok := buo.mutation.BlueprintTemplate(); ok {
 		_spec.SetField(blueprint.FieldBlueprintTemplate, field.TypeBytes, value)

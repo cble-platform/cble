@@ -20,6 +20,8 @@ type Deployment struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
+	// Name holds the value of the "name" field.
+	Name string `json:"name,omitempty"`
 	// TemplateVars holds the value of the "template_vars" field.
 	TemplateVars map[string]interface{} `json:"template_vars,omitempty"`
 	// DeploymentVars holds the value of the "deployment_vars" field.
@@ -78,6 +80,8 @@ func (*Deployment) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case deployment.FieldTemplateVars, deployment.FieldDeploymentVars, deployment.FieldDeploymentState:
 			values[i] = new([]byte)
+		case deployment.FieldName:
+			values[i] = new(sql.NullString)
 		case deployment.FieldID:
 			values[i] = new(uuid.UUID)
 		case deployment.ForeignKeys[0]: // deployment_blueprint
@@ -104,6 +108,12 @@ func (d *Deployment) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				d.ID = *value
+			}
+		case deployment.FieldName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field name", values[i])
+			} else if value.Valid {
+				d.Name = value.String
 			}
 		case deployment.FieldTemplateVars:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -189,6 +199,9 @@ func (d *Deployment) String() string {
 	var builder strings.Builder
 	builder.WriteString("Deployment(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", d.ID))
+	builder.WriteString("name=")
+	builder.WriteString(d.Name)
+	builder.WriteString(", ")
 	builder.WriteString("template_vars=")
 	builder.WriteString(fmt.Sprintf("%v", d.TemplateVars))
 	builder.WriteString(", ")

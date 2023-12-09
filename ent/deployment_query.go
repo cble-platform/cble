@@ -335,12 +335,12 @@ func (dq *DeploymentQuery) WithRequester(opts ...func(*UserQuery)) *DeploymentQu
 // Example:
 //
 //	var v []struct {
-//		TemplateVars map[string]interface {} `json:"template_vars,omitempty"`
+//		Name string `json:"name,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Deployment.Query().
-//		GroupBy(deployment.FieldTemplateVars).
+//		GroupBy(deployment.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (dq *DeploymentQuery) GroupBy(field string, fields ...string) *DeploymentGroupBy {
@@ -358,11 +358,11 @@ func (dq *DeploymentQuery) GroupBy(field string, fields ...string) *DeploymentGr
 // Example:
 //
 //	var v []struct {
-//		TemplateVars map[string]interface {} `json:"template_vars,omitempty"`
+//		Name string `json:"name,omitempty"`
 //	}
 //
 //	client.Deployment.Query().
-//		Select(deployment.FieldTemplateVars).
+//		Select(deployment.FieldName).
 //		Scan(ctx, &v)
 func (dq *DeploymentQuery) Select(fields ...string) *DeploymentSelect {
 	dq.ctx.Fields = append(dq.ctx.Fields, fields...)

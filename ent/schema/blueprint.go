@@ -19,6 +19,7 @@ func (Blueprint) Fields() []ent.Field {
 			Immutable().
 			Default(uuid.New),
 		field.String("name"),
+		field.String("description"),
 		field.Bytes("blueprint_template"),
 	}
 }
