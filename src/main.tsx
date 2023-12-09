@@ -13,20 +13,42 @@ import Login from "./routes/auth/login";
 
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 import { ThemeWrapper } from "./theme";
 import { client } from "./api/apollo";
 import { ApolloProvider } from "@apollo/client";
-import EditorTest from "./routes/editor-test";
+import Blueprints from "./routes/blueprints";
+import YamlWorker from "./yaml.worker.js?worker";
+import { SnackbarProvider } from "notistack";
+import RequestBlueprint from "./routes/blueprints/request";
+import BlueprintForm from "./routes/blueprints/form";
+
+window.MonacoEnvironment = {
+  getWorker(moduleId, label) {
+    switch (label) {
+      // Handle other cases
+      case "yaml":
+        return new YamlWorker();
+      default:
+        throw new Error(`Unknown label ${label}`);
+    }
+  },
+};
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <Root />,
     children: [
+      { index: true, element: <Navigate to="/blueprints" replace /> },
       {
-        path: "editor-test",
-        element: <EditorTest />,
+        path: "blueprints",
+        children: [
+          { index: true, element: <Blueprints /> },
+          { path: "create", element: <BlueprintForm action="create" /> },
+          { path: "edit/:id", element: <BlueprintForm action="edit" /> },
+          { path: "request/:id", element: <RequestBlueprint /> },
+        ],
       },
     ],
     errorElement: <ErrorPage />,
@@ -47,7 +69,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ApolloProvider client={client}>
       <ThemeWrapper>
-        <RouterProvider router={router} />
+        <SnackbarProvider maxSnack={5}>
+          <RouterProvider router={router} />
+        </SnackbarProvider>
       </ThemeWrapper>
     </ApolloProvider>
   </React.StrictMode>

@@ -1,4 +1,4 @@
-import { Container } from "@mui/material";
+import { Box } from "@mui/material";
 import { useContext, useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import Navbar from "../components/navbar";
@@ -17,9 +17,9 @@ export default function Root() {
   return (
     <>
       <Navbar themePreference={themePreference} setTheme={setThemePreference} />
-      <Container>
+      <Box sx={{ height: "100dvh", p: 0, pt: "4.5rem" }}>
         <Outlet />
-      </Container>
+      </Box>
     </>
   );
 }

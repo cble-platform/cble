@@ -22,6 +22,10 @@
     "apollo-upload-client": "^18.0.1",
     "graphql": "^16.8.1",
     "graphql-ws": "^5.14.2",
+    "monaco-editor": "^0.45.0",
+    "monaco-yaml": "^5.1.0",
+    "mui-markdown": "^1.1.11",
+    "notistack": "^3.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.0"

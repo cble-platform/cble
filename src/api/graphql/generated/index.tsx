@@ -15,6 +15,8 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean; }
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
+  Map: { input: any; output: any; }
+  StrMap: { input: any; output: any; }
   Time: { input: any; output: any; }
 };
 
@@ -22,6 +24,7 @@ export type Blueprint = {
   __typename?: 'Blueprint';
   blueprintTemplate: Scalars['String']['output'];
   deployments: Array<Maybe<Deployment>>;
+  description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   parentGroup: Group;
@@ -30,6 +33,7 @@ export type Blueprint = {
 
 export type BlueprintInput = {
   blueprintTemplate: Scalars['String']['input'];
+  description: Scalars['String']['input'];
   name: Scalars['String']['input'];
   parentGroupId: Scalars['ID']['input'];
   providerId: Scalars['ID']['input'];
@@ -51,8 +55,11 @@ export enum CommandType {
 export type Deployment = {
   __typename?: 'Deployment';
   blueprint: Blueprint;
+  deploymentState: Scalars['StrMap']['output'];
+  deploymentVars: Scalars['Map']['output'];
   id: Scalars['ID']['output'];
   requester: User;
+  templateVars: Scalars['Map']['output'];
 };
 
 export type Group = {
@@ -244,6 +251,8 @@ export type Query = {
   groups: Array<Group>;
   /** Get current user */
   me: User;
+  /** Retrieves if the current user has a given permission */
+  meHasPermission: Scalars['Boolean']['output'];
   /** Get a provider (requires permission `com.cble.providers.read`) */
   provider: Provider;
   /** Get a provider command (requires permission `com.cble.providercommands.read`) */
@@ -271,6 +280,11 @@ export type QueryDeploymentArgs = {
 
 export type QueryGroupArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryMeHasPermissionArgs = {
+  key: Scalars['String']['input'];
 };
 
 
@@ -306,6 +320,58 @@ export type UserInput = {
   username: Scalars['String']['input'];
 };
 
+export type BlueprintFragementFragment = { __typename?: 'Blueprint', id: string, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> };
+
+export type BlueprintsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type BlueprintsQuery = { __typename?: 'Query', blueprints: Array<{ __typename?: 'Blueprint', id: string, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }> };
+
+export type GetBlueprintQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetBlueprintQuery = { __typename?: 'Query', blueprint: { __typename?: 'Blueprint', id: string, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
+
+export type CreateBlueprintMutationVariables = Exact<{
+  input: BlueprintInput;
+}>;
+
+
+export type CreateBlueprintMutation = { __typename?: 'Mutation', createBlueprint: { __typename?: 'Blueprint', id: string, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
+
+export type UpdateBlueprintMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: BlueprintInput;
+}>;
+
+
+export type UpdateBlueprintMutation = { __typename?: 'Mutation', updateBlueprint: { __typename?: 'Blueprint', id: string, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
+
+export type DeployBlueprintMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeployBlueprintMutation = { __typename?: 'Mutation', deployBlueprint: { __typename?: 'Deployment', id: string, templateVars: any, deploymentVars: any, deploymentState: any, blueprint: { __typename?: 'Blueprint', id: string, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, username: string, email: string, firstName: string, lastName: string } } };
+
+export type DeploymentFragmentFragment = { __typename?: 'Deployment', id: string, templateVars: any, deploymentVars: any, deploymentState: any, blueprint: { __typename?: 'Blueprint', id: string, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, username: string, email: string, firstName: string, lastName: string } };
+
+export type GroupFragmentFragment = { __typename?: 'Group', id: string, name: string };
+
+export type ListGroupsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ListGroupsQuery = { __typename?: 'Query', groups: Array<{ __typename?: 'Group', id: string, name: string }> };
+
+export type ProviderFragmentFragment = { __typename?: 'Provider', id: string, displayName: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean };
+
+export type ProvidersQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ProvidersQuery = { __typename?: 'Query', providers: Array<{ __typename?: 'Provider', id: string, displayName: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean }> };
+
 export type UserFragmentFragment = { __typename?: 'User', id: string, username: string, email: string, firstName: string, lastName: string };
 
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
@@ -318,6 +384,33 @@ export type ListUsersQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type ListUsersQuery = { __typename?: 'Query', users: Array<{ __typename?: 'User', id: string, username: string, email: string, firstName: string, lastName: string }> };
 
+export type MeHasPermissionQueryVariables = Exact<{
+  key: Scalars['String']['input'];
+}>;
+
+
+export type MeHasPermissionQuery = { __typename?: 'Query', meHasPermission: boolean };
+
+export const BlueprintFragementFragmentDoc = gql`
+    fragment BlueprintFragement on Blueprint {
+  id
+  name
+  description
+  blueprintTemplate
+  parentGroup {
+    id
+    name
+  }
+  provider {
+    id
+    displayName
+    isLoaded
+  }
+  deployments {
+    id
+  }
+}
+    `;
 export const UserFragmentFragmentDoc = gql`
     fragment UserFragment on User {
   id
@@ -327,6 +420,293 @@ export const UserFragmentFragmentDoc = gql`
   lastName
 }
     `;
+export const DeploymentFragmentFragmentDoc = gql`
+    fragment DeploymentFragment on Deployment {
+  id
+  templateVars
+  deploymentVars
+  deploymentState
+  blueprint {
+    ...BlueprintFragement
+  }
+  requester {
+    ...UserFragment
+  }
+}
+    ${BlueprintFragementFragmentDoc}
+${UserFragmentFragmentDoc}`;
+export const GroupFragmentFragmentDoc = gql`
+    fragment GroupFragment on Group {
+  id
+  name
+}
+    `;
+export const ProviderFragmentFragmentDoc = gql`
+    fragment ProviderFragment on Provider {
+  id
+  displayName
+  providerGitUrl
+  providerVersion
+  isLoaded
+}
+    `;
+export const BlueprintsDocument = gql`
+    query Blueprints {
+  blueprints {
+    ...BlueprintFragement
+  }
+}
+    ${BlueprintFragementFragmentDoc}`;
+
+/**
+ * __useBlueprintsQuery__
+ *
+ * To run a query within a React component, call `useBlueprintsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useBlueprintsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useBlueprintsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useBlueprintsQuery(baseOptions?: Apollo.QueryHookOptions<BlueprintsQuery, BlueprintsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<BlueprintsQuery, BlueprintsQueryVariables>(BlueprintsDocument, options);
+      }
+export function useBlueprintsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<BlueprintsQuery, BlueprintsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<BlueprintsQuery, BlueprintsQueryVariables>(BlueprintsDocument, options);
+        }
+export function useBlueprintsSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<BlueprintsQuery, BlueprintsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<BlueprintsQuery, BlueprintsQueryVariables>(BlueprintsDocument, options);
+        }
+export type BlueprintsQueryHookResult = ReturnType<typeof useBlueprintsQuery>;
+export type BlueprintsLazyQueryHookResult = ReturnType<typeof useBlueprintsLazyQuery>;
+export type BlueprintsSuspenseQueryHookResult = ReturnType<typeof useBlueprintsSuspenseQuery>;
+export type BlueprintsQueryResult = Apollo.QueryResult<BlueprintsQuery, BlueprintsQueryVariables>;
+export const GetBlueprintDocument = gql`
+    query GetBlueprint($id: ID!) {
+  blueprint(id: $id) {
+    ...BlueprintFragement
+  }
+}
+    ${BlueprintFragementFragmentDoc}`;
+
+/**
+ * __useGetBlueprintQuery__
+ *
+ * To run a query within a React component, call `useGetBlueprintQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetBlueprintQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetBlueprintQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetBlueprintQuery(baseOptions: Apollo.QueryHookOptions<GetBlueprintQuery, GetBlueprintQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetBlueprintQuery, GetBlueprintQueryVariables>(GetBlueprintDocument, options);
+      }
+export function useGetBlueprintLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetBlueprintQuery, GetBlueprintQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetBlueprintQuery, GetBlueprintQueryVariables>(GetBlueprintDocument, options);
+        }
+export function useGetBlueprintSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<GetBlueprintQuery, GetBlueprintQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetBlueprintQuery, GetBlueprintQueryVariables>(GetBlueprintDocument, options);
+        }
+export type GetBlueprintQueryHookResult = ReturnType<typeof useGetBlueprintQuery>;
+export type GetBlueprintLazyQueryHookResult = ReturnType<typeof useGetBlueprintLazyQuery>;
+export type GetBlueprintSuspenseQueryHookResult = ReturnType<typeof useGetBlueprintSuspenseQuery>;
+export type GetBlueprintQueryResult = Apollo.QueryResult<GetBlueprintQuery, GetBlueprintQueryVariables>;
+export const CreateBlueprintDocument = gql`
+    mutation CreateBlueprint($input: BlueprintInput!) {
+  createBlueprint(input: $input) {
+    ...BlueprintFragement
+  }
+}
+    ${BlueprintFragementFragmentDoc}`;
+export type CreateBlueprintMutationFn = Apollo.MutationFunction<CreateBlueprintMutation, CreateBlueprintMutationVariables>;
+
+/**
+ * __useCreateBlueprintMutation__
+ *
+ * To run a mutation, you first call `useCreateBlueprintMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateBlueprintMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createBlueprintMutation, { data, loading, error }] = useCreateBlueprintMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateBlueprintMutation(baseOptions?: Apollo.MutationHookOptions<CreateBlueprintMutation, CreateBlueprintMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateBlueprintMutation, CreateBlueprintMutationVariables>(CreateBlueprintDocument, options);
+      }
+export type CreateBlueprintMutationHookResult = ReturnType<typeof useCreateBlueprintMutation>;
+export type CreateBlueprintMutationResult = Apollo.MutationResult<CreateBlueprintMutation>;
+export type CreateBlueprintMutationOptions = Apollo.BaseMutationOptions<CreateBlueprintMutation, CreateBlueprintMutationVariables>;
+export const UpdateBlueprintDocument = gql`
+    mutation UpdateBlueprint($id: ID!, $input: BlueprintInput!) {
+  updateBlueprint(id: $id, input: $input) {
+    ...BlueprintFragement
+  }
+}
+    ${BlueprintFragementFragmentDoc}`;
+export type UpdateBlueprintMutationFn = Apollo.MutationFunction<UpdateBlueprintMutation, UpdateBlueprintMutationVariables>;
+
+/**
+ * __useUpdateBlueprintMutation__
+ *
+ * To run a mutation, you first call `useUpdateBlueprintMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateBlueprintMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateBlueprintMutation, { data, loading, error }] = useUpdateBlueprintMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateBlueprintMutation(baseOptions?: Apollo.MutationHookOptions<UpdateBlueprintMutation, UpdateBlueprintMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdateBlueprintMutation, UpdateBlueprintMutationVariables>(UpdateBlueprintDocument, options);
+      }
+export type UpdateBlueprintMutationHookResult = ReturnType<typeof useUpdateBlueprintMutation>;
+export type UpdateBlueprintMutationResult = Apollo.MutationResult<UpdateBlueprintMutation>;
+export type UpdateBlueprintMutationOptions = Apollo.BaseMutationOptions<UpdateBlueprintMutation, UpdateBlueprintMutationVariables>;
+export const DeployBlueprintDocument = gql`
+    mutation DeployBlueprint($id: ID!) {
+  deployBlueprint(id: $id) {
+    ...DeploymentFragment
+  }
+}
+    ${DeploymentFragmentFragmentDoc}`;
+export type DeployBlueprintMutationFn = Apollo.MutationFunction<DeployBlueprintMutation, DeployBlueprintMutationVariables>;
+
+/**
+ * __useDeployBlueprintMutation__
+ *
+ * To run a mutation, you first call `useDeployBlueprintMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeployBlueprintMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deployBlueprintMutation, { data, loading, error }] = useDeployBlueprintMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeployBlueprintMutation(baseOptions?: Apollo.MutationHookOptions<DeployBlueprintMutation, DeployBlueprintMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeployBlueprintMutation, DeployBlueprintMutationVariables>(DeployBlueprintDocument, options);
+      }
+export type DeployBlueprintMutationHookResult = ReturnType<typeof useDeployBlueprintMutation>;
+export type DeployBlueprintMutationResult = Apollo.MutationResult<DeployBlueprintMutation>;
+export type DeployBlueprintMutationOptions = Apollo.BaseMutationOptions<DeployBlueprintMutation, DeployBlueprintMutationVariables>;
+export const ListGroupsDocument = gql`
+    query ListGroups {
+  groups {
+    ...GroupFragment
+  }
+}
+    ${GroupFragmentFragmentDoc}`;
+
+/**
+ * __useListGroupsQuery__
+ *
+ * To run a query within a React component, call `useListGroupsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListGroupsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListGroupsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useListGroupsQuery(baseOptions?: Apollo.QueryHookOptions<ListGroupsQuery, ListGroupsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<ListGroupsQuery, ListGroupsQueryVariables>(ListGroupsDocument, options);
+      }
+export function useListGroupsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ListGroupsQuery, ListGroupsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<ListGroupsQuery, ListGroupsQueryVariables>(ListGroupsDocument, options);
+        }
+export function useListGroupsSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<ListGroupsQuery, ListGroupsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<ListGroupsQuery, ListGroupsQueryVariables>(ListGroupsDocument, options);
+        }
+export type ListGroupsQueryHookResult = ReturnType<typeof useListGroupsQuery>;
+export type ListGroupsLazyQueryHookResult = ReturnType<typeof useListGroupsLazyQuery>;
+export type ListGroupsSuspenseQueryHookResult = ReturnType<typeof useListGroupsSuspenseQuery>;
+export type ListGroupsQueryResult = Apollo.QueryResult<ListGroupsQuery, ListGroupsQueryVariables>;
+export const ProvidersDocument = gql`
+    query Providers {
+  providers {
+    ...ProviderFragment
+  }
+}
+    ${ProviderFragmentFragmentDoc}`;
+
+/**
+ * __useProvidersQuery__
+ *
+ * To run a query within a React component, call `useProvidersQuery` and pass it any options that fit your needs.
+ * When your component renders, `useProvidersQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useProvidersQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useProvidersQuery(baseOptions?: Apollo.QueryHookOptions<ProvidersQuery, ProvidersQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<ProvidersQuery, ProvidersQueryVariables>(ProvidersDocument, options);
+      }
+export function useProvidersLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ProvidersQuery, ProvidersQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<ProvidersQuery, ProvidersQueryVariables>(ProvidersDocument, options);
+        }
+export function useProvidersSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<ProvidersQuery, ProvidersQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<ProvidersQuery, ProvidersQueryVariables>(ProvidersDocument, options);
+        }
+export type ProvidersQueryHookResult = ReturnType<typeof useProvidersQuery>;
+export type ProvidersLazyQueryHookResult = ReturnType<typeof useProvidersLazyQuery>;
+export type ProvidersSuspenseQueryHookResult = ReturnType<typeof useProvidersSuspenseQuery>;
+export type ProvidersQueryResult = Apollo.QueryResult<ProvidersQuery, ProvidersQueryVariables>;
 export const MeDocument = gql`
     query Me {
   me {
@@ -405,3 +785,41 @@ export type ListUsersQueryHookResult = ReturnType<typeof useListUsersQuery>;
 export type ListUsersLazyQueryHookResult = ReturnType<typeof useListUsersLazyQuery>;
 export type ListUsersSuspenseQueryHookResult = ReturnType<typeof useListUsersSuspenseQuery>;
 export type ListUsersQueryResult = Apollo.QueryResult<ListUsersQuery, ListUsersQueryVariables>;
+export const MeHasPermissionDocument = gql`
+    query MeHasPermission($key: String!) {
+  meHasPermission(key: $key)
+}
+    `;
+
+/**
+ * __useMeHasPermissionQuery__
+ *
+ * To run a query within a React component, call `useMeHasPermissionQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMeHasPermissionQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMeHasPermissionQuery({
+ *   variables: {
+ *      key: // value for 'key'
+ *   },
+ * });
+ */
+export function useMeHasPermissionQuery(baseOptions: Apollo.QueryHookOptions<MeHasPermissionQuery, MeHasPermissionQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<MeHasPermissionQuery, MeHasPermissionQueryVariables>(MeHasPermissionDocument, options);
+      }
+export function useMeHasPermissionLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<MeHasPermissionQuery, MeHasPermissionQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<MeHasPermissionQuery, MeHasPermissionQueryVariables>(MeHasPermissionDocument, options);
+        }
+export function useMeHasPermissionSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<MeHasPermissionQuery, MeHasPermissionQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<MeHasPermissionQuery, MeHasPermissionQueryVariables>(MeHasPermissionDocument, options);
+        }
+export type MeHasPermissionQueryHookResult = ReturnType<typeof useMeHasPermissionQuery>;
+export type MeHasPermissionLazyQueryHookResult = ReturnType<typeof useMeHasPermissionLazyQuery>;
+export type MeHasPermissionSuspenseQueryHookResult = ReturnType<typeof useMeHasPermissionSuspenseQuery>;
+export type MeHasPermissionQueryResult = Apollo.QueryResult<MeHasPermissionQuery, MeHasPermissionQueryVariables>;
