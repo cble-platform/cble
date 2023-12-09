@@ -10,9 +10,14 @@ import (
 
 type BlueprintInput struct {
 	Name              string `json:"name"`
+	Description       string `json:"description"`
 	BlueprintTemplate string `json:"blueprintTemplate"`
 	ParentGroupID     string `json:"parentGroupId"`
 	ProviderID        string `json:"providerId"`
+}
+
+type DeploymentInput struct {
+	Name string `json:"name"`
 }
 
 type ProviderInput struct {

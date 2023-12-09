@@ -5,6 +5,7 @@ scalar StrMap
 type Blueprint {
   id: ID!
   name: String!
+  description: String!
   blueprintTemplate: String!
 
   parentGroup: Group!
@@ -14,6 +15,7 @@ type Blueprint {
 
 type Deployment {
   id: ID!
+  name: String!
   templateVars: Map!
   deploymentVars: Map!
   deploymentState: StrMap!
@@ -106,6 +108,10 @@ type Query {
   """
   me: User!
   """
+  Retrieves if the current user has a given permission
+  """
+  meHasPermission(key: String!): Boolean!
+  """
   List users (requires permission `com.cble.users.list`)
   """
   users: [User!]! @permission(key: "com.cble.users.list")
@@ -157,10 +163,15 @@ type Query {
 
 input BlueprintInput {
   name: String!
+  description: String!
   blueprintTemplate: String!
 
   parentGroupId: ID!
   providerId: ID!
+}
+
+input DeploymentInput {
+  name: String!
 }
 
 input ProviderInput {
@@ -227,6 +238,10 @@ type Mutation {
   Delete a blueprint (requires permission `com.cble.blueprints.delete`)
   """
   deleteBlueprint(id: ID!): Boolean! @permission(key: "com.cble.blueprints.delete")
+  """
+  Update a deployment (requires permission `com.cble.deployments.update`)
+  """
+  updateDeployment(id: ID!, input: DeploymentInput!): Deployment! @permission(key: "com.cble.deployments.update")
 
   #############
   # PROVIDERS #

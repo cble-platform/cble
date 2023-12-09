@@ -11,7 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/cble-platform/cble-backend/auth"
 	"github.com/cble-platform/cble-backend/ent"
+	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/providercommand"
+	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/cble-platform/cble-backend/graph/generated"
 	"github.com/cble-platform/cble-backend/graph/model"
 	"github.com/google/uuid"
@@ -210,6 +212,7 @@ func (r *mutationResolver) CreateBlueprint(ctx context.Context, input model.Blue
 	}
 	entBlueprint, err := r.ent.Blueprint.Create().
 		SetName(input.Name).
+		SetDescription(input.Description).
 		SetBlueprintTemplate([]byte(input.BlueprintTemplate)).
 		SetParentGroup(entParentGroup).
 		SetProvider(entProvider).
@@ -268,6 +271,16 @@ func (r *mutationResolver) UpdateBlueprint(ctx context.Context, id string, input
 // DeleteBlueprint is the resolver for the deleteBlueprint field.
 func (r *mutationResolver) DeleteBlueprint(ctx context.Context, id string) (bool, error) {
 	panic(fmt.Errorf("not implemented: DeleteBlueprint - deleteBlueprint"))
+}
+
+// UpdateDeployment is the resolver for the updateDeployment field.
+func (r *mutationResolver) UpdateDeployment(ctx context.Context, id string, input model.DeploymentInput) (*ent.Deployment, error) {
+	deploymentUuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
+	}
+
+	return r.ent.Deployment.UpdateOneID(deploymentUuid).SetName(input.Name).Save(ctx)
 }
 
 // LoadProvider is the resolver for the loadProvider field.
@@ -356,6 +369,7 @@ func (r *mutationResolver) DeployBlueprint(ctx context.Context, id string) (*ent
 
 	// Create the deployment
 	entDeployment, err := r.ent.Deployment.Create().
+		SetName(entBlueprint.Name).
 		SetBlueprint(entBlueprint).
 		SetRequester(entUser).
 		Save(ctx)
@@ -480,6 +494,15 @@ func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
 	return auth.ForContext(ctx)
 }
 
+// MeHasPermission is the resolver for the meHasPermission field.
+func (r *queryResolver) MeHasPermission(ctx context.Context, key string) (bool, error) {
+	currentUser, err := auth.ForContext(ctx)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to get user from context: %v", err)
+	}
+	return r.permissionEngine.RequestPermission(ctx, currentUser, key)
+}
+
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context) ([]*ent.User, error) {
 	return r.ent.User.Query().All(ctx)
@@ -552,12 +575,30 @@ func (r *queryResolver) Blueprint(ctx context.Context, id string) (*ent.Blueprin
 
 // Deployments is the resolver for the deployments field.
 func (r *queryResolver) Deployments(ctx context.Context) ([]*ent.Deployment, error) {
-	panic(fmt.Errorf("not implemented: Deployments - deployments"))
+	currentUser, err := auth.ForContext(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to get user from context: %v", err)
+	}
+
+	return r.ent.Deployment.Query().Where(deployment.HasRequesterWith(user.IDEQ(currentUser.ID))).All(ctx)
 }
 
 // Deployment is the resolver for the deployment field.
 func (r *queryResolver) Deployment(ctx context.Context, id string) (*ent.Deployment, error) {
-	panic(fmt.Errorf("not implemented: Deployment - deployment"))
+	currentUser, err := auth.ForContext(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to get user from context: %v", err)
+	}
+
+	deploymentUuid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, gqlerror.Errorf("id is not valid UUID: %v", err)
+	}
+
+	return r.ent.Deployment.Query().Where(deployment.And(
+		deployment.HasRequesterWith(user.IDEQ(currentUser.ID)),
+		deployment.IDEQ(deploymentUuid),
+	)).Only(ctx)
 }
 
 // ID is the resolver for the id field.
@@ -619,16 +660,3 @@ type providerResolver struct{ *Resolver }
 type providerCommandResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//     it when you're done.
-//   - You have helper methods in this file. Move them out to keep these resolver files clean.
-func (r *deploymentResolver) TemplateVars(ctx context.Context, obj *ent.Deployment) (map[string]string, error) {
-	panic(fmt.Errorf("not implemented: TemplateVars - templateVars"))
-}
-func (r *deploymentResolver) DeploymentVars(ctx context.Context, obj *ent.Deployment) (map[string]string, error) {
-	panic(fmt.Errorf("not implemented: DeploymentVars - deploymentVars"))
-}
