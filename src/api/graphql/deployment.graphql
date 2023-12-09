@@ -10,3 +10,21 @@ fragment DeploymentFragment on Deployment {
     ...UserFragment
   }
 }
+
+query ListDeployments {
+  deployments {
+    ...DeploymentFragment
+  }
+}
+
+mutation UpdateDeployment($id: ID!, $input: DeploymentInput!) {
+  updateDeployment(id: $id, input: $input) {
+    ...DeploymentFragment
+  }
+}
+
+mutation DestroyDeployment($id: ID!) {
+  destroyDeployment(id: $id) {
+    ...DeploymentFragment
+  }
+}

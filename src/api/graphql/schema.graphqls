@@ -15,6 +15,7 @@ type Blueprint {
 
 type Deployment {
   id: ID!
+  name: String!
   templateVars: Map!
   deploymentVars: Map!
   deploymentState: StrMap!
@@ -169,6 +170,10 @@ input BlueprintInput {
   providerId: ID!
 }
 
+input DeploymentInput {
+  name: String!
+}
+
 input ProviderInput {
   displayName: String!
   providerGitUrl: String!
@@ -233,6 +238,10 @@ type Mutation {
   Delete a blueprint (requires permission `com.cble.blueprints.delete`)
   """
   deleteBlueprint(id: ID!): Boolean! @permission(key: "com.cble.blueprints.delete")
+  """
+  Update a deployment (requires permission `com.cble.deployments.update`)
+  """
+  updateDeployment(id: ID!, input: DeploymentInput!): Deployment! @permission(key: "com.cble.deployments.update")
 
   #############
   # PROVIDERS #

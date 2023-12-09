@@ -22,6 +22,7 @@ import YamlWorker from "./yaml.worker.js?worker";
 import { SnackbarProvider } from "notistack";
 import RequestBlueprint from "./routes/blueprints/request";
 import BlueprintForm from "./routes/blueprints/form";
+import Deployments from "./routes/deployments";
 
 window.MonacoEnvironment = {
   getWorker(moduleId, label) {
@@ -49,6 +50,10 @@ const router = createBrowserRouter([
           { path: "edit/:id", element: <BlueprintForm action="edit" /> },
           { path: "request/:id", element: <RequestBlueprint /> },
         ],
+      },
+      {
+        path: "deployments",
+        children: [{ index: true, element: <Deployments /> }],
       },
     ],
     errorElement: <ErrorPage />,
