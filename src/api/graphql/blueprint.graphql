@@ -1,0 +1,48 @@
+fragment BlueprintFragement on Blueprint {
+  id
+  name
+  description
+  blueprintTemplate
+  parentGroup {
+    id
+    name
+  }
+  provider {
+    id
+    displayName
+    isLoaded
+  }
+  deployments {
+    id
+  }
+}
+
+query Blueprints {
+  blueprints {
+    ...BlueprintFragement
+  }
+}
+
+query GetBlueprint($id: ID!) {
+  blueprint(id: $id) {
+    ...BlueprintFragement
+  }
+}
+
+mutation CreateBlueprint($input: BlueprintInput!) {
+  createBlueprint(input: $input) {
+    ...BlueprintFragement
+  }
+}
+
+mutation UpdateBlueprint($id: ID!, $input: BlueprintInput!) {
+  updateBlueprint(id: $id, input: $input) {
+    ...BlueprintFragement
+  }
+}
+
+mutation DeployBlueprint($id: ID!) {
+  deployBlueprint(id: $id) {
+    ...DeploymentFragment
+  }
+}

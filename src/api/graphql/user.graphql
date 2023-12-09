@@ -17,3 +17,7 @@ query ListUsers {
     ...UserFragment
   }
 }
+
+query MeHasPermission($key: String!) {
+  meHasPermission(key: $key)
+}

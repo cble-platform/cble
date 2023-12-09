@@ -1,0 +1,13 @@
+fragment ProviderFragment on Provider {
+  id
+  displayName
+  providerGitUrl
+  providerVersion
+  isLoaded
+}
+
+query Providers {
+  providers {
+    ...ProviderFragment
+  }
+}

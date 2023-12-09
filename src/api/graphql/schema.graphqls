@@ -1,8 +1,11 @@
 scalar Time
+scalar Map
+scalar StrMap
 
 type Blueprint {
   id: ID!
   name: String!
+  description: String!
   blueprintTemplate: String!
 
   parentGroup: Group!
@@ -12,6 +15,9 @@ type Blueprint {
 
 type Deployment {
   id: ID!
+  templateVars: Map!
+  deploymentVars: Map!
+  deploymentState: StrMap!
 
   blueprint: Blueprint!
   requester: User!
@@ -101,6 +107,10 @@ type Query {
   """
   me: User!
   """
+  Retrieves if the current user has a given permission
+  """
+  meHasPermission(key: String!): Boolean!
+  """
   List users (requires permission `com.cble.users.list`)
   """
   users: [User!]! @permission(key: "com.cble.users.list")
@@ -152,6 +162,7 @@ type Query {
 
 input BlueprintInput {
   name: String!
+  description: String!
   blueprintTemplate: String!
 
   parentGroupId: ID!

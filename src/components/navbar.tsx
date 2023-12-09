@@ -10,7 +10,7 @@ export default function Navbar({
   setTheme: (theme: "auto" | "dark" | "light") => void;
 }) {
   return (
-    <AppBar position="static" color="primary">
+    <AppBar position="fixed" color="primary">
       <Container maxWidth="xl">
         <Toolbar disableGutters>
           <Logo sx={{ display: { xs: "none", md: "flex" }, mr: 1, fill: "white" }} />
@@ -60,10 +60,12 @@ export default function Navbar({
           </Box>
           <AdbIcon sx={{ display: { xs: 'flex', md: 'none' }, mr: 1 }} /> */}
           <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
-            <Button sx={{ my: 2, color: "white", display: "block" }}>Home</Button>
+            <Button href="/blueprints" sx={{ my: 2, color: "white", display: "block", textAlign: "center" }}>
+              Blueprints
+            </Button>
           </Box>
           <IconButton
-            color="text.primary"
+            color="inherit"
             onClick={() => {
               if (themePreference === "light") setTheme("dark");
               else if (themePreference === "dark") setTheme("auto");

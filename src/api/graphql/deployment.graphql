@@ -1,0 +1,12 @@
+fragment DeploymentFragment on Deployment {
+  id
+  templateVars
+  deploymentVars
+  deploymentState
+  blueprint {
+    ...BlueprintFragement
+  }
+  requester {
+    ...UserFragment
+  }
+}
