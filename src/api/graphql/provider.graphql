@@ -8,8 +8,20 @@ fragment ProviderFragment on Provider {
   isLoaded
 }
 
-query Providers {
+query ListProviders {
   providers {
+    ...ProviderFragment
+  }
+}
+
+mutation LoadProvider($id: ID!) {
+  loadProvider(id: $id) {
+    ...ProviderFragment
+  }
+}
+
+mutation UnloadProvider($id: ID!) {
+  unloadProvider(id: $id) {
     ...ProviderFragment
   }
 }

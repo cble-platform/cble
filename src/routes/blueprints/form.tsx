@@ -14,11 +14,11 @@ import { useContext, useEffect, useState } from "react";
 import {
   BlueprintInput,
   ListGroupsQuery,
-  ProvidersQuery,
+  ListProvidersQuery,
   useCreateBlueprintMutation,
   useGetBlueprintLazyQuery,
   useListGroupsQuery,
-  useProvidersQuery,
+  useListProvidersQuery,
   useUpdateBlueprintMutation,
 } from "../../api/graphql/generated";
 import MonacoEditor, { useMonaco } from "@monaco-editor/react";
@@ -42,7 +42,7 @@ export default function BlueprintForm({ action }: { action: "create" | "edit" })
     parentGroupId: "",
   });
   const monaco = useMonaco();
-  const { data: providersData, error: providersError, loading: providersLoading } = useProvidersQuery();
+  const { data: providersData, error: providersError, loading: providersLoading } = useListProvidersQuery();
   const { data: groupsData, error: groupsError, loading: groupsLoading } = useListGroupsQuery();
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
@@ -152,8 +152,8 @@ export default function BlueprintForm({ action }: { action: "create" | "edit" })
           autoComplete
           clearOnEscape
           options={providersData?.providers ?? []}
-          getOptionKey={(option: ProvidersQuery["providers"][0]) => `${option.id}`}
-          getOptionLabel={(option: ProvidersQuery["providers"][0]) => `${option.displayName} (${option.providerVersion})`}
+          getOptionKey={(option: ListProvidersQuery["providers"][0]) => `${option.id}`}
+          getOptionLabel={(option: ListProvidersQuery["providers"][0]) => `${option.displayName} (${option.providerVersion})`}
           sx={{ width: 300 }}
           value={(providersData?.providers.find((p) => p.id === blueprint.providerId) || null) ?? null}
           onChange={(_, val) => {
