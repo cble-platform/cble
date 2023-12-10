@@ -5,6 +5,7 @@ import { useDeployBlueprintMutation, useGetBlueprintLazyQuery } from "../../api/
 import { MuiMarkdown } from "mui-markdown";
 import { Send } from "@mui/icons-material";
 import { useSnackbar } from "notistack";
+import ContainerFab from "../../components/container-fab";
 
 export default function RequestBlueprint() {
   const { id } = useParams();
@@ -20,7 +21,7 @@ export default function RequestBlueprint() {
         variables: {
           id,
         },
-      });
+      }).catch(console.error);
   }, [id]);
 
   useEffect(() => {
@@ -36,7 +37,7 @@ export default function RequestBlueprint() {
       </Box>
       <Divider sx={{ width: "100%", my: 2 }} />
       <MuiMarkdown>{blueprintData?.blueprint.description}</MuiMarkdown>
-      <Fab
+      <ContainerFab
         color="primary"
         variant="extended"
         sx={{ position: "fixed", bottom: "2rem", right: "2rem" }}
@@ -46,12 +47,12 @@ export default function RequestBlueprint() {
               variables: {
                 id,
               },
-            });
+            }).catch(console.error);
         }}
         disabled={!id || deployBlueprintLoading || deployBlueprintData != null || deployBlueprintError != null}
       >
         <Send sx={{ mr: 1 }} /> Request
-      </Fab>
+      </ContainerFab>
     </Container>
   );
 }

@@ -376,6 +376,13 @@ export type ListDeploymentsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type ListDeploymentsQuery = { __typename?: 'Query', deployments: Array<{ __typename?: 'Deployment', id: string, name: string, templateVars: any, deploymentVars: any, deploymentState: any, blueprint: { __typename?: 'Blueprint', id: string, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, username: string, email: string, firstName: string, lastName: string } }> };
 
+export type GetDeploymentQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetDeploymentQuery = { __typename?: 'Query', deployment: { __typename?: 'Deployment', id: string, name: string, templateVars: any, deploymentVars: any, deploymentState: any, blueprint: { __typename?: 'Blueprint', id: string, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, username: string, email: string, firstName: string, lastName: string } } };
+
 export type UpdateDeploymentMutationVariables = Exact<{
   id: Scalars['ID']['input'];
   input: DeploymentInput;
@@ -702,6 +709,46 @@ export type ListDeploymentsQueryHookResult = ReturnType<typeof useListDeployment
 export type ListDeploymentsLazyQueryHookResult = ReturnType<typeof useListDeploymentsLazyQuery>;
 export type ListDeploymentsSuspenseQueryHookResult = ReturnType<typeof useListDeploymentsSuspenseQuery>;
 export type ListDeploymentsQueryResult = Apollo.QueryResult<ListDeploymentsQuery, ListDeploymentsQueryVariables>;
+export const GetDeploymentDocument = gql`
+    query GetDeployment($id: ID!) {
+  deployment(id: $id) {
+    ...DeploymentFragment
+  }
+}
+    ${DeploymentFragmentFragmentDoc}`;
+
+/**
+ * __useGetDeploymentQuery__
+ *
+ * To run a query within a React component, call `useGetDeploymentQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetDeploymentQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetDeploymentQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetDeploymentQuery(baseOptions: Apollo.QueryHookOptions<GetDeploymentQuery, GetDeploymentQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetDeploymentQuery, GetDeploymentQueryVariables>(GetDeploymentDocument, options);
+      }
+export function useGetDeploymentLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetDeploymentQuery, GetDeploymentQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetDeploymentQuery, GetDeploymentQueryVariables>(GetDeploymentDocument, options);
+        }
+export function useGetDeploymentSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<GetDeploymentQuery, GetDeploymentQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetDeploymentQuery, GetDeploymentQueryVariables>(GetDeploymentDocument, options);
+        }
+export type GetDeploymentQueryHookResult = ReturnType<typeof useGetDeploymentQuery>;
+export type GetDeploymentLazyQueryHookResult = ReturnType<typeof useGetDeploymentLazyQuery>;
+export type GetDeploymentSuspenseQueryHookResult = ReturnType<typeof useGetDeploymentSuspenseQuery>;
+export type GetDeploymentQueryResult = Apollo.QueryResult<GetDeploymentQuery, GetDeploymentQueryVariables>;
 export const UpdateDeploymentDocument = gql`
     mutation UpdateDeployment($id: ID!, $input: DeploymentInput!) {
   updateDeployment(id: $id, input: $input) {

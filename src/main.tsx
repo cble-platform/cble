@@ -23,6 +23,7 @@ import { SnackbarProvider } from "notistack";
 import RequestBlueprint from "./routes/blueprints/request";
 import BlueprintForm from "./routes/blueprints/form";
 import Deployments from "./routes/deployments";
+import DestroyDeployment from "./routes/deployments/destroy";
 
 window.MonacoEnvironment = {
   getWorker(moduleId, label) {
@@ -53,7 +54,10 @@ const router = createBrowserRouter([
       },
       {
         path: "deployments",
-        children: [{ index: true, element: <Deployments /> }],
+        children: [
+          { index: true, element: <Deployments /> },
+          { path: "destroy/:id", element: <DestroyDeployment /> },
+        ],
       },
     ],
     errorElement: <ErrorPage />,

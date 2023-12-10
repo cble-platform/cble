@@ -18,6 +18,12 @@ query ListDeployments {
   }
 }
 
+query GetDeployment($id: ID!) {
+  deployment(id: $id) {
+    ...DeploymentFragment
+  }
+}
+
 mutation UpdateDeployment($id: ID!, $input: DeploymentInput!) {
   updateDeployment(id: $id, input: $input) {
     ...DeploymentFragment
