@@ -1,5 +1,7 @@
 fragment ProviderFragment on Provider {
   id
+  createdAt
+  updatedAt
   displayName
   providerGitUrl
   providerVersion

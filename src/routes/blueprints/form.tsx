@@ -1,4 +1,15 @@
-import { Box, IconButton, Container, Divider, Grid, Typography, useMediaQuery, Button, TextField, Autocomplete } from "@mui/material";
+import {
+  Box,
+  IconButton,
+  Container,
+  Divider,
+  Grid,
+  Typography,
+  useMediaQuery,
+  TextField,
+  Autocomplete,
+  LinearProgress,
+} from "@mui/material";
 import { useContext, useEffect, useState } from "react";
 import {
   BlueprintInput,
@@ -6,7 +17,6 @@ import {
   ProvidersQuery,
   useCreateBlueprintMutation,
   useGetBlueprintLazyQuery,
-  useGetBlueprintQuery,
   useListGroupsQuery,
   useProvidersQuery,
   useUpdateBlueprintMutation,
@@ -14,7 +24,7 @@ import {
 import MonacoEditor, { useMonaco } from "@monaco-editor/react";
 import { configureMonacoYaml } from "monaco-yaml";
 import { ThemeContext } from "../../theme";
-import { Add, AutoFixHigh, Edit, Save } from "@mui/icons-material";
+import { Add, AutoFixHigh, Circle, Save } from "@mui/icons-material";
 import { MuiMarkdown } from "mui-markdown";
 import { LoadingButton } from "@mui/lab";
 import { useSnackbar } from "notistack";
@@ -51,14 +61,15 @@ export default function BlueprintForm({ action }: { action: "create" | "edit" })
     if (groupsError) enqueueSnackbar({ message: `Failed to load group list: ${groupsError.message}`, variant: "error" });
     if (createBlueprintError) enqueueSnackbar({ message: `Failed to create blueprint: ${createBlueprintError.message}`, variant: "error" });
     if (getBlueprintError) enqueueSnackbar({ message: `Failed to create blueprint: ${getBlueprintError.message}`, variant: "error" });
-  }, [providersError, groupsError, createBlueprintError, getBlueprintError]);
+    if (updateBlueprintError) enqueueSnackbar({ message: `Failed to update blueprint: ${updateBlueprintError.message}`, variant: "error" });
+  }, [providersError, groupsError, createBlueprintError, getBlueprintError, updateBlueprintError]);
 
   // If we're editing the blueprint, fetch based on ID
   useEffect(() => {
     if (action === "edit" && id)
       getBlueprint({
         variables: { id },
-      });
+      }).catch(console.error);
   }, [id, action, getBlueprint]);
 
   // Once we get edit data, update local form state
@@ -102,14 +113,14 @@ export default function BlueprintForm({ action }: { action: "create" | "edit" })
         variables: {
           input: blueprint,
         },
-      });
+      }).catch(console.error);
     else if (action === "edit" && id)
       updateBlueprint({
         variables: {
           id,
           input: blueprint,
         },
-      });
+      }).catch(console.error);
   };
 
   return (
@@ -148,6 +159,12 @@ export default function BlueprintForm({ action }: { action: "create" | "edit" })
           onChange={(_, val) => {
             val && setBlueprint((prev) => ({ ...prev, providerId: val.id }));
           }}
+          renderOption={(props, option) => (
+            <li {...props}>
+              <Circle color={option.isLoaded ? "success" : "error"} sx={{ height: "0.75rem" }} />
+              {option.displayName} ({option.providerVersion})
+            </li>
+          )}
           renderInput={(params) => <TextField {...params} label="Provider" />}
           disabled={providersLoading || providersError !== undefined}
         />
@@ -173,6 +190,7 @@ export default function BlueprintForm({ action }: { action: "create" | "edit" })
         </Box>
       </Box>
       <Divider sx={{ my: 2 }} />
+      {getBlueprintLoading && <LinearProgress />}
       <Grid container sx={{ flexGrow: 1 }} spacing={2}>
         <Grid item md={6}>
           <Typography variant="h6">Description</Typography>
@@ -204,7 +222,7 @@ export default function BlueprintForm({ action }: { action: "create" | "edit" })
               value={blueprint.blueprintTemplate}
               onChange={(value, _) => setBlueprint((prev) => ({ ...prev, blueprintTemplate: value ?? "" } as BlueprintInput))}
               beforeMount={(monaco) => {
-                // @ts-expect-error Monaco isn't of exact expected type, but still works
+                // @ts-ignore-error Monaco isn't of exact expected type, but still works
                 configureMonacoYaml(monaco, {
                   enableSchemaRequest: true,
                   schemas: [

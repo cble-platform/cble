@@ -63,6 +63,9 @@ export default function Navbar({
             <Button href="/blueprints" sx={{ my: 2, color: "white", display: "block", textAlign: "center" }}>
               Blueprints
             </Button>
+            <Button href="/deployments" sx={{ my: 2, color: "white", display: "block", textAlign: "center" }}>
+              Deployments
+            </Button>
           </Box>
           <IconButton
             color="inherit"

@@ -23,12 +23,14 @@ export type Scalars = {
 export type Blueprint = {
   __typename?: 'Blueprint';
   blueprintTemplate: Scalars['String']['output'];
+  createdAt: Scalars['Time']['output'];
   deployments: Array<Maybe<Deployment>>;
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   parentGroup: Group;
   provider: Provider;
+  updatedAt: Scalars['Time']['output'];
 };
 
 export type BlueprintInput = {
@@ -55,21 +57,31 @@ export enum CommandType {
 export type Deployment = {
   __typename?: 'Deployment';
   blueprint: Blueprint;
+  createdAt: Scalars['Time']['output'];
   deploymentState: Scalars['StrMap']['output'];
   deploymentVars: Scalars['Map']['output'];
+  description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
   requester: User;
   templateVars: Scalars['Map']['output'];
+  updatedAt: Scalars['Time']['output'];
+};
+
+export type DeploymentInput = {
+  name: Scalars['String']['input'];
 };
 
 export type Group = {
   __typename?: 'Group';
   blueprints?: Maybe<Array<Maybe<Blueprint>>>;
   children?: Maybe<Array<Maybe<Group>>>;
+  createdAt: Scalars['Time']['output'];
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   parent?: Maybe<Group>;
   permissionPolicies?: Maybe<Array<Maybe<PermissionPolicy>>>;
+  updatedAt: Scalars['Time']['output'];
   users?: Maybe<Array<Maybe<User>>>;
 };
 
@@ -101,6 +113,8 @@ export type Mutation = {
   unloadProvider: Provider;
   /** Update a blueprint (requires permission `com.cble.blueprints.update`) */
   updateBlueprint: Blueprint;
+  /** Update a deployment (requires permission `com.cble.deployments.update`) */
+  updateDeployment: Deployment;
   /** Update a provider (requires permission `com.cble.providers.update`) */
   updateProvider: Provider;
   /** Update a user (requires permission `com.cble.users.update`) */
@@ -175,6 +189,12 @@ export type MutationUpdateBlueprintArgs = {
 };
 
 
+export type MutationUpdateDeploymentArgs = {
+  id: Scalars['ID']['input'];
+  input: DeploymentInput;
+};
+
+
 export type MutationUpdateProviderArgs = {
   id: Scalars['ID']['input'];
   input: ProviderInput;
@@ -188,17 +208,21 @@ export type MutationUpdateUserArgs = {
 
 export type Permission = {
   __typename?: 'Permission';
+  createdAt: Scalars['Time']['output'];
   id: Scalars['ID']['output'];
   key?: Maybe<Scalars['String']['output']>;
   permissionPolicies?: Maybe<Array<Maybe<PermissionPolicy>>>;
+  updatedAt: Scalars['Time']['output'];
 };
 
 export type PermissionPolicy = {
   __typename?: 'PermissionPolicy';
+  createdAt: Scalars['Time']['output'];
   group: Group;
   id: Scalars['ID']['output'];
   permission: Permission;
   type: PermissionPolicyType;
+  updatedAt: Scalars['Time']['output'];
 };
 
 export enum PermissionPolicyType {
@@ -210,22 +234,26 @@ export type Provider = {
   __typename?: 'Provider';
   blueprints?: Maybe<Array<Maybe<Blueprint>>>;
   configBytes: Scalars['String']['output'];
+  createdAt: Scalars['Time']['output'];
   displayName: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   isLoaded: Scalars['Boolean']['output'];
   providerGitUrl: Scalars['String']['output'];
   providerVersion: Scalars['String']['output'];
+  updatedAt: Scalars['Time']['output'];
 };
 
 export type ProviderCommand = {
   __typename?: 'ProviderCommand';
   commandType: CommandType;
+  createdAt: Scalars['Time']['output'];
   endTime?: Maybe<Scalars['Time']['output']>;
   error: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   output: Scalars['String']['output'];
   startTime?: Maybe<Scalars['Time']['output']>;
   status: CommandStatus;
+  updatedAt: Scalars['Time']['output'];
 };
 
 export type ProviderInput = {
@@ -304,12 +332,14 @@ export type QueryUserArgs = {
 
 export type User = {
   __typename?: 'User';
+  createdAt: Scalars['Time']['output'];
   deployments: Array<Maybe<Deployment>>;
   email: Scalars['String']['output'];
   firstName: Scalars['String']['output'];
   groups: Array<Maybe<Group>>;
   id: Scalars['ID']['output'];
   lastName: Scalars['String']['output'];
+  updatedAt: Scalars['Time']['output'];
   username: Scalars['String']['output'];
 };
 
@@ -320,26 +350,26 @@ export type UserInput = {
   username: Scalars['String']['input'];
 };
 
-export type BlueprintFragementFragment = { __typename?: 'Blueprint', id: string, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> };
+export type BlueprintFragementFragment = { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> };
 
 export type BlueprintsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type BlueprintsQuery = { __typename?: 'Query', blueprints: Array<{ __typename?: 'Blueprint', id: string, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }> };
+export type BlueprintsQuery = { __typename?: 'Query', blueprints: Array<{ __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }> };
 
 export type GetBlueprintQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetBlueprintQuery = { __typename?: 'Query', blueprint: { __typename?: 'Blueprint', id: string, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
+export type GetBlueprintQuery = { __typename?: 'Query', blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
 
 export type CreateBlueprintMutationVariables = Exact<{
   input: BlueprintInput;
 }>;
 
 
-export type CreateBlueprintMutation = { __typename?: 'Mutation', createBlueprint: { __typename?: 'Blueprint', id: string, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
+export type CreateBlueprintMutation = { __typename?: 'Mutation', createBlueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
 
 export type UpdateBlueprintMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -347,42 +377,69 @@ export type UpdateBlueprintMutationVariables = Exact<{
 }>;
 
 
-export type UpdateBlueprintMutation = { __typename?: 'Mutation', updateBlueprint: { __typename?: 'Blueprint', id: string, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
+export type UpdateBlueprintMutation = { __typename?: 'Mutation', updateBlueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
 
 export type DeployBlueprintMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type DeployBlueprintMutation = { __typename?: 'Mutation', deployBlueprint: { __typename?: 'Deployment', id: string, templateVars: any, deploymentVars: any, deploymentState: any, blueprint: { __typename?: 'Blueprint', id: string, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, username: string, email: string, firstName: string, lastName: string } } };
+export type DeployBlueprintMutation = { __typename?: 'Mutation', deployBlueprint: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, deploymentVars: any, deploymentState: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } } };
 
-export type DeploymentFragmentFragment = { __typename?: 'Deployment', id: string, templateVars: any, deploymentVars: any, deploymentState: any, blueprint: { __typename?: 'Blueprint', id: string, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, username: string, email: string, firstName: string, lastName: string } };
+export type DeploymentFragmentFragment = { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, deploymentVars: any, deploymentState: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } };
 
-export type GroupFragmentFragment = { __typename?: 'Group', id: string, name: string };
+export type ListDeploymentsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ListDeploymentsQuery = { __typename?: 'Query', deployments: Array<{ __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, deploymentVars: any, deploymentState: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } }> };
+
+export type GetDeploymentQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetDeploymentQuery = { __typename?: 'Query', deployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, deploymentVars: any, deploymentState: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } } };
+
+export type UpdateDeploymentMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: DeploymentInput;
+}>;
+
+
+export type UpdateDeploymentMutation = { __typename?: 'Mutation', updateDeployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, deploymentVars: any, deploymentState: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } } };
+
+export type DestroyDeploymentMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DestroyDeploymentMutation = { __typename?: 'Mutation', destroyDeployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, deploymentVars: any, deploymentState: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } } };
+
+export type GroupFragmentFragment = { __typename?: 'Group', id: string, createdAt: any, updatedAt: any, name: string };
 
 export type ListGroupsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ListGroupsQuery = { __typename?: 'Query', groups: Array<{ __typename?: 'Group', id: string, name: string }> };
+export type ListGroupsQuery = { __typename?: 'Query', groups: Array<{ __typename?: 'Group', id: string, createdAt: any, updatedAt: any, name: string }> };
 
-export type ProviderFragmentFragment = { __typename?: 'Provider', id: string, displayName: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean };
+export type ProviderFragmentFragment = { __typename?: 'Provider', id: string, createdAt: any, updatedAt: any, displayName: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean };
 
 export type ProvidersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ProvidersQuery = { __typename?: 'Query', providers: Array<{ __typename?: 'Provider', id: string, displayName: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean }> };
+export type ProvidersQuery = { __typename?: 'Query', providers: Array<{ __typename?: 'Provider', id: string, createdAt: any, updatedAt: any, displayName: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean }> };
 
-export type UserFragmentFragment = { __typename?: 'User', id: string, username: string, email: string, firstName: string, lastName: string };
+export type UserFragmentFragment = { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string };
 
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, username: string, email: string, firstName: string, lastName: string } };
+export type MeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } };
 
 export type ListUsersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ListUsersQuery = { __typename?: 'Query', users: Array<{ __typename?: 'User', id: string, username: string, email: string, firstName: string, lastName: string }> };
+export type ListUsersQuery = { __typename?: 'Query', users: Array<{ __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string }> };
 
 export type MeHasPermissionQueryVariables = Exact<{
   key: Scalars['String']['input'];
@@ -394,6 +451,8 @@ export type MeHasPermissionQuery = { __typename?: 'Query', meHasPermission: bool
 export const BlueprintFragementFragmentDoc = gql`
     fragment BlueprintFragement on Blueprint {
   id
+  createdAt
+  updatedAt
   name
   description
   blueprintTemplate
@@ -414,6 +473,8 @@ export const BlueprintFragementFragmentDoc = gql`
 export const UserFragmentFragmentDoc = gql`
     fragment UserFragment on User {
   id
+  createdAt
+  updatedAt
   username
   email
   firstName
@@ -423,6 +484,9 @@ export const UserFragmentFragmentDoc = gql`
 export const DeploymentFragmentFragmentDoc = gql`
     fragment DeploymentFragment on Deployment {
   id
+  createdAt
+  updatedAt
+  name
   templateVars
   deploymentVars
   deploymentState
@@ -438,12 +502,16 @@ ${UserFragmentFragmentDoc}`;
 export const GroupFragmentFragmentDoc = gql`
     fragment GroupFragment on Group {
   id
+  createdAt
+  updatedAt
   name
 }
     `;
 export const ProviderFragmentFragmentDoc = gql`
     fragment ProviderFragment on Provider {
   id
+  createdAt
+  updatedAt
   displayName
   providerGitUrl
   providerVersion
@@ -629,6 +697,152 @@ export function useDeployBlueprintMutation(baseOptions?: Apollo.MutationHookOpti
 export type DeployBlueprintMutationHookResult = ReturnType<typeof useDeployBlueprintMutation>;
 export type DeployBlueprintMutationResult = Apollo.MutationResult<DeployBlueprintMutation>;
 export type DeployBlueprintMutationOptions = Apollo.BaseMutationOptions<DeployBlueprintMutation, DeployBlueprintMutationVariables>;
+export const ListDeploymentsDocument = gql`
+    query ListDeployments {
+  deployments {
+    ...DeploymentFragment
+  }
+}
+    ${DeploymentFragmentFragmentDoc}`;
+
+/**
+ * __useListDeploymentsQuery__
+ *
+ * To run a query within a React component, call `useListDeploymentsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListDeploymentsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListDeploymentsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useListDeploymentsQuery(baseOptions?: Apollo.QueryHookOptions<ListDeploymentsQuery, ListDeploymentsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<ListDeploymentsQuery, ListDeploymentsQueryVariables>(ListDeploymentsDocument, options);
+      }
+export function useListDeploymentsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ListDeploymentsQuery, ListDeploymentsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<ListDeploymentsQuery, ListDeploymentsQueryVariables>(ListDeploymentsDocument, options);
+        }
+export function useListDeploymentsSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<ListDeploymentsQuery, ListDeploymentsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<ListDeploymentsQuery, ListDeploymentsQueryVariables>(ListDeploymentsDocument, options);
+        }
+export type ListDeploymentsQueryHookResult = ReturnType<typeof useListDeploymentsQuery>;
+export type ListDeploymentsLazyQueryHookResult = ReturnType<typeof useListDeploymentsLazyQuery>;
+export type ListDeploymentsSuspenseQueryHookResult = ReturnType<typeof useListDeploymentsSuspenseQuery>;
+export type ListDeploymentsQueryResult = Apollo.QueryResult<ListDeploymentsQuery, ListDeploymentsQueryVariables>;
+export const GetDeploymentDocument = gql`
+    query GetDeployment($id: ID!) {
+  deployment(id: $id) {
+    ...DeploymentFragment
+  }
+}
+    ${DeploymentFragmentFragmentDoc}`;
+
+/**
+ * __useGetDeploymentQuery__
+ *
+ * To run a query within a React component, call `useGetDeploymentQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetDeploymentQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetDeploymentQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetDeploymentQuery(baseOptions: Apollo.QueryHookOptions<GetDeploymentQuery, GetDeploymentQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetDeploymentQuery, GetDeploymentQueryVariables>(GetDeploymentDocument, options);
+      }
+export function useGetDeploymentLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetDeploymentQuery, GetDeploymentQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetDeploymentQuery, GetDeploymentQueryVariables>(GetDeploymentDocument, options);
+        }
+export function useGetDeploymentSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<GetDeploymentQuery, GetDeploymentQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetDeploymentQuery, GetDeploymentQueryVariables>(GetDeploymentDocument, options);
+        }
+export type GetDeploymentQueryHookResult = ReturnType<typeof useGetDeploymentQuery>;
+export type GetDeploymentLazyQueryHookResult = ReturnType<typeof useGetDeploymentLazyQuery>;
+export type GetDeploymentSuspenseQueryHookResult = ReturnType<typeof useGetDeploymentSuspenseQuery>;
+export type GetDeploymentQueryResult = Apollo.QueryResult<GetDeploymentQuery, GetDeploymentQueryVariables>;
+export const UpdateDeploymentDocument = gql`
+    mutation UpdateDeployment($id: ID!, $input: DeploymentInput!) {
+  updateDeployment(id: $id, input: $input) {
+    ...DeploymentFragment
+  }
+}
+    ${DeploymentFragmentFragmentDoc}`;
+export type UpdateDeploymentMutationFn = Apollo.MutationFunction<UpdateDeploymentMutation, UpdateDeploymentMutationVariables>;
+
+/**
+ * __useUpdateDeploymentMutation__
+ *
+ * To run a mutation, you first call `useUpdateDeploymentMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateDeploymentMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateDeploymentMutation, { data, loading, error }] = useUpdateDeploymentMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateDeploymentMutation(baseOptions?: Apollo.MutationHookOptions<UpdateDeploymentMutation, UpdateDeploymentMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdateDeploymentMutation, UpdateDeploymentMutationVariables>(UpdateDeploymentDocument, options);
+      }
+export type UpdateDeploymentMutationHookResult = ReturnType<typeof useUpdateDeploymentMutation>;
+export type UpdateDeploymentMutationResult = Apollo.MutationResult<UpdateDeploymentMutation>;
+export type UpdateDeploymentMutationOptions = Apollo.BaseMutationOptions<UpdateDeploymentMutation, UpdateDeploymentMutationVariables>;
+export const DestroyDeploymentDocument = gql`
+    mutation DestroyDeployment($id: ID!) {
+  destroyDeployment(id: $id) {
+    ...DeploymentFragment
+  }
+}
+    ${DeploymentFragmentFragmentDoc}`;
+export type DestroyDeploymentMutationFn = Apollo.MutationFunction<DestroyDeploymentMutation, DestroyDeploymentMutationVariables>;
+
+/**
+ * __useDestroyDeploymentMutation__
+ *
+ * To run a mutation, you first call `useDestroyDeploymentMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDestroyDeploymentMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [destroyDeploymentMutation, { data, loading, error }] = useDestroyDeploymentMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDestroyDeploymentMutation(baseOptions?: Apollo.MutationHookOptions<DestroyDeploymentMutation, DestroyDeploymentMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DestroyDeploymentMutation, DestroyDeploymentMutationVariables>(DestroyDeploymentDocument, options);
+      }
+export type DestroyDeploymentMutationHookResult = ReturnType<typeof useDestroyDeploymentMutation>;
+export type DestroyDeploymentMutationResult = Apollo.MutationResult<DestroyDeploymentMutation>;
+export type DestroyDeploymentMutationOptions = Apollo.BaseMutationOptions<DestroyDeploymentMutation, DestroyDeploymentMutationVariables>;
 export const ListGroupsDocument = gql`
     query ListGroups {
   groups {

@@ -1,5 +1,7 @@
 fragment GroupFragment on Group {
   id
+  createdAt
+  updatedAt
   name
 }
 

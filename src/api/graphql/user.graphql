@@ -1,5 +1,7 @@
 fragment UserFragment on User {
   id
+  createdAt
+  updatedAt
   username
   email
   firstName

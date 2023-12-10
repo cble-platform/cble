@@ -4,6 +4,8 @@ scalar StrMap
 
 type Blueprint {
   id: ID!
+  createdAt: Time!
+  updatedAt: Time!
   name: String!
   description: String!
   blueprintTemplate: String!
@@ -15,6 +17,10 @@ type Blueprint {
 
 type Deployment {
   id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  name: String!
+  description: String!
   templateVars: Map!
   deploymentVars: Map!
   deploymentState: StrMap!
@@ -25,6 +31,8 @@ type Deployment {
 
 type Group {
   id: ID!
+  createdAt: Time!
+  updatedAt: Time!
   name: String!
 
   children: [Group]
@@ -36,6 +44,8 @@ type Group {
 
 type Permission {
   id: ID!
+  createdAt: Time!
+  updatedAt: Time!
   key: String
 
   permissionPolicies: [PermissionPolicy]
@@ -48,6 +58,8 @@ enum PermissionPolicyType {
 
 type PermissionPolicy {
   id: ID!
+  createdAt: Time!
+  updatedAt: Time!
   type: PermissionPolicyType!
 
   permission: Permission!
@@ -56,6 +68,8 @@ type PermissionPolicy {
 
 type Provider {
   id: ID!
+  createdAt: Time!
+  updatedAt: Time!
   displayName: String!
   providerGitUrl: String!
   providerVersion: String!
@@ -80,6 +94,8 @@ enum CommandStatus {
 
 type ProviderCommand {
   id: ID!
+  createdAt: Time!
+  updatedAt: Time!
   commandType: CommandType!
   status: CommandStatus!
   startTime: Time
@@ -90,6 +106,8 @@ type ProviderCommand {
 
 type User {
   id: ID!
+  createdAt: Time!
+  updatedAt: Time!
   username: String!
   email: String!
   firstName: String!
@@ -169,6 +187,10 @@ input BlueprintInput {
   providerId: ID!
 }
 
+input DeploymentInput {
+  name: String!
+}
+
 input ProviderInput {
   displayName: String!
   providerGitUrl: String!
@@ -233,6 +255,10 @@ type Mutation {
   Delete a blueprint (requires permission `com.cble.blueprints.delete`)
   """
   deleteBlueprint(id: ID!): Boolean! @permission(key: "com.cble.blueprints.delete")
+  """
+  Update a deployment (requires permission `com.cble.deployments.update`)
+  """
+  updateDeployment(id: ID!, input: DeploymentInput!): Deployment! @permission(key: "com.cble.deployments.update")
 
   #############
   # PROVIDERS #

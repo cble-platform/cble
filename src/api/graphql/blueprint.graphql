@@ -1,5 +1,7 @@
 fragment BlueprintFragement on Blueprint {
   id
+  createdAt
+  updatedAt
   name
   description
   blueprintTemplate
