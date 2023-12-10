@@ -1,6 +1,6 @@
-import { Box, Container, Divider, Fab, Typography } from "@mui/material";
+import { Box, Container, Divider, Typography } from "@mui/material";
 import { useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useDeployBlueprintMutation, useGetBlueprintLazyQuery } from "../../api/graphql/generated";
 import { MuiMarkdown } from "mui-markdown";
 import { Send } from "@mui/icons-material";
@@ -9,6 +9,7 @@ import ContainerFab from "../../components/container-fab";
 
 export default function RequestBlueprint() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [getBlueprint, { data: blueprintData, error: blueprintError, loading: blueprintLoading }] = useGetBlueprintLazyQuery();
   const [deployBlueprint, { data: deployBlueprintData, error: deployBlueprintError, loading: deployBlueprintLoading }] =
     useDeployBlueprintMutation();
@@ -27,8 +28,14 @@ export default function RequestBlueprint() {
   useEffect(() => {
     if (deployBlueprintLoading) enqueueSnackbar({ message: "Deploying blueprint...", variant: "info" });
     if (deployBlueprintError) enqueueSnackbar({ message: `Error deploying blueprint: ${deployBlueprintError.message}`, variant: "error" });
-    if (deployBlueprintData) enqueueSnackbar({ message: "Deployed blueprint!", variant: "success" });
-  }, [deployBlueprintData, deployBlueprintError, deployBlueprintLoading]);
+  }, [deployBlueprintError, deployBlueprintLoading]);
+
+  useEffect(() => {
+    if (deployBlueprintData) {
+      navigate("/deployments");
+      enqueueSnackbar({ message: "Deployed blueprint!", variant: "success" });
+    }
+  }, [deployBlueprintData]);
 
   return (
     <Container sx={{ display: "flex", flexDirection: "column", height: "100%", py: 2 }}>

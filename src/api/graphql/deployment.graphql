@@ -1,5 +1,7 @@
 fragment DeploymentFragment on Deployment {
   id
+  createdAt
+  updatedAt
   name
   templateVars
   deploymentVars

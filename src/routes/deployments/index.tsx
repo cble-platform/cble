@@ -12,11 +12,13 @@ import {
   TextField,
   CircularProgress,
   LinearProgress,
+  Button,
+  Link,
 } from "@mui/material";
 import { useListDeploymentsQuery, useUpdateDeploymentMutation } from "../../api/graphql/generated";
 import { useSnackbar } from "notistack";
 import React, { useEffect, useState } from "react";
-import { Cancel, Edit, MoreVert, Save } from "@mui/icons-material";
+import { Cancel, Edit, ExpandMore, Save } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 
 export default function Deployments() {
@@ -85,63 +87,90 @@ export default function Deployments() {
             <LinearProgress />
           </Grid>
         )}
-        {listDeploymentsData?.deployments.map((deployment) => (
-          <Grid item xs={12} key={deployment.id}>
-            <Card sx={{ width: "100%" }}>
-              <CardContent>
-                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
-                  <Box sx={{ display: "flex", alignItems: "center", "&:hover .MuiIconButton-root": { visibility: "visible" } }}>
-                    {editDeploymentNameData?.id === deployment.id ? (
-                      <form onSubmit={handleSaveDeployment}>
-                        <TextField
-                          variant="standard"
-                          value={editDeploymentNameData.name}
-                          onChange={(e) => setEditDeploymentNameData({ id: deployment.id, name: e.target.value ?? "" })}
-                          disabled={updateDeploymentLoading}
-                        />
-                        <IconButton sx={{ ml: 1 }} size="small" type="submit" disabled={updateDeploymentLoading}>
-                          {updateDeploymentLoading ? <CircularProgress size="1rem" /> : <Save />}
-                        </IconButton>
-                        <IconButton
-                          sx={{ ml: 1 }}
-                          size="small"
-                          onClick={() => setEditDeploymentNameData(null)}
-                          disabled={updateDeploymentLoading}
-                        >
-                          <Cancel />
-                        </IconButton>
-                      </form>
-                    ) : (
-                      <>
-                        <Typography variant="h5">{deployment.name}</Typography>
-                        <IconButton
-                          sx={{ ml: 1, visibility: "hidden" }}
-                          size="small"
-                          onClick={() => setEditDeploymentNameData({ id: deployment.id, name: deployment.name })}
-                        >
-                          <Edit />
-                        </IconButton>
-                      </>
-                    )}
-                  </Box>
-                  <IconButton
-                    id="more-button"
-                    aria-controls={moreMenuEl ? "more-menu" : undefined}
-                    aria-haspopup="true"
-                    aria-expanded={moreMenuEl ? "true" : undefined}
-                    onClick={(event) => handleMoreMenuClick(deployment.id, event)}
+        {listDeploymentsData?.deployments.map((deployment) => {
+          const createdDaysDiff = Math.ceil((Date.now() - new Date(deployment.createdAt as string).getTime()) / 1000 / 60 / 60 / 24);
+          return (
+            <Grid item xs={12} key={deployment.id}>
+              <Card sx={{ width: "100%" }}>
+                <CardContent>
+                  <Grid
+                    container
+                    spacing={1}
+                    sx={{
+                      "& .MuiGrid-item": {
+                        display: "flex",
+                        alignItems: "center",
+                      },
+                    }}
                   >
-                    <MoreVert />
-                  </IconButton>
-                </Box>
-                <Typography variant="body1">
-                  Owner: {deployment.requester.firstName} {deployment.requester.lastName}
-                </Typography>
-                <Typography variant="body1">Group: {deployment.blueprint.parentGroup.name}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
+                    <Grid item xs={4}>
+                      <Box sx={{ display: "flex", alignItems: "center", "&:hover .MuiIconButton-root": { visibility: "visible" } }}>
+                        {editDeploymentNameData?.id === deployment.id ? (
+                          <form onSubmit={handleSaveDeployment}>
+                            <TextField
+                              variant="standard"
+                              value={editDeploymentNameData.name}
+                              onChange={(e) => setEditDeploymentNameData({ id: deployment.id, name: e.target.value ?? "" })}
+                              disabled={updateDeploymentLoading}
+                            />
+                            <IconButton sx={{ ml: 1 }} size="small" type="submit" disabled={updateDeploymentLoading}>
+                              {updateDeploymentLoading ? <CircularProgress size="1rem" /> : <Save />}
+                            </IconButton>
+                            <IconButton
+                              sx={{ ml: 1 }}
+                              size="small"
+                              onClick={() => setEditDeploymentNameData(null)}
+                              disabled={updateDeploymentLoading}
+                            >
+                              <Cancel />
+                            </IconButton>
+                          </form>
+                        ) : (
+                          <>
+                            <Link href={`/deployments/${deployment.id}`} variant="h5" color="primary">
+                              {deployment.name}
+                            </Link>
+                            <IconButton
+                              sx={{ ml: 1, visibility: "hidden" }}
+                              size="small"
+                              onClick={() => setEditDeploymentNameData({ id: deployment.id, name: deployment.name })}
+                            >
+                              <Edit />
+                            </IconButton>
+                          </>
+                        )}
+                      </Box>
+                    </Grid>
+                    <Grid item xs={4}>
+                      <Typography variant="subtitle1">
+                        Created {createdDaysDiff} day{createdDaysDiff > 1 ? "s" : ""} ago
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={4} sx={{ display: "flex", justifyContent: "flex-end" }}>
+                      <Button
+                        id="more-button"
+                        aria-controls={moreMenuEl ? "more-menu" : undefined}
+                        aria-haspopup="true"
+                        aria-expanded={moreMenuEl ? "true" : undefined}
+                        onClick={(event) => handleMoreMenuClick(deployment.id, event)}
+                        startIcon={<ExpandMore />}
+                      >
+                        Actions
+                      </Button>
+                    </Grid>
+                    <Grid item xs={4}>
+                      <Typography variant="body1">
+                        Owner: {deployment.requester.firstName} {deployment.requester.lastName}
+                        <br />
+                        Group: {deployment.blueprint.parentGroup.name}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+            </Grid>
+          );
+        })}
       </Grid>
       <Menu
         id="more-menu"

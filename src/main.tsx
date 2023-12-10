@@ -24,9 +24,10 @@ import RequestBlueprint from "./routes/blueprints/request";
 import BlueprintForm from "./routes/blueprints/form";
 import Deployments from "./routes/deployments";
 import DestroyDeployment from "./routes/deployments/destroy";
+import DeploymentDetails from "./routes/deployments/details";
 
 window.MonacoEnvironment = {
-  getWorker(moduleId, label) {
+  getWorker(_, label) {
     switch (label) {
       // Handle other cases
       case "yaml":
@@ -56,6 +57,7 @@ const router = createBrowserRouter([
         path: "deployments",
         children: [
           { index: true, element: <Deployments /> },
+          { path: ":id", element: <DeploymentDetails /> },
           { path: "destroy/:id", element: <DestroyDeployment /> },
         ],
       },

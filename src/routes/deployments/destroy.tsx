@@ -1,9 +1,9 @@
-import { Container, Divider, LinearProgress, Typography, styled } from "@mui/material";
+import { Button, Container, Divider, LinearProgress, Typography, styled } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDestroyDeploymentMutation, useGetDeploymentLazyQuery } from "../../api/graphql/generated";
 import { useEffect } from "react";
 import { useSnackbar } from "notistack";
-import { Delete } from "@mui/icons-material";
+import { ChevronLeft, Delete } from "@mui/icons-material";
 import ContainerFab from "../../components/container-fab";
 
 const ErrorSpan = styled("span")(({ theme }) => ({
@@ -39,6 +39,9 @@ export default function DestroyDeployment() {
 
   return (
     <Container sx={{ py: 3 }}>
+      <Button href="/deployments" startIcon={<ChevronLeft />} sx={{ mb: 2 }}>
+        Back
+      </Button>
       <Typography variant="h4">Destroy - {getDeploymentData?.deployment.name}</Typography>
       <Divider sx={{ my: 2 }} />
       <Typography variant="body1">
