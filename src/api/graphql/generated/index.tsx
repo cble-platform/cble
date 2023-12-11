@@ -422,26 +422,55 @@ export type ListGroupsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type ListGroupsQuery = { __typename?: 'Query', groups: Array<{ __typename?: 'Group', id: string, createdAt: any, updatedAt: any, name: string }> };
 
-export type ProviderFragmentFragment = { __typename?: 'Provider', id: string, createdAt: any, updatedAt: any, displayName: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean };
+export type ProviderFragmentFragment = { __typename?: 'Provider', id: string, createdAt: any, updatedAt: any, displayName: string, configBytes: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean };
 
 export type ListProvidersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ListProvidersQuery = { __typename?: 'Query', providers: Array<{ __typename?: 'Provider', id: string, createdAt: any, updatedAt: any, displayName: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean }> };
+export type ListProvidersQuery = { __typename?: 'Query', providers: Array<{ __typename?: 'Provider', id: string, createdAt: any, updatedAt: any, displayName: string, configBytes: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean }> };
+
+export type GetProviderQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetProviderQuery = { __typename?: 'Query', provider: { __typename?: 'Provider', id: string, createdAt: any, updatedAt: any, displayName: string, configBytes: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean } };
+
+export type CreateProviderMutationVariables = Exact<{
+  input: ProviderInput;
+}>;
+
+
+export type CreateProviderMutation = { __typename?: 'Mutation', createProvider: { __typename?: 'Provider', id: string, createdAt: any, updatedAt: any, displayName: string, configBytes: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean } };
+
+export type UpdateProviderMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: ProviderInput;
+}>;
+
+
+export type UpdateProviderMutation = { __typename?: 'Mutation', updateProvider: { __typename?: 'Provider', id: string, createdAt: any, updatedAt: any, displayName: string, configBytes: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean } };
 
 export type LoadProviderMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type LoadProviderMutation = { __typename?: 'Mutation', loadProvider: { __typename?: 'Provider', id: string, createdAt: any, updatedAt: any, displayName: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean } };
+export type LoadProviderMutation = { __typename?: 'Mutation', loadProvider: { __typename?: 'Provider', id: string, createdAt: any, updatedAt: any, displayName: string, configBytes: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean } };
 
 export type UnloadProviderMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type UnloadProviderMutation = { __typename?: 'Mutation', unloadProvider: { __typename?: 'Provider', id: string, createdAt: any, updatedAt: any, displayName: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean } };
+export type UnloadProviderMutation = { __typename?: 'Mutation', unloadProvider: { __typename?: 'Provider', id: string, createdAt: any, updatedAt: any, displayName: string, configBytes: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean } };
+
+export type ConfigrueProviderMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ConfigrueProviderMutation = { __typename?: 'Mutation', configureProvider: { __typename?: 'Provider', id: string, createdAt: any, updatedAt: any, displayName: string, configBytes: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean } };
 
 export type UserFragmentFragment = { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string };
 
@@ -527,6 +556,7 @@ export const ProviderFragmentFragmentDoc = gql`
   createdAt
   updatedAt
   displayName
+  configBytes
   providerGitUrl
   providerVersion
   isLoaded
@@ -935,6 +965,113 @@ export type ListProvidersQueryHookResult = ReturnType<typeof useListProvidersQue
 export type ListProvidersLazyQueryHookResult = ReturnType<typeof useListProvidersLazyQuery>;
 export type ListProvidersSuspenseQueryHookResult = ReturnType<typeof useListProvidersSuspenseQuery>;
 export type ListProvidersQueryResult = Apollo.QueryResult<ListProvidersQuery, ListProvidersQueryVariables>;
+export const GetProviderDocument = gql`
+    query GetProvider($id: ID!) {
+  provider(id: $id) {
+    ...ProviderFragment
+  }
+}
+    ${ProviderFragmentFragmentDoc}`;
+
+/**
+ * __useGetProviderQuery__
+ *
+ * To run a query within a React component, call `useGetProviderQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetProviderQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetProviderQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetProviderQuery(baseOptions: Apollo.QueryHookOptions<GetProviderQuery, GetProviderQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetProviderQuery, GetProviderQueryVariables>(GetProviderDocument, options);
+      }
+export function useGetProviderLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetProviderQuery, GetProviderQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetProviderQuery, GetProviderQueryVariables>(GetProviderDocument, options);
+        }
+export function useGetProviderSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<GetProviderQuery, GetProviderQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetProviderQuery, GetProviderQueryVariables>(GetProviderDocument, options);
+        }
+export type GetProviderQueryHookResult = ReturnType<typeof useGetProviderQuery>;
+export type GetProviderLazyQueryHookResult = ReturnType<typeof useGetProviderLazyQuery>;
+export type GetProviderSuspenseQueryHookResult = ReturnType<typeof useGetProviderSuspenseQuery>;
+export type GetProviderQueryResult = Apollo.QueryResult<GetProviderQuery, GetProviderQueryVariables>;
+export const CreateProviderDocument = gql`
+    mutation CreateProvider($input: ProviderInput!) {
+  createProvider(input: $input) {
+    ...ProviderFragment
+  }
+}
+    ${ProviderFragmentFragmentDoc}`;
+export type CreateProviderMutationFn = Apollo.MutationFunction<CreateProviderMutation, CreateProviderMutationVariables>;
+
+/**
+ * __useCreateProviderMutation__
+ *
+ * To run a mutation, you first call `useCreateProviderMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateProviderMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createProviderMutation, { data, loading, error }] = useCreateProviderMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateProviderMutation(baseOptions?: Apollo.MutationHookOptions<CreateProviderMutation, CreateProviderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateProviderMutation, CreateProviderMutationVariables>(CreateProviderDocument, options);
+      }
+export type CreateProviderMutationHookResult = ReturnType<typeof useCreateProviderMutation>;
+export type CreateProviderMutationResult = Apollo.MutationResult<CreateProviderMutation>;
+export type CreateProviderMutationOptions = Apollo.BaseMutationOptions<CreateProviderMutation, CreateProviderMutationVariables>;
+export const UpdateProviderDocument = gql`
+    mutation UpdateProvider($id: ID!, $input: ProviderInput!) {
+  updateProvider(id: $id, input: $input) {
+    ...ProviderFragment
+  }
+}
+    ${ProviderFragmentFragmentDoc}`;
+export type UpdateProviderMutationFn = Apollo.MutationFunction<UpdateProviderMutation, UpdateProviderMutationVariables>;
+
+/**
+ * __useUpdateProviderMutation__
+ *
+ * To run a mutation, you first call `useUpdateProviderMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateProviderMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateProviderMutation, { data, loading, error }] = useUpdateProviderMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateProviderMutation(baseOptions?: Apollo.MutationHookOptions<UpdateProviderMutation, UpdateProviderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdateProviderMutation, UpdateProviderMutationVariables>(UpdateProviderDocument, options);
+      }
+export type UpdateProviderMutationHookResult = ReturnType<typeof useUpdateProviderMutation>;
+export type UpdateProviderMutationResult = Apollo.MutationResult<UpdateProviderMutation>;
+export type UpdateProviderMutationOptions = Apollo.BaseMutationOptions<UpdateProviderMutation, UpdateProviderMutationVariables>;
 export const LoadProviderDocument = gql`
     mutation LoadProvider($id: ID!) {
   loadProvider(id: $id) {
@@ -1001,6 +1138,39 @@ export function useUnloadProviderMutation(baseOptions?: Apollo.MutationHookOptio
 export type UnloadProviderMutationHookResult = ReturnType<typeof useUnloadProviderMutation>;
 export type UnloadProviderMutationResult = Apollo.MutationResult<UnloadProviderMutation>;
 export type UnloadProviderMutationOptions = Apollo.BaseMutationOptions<UnloadProviderMutation, UnloadProviderMutationVariables>;
+export const ConfigrueProviderDocument = gql`
+    mutation ConfigrueProvider($id: ID!) {
+  configureProvider(id: $id) {
+    ...ProviderFragment
+  }
+}
+    ${ProviderFragmentFragmentDoc}`;
+export type ConfigrueProviderMutationFn = Apollo.MutationFunction<ConfigrueProviderMutation, ConfigrueProviderMutationVariables>;
+
+/**
+ * __useConfigrueProviderMutation__
+ *
+ * To run a mutation, you first call `useConfigrueProviderMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useConfigrueProviderMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [configrueProviderMutation, { data, loading, error }] = useConfigrueProviderMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useConfigrueProviderMutation(baseOptions?: Apollo.MutationHookOptions<ConfigrueProviderMutation, ConfigrueProviderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<ConfigrueProviderMutation, ConfigrueProviderMutationVariables>(ConfigrueProviderDocument, options);
+      }
+export type ConfigrueProviderMutationHookResult = ReturnType<typeof useConfigrueProviderMutation>;
+export type ConfigrueProviderMutationResult = Apollo.MutationResult<ConfigrueProviderMutation>;
+export type ConfigrueProviderMutationOptions = Apollo.BaseMutationOptions<ConfigrueProviderMutation, ConfigrueProviderMutationVariables>;
 export const MeDocument = gql`
     query Me {
   me {

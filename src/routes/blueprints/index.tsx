@@ -10,6 +10,7 @@ import {
   Button,
   TypographyProps,
   IconButton,
+  LinearProgress,
 } from "@mui/material";
 import { useBlueprintsQuery, useMeHasPermissionQuery } from "../../api/graphql/generated";
 import { useEffect } from "react";
@@ -82,6 +83,11 @@ export default function Blueprints() {
       </Box>
       <Divider sx={{ my: 3 }} />
       <Grid container spacing={2}>
+        {blueprintsLoading && (
+          <Grid item xs={12}>
+            <LinearProgress />
+          </Grid>
+        )}
         {blueprintsData?.blueprints.map((blueprint) => (
           <Grid item xs={3} key={blueprint.id}>
             <Card sx={{ height: "100%" }}>

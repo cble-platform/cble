@@ -13,13 +13,22 @@ import {
   Typography,
 } from "@mui/material";
 import { useSnackbar } from "notistack";
-import { ListProvidersQuery, useListProvidersQuery, useLoadProviderMutation, useUnloadProviderMutation } from "../../api/graphql/generated";
+import {
+  ListProvidersQuery,
+  useListProvidersQuery,
+  useLoadProviderMutation,
+  useMeHasPermissionQuery,
+  useUnloadProviderMutation,
+} from "../../api/graphql/generated";
 import { useEffect, useState } from "react";
 import { TypographyCode } from "../../components/custom-typography";
-import { Circle, ExpandMore } from "@mui/icons-material";
+import { Add, Circle, ExpandMore } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
 
 export default function Providers() {
   const { enqueueSnackbar } = useSnackbar();
+  const navigate = useNavigate();
+  const { data: createPermData } = useMeHasPermissionQuery({ variables: { key: "com.cble.providers.create" } });
   const {
     data: listProvidersData,
     error: listProvidersError,
@@ -27,7 +36,7 @@ export default function Providers() {
     refetch: refetchListProviders,
   } = useListProvidersQuery();
   const [moreMenuEl, setMoreMenuEl] = useState<null | HTMLElement>(null);
-  const [moreMenuProvider, setMoreMenuProvider] = useState<null | ListProvidersQuery["providers"][number]>(null);
+  const [moreMenuProvider, setMoreMenuProvider] = useState<ListProvidersQuery["providers"][number]>();
   const [loadProvider, { data: loadProviderData, error: loadProviderError, loading: loadProviderLoading, reset: resetLoadProvider }] =
     useLoadProviderMutation();
   const [
@@ -69,6 +78,11 @@ export default function Providers() {
     <Container sx={{ py: 3 }}>
       <Box sx={{ display: "flex", alignContent: "center", justifyContent: "space-between" }}>
         <Typography variant="h4">Providers</Typography>
+        {createPermData?.meHasPermission && (
+          <Button href="/providers/create" variant="contained" color="primary" startIcon={<Add />}>
+            Create
+          </Button>
+        )}
       </Box>
       <Divider sx={{ my: 3 }} />
       <Grid container spacing={2}>
@@ -134,6 +148,7 @@ export default function Providers() {
         >
           {loadProviderLoading || unloadProviderLoading ? <CircularProgress size="1rem" /> : moreMenuProvider?.isLoaded ? "Unload" : "Load"}
         </MenuItem>
+        <MenuItem onClick={() => navigate(`/providers/edit/${moreMenuProvider?.id}`)}>Edit</MenuItem>
       </Menu>
     </Container>
   );

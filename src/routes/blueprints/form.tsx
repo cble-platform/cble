@@ -87,7 +87,7 @@ export default function BlueprintForm({ action }: { action: "create" | "edit" })
   // Move to edit page after creation
   useEffect(() => {
     if (createBlueprintData?.createBlueprint.id) {
-      enqueueSnackbar({ message: "Create blueprint!", variant: "success" });
+      enqueueSnackbar({ message: "Created blueprint!", variant: "success" });
       navigate(`/blueprints/edit/${createBlueprintData.createBlueprint.id}`);
     }
   }, [createBlueprintData, navigate]);

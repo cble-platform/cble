@@ -3,6 +3,7 @@ fragment ProviderFragment on Provider {
   createdAt
   updatedAt
   displayName
+  configBytes
   providerGitUrl
   providerVersion
   isLoaded
@@ -10,6 +11,24 @@ fragment ProviderFragment on Provider {
 
 query ListProviders {
   providers {
+    ...ProviderFragment
+  }
+}
+
+query GetProvider($id: ID!) {
+  provider(id: $id) {
+    ...ProviderFragment
+  }
+}
+
+mutation CreateProvider($input: ProviderInput!) {
+  createProvider(input: $input) {
+    ...ProviderFragment
+  }
+}
+
+mutation UpdateProvider($id: ID!, $input: ProviderInput!) {
+  updateProvider(id: $id, input: $input) {
     ...ProviderFragment
   }
 }
@@ -22,6 +41,12 @@ mutation LoadProvider($id: ID!) {
 
 mutation UnloadProvider($id: ID!) {
   unloadProvider(id: $id) {
+    ...ProviderFragment
+  }
+}
+
+mutation ConfigrueProvider($id: ID!) {
+  configureProvider(id: $id) {
     ...ProviderFragment
   }
 }
