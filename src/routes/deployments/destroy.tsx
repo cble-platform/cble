@@ -21,7 +21,7 @@ export default function DestroyDeployment() {
     useDestroyDeploymentMutation();
 
   useEffect(() => {
-    if (id) getDeployment({ variables: { id } });
+    if (id) getDeployment({ variables: { id } }).catch(console.error);
   }, [id]);
 
   useEffect(() => {

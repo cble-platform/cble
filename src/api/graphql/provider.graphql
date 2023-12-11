@@ -3,13 +3,50 @@ fragment ProviderFragment on Provider {
   createdAt
   updatedAt
   displayName
+  configBytes
   providerGitUrl
   providerVersion
   isLoaded
 }
 
-query Providers {
+query ListProviders {
   providers {
+    ...ProviderFragment
+  }
+}
+
+query GetProvider($id: ID!) {
+  provider(id: $id) {
+    ...ProviderFragment
+  }
+}
+
+mutation CreateProvider($input: ProviderInput!) {
+  createProvider(input: $input) {
+    ...ProviderFragment
+  }
+}
+
+mutation UpdateProvider($id: ID!, $input: ProviderInput!) {
+  updateProvider(id: $id, input: $input) {
+    ...ProviderFragment
+  }
+}
+
+mutation LoadProvider($id: ID!) {
+  loadProvider(id: $id) {
+    ...ProviderFragment
+  }
+}
+
+mutation UnloadProvider($id: ID!) {
+  unloadProvider(id: $id) {
+    ...ProviderFragment
+  }
+}
+
+mutation ConfigrueProvider($id: ID!) {
+  configureProvider(id: $id) {
     ...ProviderFragment
   }
 }
