@@ -10,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -23,7 +22,6 @@ func Login(cbleConfig *config.Config, client *ent.Client) gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Invalid username/password"})
 			return
 		}
-		logrus.Debugf("login with username \"%s\" and password \"%s\"", input.Username, input.Password)
 
 		// Lookup the user via username
 		entUser, err := client.User.Query().Where(
