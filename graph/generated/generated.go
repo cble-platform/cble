@@ -59,31 +59,38 @@ type DirectiveRoot struct {
 type ComplexityRoot struct {
 	Blueprint struct {
 		BlueprintTemplate func(childComplexity int) int
+		CreatedAt         func(childComplexity int) int
 		Deployments       func(childComplexity int) int
 		Description       func(childComplexity int) int
 		ID                func(childComplexity int) int
 		Name              func(childComplexity int) int
 		ParentGroup       func(childComplexity int) int
 		Provider          func(childComplexity int) int
+		UpdatedAt         func(childComplexity int) int
 	}
 
 	Deployment struct {
 		Blueprint       func(childComplexity int) int
+		CreatedAt       func(childComplexity int) int
 		DeploymentState func(childComplexity int) int
 		DeploymentVars  func(childComplexity int) int
+		Description     func(childComplexity int) int
 		ID              func(childComplexity int) int
 		Name            func(childComplexity int) int
 		Requester       func(childComplexity int) int
 		TemplateVars    func(childComplexity int) int
+		UpdatedAt       func(childComplexity int) int
 	}
 
 	Group struct {
 		Blueprints         func(childComplexity int) int
 		Children           func(childComplexity int) int
+		CreatedAt          func(childComplexity int) int
 		ID                 func(childComplexity int) int
 		Name               func(childComplexity int) int
 		Parent             func(childComplexity int) int
 		PermissionPolicies func(childComplexity int) int
+		UpdatedAt          func(childComplexity int) int
 		Users              func(childComplexity int) int
 	}
 
@@ -107,36 +114,44 @@ type ComplexityRoot struct {
 	}
 
 	Permission struct {
+		CreatedAt          func(childComplexity int) int
 		ID                 func(childComplexity int) int
 		Key                func(childComplexity int) int
 		PermissionPolicies func(childComplexity int) int
+		UpdatedAt          func(childComplexity int) int
 	}
 
 	PermissionPolicy struct {
+		CreatedAt  func(childComplexity int) int
 		Group      func(childComplexity int) int
 		ID         func(childComplexity int) int
 		Permission func(childComplexity int) int
 		Type       func(childComplexity int) int
+		UpdatedAt  func(childComplexity int) int
 	}
 
 	Provider struct {
 		Blueprints      func(childComplexity int) int
 		ConfigBytes     func(childComplexity int) int
+		CreatedAt       func(childComplexity int) int
 		DisplayName     func(childComplexity int) int
 		ID              func(childComplexity int) int
 		IsLoaded        func(childComplexity int) int
 		ProviderGitURL  func(childComplexity int) int
 		ProviderVersion func(childComplexity int) int
+		UpdatedAt       func(childComplexity int) int
 	}
 
 	ProviderCommand struct {
 		CommandType func(childComplexity int) int
+		CreatedAt   func(childComplexity int) int
 		EndTime     func(childComplexity int) int
 		Error       func(childComplexity int) int
 		ID          func(childComplexity int) int
 		Output      func(childComplexity int) int
 		StartTime   func(childComplexity int) int
 		Status      func(childComplexity int) int
+		UpdatedAt   func(childComplexity int) int
 	}
 
 	Query struct {
@@ -157,12 +172,14 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
+		CreatedAt   func(childComplexity int) int
 		Deployments func(childComplexity int) int
 		Email       func(childComplexity int) int
 		FirstName   func(childComplexity int) int
 		Groups      func(childComplexity int) int
 		ID          func(childComplexity int) int
 		LastName    func(childComplexity int) int
+		UpdatedAt   func(childComplexity int) int
 		Username    func(childComplexity int) int
 	}
 }
@@ -215,6 +232,7 @@ type PermissionResolver interface {
 }
 type PermissionPolicyResolver interface {
 	ID(ctx context.Context, obj *ent.PermissionPolicy) (string, error)
+
 	Type(ctx context.Context, obj *ent.PermissionPolicy) (model.PermissionPolicyType, error)
 	Permission(ctx context.Context, obj *ent.PermissionPolicy) (*ent.Permission, error)
 	Group(ctx context.Context, obj *ent.PermissionPolicy) (*ent.Group, error)
@@ -228,6 +246,7 @@ type ProviderResolver interface {
 }
 type ProviderCommandResolver interface {
 	ID(ctx context.Context, obj *ent.ProviderCommand) (string, error)
+
 	CommandType(ctx context.Context, obj *ent.ProviderCommand) (model.CommandType, error)
 	Status(ctx context.Context, obj *ent.ProviderCommand) (model.CommandStatus, error)
 }
@@ -280,6 +299,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Blueprint.BlueprintTemplate(childComplexity), true
 
+	case "Blueprint.createdAt":
+		if e.complexity.Blueprint.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Blueprint.CreatedAt(childComplexity), true
+
 	case "Blueprint.deployments":
 		if e.complexity.Blueprint.Deployments == nil {
 			break
@@ -322,12 +348,26 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Blueprint.Provider(childComplexity), true
 
+	case "Blueprint.updatedAt":
+		if e.complexity.Blueprint.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.Blueprint.UpdatedAt(childComplexity), true
+
 	case "Deployment.blueprint":
 		if e.complexity.Deployment.Blueprint == nil {
 			break
 		}
 
 		return e.complexity.Deployment.Blueprint(childComplexity), true
+
+	case "Deployment.createdAt":
+		if e.complexity.Deployment.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Deployment.CreatedAt(childComplexity), true
 
 	case "Deployment.deploymentState":
 		if e.complexity.Deployment.DeploymentState == nil {
@@ -342,6 +382,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Deployment.DeploymentVars(childComplexity), true
+
+	case "Deployment.description":
+		if e.complexity.Deployment.Description == nil {
+			break
+		}
+
+		return e.complexity.Deployment.Description(childComplexity), true
 
 	case "Deployment.id":
 		if e.complexity.Deployment.ID == nil {
@@ -371,6 +418,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Deployment.TemplateVars(childComplexity), true
 
+	case "Deployment.updatedAt":
+		if e.complexity.Deployment.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.Deployment.UpdatedAt(childComplexity), true
+
 	case "Group.blueprints":
 		if e.complexity.Group.Blueprints == nil {
 			break
@@ -384,6 +438,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Group.Children(childComplexity), true
+
+	case "Group.createdAt":
+		if e.complexity.Group.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Group.CreatedAt(childComplexity), true
 
 	case "Group.id":
 		if e.complexity.Group.ID == nil {
@@ -412,6 +473,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Group.PermissionPolicies(childComplexity), true
+
+	case "Group.updatedAt":
+		if e.complexity.Group.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.Group.UpdatedAt(childComplexity), true
 
 	case "Group.users":
 		if e.complexity.Group.Users == nil {
@@ -612,6 +680,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateUser(childComplexity, args["id"].(string), args["input"].(model.UserInput)), true
 
+	case "Permission.createdAt":
+		if e.complexity.Permission.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Permission.CreatedAt(childComplexity), true
+
 	case "Permission.id":
 		if e.complexity.Permission.ID == nil {
 			break
@@ -632,6 +707,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Permission.PermissionPolicies(childComplexity), true
+
+	case "Permission.updatedAt":
+		if e.complexity.Permission.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.Permission.UpdatedAt(childComplexity), true
+
+	case "PermissionPolicy.createdAt":
+		if e.complexity.PermissionPolicy.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.PermissionPolicy.CreatedAt(childComplexity), true
 
 	case "PermissionPolicy.group":
 		if e.complexity.PermissionPolicy.Group == nil {
@@ -661,6 +750,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PermissionPolicy.Type(childComplexity), true
 
+	case "PermissionPolicy.updatedAt":
+		if e.complexity.PermissionPolicy.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.PermissionPolicy.UpdatedAt(childComplexity), true
+
 	case "Provider.blueprints":
 		if e.complexity.Provider.Blueprints == nil {
 			break
@@ -674,6 +770,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Provider.ConfigBytes(childComplexity), true
+
+	case "Provider.createdAt":
+		if e.complexity.Provider.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Provider.CreatedAt(childComplexity), true
 
 	case "Provider.displayName":
 		if e.complexity.Provider.DisplayName == nil {
@@ -710,12 +813,26 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Provider.ProviderVersion(childComplexity), true
 
+	case "Provider.updatedAt":
+		if e.complexity.Provider.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.Provider.UpdatedAt(childComplexity), true
+
 	case "ProviderCommand.commandType":
 		if e.complexity.ProviderCommand.CommandType == nil {
 			break
 		}
 
 		return e.complexity.ProviderCommand.CommandType(childComplexity), true
+
+	case "ProviderCommand.createdAt":
+		if e.complexity.ProviderCommand.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.ProviderCommand.CreatedAt(childComplexity), true
 
 	case "ProviderCommand.endTime":
 		if e.complexity.ProviderCommand.EndTime == nil {
@@ -758,6 +875,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ProviderCommand.Status(childComplexity), true
+
+	case "ProviderCommand.updatedAt":
+		if e.complexity.ProviderCommand.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.ProviderCommand.UpdatedAt(childComplexity), true
 
 	case "Query.blueprint":
 		if e.complexity.Query.Blueprint == nil {
@@ -892,6 +1016,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Users(childComplexity), true
 
+	case "User.createdAt":
+		if e.complexity.User.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.User.CreatedAt(childComplexity), true
+
 	case "User.deployments":
 		if e.complexity.User.Deployments == nil {
 			break
@@ -933,6 +1064,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.LastName(childComplexity), true
+
+	case "User.updatedAt":
+		if e.complexity.User.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.User.UpdatedAt(childComplexity), true
 
 	case "User.username":
 		if e.complexity.User.Username == nil {
@@ -1056,6 +1194,8 @@ scalar StrMap
 
 type Blueprint {
   id: ID!
+  createdAt: Time!
+  updatedAt: Time!
   name: String!
   description: String!
   blueprintTemplate: String!
@@ -1067,7 +1207,10 @@ type Blueprint {
 
 type Deployment {
   id: ID!
+  createdAt: Time!
+  updatedAt: Time!
   name: String!
+  description: String!
   templateVars: Map!
   deploymentVars: Map!
   deploymentState: StrMap!
@@ -1078,6 +1221,8 @@ type Deployment {
 
 type Group {
   id: ID!
+  createdAt: Time!
+  updatedAt: Time!
   name: String!
 
   children: [Group]
@@ -1089,6 +1234,8 @@ type Group {
 
 type Permission {
   id: ID!
+  createdAt: Time!
+  updatedAt: Time!
   key: String
 
   permissionPolicies: [PermissionPolicy]
@@ -1101,6 +1248,8 @@ enum PermissionPolicyType {
 
 type PermissionPolicy {
   id: ID!
+  createdAt: Time!
+  updatedAt: Time!
   type: PermissionPolicyType!
 
   permission: Permission!
@@ -1109,6 +1258,8 @@ type PermissionPolicy {
 
 type Provider {
   id: ID!
+  createdAt: Time!
+  updatedAt: Time!
   displayName: String!
   providerGitUrl: String!
   providerVersion: String!
@@ -1133,6 +1284,8 @@ enum CommandStatus {
 
 type ProviderCommand {
   id: ID!
+  createdAt: Time!
+  updatedAt: Time!
   commandType: CommandType!
   status: CommandStatus!
   startTime: Time
@@ -1143,6 +1296,8 @@ type ProviderCommand {
 
 type User {
   id: ID!
+  createdAt: Time!
+  updatedAt: Time!
   username: String!
   email: String!
   firstName: String!
@@ -1835,6 +1990,94 @@ func (ec *executionContext) fieldContext_Blueprint_id(ctx context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _Blueprint_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.Blueprint) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Blueprint_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Blueprint_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Blueprint",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Blueprint_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.Blueprint) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Blueprint_updatedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Blueprint_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Blueprint",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Blueprint_name(ctx context.Context, field graphql.CollectedField, obj *ent.Blueprint) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Blueprint_name(ctx, field)
 	if err != nil {
@@ -2008,6 +2251,10 @@ func (ec *executionContext) fieldContext_Blueprint_parentGroup(ctx context.Conte
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Group_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Group_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Group_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Group_name(ctx, field)
 			case "children":
@@ -2068,6 +2315,10 @@ func (ec *executionContext) fieldContext_Blueprint_provider(ctx context.Context,
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Provider_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Provider_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Provider_updatedAt(ctx, field)
 			case "displayName":
 				return ec.fieldContext_Provider_displayName(ctx, field)
 			case "providerGitUrl":
@@ -2128,8 +2379,14 @@ func (ec *executionContext) fieldContext_Blueprint_deployments(ctx context.Conte
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Deployment_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Deployment_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Deployment_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Deployment_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Deployment_description(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
 			case "deploymentVars":
@@ -2191,6 +2448,94 @@ func (ec *executionContext) fieldContext_Deployment_id(ctx context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _Deployment_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.Deployment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Deployment_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Deployment_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Deployment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Deployment_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.Deployment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Deployment_updatedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Deployment_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Deployment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Deployment_name(ctx context.Context, field graphql.CollectedField, obj *ent.Deployment) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Deployment_name(ctx, field)
 	if err != nil {
@@ -2223,6 +2568,50 @@ func (ec *executionContext) _Deployment_name(ctx context.Context, field graphql.
 }
 
 func (ec *executionContext) fieldContext_Deployment_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Deployment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Deployment_description(ctx context.Context, field graphql.CollectedField, obj *ent.Deployment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Deployment_description(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Deployment_description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Deployment",
 		Field:      field,
@@ -2408,6 +2797,10 @@ func (ec *executionContext) fieldContext_Deployment_blueprint(ctx context.Contex
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Blueprint_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Blueprint_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Blueprint_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Blueprint_name(ctx, field)
 			case "description":
@@ -2468,6 +2861,10 @@ func (ec *executionContext) fieldContext_Deployment_requester(ctx context.Contex
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_User_updatedAt(ctx, field)
 			case "username":
 				return ec.fieldContext_User_username(ctx, field)
 			case "email":
@@ -2526,6 +2923,94 @@ func (ec *executionContext) fieldContext_Group_id(ctx context.Context, field gra
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Group_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.Group) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Group_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Group_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Group",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Group_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.Group) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Group_updatedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Group_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Group",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
 		},
 	}
 	return fc, nil
@@ -2613,6 +3098,10 @@ func (ec *executionContext) fieldContext_Group_children(ctx context.Context, fie
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Group_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Group_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Group_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Group_name(ctx, field)
 			case "children":
@@ -2670,6 +3159,10 @@ func (ec *executionContext) fieldContext_Group_parent(ctx context.Context, field
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Group_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Group_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Group_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Group_name(ctx, field)
 			case "children":
@@ -2727,6 +3220,10 @@ func (ec *executionContext) fieldContext_Group_users(ctx context.Context, field 
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_User_updatedAt(ctx, field)
 			case "username":
 				return ec.fieldContext_User_username(ctx, field)
 			case "email":
@@ -2784,6 +3281,10 @@ func (ec *executionContext) fieldContext_Group_permissionPolicies(ctx context.Co
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_PermissionPolicy_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_PermissionPolicy_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_PermissionPolicy_updatedAt(ctx, field)
 			case "type":
 				return ec.fieldContext_PermissionPolicy_type(ctx, field)
 			case "permission":
@@ -2835,6 +3336,10 @@ func (ec *executionContext) fieldContext_Group_blueprints(ctx context.Context, f
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Blueprint_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Blueprint_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Blueprint_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Blueprint_name(ctx, field)
 			case "description":
@@ -2974,6 +3479,10 @@ func (ec *executionContext) fieldContext_Mutation_createUser(ctx context.Context
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_User_updatedAt(ctx, field)
 			case "username":
 				return ec.fieldContext_User_username(ctx, field)
 			case "email":
@@ -3069,6 +3578,10 @@ func (ec *executionContext) fieldContext_Mutation_updateUser(ctx context.Context
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_User_updatedAt(ctx, field)
 			case "username":
 				return ec.fieldContext_User_username(ctx, field)
 			case "email":
@@ -3243,6 +3756,10 @@ func (ec *executionContext) fieldContext_Mutation_createProvider(ctx context.Con
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Provider_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Provider_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Provider_updatedAt(ctx, field)
 			case "displayName":
 				return ec.fieldContext_Provider_displayName(ctx, field)
 			case "providerGitUrl":
@@ -3338,6 +3855,10 @@ func (ec *executionContext) fieldContext_Mutation_updateProvider(ctx context.Con
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Provider_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Provider_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Provider_updatedAt(ctx, field)
 			case "displayName":
 				return ec.fieldContext_Provider_displayName(ctx, field)
 			case "providerGitUrl":
@@ -3512,6 +4033,10 @@ func (ec *executionContext) fieldContext_Mutation_createBlueprint(ctx context.Co
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Blueprint_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Blueprint_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Blueprint_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Blueprint_name(ctx, field)
 			case "description":
@@ -3607,6 +4132,10 @@ func (ec *executionContext) fieldContext_Mutation_updateBlueprint(ctx context.Co
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Blueprint_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Blueprint_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Blueprint_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Blueprint_name(ctx, field)
 			case "description":
@@ -3781,8 +4310,14 @@ func (ec *executionContext) fieldContext_Mutation_updateDeployment(ctx context.C
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Deployment_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Deployment_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Deployment_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Deployment_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Deployment_description(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
 			case "deploymentVars":
@@ -3876,6 +4411,10 @@ func (ec *executionContext) fieldContext_Mutation_loadProvider(ctx context.Conte
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Provider_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Provider_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Provider_updatedAt(ctx, field)
 			case "displayName":
 				return ec.fieldContext_Provider_displayName(ctx, field)
 			case "providerGitUrl":
@@ -3971,6 +4510,10 @@ func (ec *executionContext) fieldContext_Mutation_unloadProvider(ctx context.Con
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Provider_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Provider_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Provider_updatedAt(ctx, field)
 			case "displayName":
 				return ec.fieldContext_Provider_displayName(ctx, field)
 			case "providerGitUrl":
@@ -4066,6 +4609,10 @@ func (ec *executionContext) fieldContext_Mutation_configureProvider(ctx context.
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Provider_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Provider_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Provider_updatedAt(ctx, field)
 			case "displayName":
 				return ec.fieldContext_Provider_displayName(ctx, field)
 			case "providerGitUrl":
@@ -4161,8 +4708,14 @@ func (ec *executionContext) fieldContext_Mutation_deployBlueprint(ctx context.Co
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Deployment_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Deployment_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Deployment_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Deployment_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Deployment_description(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
 			case "deploymentVars":
@@ -4256,8 +4809,14 @@ func (ec *executionContext) fieldContext_Mutation_destroyDeployment(ctx context.
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Deployment_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Deployment_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Deployment_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Deployment_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Deployment_description(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
 			case "deploymentVars":
@@ -4325,6 +4884,94 @@ func (ec *executionContext) fieldContext_Permission_id(ctx context.Context, fiel
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Permission_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.Permission) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Permission_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Permission_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Permission",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Permission_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.Permission) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Permission_updatedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Permission_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Permission",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4409,6 +5056,10 @@ func (ec *executionContext) fieldContext_Permission_permissionPolicies(ctx conte
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_PermissionPolicy_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_PermissionPolicy_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_PermissionPolicy_updatedAt(ctx, field)
 			case "type":
 				return ec.fieldContext_PermissionPolicy_type(ctx, field)
 			case "permission":
@@ -4461,6 +5112,94 @@ func (ec *executionContext) fieldContext_PermissionPolicy_id(ctx context.Context
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PermissionPolicy_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.PermissionPolicy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PermissionPolicy_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PermissionPolicy_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PermissionPolicy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PermissionPolicy_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.PermissionPolicy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PermissionPolicy_updatedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PermissionPolicy_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PermissionPolicy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4551,6 +5290,10 @@ func (ec *executionContext) fieldContext_PermissionPolicy_permission(ctx context
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Permission_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Permission_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Permission_updatedAt(ctx, field)
 			case "key":
 				return ec.fieldContext_Permission_key(ctx, field)
 			case "permissionPolicies":
@@ -4603,6 +5346,10 @@ func (ec *executionContext) fieldContext_PermissionPolicy_group(ctx context.Cont
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Group_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Group_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Group_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Group_name(ctx, field)
 			case "children":
@@ -4661,6 +5408,94 @@ func (ec *executionContext) fieldContext_Provider_id(ctx context.Context, field 
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Provider_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.Provider) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Provider_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Provider_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Provider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Provider_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.Provider) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Provider_updatedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Provider_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Provider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4924,6 +5759,10 @@ func (ec *executionContext) fieldContext_Provider_blueprints(ctx context.Context
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Blueprint_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Blueprint_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Blueprint_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Blueprint_name(ctx, field)
 			case "description":
@@ -4982,6 +5821,94 @@ func (ec *executionContext) fieldContext_ProviderCommand_id(ctx context.Context,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProviderCommand_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.ProviderCommand) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ProviderCommand_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ProviderCommand_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProviderCommand",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProviderCommand_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.ProviderCommand) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ProviderCommand_updatedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ProviderCommand_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProviderCommand",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
 		},
 	}
 	return fc, nil
@@ -5286,6 +6213,10 @@ func (ec *executionContext) fieldContext_Query_me(ctx context.Context, field gra
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_User_updatedAt(ctx, field)
 			case "username":
 				return ec.fieldContext_User_username(ctx, field)
 			case "email":
@@ -5425,6 +6356,10 @@ func (ec *executionContext) fieldContext_Query_users(ctx context.Context, field 
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_User_updatedAt(ctx, field)
 			case "username":
 				return ec.fieldContext_User_username(ctx, field)
 			case "email":
@@ -5509,6 +6444,10 @@ func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field g
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_User_updatedAt(ctx, field)
 			case "username":
 				return ec.fieldContext_User_username(ctx, field)
 			case "email":
@@ -5604,6 +6543,10 @@ func (ec *executionContext) fieldContext_Query_groups(ctx context.Context, field
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Group_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Group_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Group_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Group_name(ctx, field)
 			case "children":
@@ -5688,6 +6631,10 @@ func (ec *executionContext) fieldContext_Query_group(ctx context.Context, field 
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Group_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Group_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Group_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Group_name(ctx, field)
 			case "children":
@@ -5783,6 +6730,10 @@ func (ec *executionContext) fieldContext_Query_providers(ctx context.Context, fi
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Provider_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Provider_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Provider_updatedAt(ctx, field)
 			case "displayName":
 				return ec.fieldContext_Provider_displayName(ctx, field)
 			case "providerGitUrl":
@@ -5867,6 +6818,10 @@ func (ec *executionContext) fieldContext_Query_provider(ctx context.Context, fie
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Provider_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Provider_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Provider_updatedAt(ctx, field)
 			case "displayName":
 				return ec.fieldContext_Provider_displayName(ctx, field)
 			case "providerGitUrl":
@@ -5962,6 +6917,10 @@ func (ec *executionContext) fieldContext_Query_providerCommands(ctx context.Cont
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_ProviderCommand_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_ProviderCommand_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_ProviderCommand_updatedAt(ctx, field)
 			case "commandType":
 				return ec.fieldContext_ProviderCommand_commandType(ctx, field)
 			case "status":
@@ -6046,6 +7005,10 @@ func (ec *executionContext) fieldContext_Query_providerCommand(ctx context.Conte
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_ProviderCommand_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_ProviderCommand_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_ProviderCommand_updatedAt(ctx, field)
 			case "commandType":
 				return ec.fieldContext_ProviderCommand_commandType(ctx, field)
 			case "status":
@@ -6141,6 +7104,10 @@ func (ec *executionContext) fieldContext_Query_blueprints(ctx context.Context, f
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Blueprint_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Blueprint_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Blueprint_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Blueprint_name(ctx, field)
 			case "description":
@@ -6225,6 +7192,10 @@ func (ec *executionContext) fieldContext_Query_blueprint(ctx context.Context, fi
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Blueprint_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Blueprint_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Blueprint_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Blueprint_name(ctx, field)
 			case "description":
@@ -6320,8 +7291,14 @@ func (ec *executionContext) fieldContext_Query_deployments(ctx context.Context, 
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Deployment_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Deployment_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Deployment_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Deployment_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Deployment_description(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
 			case "deploymentVars":
@@ -6404,8 +7381,14 @@ func (ec *executionContext) fieldContext_Query_deployment(ctx context.Context, f
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Deployment_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Deployment_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Deployment_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Deployment_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Deployment_description(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
 			case "deploymentVars":
@@ -6602,6 +7585,94 @@ func (ec *executionContext) fieldContext_User_id(ctx context.Context, field grap
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_updatedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6824,6 +7895,10 @@ func (ec *executionContext) fieldContext_User_groups(ctx context.Context, field 
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Group_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Group_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Group_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Group_name(ctx, field)
 			case "children":
@@ -6884,8 +7959,14 @@ func (ec *executionContext) fieldContext_User_deployments(ctx context.Context, f
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Deployment_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Deployment_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Deployment_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Deployment_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Deployment_description(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
 			case "deploymentVars":
@@ -8937,6 +10018,16 @@ func (ec *executionContext) _Blueprint(ctx context.Context, sel ast.SelectionSet
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createdAt":
+			out.Values[i] = ec._Blueprint_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._Blueprint_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "name":
 			out.Values[i] = ec._Blueprint_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -9161,8 +10252,23 @@ func (ec *executionContext) _Deployment(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createdAt":
+			out.Values[i] = ec._Deployment_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._Deployment_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "name":
 			out.Values[i] = ec._Deployment_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "description":
+			out.Values[i] = ec._Deployment_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -9323,6 +10429,16 @@ func (ec *executionContext) _Group(ctx context.Context, sel ast.SelectionSet, ob
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createdAt":
+			out.Values[i] = ec._Group_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._Group_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "name":
 			out.Values[i] = ec._Group_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -9717,6 +10833,16 @@ func (ec *executionContext) _Permission(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createdAt":
+			out.Values[i] = ec._Permission_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._Permission_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "key":
 			out.Values[i] = ec._Permission_key(ctx, field, obj)
 		case "permissionPolicies":
@@ -9822,6 +10948,16 @@ func (ec *executionContext) _PermissionPolicy(ctx context.Context, sel ast.Selec
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createdAt":
+			out.Values[i] = ec._PermissionPolicy_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._PermissionPolicy_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "type":
 			field := field
 
@@ -10000,6 +11136,16 @@ func (ec *executionContext) _Provider(ctx context.Context, sel ast.SelectionSet,
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createdAt":
+			out.Values[i] = ec._Provider_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._Provider_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "displayName":
 			out.Values[i] = ec._Provider_displayName(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -10159,6 +11305,16 @@ func (ec *executionContext) _ProviderCommand(ctx context.Context, sel ast.Select
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createdAt":
+			out.Values[i] = ec._ProviderCommand_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._ProviderCommand_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "commandType":
 			field := field
 
@@ -10673,6 +11829,16 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createdAt":
+			out.Values[i] = ec._User_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._User_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "username":
 			out.Values[i] = ec._User_username(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -11618,6 +12784,21 @@ func (ec *executionContext) unmarshalNString2string(ctx context.Context, v inter
 
 func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v interface{}) (time.Time, error) {
+	res, err := graphql.UnmarshalTime(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel ast.SelectionSet, v time.Time) graphql.Marshaler {
+	res := graphql.MarshalTime(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")

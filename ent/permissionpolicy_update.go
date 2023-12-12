@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -27,6 +28,12 @@ type PermissionPolicyUpdate struct {
 // Where appends a list predicates to the PermissionPolicyUpdate builder.
 func (ppu *PermissionPolicyUpdate) Where(ps ...predicate.PermissionPolicy) *PermissionPolicyUpdate {
 	ppu.mutation.Where(ps...)
+	return ppu
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (ppu *PermissionPolicyUpdate) SetUpdatedAt(t time.Time) *PermissionPolicyUpdate {
+	ppu.mutation.SetUpdatedAt(t)
 	return ppu
 }
 
@@ -111,6 +118,7 @@ func (ppu *PermissionPolicyUpdate) ClearGroup() *PermissionPolicyUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (ppu *PermissionPolicyUpdate) Save(ctx context.Context) (int, error) {
+	ppu.defaults()
 	return withHooks(ctx, ppu.sqlSave, ppu.mutation, ppu.hooks)
 }
 
@@ -133,6 +141,14 @@ func (ppu *PermissionPolicyUpdate) Exec(ctx context.Context) error {
 func (ppu *PermissionPolicyUpdate) ExecX(ctx context.Context) {
 	if err := ppu.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (ppu *PermissionPolicyUpdate) defaults() {
+	if _, ok := ppu.mutation.UpdatedAt(); !ok {
+		v := permissionpolicy.UpdateDefaultUpdatedAt()
+		ppu.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -163,6 +179,9 @@ func (ppu *PermissionPolicyUpdate) sqlSave(ctx context.Context) (n int, err erro
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := ppu.mutation.UpdatedAt(); ok {
+		_spec.SetField(permissionpolicy.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := ppu.mutation.GetType(); ok {
 		_spec.SetField(permissionpolicy.FieldType, field.TypeEnum, value)
@@ -252,6 +271,12 @@ type PermissionPolicyUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *PermissionPolicyMutation
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (ppuo *PermissionPolicyUpdateOne) SetUpdatedAt(t time.Time) *PermissionPolicyUpdateOne {
+	ppuo.mutation.SetUpdatedAt(t)
+	return ppuo
 }
 
 // SetType sets the "type" field.
@@ -348,6 +373,7 @@ func (ppuo *PermissionPolicyUpdateOne) Select(field string, fields ...string) *P
 
 // Save executes the query and returns the updated PermissionPolicy entity.
 func (ppuo *PermissionPolicyUpdateOne) Save(ctx context.Context) (*PermissionPolicy, error) {
+	ppuo.defaults()
 	return withHooks(ctx, ppuo.sqlSave, ppuo.mutation, ppuo.hooks)
 }
 
@@ -370,6 +396,14 @@ func (ppuo *PermissionPolicyUpdateOne) Exec(ctx context.Context) error {
 func (ppuo *PermissionPolicyUpdateOne) ExecX(ctx context.Context) {
 	if err := ppuo.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (ppuo *PermissionPolicyUpdateOne) defaults() {
+	if _, ok := ppuo.mutation.UpdatedAt(); !ok {
+		v := permissionpolicy.UpdateDefaultUpdatedAt()
+		ppuo.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -417,6 +451,9 @@ func (ppuo *PermissionPolicyUpdateOne) sqlSave(ctx context.Context) (_node *Perm
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := ppuo.mutation.UpdatedAt(); ok {
+		_spec.SetField(permissionpolicy.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := ppuo.mutation.GetType(); ok {
 		_spec.SetField(permissionpolicy.FieldType, field.TypeEnum, value)

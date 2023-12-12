@@ -372,12 +372,12 @@ func (bq *BlueprintQuery) WithDeployments(opts ...func(*DeploymentQuery)) *Bluep
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Blueprint.Query().
-//		GroupBy(blueprint.FieldName).
+//		GroupBy(blueprint.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (bq *BlueprintQuery) GroupBy(field string, fields ...string) *BlueprintGroupBy {
@@ -395,11 +395,11 @@ func (bq *BlueprintQuery) GroupBy(field string, fields ...string) *BlueprintGrou
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //	}
 //
 //	client.Blueprint.Query().
-//		Select(blueprint.FieldName).
+//		Select(blueprint.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (bq *BlueprintQuery) Select(fields ...string) *BlueprintSelect {
 	bq.ctx.Fields = append(bq.ctx.Fields, fields...)

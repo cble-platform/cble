@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -28,6 +29,12 @@ type BlueprintUpdate struct {
 // Where appends a list predicates to the BlueprintUpdate builder.
 func (bu *BlueprintUpdate) Where(ps ...predicate.Blueprint) *BlueprintUpdate {
 	bu.mutation.Where(ps...)
+	return bu
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (bu *BlueprintUpdate) SetUpdatedAt(t time.Time) *BlueprintUpdate {
+	bu.mutation.SetUpdatedAt(t)
 	return bu
 }
 
@@ -126,6 +133,7 @@ func (bu *BlueprintUpdate) RemoveDeployments(d ...*Deployment) *BlueprintUpdate 
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (bu *BlueprintUpdate) Save(ctx context.Context) (int, error) {
+	bu.defaults()
 	return withHooks(ctx, bu.sqlSave, bu.mutation, bu.hooks)
 }
 
@@ -151,6 +159,14 @@ func (bu *BlueprintUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (bu *BlueprintUpdate) defaults() {
+	if _, ok := bu.mutation.UpdatedAt(); !ok {
+		v := blueprint.UpdateDefaultUpdatedAt()
+		bu.mutation.SetUpdatedAt(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (bu *BlueprintUpdate) check() error {
 	if _, ok := bu.mutation.ParentGroupID(); bu.mutation.ParentGroupCleared() && !ok {
@@ -173,6 +189,9 @@ func (bu *BlueprintUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := bu.mutation.UpdatedAt(); ok {
+		_spec.SetField(blueprint.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := bu.mutation.Name(); ok {
 		_spec.SetField(blueprint.FieldName, field.TypeString, value)
@@ -306,6 +325,12 @@ type BlueprintUpdateOne struct {
 	mutation *BlueprintMutation
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (buo *BlueprintUpdateOne) SetUpdatedAt(t time.Time) *BlueprintUpdateOne {
+	buo.mutation.SetUpdatedAt(t)
+	return buo
+}
+
 // SetName sets the "name" field.
 func (buo *BlueprintUpdateOne) SetName(s string) *BlueprintUpdateOne {
 	buo.mutation.SetName(s)
@@ -414,6 +439,7 @@ func (buo *BlueprintUpdateOne) Select(field string, fields ...string) *Blueprint
 
 // Save executes the query and returns the updated Blueprint entity.
 func (buo *BlueprintUpdateOne) Save(ctx context.Context) (*Blueprint, error) {
+	buo.defaults()
 	return withHooks(ctx, buo.sqlSave, buo.mutation, buo.hooks)
 }
 
@@ -436,6 +462,14 @@ func (buo *BlueprintUpdateOne) Exec(ctx context.Context) error {
 func (buo *BlueprintUpdateOne) ExecX(ctx context.Context) {
 	if err := buo.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (buo *BlueprintUpdateOne) defaults() {
+	if _, ok := buo.mutation.UpdatedAt(); !ok {
+		v := blueprint.UpdateDefaultUpdatedAt()
+		buo.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -478,6 +512,9 @@ func (buo *BlueprintUpdateOne) sqlSave(ctx context.Context) (_node *Blueprint, e
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := buo.mutation.UpdatedAt(); ok {
+		_spec.SetField(blueprint.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := buo.mutation.Name(); ok {
 		_spec.SetField(blueprint.FieldName, field.TypeString, value)

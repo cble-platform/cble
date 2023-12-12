@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -19,6 +20,34 @@ type ProviderCreate struct {
 	config
 	mutation *ProviderMutation
 	hooks    []Hook
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (pc *ProviderCreate) SetCreatedAt(t time.Time) *ProviderCreate {
+	pc.mutation.SetCreatedAt(t)
+	return pc
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (pc *ProviderCreate) SetNillableCreatedAt(t *time.Time) *ProviderCreate {
+	if t != nil {
+		pc.SetCreatedAt(*t)
+	}
+	return pc
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (pc *ProviderCreate) SetUpdatedAt(t time.Time) *ProviderCreate {
+	pc.mutation.SetUpdatedAt(t)
+	return pc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (pc *ProviderCreate) SetNillableUpdatedAt(t *time.Time) *ProviderCreate {
+	if t != nil {
+		pc.SetUpdatedAt(*t)
+	}
+	return pc
 }
 
 // SetDisplayName sets the "display_name" field.
@@ -123,6 +152,14 @@ func (pc *ProviderCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (pc *ProviderCreate) defaults() {
+	if _, ok := pc.mutation.CreatedAt(); !ok {
+		v := provider.DefaultCreatedAt()
+		pc.mutation.SetCreatedAt(v)
+	}
+	if _, ok := pc.mutation.UpdatedAt(); !ok {
+		v := provider.DefaultUpdatedAt()
+		pc.mutation.SetUpdatedAt(v)
+	}
 	if _, ok := pc.mutation.IsLoaded(); !ok {
 		v := provider.DefaultIsLoaded
 		pc.mutation.SetIsLoaded(v)
@@ -135,6 +172,12 @@ func (pc *ProviderCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (pc *ProviderCreate) check() error {
+	if _, ok := pc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Provider.created_at"`)}
+	}
+	if _, ok := pc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Provider.updated_at"`)}
+	}
 	if _, ok := pc.mutation.DisplayName(); !ok {
 		return &ValidationError{Name: "display_name", err: errors.New(`ent: missing required field "Provider.display_name"`)}
 	}
@@ -184,6 +227,14 @@ func (pc *ProviderCreate) createSpec() (*Provider, *sqlgraph.CreateSpec) {
 	if id, ok := pc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
+	}
+	if value, ok := pc.mutation.CreatedAt(); ok {
+		_spec.SetField(provider.FieldCreatedAt, field.TypeTime, value)
+		_node.CreatedAt = value
+	}
+	if value, ok := pc.mutation.UpdatedAt(); ok {
+		_spec.SetField(provider.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
 	}
 	if value, ok := pc.mutation.DisplayName(); ok {
 		_spec.SetField(provider.FieldDisplayName, field.TypeString, value)

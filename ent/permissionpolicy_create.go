@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -20,6 +21,34 @@ type PermissionPolicyCreate struct {
 	config
 	mutation *PermissionPolicyMutation
 	hooks    []Hook
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (ppc *PermissionPolicyCreate) SetCreatedAt(t time.Time) *PermissionPolicyCreate {
+	ppc.mutation.SetCreatedAt(t)
+	return ppc
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (ppc *PermissionPolicyCreate) SetNillableCreatedAt(t *time.Time) *PermissionPolicyCreate {
+	if t != nil {
+		ppc.SetCreatedAt(*t)
+	}
+	return ppc
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (ppc *PermissionPolicyCreate) SetUpdatedAt(t time.Time) *PermissionPolicyCreate {
+	ppc.mutation.SetUpdatedAt(t)
+	return ppc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (ppc *PermissionPolicyCreate) SetNillableUpdatedAt(t *time.Time) *PermissionPolicyCreate {
+	if t != nil {
+		ppc.SetUpdatedAt(*t)
+	}
+	return ppc
 }
 
 // SetType sets the "type" field.
@@ -121,6 +150,14 @@ func (ppc *PermissionPolicyCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (ppc *PermissionPolicyCreate) defaults() {
+	if _, ok := ppc.mutation.CreatedAt(); !ok {
+		v := permissionpolicy.DefaultCreatedAt()
+		ppc.mutation.SetCreatedAt(v)
+	}
+	if _, ok := ppc.mutation.UpdatedAt(); !ok {
+		v := permissionpolicy.DefaultUpdatedAt()
+		ppc.mutation.SetUpdatedAt(v)
+	}
 	if _, ok := ppc.mutation.GetType(); !ok {
 		v := permissionpolicy.DefaultType
 		ppc.mutation.SetType(v)
@@ -137,6 +174,12 @@ func (ppc *PermissionPolicyCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (ppc *PermissionPolicyCreate) check() error {
+	if _, ok := ppc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "PermissionPolicy.created_at"`)}
+	}
+	if _, ok := ppc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "PermissionPolicy.updated_at"`)}
+	}
 	if v, ok := ppc.mutation.GetType(); ok {
 		if err := permissionpolicy.TypeValidator(v); err != nil {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "PermissionPolicy.type": %w`, err)}
@@ -182,6 +225,14 @@ func (ppc *PermissionPolicyCreate) createSpec() (*PermissionPolicy, *sqlgraph.Cr
 	if id, ok := ppc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
+	}
+	if value, ok := ppc.mutation.CreatedAt(); ok {
+		_spec.SetField(permissionpolicy.FieldCreatedAt, field.TypeTime, value)
+		_node.CreatedAt = value
+	}
+	if value, ok := ppc.mutation.UpdatedAt(); ok {
+		_spec.SetField(permissionpolicy.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
 	}
 	if value, ok := ppc.mutation.GetType(); ok {
 		_spec.SetField(permissionpolicy.FieldType, field.TypeEnum, value)

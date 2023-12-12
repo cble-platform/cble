@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"time"
+
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -18,7 +20,16 @@ func (Deployment) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).
 			Immutable().
 			Default(uuid.New),
+		field.Time("created_at").
+			Immutable().
+			Default(time.Now),
+		field.Time("updated_at").
+			Default(time.Now).
+			UpdateDefault(time.Now),
 		field.String("name"),
+		field.String("description").
+			Optional().
+			Default(""),
 		field.JSON("template_vars", map[string]interface{}{}).
 			Default(make(map[string]interface{})),
 		field.JSON("deployment_vars", map[string]interface{}{}).

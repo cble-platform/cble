@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -22,9 +23,51 @@ type DeploymentCreate struct {
 	hooks    []Hook
 }
 
+// SetCreatedAt sets the "created_at" field.
+func (dc *DeploymentCreate) SetCreatedAt(t time.Time) *DeploymentCreate {
+	dc.mutation.SetCreatedAt(t)
+	return dc
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (dc *DeploymentCreate) SetNillableCreatedAt(t *time.Time) *DeploymentCreate {
+	if t != nil {
+		dc.SetCreatedAt(*t)
+	}
+	return dc
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (dc *DeploymentCreate) SetUpdatedAt(t time.Time) *DeploymentCreate {
+	dc.mutation.SetUpdatedAt(t)
+	return dc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (dc *DeploymentCreate) SetNillableUpdatedAt(t *time.Time) *DeploymentCreate {
+	if t != nil {
+		dc.SetUpdatedAt(*t)
+	}
+	return dc
+}
+
 // SetName sets the "name" field.
 func (dc *DeploymentCreate) SetName(s string) *DeploymentCreate {
 	dc.mutation.SetName(s)
+	return dc
+}
+
+// SetDescription sets the "description" field.
+func (dc *DeploymentCreate) SetDescription(s string) *DeploymentCreate {
+	dc.mutation.SetDescription(s)
+	return dc
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (dc *DeploymentCreate) SetNillableDescription(s *string) *DeploymentCreate {
+	if s != nil {
+		dc.SetDescription(*s)
+	}
 	return dc
 }
 
@@ -117,6 +160,18 @@ func (dc *DeploymentCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (dc *DeploymentCreate) defaults() {
+	if _, ok := dc.mutation.CreatedAt(); !ok {
+		v := deployment.DefaultCreatedAt()
+		dc.mutation.SetCreatedAt(v)
+	}
+	if _, ok := dc.mutation.UpdatedAt(); !ok {
+		v := deployment.DefaultUpdatedAt()
+		dc.mutation.SetUpdatedAt(v)
+	}
+	if _, ok := dc.mutation.Description(); !ok {
+		v := deployment.DefaultDescription
+		dc.mutation.SetDescription(v)
+	}
 	if _, ok := dc.mutation.TemplateVars(); !ok {
 		v := deployment.DefaultTemplateVars
 		dc.mutation.SetTemplateVars(v)
@@ -137,6 +192,12 @@ func (dc *DeploymentCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (dc *DeploymentCreate) check() error {
+	if _, ok := dc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Deployment.created_at"`)}
+	}
+	if _, ok := dc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Deployment.updated_at"`)}
+	}
 	if _, ok := dc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Deployment.name"`)}
 	}
@@ -190,9 +251,21 @@ func (dc *DeploymentCreate) createSpec() (*Deployment, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
+	if value, ok := dc.mutation.CreatedAt(); ok {
+		_spec.SetField(deployment.FieldCreatedAt, field.TypeTime, value)
+		_node.CreatedAt = value
+	}
+	if value, ok := dc.mutation.UpdatedAt(); ok {
+		_spec.SetField(deployment.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
+	}
 	if value, ok := dc.mutation.Name(); ok {
 		_spec.SetField(deployment.FieldName, field.TypeString, value)
 		_node.Name = value
+	}
+	if value, ok := dc.mutation.Description(); ok {
+		_spec.SetField(deployment.FieldDescription, field.TypeString, value)
+		_node.Description = value
 	}
 	if value, ok := dc.mutation.TemplateVars(); ok {
 		_spec.SetField(deployment.FieldTemplateVars, field.TypeJSON, value)

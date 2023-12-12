@@ -31,6 +31,12 @@ func (pcu *ProviderCommandUpdate) Where(ps ...predicate.ProviderCommand) *Provid
 	return pcu
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (pcu *ProviderCommandUpdate) SetUpdatedAt(t time.Time) *ProviderCommandUpdate {
+	pcu.mutation.SetUpdatedAt(t)
+	return pcu
+}
+
 // SetCommandType sets the "command_type" field.
 func (pcu *ProviderCommandUpdate) SetCommandType(pt providercommand.CommandType) *ProviderCommandUpdate {
 	pcu.mutation.SetCommandType(pt)
@@ -168,6 +174,7 @@ func (pcu *ProviderCommandUpdate) ClearDeployment() *ProviderCommandUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (pcu *ProviderCommandUpdate) Save(ctx context.Context) (int, error) {
+	pcu.defaults()
 	return withHooks(ctx, pcu.sqlSave, pcu.mutation, pcu.hooks)
 }
 
@@ -190,6 +197,14 @@ func (pcu *ProviderCommandUpdate) Exec(ctx context.Context) error {
 func (pcu *ProviderCommandUpdate) ExecX(ctx context.Context) {
 	if err := pcu.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (pcu *ProviderCommandUpdate) defaults() {
+	if _, ok := pcu.mutation.UpdatedAt(); !ok {
+		v := providercommand.UpdateDefaultUpdatedAt()
+		pcu.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -222,6 +237,9 @@ func (pcu *ProviderCommandUpdate) sqlSave(ctx context.Context) (n int, err error
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := pcu.mutation.UpdatedAt(); ok {
+		_spec.SetField(providercommand.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := pcu.mutation.CommandType(); ok {
 		_spec.SetField(providercommand.FieldCommandType, field.TypeEnum, value)
@@ -323,6 +341,12 @@ type ProviderCommandUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *ProviderCommandMutation
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (pcuo *ProviderCommandUpdateOne) SetUpdatedAt(t time.Time) *ProviderCommandUpdateOne {
+	pcuo.mutation.SetUpdatedAt(t)
+	return pcuo
 }
 
 // SetCommandType sets the "command_type" field.
@@ -475,6 +499,7 @@ func (pcuo *ProviderCommandUpdateOne) Select(field string, fields ...string) *Pr
 
 // Save executes the query and returns the updated ProviderCommand entity.
 func (pcuo *ProviderCommandUpdateOne) Save(ctx context.Context) (*ProviderCommand, error) {
+	pcuo.defaults()
 	return withHooks(ctx, pcuo.sqlSave, pcuo.mutation, pcuo.hooks)
 }
 
@@ -497,6 +522,14 @@ func (pcuo *ProviderCommandUpdateOne) Exec(ctx context.Context) error {
 func (pcuo *ProviderCommandUpdateOne) ExecX(ctx context.Context) {
 	if err := pcuo.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (pcuo *ProviderCommandUpdateOne) defaults() {
+	if _, ok := pcuo.mutation.UpdatedAt(); !ok {
+		v := providercommand.UpdateDefaultUpdatedAt()
+		pcuo.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -546,6 +579,9 @@ func (pcuo *ProviderCommandUpdateOne) sqlSave(ctx context.Context) (_node *Provi
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := pcuo.mutation.UpdatedAt(); ok {
+		_spec.SetField(providercommand.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := pcuo.mutation.CommandType(); ok {
 		_spec.SetField(providercommand.FieldCommandType, field.TypeEnum, value)

@@ -299,12 +299,12 @@ func (pq *PermissionQuery) WithPermissionPolicies(opts ...func(*PermissionPolicy
 // Example:
 //
 //	var v []struct {
-//		Key string `json:"key,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Permission.Query().
-//		GroupBy(permission.FieldKey).
+//		GroupBy(permission.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (pq *PermissionQuery) GroupBy(field string, fields ...string) *PermissionGroupBy {
@@ -322,11 +322,11 @@ func (pq *PermissionQuery) GroupBy(field string, fields ...string) *PermissionGr
 // Example:
 //
 //	var v []struct {
-//		Key string `json:"key,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //	}
 //
 //	client.Permission.Query().
-//		Select(permission.FieldKey).
+//		Select(permission.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (pq *PermissionQuery) Select(fields ...string) *PermissionSelect {
 	pq.ctx.Fields = append(pq.ctx.Fields, fields...)

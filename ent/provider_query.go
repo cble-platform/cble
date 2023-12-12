@@ -299,12 +299,12 @@ func (pq *ProviderQuery) WithBlueprints(opts ...func(*BlueprintQuery)) *Provider
 // Example:
 //
 //	var v []struct {
-//		DisplayName string `json:"display_name,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Provider.Query().
-//		GroupBy(provider.FieldDisplayName).
+//		GroupBy(provider.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (pq *ProviderQuery) GroupBy(field string, fields ...string) *ProviderGroupBy {
@@ -322,11 +322,11 @@ func (pq *ProviderQuery) GroupBy(field string, fields ...string) *ProviderGroupB
 // Example:
 //
 //	var v []struct {
-//		DisplayName string `json:"display_name,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //	}
 //
 //	client.Provider.Query().
-//		Select(provider.FieldDisplayName).
+//		Select(provider.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (pq *ProviderQuery) Select(fields ...string) *ProviderSelect {
 	pq.ctx.Fields = append(pq.ctx.Fields, fields...)

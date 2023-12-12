@@ -5,6 +5,7 @@ package ent
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -17,6 +18,10 @@ type Provider struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// DisplayName holds the value of the "display_name" field.
 	DisplayName string `json:"display_name,omitempty"`
 	// ProviderGitURL holds the value of the "provider_git_url" field.
@@ -62,6 +67,8 @@ func (*Provider) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case provider.FieldDisplayName, provider.FieldProviderGitURL, provider.FieldProviderVersion:
 			values[i] = new(sql.NullString)
+		case provider.FieldCreatedAt, provider.FieldUpdatedAt:
+			values[i] = new(sql.NullTime)
 		case provider.FieldID:
 			values[i] = new(uuid.UUID)
 		default:
@@ -84,6 +91,18 @@ func (pr *Provider) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				pr.ID = *value
+			}
+		case provider.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				pr.CreatedAt = value.Time
+			}
+		case provider.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				pr.UpdatedAt = value.Time
 			}
 		case provider.FieldDisplayName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -156,6 +175,12 @@ func (pr *Provider) String() string {
 	var builder strings.Builder
 	builder.WriteString("Provider(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pr.ID))
+	builder.WriteString("created_at=")
+	builder.WriteString(pr.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(pr.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
 	builder.WriteString("display_name=")
 	builder.WriteString(pr.DisplayName)
 	builder.WriteString(", ")

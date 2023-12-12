@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -26,6 +27,12 @@ type ProviderUpdate struct {
 // Where appends a list predicates to the ProviderUpdate builder.
 func (pu *ProviderUpdate) Where(ps ...predicate.Provider) *ProviderUpdate {
 	pu.mutation.Where(ps...)
+	return pu
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (pu *ProviderUpdate) SetUpdatedAt(t time.Time) *ProviderUpdate {
+	pu.mutation.SetUpdatedAt(t)
 	return pu
 }
 
@@ -110,6 +117,7 @@ func (pu *ProviderUpdate) RemoveBlueprints(b ...*Blueprint) *ProviderUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (pu *ProviderUpdate) Save(ctx context.Context) (int, error) {
+	pu.defaults()
 	return withHooks(ctx, pu.sqlSave, pu.mutation, pu.hooks)
 }
 
@@ -135,6 +143,14 @@ func (pu *ProviderUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (pu *ProviderUpdate) defaults() {
+	if _, ok := pu.mutation.UpdatedAt(); !ok {
+		v := provider.UpdateDefaultUpdatedAt()
+		pu.mutation.SetUpdatedAt(v)
+	}
+}
+
 func (pu *ProviderUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := sqlgraph.NewUpdateSpec(provider.Table, provider.Columns, sqlgraph.NewFieldSpec(provider.FieldID, field.TypeUUID))
 	if ps := pu.mutation.predicates; len(ps) > 0 {
@@ -143,6 +159,9 @@ func (pu *ProviderUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := pu.mutation.UpdatedAt(); ok {
+		_spec.SetField(provider.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := pu.mutation.DisplayName(); ok {
 		_spec.SetField(provider.FieldDisplayName, field.TypeString, value)
@@ -222,6 +241,12 @@ type ProviderUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *ProviderMutation
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (puo *ProviderUpdateOne) SetUpdatedAt(t time.Time) *ProviderUpdateOne {
+	puo.mutation.SetUpdatedAt(t)
+	return puo
 }
 
 // SetDisplayName sets the "display_name" field.
@@ -318,6 +343,7 @@ func (puo *ProviderUpdateOne) Select(field string, fields ...string) *ProviderUp
 
 // Save executes the query and returns the updated Provider entity.
 func (puo *ProviderUpdateOne) Save(ctx context.Context) (*Provider, error) {
+	puo.defaults()
 	return withHooks(ctx, puo.sqlSave, puo.mutation, puo.hooks)
 }
 
@@ -340,6 +366,14 @@ func (puo *ProviderUpdateOne) Exec(ctx context.Context) error {
 func (puo *ProviderUpdateOne) ExecX(ctx context.Context) {
 	if err := puo.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (puo *ProviderUpdateOne) defaults() {
+	if _, ok := puo.mutation.UpdatedAt(); !ok {
+		v := provider.UpdateDefaultUpdatedAt()
+		puo.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -368,6 +402,9 @@ func (puo *ProviderUpdateOne) sqlSave(ctx context.Context) (_node *Provider, err
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := puo.mutation.UpdatedAt(); ok {
+		_spec.SetField(provider.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := puo.mutation.DisplayName(); ok {
 		_spec.SetField(provider.FieldDisplayName, field.TypeString, value)

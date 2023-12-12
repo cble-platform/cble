@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"time"
+
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -18,6 +20,12 @@ func (ProviderCommand) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).
 			Immutable().
 			Default(uuid.New),
+		field.Time("created_at").
+			Immutable().
+			Default(time.Now),
+		field.Time("updated_at").
+			Default(time.Now).
+			UpdateDefault(time.Now),
 		field.Enum("command_type").Values("CONFIGURE", "DEPLOY", "DESTROY"),
 		field.Enum("status").Values("QUEUED", "FAILED", "SUCCEEDED", "INPROGRESS").Default("QUEUED"),
 		field.Time("start_time").Optional(),

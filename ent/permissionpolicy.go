@@ -5,6 +5,7 @@ package ent
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -19,6 +20,10 @@ type PermissionPolicy struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// Type holds the value of the "type" field.
 	Type permissionpolicy.Type `json:"type,omitempty"`
 	// IsInherited holds the value of the "is_inherited" field.
@@ -77,6 +82,8 @@ func (*PermissionPolicy) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case permissionpolicy.FieldType:
 			values[i] = new(sql.NullString)
+		case permissionpolicy.FieldCreatedAt, permissionpolicy.FieldUpdatedAt:
+			values[i] = new(sql.NullTime)
 		case permissionpolicy.FieldID:
 			values[i] = new(uuid.UUID)
 		case permissionpolicy.ForeignKeys[0]: // permission_policy_permission
@@ -103,6 +110,18 @@ func (pp *PermissionPolicy) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				pp.ID = *value
+			}
+		case permissionpolicy.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				pp.CreatedAt = value.Time
+			}
+		case permissionpolicy.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				pp.UpdatedAt = value.Time
 			}
 		case permissionpolicy.FieldType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -176,6 +195,12 @@ func (pp *PermissionPolicy) String() string {
 	var builder strings.Builder
 	builder.WriteString("PermissionPolicy(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pp.ID))
+	builder.WriteString("created_at=")
+	builder.WriteString(pp.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(pp.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
 	builder.WriteString("type=")
 	builder.WriteString(fmt.Sprintf("%v", pp.Type))
 	builder.WriteString(", ")

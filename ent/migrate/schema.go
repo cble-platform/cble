@@ -11,6 +11,8 @@ var (
 	// BlueprintsColumns holds the columns for the "blueprints" table.
 	BlueprintsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString},
 		{Name: "blueprint_template", Type: field.TypeBytes},
@@ -25,13 +27,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "blueprints_groups_parent_group",
-				Columns:    []*schema.Column{BlueprintsColumns[4]},
+				Columns:    []*schema.Column{BlueprintsColumns[6]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "blueprints_providers_provider",
-				Columns:    []*schema.Column{BlueprintsColumns[5]},
+				Columns:    []*schema.Column{BlueprintsColumns[7]},
 				RefColumns: []*schema.Column{ProvidersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -40,7 +42,10 @@ var (
 	// DeploymentsColumns holds the columns for the "deployments" table.
 	DeploymentsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString, Nullable: true, Default: ""},
 		{Name: "template_vars", Type: field.TypeJSON},
 		{Name: "deployment_vars", Type: field.TypeJSON},
 		{Name: "deployment_state", Type: field.TypeJSON},
@@ -55,13 +60,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "deployments_blueprints_blueprint",
-				Columns:    []*schema.Column{DeploymentsColumns[5]},
+				Columns:    []*schema.Column{DeploymentsColumns[8]},
 				RefColumns: []*schema.Column{BlueprintsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "deployments_users_requester",
-				Columns:    []*schema.Column{DeploymentsColumns[6]},
+				Columns:    []*schema.Column{DeploymentsColumns[9]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -70,6 +75,8 @@ var (
 	// GroupsColumns holds the columns for the "groups" table.
 	GroupsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString},
 		{Name: "group_children", Type: field.TypeUUID, Nullable: true},
 	}
@@ -81,7 +88,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "groups_groups_children",
-				Columns:    []*schema.Column{GroupsColumns[2]},
+				Columns:    []*schema.Column{GroupsColumns[4]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -90,6 +97,8 @@ var (
 	// PermissionsColumns holds the columns for the "permissions" table.
 	PermissionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "key", Type: field.TypeString, Unique: true},
 		{Name: "component", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString},
@@ -103,6 +112,8 @@ var (
 	// PermissionPoliciesColumns holds the columns for the "permission_policies" table.
 	PermissionPoliciesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "type", Type: field.TypeEnum, Nullable: true, Enums: []string{"ALLOW", "DENY"}, Default: "ALLOW"},
 		{Name: "is_inherited", Type: field.TypeBool, Nullable: true, Default: false},
 		{Name: "permission_policy_permission", Type: field.TypeUUID},
@@ -116,13 +127,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "permission_policies_permissions_permission",
-				Columns:    []*schema.Column{PermissionPoliciesColumns[3]},
+				Columns:    []*schema.Column{PermissionPoliciesColumns[5]},
 				RefColumns: []*schema.Column{PermissionsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "permission_policies_groups_group",
-				Columns:    []*schema.Column{PermissionPoliciesColumns[4]},
+				Columns:    []*schema.Column{PermissionPoliciesColumns[6]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -131,6 +142,8 @@ var (
 	// ProvidersColumns holds the columns for the "providers" table.
 	ProvidersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "display_name", Type: field.TypeString},
 		{Name: "provider_git_url", Type: field.TypeString},
 		{Name: "provider_version", Type: field.TypeString},
@@ -146,6 +159,8 @@ var (
 	// ProviderCommandsColumns holds the columns for the "provider_commands" table.
 	ProviderCommandsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "command_type", Type: field.TypeEnum, Enums: []string{"CONFIGURE", "DEPLOY", "DESTROY"}},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"QUEUED", "FAILED", "SUCCEEDED", "INPROGRESS"}, Default: "QUEUED"},
 		{Name: "start_time", Type: field.TypeTime, Nullable: true},
@@ -163,13 +178,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "provider_commands_providers_provider",
-				Columns:    []*schema.Column{ProviderCommandsColumns[7]},
+				Columns:    []*schema.Column{ProviderCommandsColumns[9]},
 				RefColumns: []*schema.Column{ProvidersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "provider_commands_deployments_deployment",
-				Columns:    []*schema.Column{ProviderCommandsColumns[8]},
+				Columns:    []*schema.Column{ProviderCommandsColumns[10]},
 				RefColumns: []*schema.Column{DeploymentsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -178,6 +193,8 @@ var (
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "username", Type: field.TypeString, Unique: true},
 		{Name: "email", Type: field.TypeString},
 		{Name: "password", Type: field.TypeString},

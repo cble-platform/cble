@@ -23,6 +23,34 @@ type ProviderCommandCreate struct {
 	hooks    []Hook
 }
 
+// SetCreatedAt sets the "created_at" field.
+func (pcc *ProviderCommandCreate) SetCreatedAt(t time.Time) *ProviderCommandCreate {
+	pcc.mutation.SetCreatedAt(t)
+	return pcc
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (pcc *ProviderCommandCreate) SetNillableCreatedAt(t *time.Time) *ProviderCommandCreate {
+	if t != nil {
+		pcc.SetCreatedAt(*t)
+	}
+	return pcc
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (pcc *ProviderCommandCreate) SetUpdatedAt(t time.Time) *ProviderCommandCreate {
+	pcc.mutation.SetUpdatedAt(t)
+	return pcc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (pcc *ProviderCommandCreate) SetNillableUpdatedAt(t *time.Time) *ProviderCommandCreate {
+	if t != nil {
+		pcc.SetUpdatedAt(*t)
+	}
+	return pcc
+}
+
 // SetCommandType sets the "command_type" field.
 func (pcc *ProviderCommandCreate) SetCommandType(pt providercommand.CommandType) *ProviderCommandCreate {
 	pcc.mutation.SetCommandType(pt)
@@ -178,6 +206,14 @@ func (pcc *ProviderCommandCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (pcc *ProviderCommandCreate) defaults() {
+	if _, ok := pcc.mutation.CreatedAt(); !ok {
+		v := providercommand.DefaultCreatedAt()
+		pcc.mutation.SetCreatedAt(v)
+	}
+	if _, ok := pcc.mutation.UpdatedAt(); !ok {
+		v := providercommand.DefaultUpdatedAt()
+		pcc.mutation.SetUpdatedAt(v)
+	}
 	if _, ok := pcc.mutation.Status(); !ok {
 		v := providercommand.DefaultStatus
 		pcc.mutation.SetStatus(v)
@@ -198,6 +234,12 @@ func (pcc *ProviderCommandCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (pcc *ProviderCommandCreate) check() error {
+	if _, ok := pcc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ProviderCommand.created_at"`)}
+	}
+	if _, ok := pcc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "ProviderCommand.updated_at"`)}
+	}
 	if _, ok := pcc.mutation.CommandType(); !ok {
 		return &ValidationError{Name: "command_type", err: errors.New(`ent: missing required field "ProviderCommand.command_type"`)}
 	}
@@ -257,6 +299,14 @@ func (pcc *ProviderCommandCreate) createSpec() (*ProviderCommand, *sqlgraph.Crea
 	if id, ok := pcc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
+	}
+	if value, ok := pcc.mutation.CreatedAt(); ok {
+		_spec.SetField(providercommand.FieldCreatedAt, field.TypeTime, value)
+		_node.CreatedAt = value
+	}
+	if value, ok := pcc.mutation.UpdatedAt(); ok {
+		_spec.SetField(providercommand.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
 	}
 	if value, ok := pcc.mutation.CommandType(); ok {
 		_spec.SetField(providercommand.FieldCommandType, field.TypeEnum, value)

@@ -5,6 +5,7 @@ package ent
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -17,6 +18,10 @@ type Group struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -99,6 +104,8 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case group.FieldName:
 			values[i] = new(sql.NullString)
+		case group.FieldCreatedAt, group.FieldUpdatedAt:
+			values[i] = new(sql.NullTime)
 		case group.FieldID:
 			values[i] = new(uuid.UUID)
 		case group.ForeignKeys[0]: // group_children
@@ -123,6 +130,18 @@ func (gr *Group) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				gr.ID = *value
+			}
+		case group.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				gr.CreatedAt = value.Time
+			}
+		case group.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				gr.UpdatedAt = value.Time
 			}
 		case group.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -198,6 +217,12 @@ func (gr *Group) String() string {
 	var builder strings.Builder
 	builder.WriteString("Group(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", gr.ID))
+	builder.WriteString("created_at=")
+	builder.WriteString(gr.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(gr.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(gr.Name)
 	builder.WriteByte(')')

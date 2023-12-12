@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -21,6 +22,34 @@ type BlueprintCreate struct {
 	config
 	mutation *BlueprintMutation
 	hooks    []Hook
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (bc *BlueprintCreate) SetCreatedAt(t time.Time) *BlueprintCreate {
+	bc.mutation.SetCreatedAt(t)
+	return bc
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (bc *BlueprintCreate) SetNillableCreatedAt(t *time.Time) *BlueprintCreate {
+	if t != nil {
+		bc.SetCreatedAt(*t)
+	}
+	return bc
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (bc *BlueprintCreate) SetUpdatedAt(t time.Time) *BlueprintCreate {
+	bc.mutation.SetUpdatedAt(t)
+	return bc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (bc *BlueprintCreate) SetNillableUpdatedAt(t *time.Time) *BlueprintCreate {
+	if t != nil {
+		bc.SetUpdatedAt(*t)
+	}
+	return bc
 }
 
 // SetName sets the "name" field.
@@ -127,6 +156,14 @@ func (bc *BlueprintCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (bc *BlueprintCreate) defaults() {
+	if _, ok := bc.mutation.CreatedAt(); !ok {
+		v := blueprint.DefaultCreatedAt()
+		bc.mutation.SetCreatedAt(v)
+	}
+	if _, ok := bc.mutation.UpdatedAt(); !ok {
+		v := blueprint.DefaultUpdatedAt()
+		bc.mutation.SetUpdatedAt(v)
+	}
 	if _, ok := bc.mutation.ID(); !ok {
 		v := blueprint.DefaultID()
 		bc.mutation.SetID(v)
@@ -135,6 +172,12 @@ func (bc *BlueprintCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (bc *BlueprintCreate) check() error {
+	if _, ok := bc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Blueprint.created_at"`)}
+	}
+	if _, ok := bc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Blueprint.updated_at"`)}
+	}
 	if _, ok := bc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Blueprint.name"`)}
 	}
@@ -184,6 +227,14 @@ func (bc *BlueprintCreate) createSpec() (*Blueprint, *sqlgraph.CreateSpec) {
 	if id, ok := bc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
+	}
+	if value, ok := bc.mutation.CreatedAt(); ok {
+		_spec.SetField(blueprint.FieldCreatedAt, field.TypeTime, value)
+		_node.CreatedAt = value
+	}
+	if value, ok := bc.mutation.UpdatedAt(); ok {
+		_spec.SetField(blueprint.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
 	}
 	if value, ok := bc.mutation.Name(); ok {
 		_spec.SetField(blueprint.FieldName, field.TypeString, value)

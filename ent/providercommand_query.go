@@ -335,12 +335,12 @@ func (pcq *ProviderCommandQuery) WithDeployment(opts ...func(*DeploymentQuery)) 
 // Example:
 //
 //	var v []struct {
-//		CommandType providercommand.CommandType `json:"command_type,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.ProviderCommand.Query().
-//		GroupBy(providercommand.FieldCommandType).
+//		GroupBy(providercommand.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (pcq *ProviderCommandQuery) GroupBy(field string, fields ...string) *ProviderCommandGroupBy {
@@ -358,11 +358,11 @@ func (pcq *ProviderCommandQuery) GroupBy(field string, fields ...string) *Provid
 // Example:
 //
 //	var v []struct {
-//		CommandType providercommand.CommandType `json:"command_type,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //	}
 //
 //	client.ProviderCommand.Query().
-//		Select(providercommand.FieldCommandType).
+//		Select(providercommand.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (pcq *ProviderCommandQuery) Select(fields ...string) *ProviderCommandSelect {
 	pcq.ctx.Fields = append(pcq.ctx.Fields, fields...)

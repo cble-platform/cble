@@ -335,12 +335,12 @@ func (ppq *PermissionPolicyQuery) WithGroup(opts ...func(*GroupQuery)) *Permissi
 // Example:
 //
 //	var v []struct {
-//		Type permissionpolicy.Type `json:"type,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.PermissionPolicy.Query().
-//		GroupBy(permissionpolicy.FieldType).
+//		GroupBy(permissionpolicy.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (ppq *PermissionPolicyQuery) GroupBy(field string, fields ...string) *PermissionPolicyGroupBy {
@@ -358,11 +358,11 @@ func (ppq *PermissionPolicyQuery) GroupBy(field string, fields ...string) *Permi
 // Example:
 //
 //	var v []struct {
-//		Type permissionpolicy.Type `json:"type,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //	}
 //
 //	client.PermissionPolicy.Query().
-//		Select(permissionpolicy.FieldType).
+//		Select(permissionpolicy.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (ppq *PermissionPolicyQuery) Select(fields ...string) *PermissionPolicySelect {
 	ppq.ctx.Fields = append(ppq.ctx.Fields, fields...)

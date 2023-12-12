@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"time"
+
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -18,6 +20,12 @@ func (Blueprint) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).
 			Immutable().
 			Default(uuid.New),
+		field.Time("created_at").
+			Immutable().
+			Default(time.Now),
+		field.Time("updated_at").
+			Default(time.Now).
+			UpdateDefault(time.Now),
 		field.String("name"),
 		field.String("description"),
 		field.Bytes("blueprint_template"),

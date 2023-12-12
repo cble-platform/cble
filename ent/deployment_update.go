@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -30,9 +31,35 @@ func (du *DeploymentUpdate) Where(ps ...predicate.Deployment) *DeploymentUpdate 
 	return du
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (du *DeploymentUpdate) SetUpdatedAt(t time.Time) *DeploymentUpdate {
+	du.mutation.SetUpdatedAt(t)
+	return du
+}
+
 // SetName sets the "name" field.
 func (du *DeploymentUpdate) SetName(s string) *DeploymentUpdate {
 	du.mutation.SetName(s)
+	return du
+}
+
+// SetDescription sets the "description" field.
+func (du *DeploymentUpdate) SetDescription(s string) *DeploymentUpdate {
+	du.mutation.SetDescription(s)
+	return du
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (du *DeploymentUpdate) SetNillableDescription(s *string) *DeploymentUpdate {
+	if s != nil {
+		du.SetDescription(*s)
+	}
+	return du
+}
+
+// ClearDescription clears the value of the "description" field.
+func (du *DeploymentUpdate) ClearDescription() *DeploymentUpdate {
+	du.mutation.ClearDescription()
 	return du
 }
 
@@ -95,6 +122,7 @@ func (du *DeploymentUpdate) ClearRequester() *DeploymentUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (du *DeploymentUpdate) Save(ctx context.Context) (int, error) {
+	du.defaults()
 	return withHooks(ctx, du.sqlSave, du.mutation, du.hooks)
 }
 
@@ -117,6 +145,14 @@ func (du *DeploymentUpdate) Exec(ctx context.Context) error {
 func (du *DeploymentUpdate) ExecX(ctx context.Context) {
 	if err := du.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (du *DeploymentUpdate) defaults() {
+	if _, ok := du.mutation.UpdatedAt(); !ok {
+		v := deployment.UpdateDefaultUpdatedAt()
+		du.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -143,8 +179,17 @@ func (du *DeploymentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := du.mutation.UpdatedAt(); ok {
+		_spec.SetField(deployment.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := du.mutation.Name(); ok {
 		_spec.SetField(deployment.FieldName, field.TypeString, value)
+	}
+	if value, ok := du.mutation.Description(); ok {
+		_spec.SetField(deployment.FieldDescription, field.TypeString, value)
+	}
+	if du.mutation.DescriptionCleared() {
+		_spec.ClearField(deployment.FieldDescription, field.TypeString)
 	}
 	if value, ok := du.mutation.TemplateVars(); ok {
 		_spec.SetField(deployment.FieldTemplateVars, field.TypeJSON, value)
@@ -233,9 +278,35 @@ type DeploymentUpdateOne struct {
 	mutation *DeploymentMutation
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (duo *DeploymentUpdateOne) SetUpdatedAt(t time.Time) *DeploymentUpdateOne {
+	duo.mutation.SetUpdatedAt(t)
+	return duo
+}
+
 // SetName sets the "name" field.
 func (duo *DeploymentUpdateOne) SetName(s string) *DeploymentUpdateOne {
 	duo.mutation.SetName(s)
+	return duo
+}
+
+// SetDescription sets the "description" field.
+func (duo *DeploymentUpdateOne) SetDescription(s string) *DeploymentUpdateOne {
+	duo.mutation.SetDescription(s)
+	return duo
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (duo *DeploymentUpdateOne) SetNillableDescription(s *string) *DeploymentUpdateOne {
+	if s != nil {
+		duo.SetDescription(*s)
+	}
+	return duo
+}
+
+// ClearDescription clears the value of the "description" field.
+func (duo *DeploymentUpdateOne) ClearDescription() *DeploymentUpdateOne {
+	duo.mutation.ClearDescription()
 	return duo
 }
 
@@ -311,6 +382,7 @@ func (duo *DeploymentUpdateOne) Select(field string, fields ...string) *Deployme
 
 // Save executes the query and returns the updated Deployment entity.
 func (duo *DeploymentUpdateOne) Save(ctx context.Context) (*Deployment, error) {
+	duo.defaults()
 	return withHooks(ctx, duo.sqlSave, duo.mutation, duo.hooks)
 }
 
@@ -333,6 +405,14 @@ func (duo *DeploymentUpdateOne) Exec(ctx context.Context) error {
 func (duo *DeploymentUpdateOne) ExecX(ctx context.Context) {
 	if err := duo.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (duo *DeploymentUpdateOne) defaults() {
+	if _, ok := duo.mutation.UpdatedAt(); !ok {
+		v := deployment.UpdateDefaultUpdatedAt()
+		duo.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -376,8 +456,17 @@ func (duo *DeploymentUpdateOne) sqlSave(ctx context.Context) (_node *Deployment,
 			}
 		}
 	}
+	if value, ok := duo.mutation.UpdatedAt(); ok {
+		_spec.SetField(deployment.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := duo.mutation.Name(); ok {
 		_spec.SetField(deployment.FieldName, field.TypeString, value)
+	}
+	if value, ok := duo.mutation.Description(); ok {
+		_spec.SetField(deployment.FieldDescription, field.TypeString, value)
+	}
+	if duo.mutation.DescriptionCleared() {
+		_spec.ClearField(deployment.FieldDescription, field.TypeString)
 	}
 	if value, ok := duo.mutation.TemplateVars(); ok {
 		_spec.SetField(deployment.FieldTemplateVars, field.TypeJSON, value)

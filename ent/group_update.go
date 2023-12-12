@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -28,6 +29,12 @@ type GroupUpdate struct {
 // Where appends a list predicates to the GroupUpdate builder.
 func (gu *GroupUpdate) Where(ps ...predicate.Group) *GroupUpdate {
 	gu.mutation.Where(ps...)
+	return gu
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (gu *GroupUpdate) SetUpdatedAt(t time.Time) *GroupUpdate {
+	gu.mutation.SetUpdatedAt(t)
 	return gu
 }
 
@@ -213,6 +220,7 @@ func (gu *GroupUpdate) RemoveBlueprints(b ...*Blueprint) *GroupUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (gu *GroupUpdate) Save(ctx context.Context) (int, error) {
+	gu.defaults()
 	return withHooks(ctx, gu.sqlSave, gu.mutation, gu.hooks)
 }
 
@@ -238,6 +246,14 @@ func (gu *GroupUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (gu *GroupUpdate) defaults() {
+	if _, ok := gu.mutation.UpdatedAt(); !ok {
+		v := group.UpdateDefaultUpdatedAt()
+		gu.mutation.SetUpdatedAt(v)
+	}
+}
+
 func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := sqlgraph.NewUpdateSpec(group.Table, group.Columns, sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID))
 	if ps := gu.mutation.predicates; len(ps) > 0 {
@@ -246,6 +262,9 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := gu.mutation.UpdatedAt(); ok {
+		_spec.SetField(group.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := gu.mutation.Name(); ok {
 		_spec.SetField(group.FieldName, field.TypeString, value)
@@ -479,6 +498,12 @@ type GroupUpdateOne struct {
 	mutation *GroupMutation
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (guo *GroupUpdateOne) SetUpdatedAt(t time.Time) *GroupUpdateOne {
+	guo.mutation.SetUpdatedAt(t)
+	return guo
+}
+
 // SetName sets the "name" field.
 func (guo *GroupUpdateOne) SetName(s string) *GroupUpdateOne {
 	guo.mutation.SetName(s)
@@ -674,6 +699,7 @@ func (guo *GroupUpdateOne) Select(field string, fields ...string) *GroupUpdateOn
 
 // Save executes the query and returns the updated Group entity.
 func (guo *GroupUpdateOne) Save(ctx context.Context) (*Group, error) {
+	guo.defaults()
 	return withHooks(ctx, guo.sqlSave, guo.mutation, guo.hooks)
 }
 
@@ -696,6 +722,14 @@ func (guo *GroupUpdateOne) Exec(ctx context.Context) error {
 func (guo *GroupUpdateOne) ExecX(ctx context.Context) {
 	if err := guo.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (guo *GroupUpdateOne) defaults() {
+	if _, ok := guo.mutation.UpdatedAt(); !ok {
+		v := group.UpdateDefaultUpdatedAt()
+		guo.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -724,6 +758,9 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := guo.mutation.UpdatedAt(); ok {
+		_spec.SetField(group.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := guo.mutation.Name(); ok {
 		_spec.SetField(group.FieldName, field.TypeString, value)

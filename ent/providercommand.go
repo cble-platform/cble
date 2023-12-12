@@ -20,6 +20,10 @@ type ProviderCommand struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// CommandType holds the value of the "command_type" field.
 	CommandType providercommand.CommandType `json:"command_type,omitempty"`
 	// Status holds the value of the "status" field.
@@ -84,7 +88,7 @@ func (*ProviderCommand) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case providercommand.FieldCommandType, providercommand.FieldStatus, providercommand.FieldOutput, providercommand.FieldError:
 			values[i] = new(sql.NullString)
-		case providercommand.FieldStartTime, providercommand.FieldEndTime:
+		case providercommand.FieldCreatedAt, providercommand.FieldUpdatedAt, providercommand.FieldStartTime, providercommand.FieldEndTime:
 			values[i] = new(sql.NullTime)
 		case providercommand.FieldID:
 			values[i] = new(uuid.UUID)
@@ -112,6 +116,18 @@ func (pc *ProviderCommand) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				pc.ID = *value
+			}
+		case providercommand.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				pc.CreatedAt = value.Time
+			}
+		case providercommand.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				pc.UpdatedAt = value.Time
 			}
 		case providercommand.FieldCommandType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -209,6 +225,12 @@ func (pc *ProviderCommand) String() string {
 	var builder strings.Builder
 	builder.WriteString("ProviderCommand(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pc.ID))
+	builder.WriteString("created_at=")
+	builder.WriteString(pc.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(pc.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
 	builder.WriteString("command_type=")
 	builder.WriteString(fmt.Sprintf("%v", pc.CommandType))
 	builder.WriteString(", ")

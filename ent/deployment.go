@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -20,8 +21,14 @@ type Deployment struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
+	// Description holds the value of the "description" field.
+	Description string `json:"description,omitempty"`
 	// TemplateVars holds the value of the "template_vars" field.
 	TemplateVars map[string]interface{} `json:"template_vars,omitempty"`
 	// DeploymentVars holds the value of the "deployment_vars" field.
@@ -80,8 +87,10 @@ func (*Deployment) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case deployment.FieldTemplateVars, deployment.FieldDeploymentVars, deployment.FieldDeploymentState:
 			values[i] = new([]byte)
-		case deployment.FieldName:
+		case deployment.FieldName, deployment.FieldDescription:
 			values[i] = new(sql.NullString)
+		case deployment.FieldCreatedAt, deployment.FieldUpdatedAt:
+			values[i] = new(sql.NullTime)
 		case deployment.FieldID:
 			values[i] = new(uuid.UUID)
 		case deployment.ForeignKeys[0]: // deployment_blueprint
@@ -109,11 +118,29 @@ func (d *Deployment) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				d.ID = *value
 			}
+		case deployment.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				d.CreatedAt = value.Time
+			}
+		case deployment.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				d.UpdatedAt = value.Time
+			}
 		case deployment.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
 				d.Name = value.String
+			}
+		case deployment.FieldDescription:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field description", values[i])
+			} else if value.Valid {
+				d.Description = value.String
 			}
 		case deployment.FieldTemplateVars:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -199,8 +226,17 @@ func (d *Deployment) String() string {
 	var builder strings.Builder
 	builder.WriteString("Deployment(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", d.ID))
+	builder.WriteString("created_at=")
+	builder.WriteString(d.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(d.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(d.Name)
+	builder.WriteString(", ")
+	builder.WriteString("description=")
+	builder.WriteString(d.Description)
 	builder.WriteString(", ")
 	builder.WriteString("template_vars=")
 	builder.WriteString(fmt.Sprintf("%v", d.TemplateVars))

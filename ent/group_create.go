@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -21,6 +22,34 @@ type GroupCreate struct {
 	config
 	mutation *GroupMutation
 	hooks    []Hook
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (gc *GroupCreate) SetCreatedAt(t time.Time) *GroupCreate {
+	gc.mutation.SetCreatedAt(t)
+	return gc
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (gc *GroupCreate) SetNillableCreatedAt(t *time.Time) *GroupCreate {
+	if t != nil {
+		gc.SetCreatedAt(*t)
+	}
+	return gc
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (gc *GroupCreate) SetUpdatedAt(t time.Time) *GroupCreate {
+	gc.mutation.SetUpdatedAt(t)
+	return gc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (gc *GroupCreate) SetNillableUpdatedAt(t *time.Time) *GroupCreate {
+	if t != nil {
+		gc.SetUpdatedAt(*t)
+	}
+	return gc
 }
 
 // SetName sets the "name" field.
@@ -157,6 +186,14 @@ func (gc *GroupCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (gc *GroupCreate) defaults() {
+	if _, ok := gc.mutation.CreatedAt(); !ok {
+		v := group.DefaultCreatedAt()
+		gc.mutation.SetCreatedAt(v)
+	}
+	if _, ok := gc.mutation.UpdatedAt(); !ok {
+		v := group.DefaultUpdatedAt()
+		gc.mutation.SetUpdatedAt(v)
+	}
 	if _, ok := gc.mutation.ID(); !ok {
 		v := group.DefaultID()
 		gc.mutation.SetID(v)
@@ -165,6 +202,12 @@ func (gc *GroupCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (gc *GroupCreate) check() error {
+	if _, ok := gc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Group.created_at"`)}
+	}
+	if _, ok := gc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Group.updated_at"`)}
+	}
 	if _, ok := gc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Group.name"`)}
 	}
@@ -202,6 +245,14 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	if id, ok := gc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
+	}
+	if value, ok := gc.mutation.CreatedAt(); ok {
+		_spec.SetField(group.FieldCreatedAt, field.TypeTime, value)
+		_node.CreatedAt = value
+	}
+	if value, ok := gc.mutation.UpdatedAt(); ok {
+		_spec.SetField(group.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
 	}
 	if value, ok := gc.mutation.Name(); ok {
 		_spec.SetField(group.FieldName, field.TypeString, value)

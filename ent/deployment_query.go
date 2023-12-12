@@ -335,12 +335,12 @@ func (dq *DeploymentQuery) WithRequester(opts ...func(*UserQuery)) *DeploymentQu
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Deployment.Query().
-//		GroupBy(deployment.FieldName).
+//		GroupBy(deployment.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (dq *DeploymentQuery) GroupBy(field string, fields ...string) *DeploymentGroupBy {
@@ -358,11 +358,11 @@ func (dq *DeploymentQuery) GroupBy(field string, fields ...string) *DeploymentGr
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //	}
 //
 //	client.Deployment.Query().
-//		Select(deployment.FieldName).
+//		Select(deployment.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (dq *DeploymentQuery) Select(fields ...string) *DeploymentSelect {
 	dq.ctx.Fields = append(dq.ctx.Fields, fields...)
