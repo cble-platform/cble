@@ -60,3 +60,6 @@ models:
   StrMap:
     model:
       - github.com/cble-platform/cble-backend/graph/model.StrMap
+  UUID:
+    model:
+      - github.com/cble-platform/cble-backend/graph/model.UUID

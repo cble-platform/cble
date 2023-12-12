@@ -6,14 +6,16 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+
+	"github.com/google/uuid"
 )
 
 type BlueprintInput struct {
-	Name              string `json:"name"`
-	Description       string `json:"description"`
-	BlueprintTemplate string `json:"blueprintTemplate"`
-	ParentGroupID     string `json:"parentGroupId"`
-	ProviderID        string `json:"providerId"`
+	Name              string    `json:"name"`
+	Description       string    `json:"description"`
+	BlueprintTemplate string    `json:"blueprintTemplate"`
+	ParentGroupID     uuid.UUID `json:"parentGroupId"`
+	ProviderID        uuid.UUID `json:"providerId"`
 }
 
 type DeploymentInput struct {
@@ -28,10 +30,11 @@ type ProviderInput struct {
 }
 
 type UserInput struct {
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
+	Username  string   `json:"username"`
+	Email     string   `json:"email"`
+	FirstName string   `json:"firstName"`
+	LastName  string   `json:"lastName"`
+	GroupIds  []string `json:"groupIds"`
 }
 
 type CommandStatus string
