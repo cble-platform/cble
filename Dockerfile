@@ -7,6 +7,6 @@ WORKDIR /app
 ENV PATH="${PATH}:/app"
 
 RUN go mod download && go mod verify
-RUN go build -o cble main.go
+RUN go build -o cble_server main.go
 
-CMD ["./cble"]
+CMD ["./cble_server"]
