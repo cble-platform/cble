@@ -292,4 +292,8 @@ type Mutation {
   Destroy a deployment (requires permission `com.cble.deployments.destroy`)
   """
   destroyDeployment(id: UUID!): Deployment! @permission(key: "com.cble.deployments.destroy")
+  """
+  Get a vm console (requires permission `com.cble.deployments.console`)
+  """
+  getConsole(id: UUID!, hostKey: String!): String! @permission(key: "com.cble.deployments.console")
 }

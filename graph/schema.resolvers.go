@@ -7,6 +7,7 @@ package graph
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/cble-platform/cble-backend/auth"
@@ -369,6 +370,48 @@ func (r *mutationResolver) DestroyDeployment(ctx context.Context, id uuid.UUID) 
 	return entDeployment, nil
 }
 
+// GetConsole is the resolver for the getConsole field.
+func (r *mutationResolver) GetConsole(ctx context.Context, id uuid.UUID, hostKey string) (string, error) {
+	// Get the deployment
+	entDeployment, err := r.ent.Deployment.Get(ctx, id)
+	if err != nil {
+		return "", gqlerror.Errorf("failed to create deployment from blueprint: %v", err)
+	}
+	entProvider, err := entDeployment.QueryBlueprint().QueryProvider().Only(ctx)
+	if err != nil {
+		return "", gqlerror.Errorf("failed to query provider from deployment: %v", err)
+	}
+
+	// Queue a destroy command for blueprint
+	entCommand, err := r.ent.ProviderCommand.Create().
+		SetCommandType(providercommand.CommandTypeCONSOLE).
+		SetArguments([]string{hostKey}).
+		SetProvider(entProvider).
+		SetDeployment(entDeployment).
+		Save(ctx)
+	if err != nil {
+		return "", gqlerror.Errorf("failed to create deployment CONSOLE command: %v", err)
+	}
+
+	// Wait for the command to finish
+	// TODO: potentially make this command synchronous somehow
+	for {
+		entCommand, err = r.ent.ProviderCommand.Get(ctx, entCommand.ID)
+		if err != nil {
+			return "", fmt.Errorf("failed to query ent command")
+		}
+		if entCommand.Status == providercommand.StatusSUCCEEDED {
+			return entCommand.Output, nil
+		}
+		if entCommand.Status == providercommand.StatusFAILED {
+			return "", fmt.Errorf(entCommand.Error)
+		}
+
+		// Sleep before checking again
+		time.Sleep(1 * time.Second)
+	}
+}
+
 // PermissionPolicies is the resolver for the permissionPolicies field.
 func (r *permissionResolver) PermissionPolicies(ctx context.Context, obj *ent.Permission) ([]*ent.PermissionPolicy, error) {
 	return obj.QueryPermissionPolicies().All(ctx)
@@ -558,3 +601,13 @@ type providerResolver struct{ *Resolver }
 type providerCommandResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//     it when you're done.
+//   - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *queryResolver) GetConsole(ctx context.Context, id uuid.UUID, hostKey string) (*ent.Deployment, error) {
+	panic(fmt.Errorf("not implemented: GetConsole - getConsole"))
+}

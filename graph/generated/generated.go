@@ -105,6 +105,7 @@ type ComplexityRoot struct {
 		DeleteUser         func(childComplexity int, id uuid.UUID) int
 		DeployBlueprint    func(childComplexity int, id uuid.UUID) int
 		DestroyDeployment  func(childComplexity int, id uuid.UUID) int
+		GetConsole         func(childComplexity int, id uuid.UUID, hostKey string) int
 		LoadProvider       func(childComplexity int, id uuid.UUID) int
 		SelfChangePassword func(childComplexity int, currentPassword string, newPassword string) int
 		UnloadProvider     func(childComplexity int, id uuid.UUID) int
@@ -219,6 +220,7 @@ type MutationResolver interface {
 	ConfigureProvider(ctx context.Context, id uuid.UUID) (*ent.Provider, error)
 	DeployBlueprint(ctx context.Context, id uuid.UUID) (*ent.Deployment, error)
 	DestroyDeployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error)
+	GetConsole(ctx context.Context, id uuid.UUID, hostKey string) (string, error)
 }
 type PermissionResolver interface {
 	PermissionPolicies(ctx context.Context, obj *ent.Permission) ([]*ent.PermissionPolicy, error)
@@ -580,6 +582,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.DestroyDeployment(childComplexity, args["id"].(uuid.UUID)), true
+
+	case "Mutation.getConsole":
+		if e.complexity.Mutation.GetConsole == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_getConsole_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.GetConsole(childComplexity, args["id"].(uuid.UUID), args["hostKey"].(string)), true
 
 	case "Mutation.loadProvider":
 		if e.complexity.Mutation.LoadProvider == nil {
@@ -1467,6 +1481,10 @@ type Mutation {
   Destroy a deployment (requires permission ` + "`" + `com.cble.deployments.destroy` + "`" + `)
   """
   destroyDeployment(id: UUID!): Deployment! @permission(key: "com.cble.deployments.destroy")
+  """
+  Get a vm console (requires permission ` + "`" + `com.cble.deployments.console` + "`" + `)
+  """
+  getConsole(id: UUID!, hostKey: String!): String! @permission(key: "com.cble.deployments.console")
 }
 `, BuiltIn: false},
 }
@@ -1623,6 +1641,30 @@ func (ec *executionContext) field_Mutation_destroyDeployment_args(ctx context.Co
 		}
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_getConsole_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uuid.UUID
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["hostKey"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hostKey"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["hostKey"] = arg1
 	return args, nil
 }
 
@@ -4827,6 +4869,85 @@ func (ec *executionContext) fieldContext_Mutation_destroyDeployment(ctx context.
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_destroyDeployment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_getConsole(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_getConsole(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().GetConsole(rctx, fc.Args["id"].(uuid.UUID), fc.Args["hostKey"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			key, err := ec.unmarshalNString2string(ctx, "com.cble.deployments.console")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Permission == nil {
+				return nil, errors.New("directive permission is not implemented")
+			}
+			return ec.directives.Permission(ctx, nil, directive0, key)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(string); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be string`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_getConsole(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_getConsole_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -10663,6 +10784,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "destroyDeployment":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_destroyDeployment(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "getConsole":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_getConsole(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
