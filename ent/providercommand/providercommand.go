@@ -116,6 +116,7 @@ const (
 	CommandTypeDEPLOY    CommandType = "DEPLOY"
 	CommandTypeDESTROY   CommandType = "DESTROY"
 	CommandTypeCONSOLE   CommandType = "CONSOLE"
+	CommandTypeRESOURCES CommandType = "RESOURCES"
 )
 
 func (ct CommandType) String() string {
@@ -125,7 +126,7 @@ func (ct CommandType) String() string {
 // CommandTypeValidator is a validator for the "command_type" field enum values. It is called by the builders before save.
 func CommandTypeValidator(ct CommandType) error {
 	switch ct {
-	case CommandTypeCONFIGURE, CommandTypeDEPLOY, CommandTypeDESTROY, CommandTypeCONSOLE:
+	case CommandTypeCONFIGURE, CommandTypeDEPLOY, CommandTypeDESTROY, CommandTypeCONSOLE, CommandTypeRESOURCES:
 		return nil
 	default:
 		return fmt.Errorf("providercommand: invalid enum value for command_type field: %q", ct)

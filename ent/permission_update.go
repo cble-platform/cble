@@ -42,15 +42,39 @@ func (pu *PermissionUpdate) SetKey(s string) *PermissionUpdate {
 	return pu
 }
 
+// SetNillableKey sets the "key" field if the given value is not nil.
+func (pu *PermissionUpdate) SetNillableKey(s *string) *PermissionUpdate {
+	if s != nil {
+		pu.SetKey(*s)
+	}
+	return pu
+}
+
 // SetComponent sets the "component" field.
 func (pu *PermissionUpdate) SetComponent(s string) *PermissionUpdate {
 	pu.mutation.SetComponent(s)
 	return pu
 }
 
+// SetNillableComponent sets the "component" field if the given value is not nil.
+func (pu *PermissionUpdate) SetNillableComponent(s *string) *PermissionUpdate {
+	if s != nil {
+		pu.SetComponent(*s)
+	}
+	return pu
+}
+
 // SetDescription sets the "description" field.
 func (pu *PermissionUpdate) SetDescription(s string) *PermissionUpdate {
 	pu.mutation.SetDescription(s)
+	return pu
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (pu *PermissionUpdate) SetNillableDescription(s *string) *PermissionUpdate {
+	if s != nil {
+		pu.SetDescription(*s)
+	}
 	return pu
 }
 
@@ -229,15 +253,39 @@ func (puo *PermissionUpdateOne) SetKey(s string) *PermissionUpdateOne {
 	return puo
 }
 
+// SetNillableKey sets the "key" field if the given value is not nil.
+func (puo *PermissionUpdateOne) SetNillableKey(s *string) *PermissionUpdateOne {
+	if s != nil {
+		puo.SetKey(*s)
+	}
+	return puo
+}
+
 // SetComponent sets the "component" field.
 func (puo *PermissionUpdateOne) SetComponent(s string) *PermissionUpdateOne {
 	puo.mutation.SetComponent(s)
 	return puo
 }
 
+// SetNillableComponent sets the "component" field if the given value is not nil.
+func (puo *PermissionUpdateOne) SetNillableComponent(s *string) *PermissionUpdateOne {
+	if s != nil {
+		puo.SetComponent(*s)
+	}
+	return puo
+}
+
 // SetDescription sets the "description" field.
 func (puo *PermissionUpdateOne) SetDescription(s string) *PermissionUpdateOne {
 	puo.mutation.SetDescription(s)
+	return puo
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (puo *PermissionUpdateOne) SetNillableDescription(s *string) *PermissionUpdateOne {
+	if s != nil {
+		puo.SetDescription(*s)
+	}
 	return puo
 }
 

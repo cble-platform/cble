@@ -42,15 +42,39 @@ func (pu *ProviderUpdate) SetDisplayName(s string) *ProviderUpdate {
 	return pu
 }
 
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
+func (pu *ProviderUpdate) SetNillableDisplayName(s *string) *ProviderUpdate {
+	if s != nil {
+		pu.SetDisplayName(*s)
+	}
+	return pu
+}
+
 // SetProviderGitURL sets the "provider_git_url" field.
 func (pu *ProviderUpdate) SetProviderGitURL(s string) *ProviderUpdate {
 	pu.mutation.SetProviderGitURL(s)
 	return pu
 }
 
+// SetNillableProviderGitURL sets the "provider_git_url" field if the given value is not nil.
+func (pu *ProviderUpdate) SetNillableProviderGitURL(s *string) *ProviderUpdate {
+	if s != nil {
+		pu.SetProviderGitURL(*s)
+	}
+	return pu
+}
+
 // SetProviderVersion sets the "provider_version" field.
 func (pu *ProviderUpdate) SetProviderVersion(s string) *ProviderUpdate {
 	pu.mutation.SetProviderVersion(s)
+	return pu
+}
+
+// SetNillableProviderVersion sets the "provider_version" field if the given value is not nil.
+func (pu *ProviderUpdate) SetNillableProviderVersion(s *string) *ProviderUpdate {
+	if s != nil {
+		pu.SetProviderVersion(*s)
+	}
 	return pu
 }
 
@@ -255,15 +279,39 @@ func (puo *ProviderUpdateOne) SetDisplayName(s string) *ProviderUpdateOne {
 	return puo
 }
 
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
+func (puo *ProviderUpdateOne) SetNillableDisplayName(s *string) *ProviderUpdateOne {
+	if s != nil {
+		puo.SetDisplayName(*s)
+	}
+	return puo
+}
+
 // SetProviderGitURL sets the "provider_git_url" field.
 func (puo *ProviderUpdateOne) SetProviderGitURL(s string) *ProviderUpdateOne {
 	puo.mutation.SetProviderGitURL(s)
 	return puo
 }
 
+// SetNillableProviderGitURL sets the "provider_git_url" field if the given value is not nil.
+func (puo *ProviderUpdateOne) SetNillableProviderGitURL(s *string) *ProviderUpdateOne {
+	if s != nil {
+		puo.SetProviderGitURL(*s)
+	}
+	return puo
+}
+
 // SetProviderVersion sets the "provider_version" field.
 func (puo *ProviderUpdateOne) SetProviderVersion(s string) *ProviderUpdateOne {
 	puo.mutation.SetProviderVersion(s)
+	return puo
+}
+
+// SetNillableProviderVersion sets the "provider_version" field if the given value is not nil.
+func (puo *ProviderUpdateOne) SetNillableProviderVersion(s *string) *ProviderUpdateOne {
+	if s != nil {
+		puo.SetProviderVersion(*s)
+	}
 	return puo
 }
 

@@ -44,9 +44,25 @@ func (bu *BlueprintUpdate) SetName(s string) *BlueprintUpdate {
 	return bu
 }
 
+// SetNillableName sets the "name" field if the given value is not nil.
+func (bu *BlueprintUpdate) SetNillableName(s *string) *BlueprintUpdate {
+	if s != nil {
+		bu.SetName(*s)
+	}
+	return bu
+}
+
 // SetDescription sets the "description" field.
 func (bu *BlueprintUpdate) SetDescription(s string) *BlueprintUpdate {
 	bu.mutation.SetDescription(s)
+	return bu
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (bu *BlueprintUpdate) SetNillableDescription(s *string) *BlueprintUpdate {
+	if s != nil {
+		bu.SetDescription(*s)
+	}
 	return bu
 }
 
@@ -337,9 +353,25 @@ func (buo *BlueprintUpdateOne) SetName(s string) *BlueprintUpdateOne {
 	return buo
 }
 
+// SetNillableName sets the "name" field if the given value is not nil.
+func (buo *BlueprintUpdateOne) SetNillableName(s *string) *BlueprintUpdateOne {
+	if s != nil {
+		buo.SetName(*s)
+	}
+	return buo
+}
+
 // SetDescription sets the "description" field.
 func (buo *BlueprintUpdateOne) SetDescription(s string) *BlueprintUpdateOne {
 	buo.mutation.SetDescription(s)
+	return buo
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (buo *BlueprintUpdateOne) SetNillableDescription(s *string) *BlueprintUpdateOne {
+	if s != nil {
+		buo.SetDescription(*s)
+	}
 	return buo
 }
 

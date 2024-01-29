@@ -44,6 +44,14 @@ func (pcu *ProviderCommandUpdate) SetCommandType(pt providercommand.CommandType)
 	return pcu
 }
 
+// SetNillableCommandType sets the "command_type" field if the given value is not nil.
+func (pcu *ProviderCommandUpdate) SetNillableCommandType(pt *providercommand.CommandType) *ProviderCommandUpdate {
+	if pt != nil {
+		pcu.SetCommandType(*pt)
+	}
+	return pcu
+}
+
 // SetStatus sets the "status" field.
 func (pcu *ProviderCommandUpdate) SetStatus(pr providercommand.Status) *ProviderCommandUpdate {
 	pcu.mutation.SetStatus(pr)
@@ -382,6 +390,14 @@ func (pcuo *ProviderCommandUpdateOne) SetUpdatedAt(t time.Time) *ProviderCommand
 // SetCommandType sets the "command_type" field.
 func (pcuo *ProviderCommandUpdateOne) SetCommandType(pt providercommand.CommandType) *ProviderCommandUpdateOne {
 	pcuo.mutation.SetCommandType(pt)
+	return pcuo
+}
+
+// SetNillableCommandType sets the "command_type" field if the given value is not nil.
+func (pcuo *ProviderCommandUpdateOne) SetNillableCommandType(pt *providercommand.CommandType) *ProviderCommandUpdateOne {
+	if pt != nil {
+		pcuo.SetCommandType(*pt)
+	}
 	return pcuo
 }
 

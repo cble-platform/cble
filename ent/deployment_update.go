@@ -43,6 +43,14 @@ func (du *DeploymentUpdate) SetName(s string) *DeploymentUpdate {
 	return du
 }
 
+// SetNillableName sets the "name" field if the given value is not nil.
+func (du *DeploymentUpdate) SetNillableName(s *string) *DeploymentUpdate {
+	if s != nil {
+		du.SetName(*s)
+	}
+	return du
+}
+
 // SetDescription sets the "description" field.
 func (du *DeploymentUpdate) SetDescription(s string) *DeploymentUpdate {
 	du.mutation.SetDescription(s)
@@ -287,6 +295,14 @@ func (duo *DeploymentUpdateOne) SetUpdatedAt(t time.Time) *DeploymentUpdateOne {
 // SetName sets the "name" field.
 func (duo *DeploymentUpdateOne) SetName(s string) *DeploymentUpdateOne {
 	duo.mutation.SetName(s)
+	return duo
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (duo *DeploymentUpdateOne) SetNillableName(s *string) *DeploymentUpdateOne {
+	if s != nil {
+		duo.SetName(*s)
+	}
 	return duo
 }
 
