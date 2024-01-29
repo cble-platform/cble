@@ -71,6 +71,12 @@ func (pcc *ProviderCommandCreate) SetNillableStatus(pr *providercommand.Status) 
 	return pcc
 }
 
+// SetArguments sets the "arguments" field.
+func (pcc *ProviderCommandCreate) SetArguments(s []string) *ProviderCommandCreate {
+	pcc.mutation.SetArguments(s)
+	return pcc
+}
+
 // SetStartTime sets the "start_time" field.
 func (pcc *ProviderCommandCreate) SetStartTime(t time.Time) *ProviderCommandCreate {
 	pcc.mutation.SetStartTime(t)
@@ -315,6 +321,10 @@ func (pcc *ProviderCommandCreate) createSpec() (*ProviderCommand, *sqlgraph.Crea
 	if value, ok := pcc.mutation.Status(); ok {
 		_spec.SetField(providercommand.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
+	}
+	if value, ok := pcc.mutation.Arguments(); ok {
+		_spec.SetField(providercommand.FieldArguments, field.TypeJSON, value)
+		_node.Arguments = value
 	}
 	if value, ok := pcc.mutation.StartTime(); ok {
 		_spec.SetField(providercommand.FieldStartTime, field.TypeTime, value)

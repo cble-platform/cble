@@ -161,8 +161,9 @@ var (
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "command_type", Type: field.TypeEnum, Enums: []string{"CONFIGURE", "DEPLOY", "DESTROY"}},
+		{Name: "command_type", Type: field.TypeEnum, Enums: []string{"CONFIGURE", "DEPLOY", "DESTROY", "CONSOLE"}},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"QUEUED", "FAILED", "SUCCEEDED", "INPROGRESS"}, Default: "QUEUED"},
+		{Name: "arguments", Type: field.TypeJSON, Nullable: true},
 		{Name: "start_time", Type: field.TypeTime, Nullable: true},
 		{Name: "end_time", Type: field.TypeTime, Nullable: true},
 		{Name: "output", Type: field.TypeString, Default: ""},
@@ -178,13 +179,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "provider_commands_providers_provider",
-				Columns:    []*schema.Column{ProviderCommandsColumns[9]},
+				Columns:    []*schema.Column{ProviderCommandsColumns[10]},
 				RefColumns: []*schema.Column{ProvidersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "provider_commands_deployments_deployment",
-				Columns:    []*schema.Column{ProviderCommandsColumns[10]},
+				Columns:    []*schema.Column{ProviderCommandsColumns[11]},
 				RefColumns: []*schema.Column{DeploymentsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

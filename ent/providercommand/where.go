@@ -206,6 +206,16 @@ func StatusNotIn(vs ...Status) predicate.ProviderCommand {
 	return predicate.ProviderCommand(sql.FieldNotIn(FieldStatus, vs...))
 }
 
+// ArgumentsIsNil applies the IsNil predicate on the "arguments" field.
+func ArgumentsIsNil() predicate.ProviderCommand {
+	return predicate.ProviderCommand(sql.FieldIsNull(FieldArguments))
+}
+
+// ArgumentsNotNil applies the NotNil predicate on the "arguments" field.
+func ArgumentsNotNil() predicate.ProviderCommand {
+	return predicate.ProviderCommand(sql.FieldNotNull(FieldArguments))
+}
+
 // StartTimeEQ applies the EQ predicate on the "start_time" field.
 func StartTimeEQ(v time.Time) predicate.ProviderCommand {
 	return predicate.ProviderCommand(sql.FieldEQ(FieldStartTime, v))

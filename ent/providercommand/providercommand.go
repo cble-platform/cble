@@ -24,6 +24,8 @@ const (
 	FieldCommandType = "command_type"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldArguments holds the string denoting the arguments field in the database.
+	FieldArguments = "arguments"
 	// FieldStartTime holds the string denoting the start_time field in the database.
 	FieldStartTime = "start_time"
 	// FieldEndTime holds the string denoting the end_time field in the database.
@@ -61,6 +63,7 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldCommandType,
 	FieldStatus,
+	FieldArguments,
 	FieldStartTime,
 	FieldEndTime,
 	FieldOutput,
@@ -112,6 +115,7 @@ const (
 	CommandTypeCONFIGURE CommandType = "CONFIGURE"
 	CommandTypeDEPLOY    CommandType = "DEPLOY"
 	CommandTypeDESTROY   CommandType = "DESTROY"
+	CommandTypeCONSOLE   CommandType = "CONSOLE"
 )
 
 func (ct CommandType) String() string {
@@ -121,7 +125,7 @@ func (ct CommandType) String() string {
 // CommandTypeValidator is a validator for the "command_type" field enum values. It is called by the builders before save.
 func CommandTypeValidator(ct CommandType) error {
 	switch ct {
-	case CommandTypeCONFIGURE, CommandTypeDEPLOY, CommandTypeDESTROY:
+	case CommandTypeCONFIGURE, CommandTypeDEPLOY, CommandTypeDESTROY, CommandTypeCONSOLE:
 		return nil
 	default:
 		return fmt.Errorf("providercommand: invalid enum value for command_type field: %q", ct)

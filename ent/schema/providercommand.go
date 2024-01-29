@@ -26,8 +26,9 @@ func (ProviderCommand) Fields() []ent.Field {
 		field.Time("updated_at").
 			Default(time.Now).
 			UpdateDefault(time.Now),
-		field.Enum("command_type").Values("CONFIGURE", "DEPLOY", "DESTROY"),
+		field.Enum("command_type").Values("CONFIGURE", "DEPLOY", "DESTROY", "CONSOLE"),
 		field.Enum("status").Values("QUEUED", "FAILED", "SUCCEEDED", "INPROGRESS").Default("QUEUED"),
+		field.Strings("arguments").Optional(),
 		field.Time("start_time").Optional(),
 		field.Time("end_time").Optional(),
 		field.String("output").Default(""),

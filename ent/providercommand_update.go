@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/predicate"
@@ -54,6 +55,24 @@ func (pcu *ProviderCommandUpdate) SetNillableStatus(pr *providercommand.Status) 
 	if pr != nil {
 		pcu.SetStatus(*pr)
 	}
+	return pcu
+}
+
+// SetArguments sets the "arguments" field.
+func (pcu *ProviderCommandUpdate) SetArguments(s []string) *ProviderCommandUpdate {
+	pcu.mutation.SetArguments(s)
+	return pcu
+}
+
+// AppendArguments appends s to the "arguments" field.
+func (pcu *ProviderCommandUpdate) AppendArguments(s []string) *ProviderCommandUpdate {
+	pcu.mutation.AppendArguments(s)
+	return pcu
+}
+
+// ClearArguments clears the value of the "arguments" field.
+func (pcu *ProviderCommandUpdate) ClearArguments() *ProviderCommandUpdate {
+	pcu.mutation.ClearArguments()
 	return pcu
 }
 
@@ -247,6 +266,17 @@ func (pcu *ProviderCommandUpdate) sqlSave(ctx context.Context) (n int, err error
 	if value, ok := pcu.mutation.Status(); ok {
 		_spec.SetField(providercommand.FieldStatus, field.TypeEnum, value)
 	}
+	if value, ok := pcu.mutation.Arguments(); ok {
+		_spec.SetField(providercommand.FieldArguments, field.TypeJSON, value)
+	}
+	if value, ok := pcu.mutation.AppendedArguments(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, providercommand.FieldArguments, value)
+		})
+	}
+	if pcu.mutation.ArgumentsCleared() {
+		_spec.ClearField(providercommand.FieldArguments, field.TypeJSON)
+	}
 	if value, ok := pcu.mutation.StartTime(); ok {
 		_spec.SetField(providercommand.FieldStartTime, field.TypeTime, value)
 	}
@@ -366,6 +396,24 @@ func (pcuo *ProviderCommandUpdateOne) SetNillableStatus(pr *providercommand.Stat
 	if pr != nil {
 		pcuo.SetStatus(*pr)
 	}
+	return pcuo
+}
+
+// SetArguments sets the "arguments" field.
+func (pcuo *ProviderCommandUpdateOne) SetArguments(s []string) *ProviderCommandUpdateOne {
+	pcuo.mutation.SetArguments(s)
+	return pcuo
+}
+
+// AppendArguments appends s to the "arguments" field.
+func (pcuo *ProviderCommandUpdateOne) AppendArguments(s []string) *ProviderCommandUpdateOne {
+	pcuo.mutation.AppendArguments(s)
+	return pcuo
+}
+
+// ClearArguments clears the value of the "arguments" field.
+func (pcuo *ProviderCommandUpdateOne) ClearArguments() *ProviderCommandUpdateOne {
+	pcuo.mutation.ClearArguments()
 	return pcuo
 }
 
@@ -588,6 +636,17 @@ func (pcuo *ProviderCommandUpdateOne) sqlSave(ctx context.Context) (_node *Provi
 	}
 	if value, ok := pcuo.mutation.Status(); ok {
 		_spec.SetField(providercommand.FieldStatus, field.TypeEnum, value)
+	}
+	if value, ok := pcuo.mutation.Arguments(); ok {
+		_spec.SetField(providercommand.FieldArguments, field.TypeJSON, value)
+	}
+	if value, ok := pcuo.mutation.AppendedArguments(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, providercommand.FieldArguments, value)
+		})
+	}
+	if pcuo.mutation.ArgumentsCleared() {
+		_spec.ClearField(providercommand.FieldArguments, field.TypeJSON)
 	}
 	if value, ok := pcuo.mutation.StartTime(); ok {
 		_spec.SetField(providercommand.FieldStartTime, field.TypeTime, value)

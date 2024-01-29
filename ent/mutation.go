@@ -4507,6 +4507,8 @@ type ProviderCommandMutation struct {
 	updated_at        *time.Time
 	command_type      *providercommand.CommandType
 	status            *providercommand.Status
+	arguments         *[]string
+	appendarguments   []string
 	start_time        *time.Time
 	end_time          *time.Time
 	output            *string
@@ -4767,6 +4769,71 @@ func (m *ProviderCommandMutation) OldStatus(ctx context.Context) (v providercomm
 // ResetStatus resets all changes to the "status" field.
 func (m *ProviderCommandMutation) ResetStatus() {
 	m.status = nil
+}
+
+// SetArguments sets the "arguments" field.
+func (m *ProviderCommandMutation) SetArguments(s []string) {
+	m.arguments = &s
+	m.appendarguments = nil
+}
+
+// Arguments returns the value of the "arguments" field in the mutation.
+func (m *ProviderCommandMutation) Arguments() (r []string, exists bool) {
+	v := m.arguments
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldArguments returns the old "arguments" field's value of the ProviderCommand entity.
+// If the ProviderCommand object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProviderCommandMutation) OldArguments(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldArguments is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldArguments requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldArguments: %w", err)
+	}
+	return oldValue.Arguments, nil
+}
+
+// AppendArguments adds s to the "arguments" field.
+func (m *ProviderCommandMutation) AppendArguments(s []string) {
+	m.appendarguments = append(m.appendarguments, s...)
+}
+
+// AppendedArguments returns the list of values that were appended to the "arguments" field in this mutation.
+func (m *ProviderCommandMutation) AppendedArguments() ([]string, bool) {
+	if len(m.appendarguments) == 0 {
+		return nil, false
+	}
+	return m.appendarguments, true
+}
+
+// ClearArguments clears the value of the "arguments" field.
+func (m *ProviderCommandMutation) ClearArguments() {
+	m.arguments = nil
+	m.appendarguments = nil
+	m.clearedFields[providercommand.FieldArguments] = struct{}{}
+}
+
+// ArgumentsCleared returns if the "arguments" field was cleared in this mutation.
+func (m *ProviderCommandMutation) ArgumentsCleared() bool {
+	_, ok := m.clearedFields[providercommand.FieldArguments]
+	return ok
+}
+
+// ResetArguments resets all changes to the "arguments" field.
+func (m *ProviderCommandMutation) ResetArguments() {
+	m.arguments = nil
+	m.appendarguments = nil
+	delete(m.clearedFields, providercommand.FieldArguments)
 }
 
 // SetStartTime sets the "start_time" field.
@@ -5051,7 +5118,7 @@ func (m *ProviderCommandMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ProviderCommandMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.created_at != nil {
 		fields = append(fields, providercommand.FieldCreatedAt)
 	}
@@ -5063,6 +5130,9 @@ func (m *ProviderCommandMutation) Fields() []string {
 	}
 	if m.status != nil {
 		fields = append(fields, providercommand.FieldStatus)
+	}
+	if m.arguments != nil {
+		fields = append(fields, providercommand.FieldArguments)
 	}
 	if m.start_time != nil {
 		fields = append(fields, providercommand.FieldStartTime)
@@ -5092,6 +5162,8 @@ func (m *ProviderCommandMutation) Field(name string) (ent.Value, bool) {
 		return m.CommandType()
 	case providercommand.FieldStatus:
 		return m.Status()
+	case providercommand.FieldArguments:
+		return m.Arguments()
 	case providercommand.FieldStartTime:
 		return m.StartTime()
 	case providercommand.FieldEndTime:
@@ -5117,6 +5189,8 @@ func (m *ProviderCommandMutation) OldField(ctx context.Context, name string) (en
 		return m.OldCommandType(ctx)
 	case providercommand.FieldStatus:
 		return m.OldStatus(ctx)
+	case providercommand.FieldArguments:
+		return m.OldArguments(ctx)
 	case providercommand.FieldStartTime:
 		return m.OldStartTime(ctx)
 	case providercommand.FieldEndTime:
@@ -5161,6 +5235,13 @@ func (m *ProviderCommandMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStatus(v)
+		return nil
+	case providercommand.FieldArguments:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetArguments(v)
 		return nil
 	case providercommand.FieldStartTime:
 		v, ok := value.(time.Time)
@@ -5220,6 +5301,9 @@ func (m *ProviderCommandMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *ProviderCommandMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(providercommand.FieldArguments) {
+		fields = append(fields, providercommand.FieldArguments)
+	}
 	if m.FieldCleared(providercommand.FieldStartTime) {
 		fields = append(fields, providercommand.FieldStartTime)
 	}
@@ -5240,6 +5324,9 @@ func (m *ProviderCommandMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *ProviderCommandMutation) ClearField(name string) error {
 	switch name {
+	case providercommand.FieldArguments:
+		m.ClearArguments()
+		return nil
 	case providercommand.FieldStartTime:
 		m.ClearStartTime()
 		return nil
@@ -5265,6 +5352,9 @@ func (m *ProviderCommandMutation) ResetField(name string) error {
 		return nil
 	case providercommand.FieldStatus:
 		m.ResetStatus()
+		return nil
+	case providercommand.FieldArguments:
+		m.ResetArguments()
 		return nil
 	case providercommand.FieldStartTime:
 		m.ResetStartTime()

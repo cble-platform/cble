@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -28,6 +29,8 @@ type ProviderCommand struct {
 	CommandType providercommand.CommandType `json:"command_type,omitempty"`
 	// Status holds the value of the "status" field.
 	Status providercommand.Status `json:"status,omitempty"`
+	// Arguments holds the value of the "arguments" field.
+	Arguments []string `json:"arguments,omitempty"`
 	// StartTime holds the value of the "start_time" field.
 	StartTime time.Time `json:"start_time,omitempty"`
 	// EndTime holds the value of the "end_time" field.
@@ -86,6 +89,8 @@ func (*ProviderCommand) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case providercommand.FieldArguments:
+			values[i] = new([]byte)
 		case providercommand.FieldCommandType, providercommand.FieldStatus, providercommand.FieldOutput, providercommand.FieldError:
 			values[i] = new(sql.NullString)
 		case providercommand.FieldCreatedAt, providercommand.FieldUpdatedAt, providercommand.FieldStartTime, providercommand.FieldEndTime:
@@ -140,6 +145,14 @@ func (pc *ProviderCommand) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
 				pc.Status = providercommand.Status(value.String)
+			}
+		case providercommand.FieldArguments:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field arguments", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &pc.Arguments); err != nil {
+					return fmt.Errorf("unmarshal field arguments: %w", err)
+				}
 			}
 		case providercommand.FieldStartTime:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -236,6 +249,9 @@ func (pc *ProviderCommand) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", pc.Status))
+	builder.WriteString(", ")
+	builder.WriteString("arguments=")
+	builder.WriteString(fmt.Sprintf("%v", pc.Arguments))
 	builder.WriteString(", ")
 	builder.WriteString("start_time=")
 	builder.WriteString(pc.StartTime.Format(time.ANSIC))

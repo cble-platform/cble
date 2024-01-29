@@ -154,11 +154,11 @@ func init() {
 	// providercommand.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	providercommand.UpdateDefaultUpdatedAt = providercommandDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// providercommandDescOutput is the schema descriptor for output field.
-	providercommandDescOutput := providercommandFields[7].Descriptor()
+	providercommandDescOutput := providercommandFields[8].Descriptor()
 	// providercommand.DefaultOutput holds the default value on creation for the output field.
 	providercommand.DefaultOutput = providercommandDescOutput.Default.(string)
 	// providercommandDescError is the schema descriptor for error field.
-	providercommandDescError := providercommandFields[8].Descriptor()
+	providercommandDescError := providercommandFields[9].Descriptor()
 	// providercommand.DefaultError holds the default value on creation for the error field.
 	providercommand.DefaultError = providercommandDescError.Default.(string)
 	// providercommandDescID is the schema descriptor for id field.
