@@ -6,6 +6,7 @@ package graph
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/cble-platform/cble-backend/graph/generated"
 	"github.com/cble-platform/cble-backend/graph/model"
+	providerGRPC "github.com/cble-platform/cble-provider-grpc/pkg/provider"
 	"github.com/google/uuid"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
@@ -401,15 +403,93 @@ func (r *mutationResolver) GetConsole(ctx context.Context, id uuid.UUID, hostKey
 			return "", fmt.Errorf("failed to query ent command")
 		}
 		if entCommand.Status == providercommand.StatusSUCCEEDED {
-			return entCommand.Output, nil
+			break
 		}
 		if entCommand.Status == providercommand.StatusFAILED {
-			return "", fmt.Errorf(entCommand.Error)
+			return "", fmt.Errorf("%s", entCommand.Errors)
 		}
 
 		// Sleep before checking again
 		time.Sleep(1 * time.Second)
 	}
+
+	var output *providerGRPC.GetConsoleReply
+	err = json.Unmarshal(entCommand.Output, &output)
+	if err != nil {
+		return "", fmt.Errorf("failed to unmarshal command output: %v", err)
+	}
+
+	return output.Console, nil
+}
+
+// DeploymentResources is the resolver for the deploymentResources field.
+func (r *mutationResolver) DeploymentResources(ctx context.Context, id uuid.UUID) ([]*model.DeployResource, error) {
+	// Get the deployment
+	entDeployment, err := r.ent.Deployment.Get(ctx, id)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to create deployment from blueprint: %v", err)
+	}
+	entProvider, err := entDeployment.QueryBlueprint().QueryProvider().Only(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query provider from deployment: %v", err)
+	}
+
+	// Queue a destroy command for blueprint
+	entCommand, err := r.ent.ProviderCommand.Create().
+		SetCommandType(providercommand.CommandTypeRESOURCES).
+		SetProvider(entProvider).
+		SetDeployment(entDeployment).
+		Save(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to create deployment CONSOLE command: %v", err)
+	}
+
+	// Wait for the command to finish
+	// TODO: potentially make this command synchronous somehow
+	for {
+		entCommand, err = r.ent.ProviderCommand.Get(ctx, entCommand.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to query ent command")
+		}
+		if entCommand.Status == providercommand.StatusSUCCEEDED {
+			break
+		}
+		if entCommand.Status == providercommand.StatusFAILED {
+			return nil, fmt.Errorf("%s", entCommand.Errors)
+		}
+
+		// Sleep before checking again
+		time.Sleep(1 * time.Second)
+	}
+
+	var output *providerGRPC.GetResourceListReply
+	err = json.Unmarshal(entCommand.Output, &output)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal command output: %v", err)
+	}
+
+	// Convert resources to GraphQL type
+	resources := make([]*model.DeployResource, 0)
+	for _, resource := range output.Resources {
+		r := &model.DeployResource{
+			Key:          resource.Key,
+			DeploymentID: resource.DeploymentId,
+			Name:         resource.Name,
+		}
+		switch resource.Type {
+		case providerGRPC.ResourceType_HOST:
+			r.Type = model.DeployResourceTypeHost
+		case providerGRPC.ResourceType_NETWORK:
+			r.Type = model.DeployResourceTypeNetwork
+		case providerGRPC.ResourceType_ROUTER:
+			r.Type = model.DeployResourceTypeRouter
+		default:
+			r.Type = model.DeployResourceTypeUnknown
+		}
+		resources = append(resources, r)
+	}
+
+	return resources, nil
 }
 
 // PermissionPolicies is the resolver for the permissionPolicies field.
@@ -458,6 +538,11 @@ func (r *providerCommandResolver) CommandType(ctx context.Context, obj *ent.Prov
 // Status is the resolver for the status field.
 func (r *providerCommandResolver) Status(ctx context.Context, obj *ent.ProviderCommand) (model.CommandStatus, error) {
 	return model.CommandStatus(obj.Status), nil
+}
+
+// Output is the resolver for the output field.
+func (r *providerCommandResolver) Output(ctx context.Context, obj *ent.ProviderCommand) (string, error) {
+	return string(obj.Output), nil
 }
 
 // Me is the resolver for the me field.
@@ -601,13 +686,3 @@ type providerResolver struct{ *Resolver }
 type providerCommandResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//     it when you're done.
-//   - You have helper methods in this file. Move them out to keep these resolver files clean.
-func (r *queryResolver) GetConsole(ctx context.Context, id uuid.UUID, hostKey string) (*ent.Deployment, error) {
-	panic(fmt.Errorf("not implemented: GetConsole - getConsole"))
-}

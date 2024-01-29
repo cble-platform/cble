@@ -18,6 +18,13 @@ type BlueprintInput struct {
 	ProviderID        uuid.UUID `json:"providerId"`
 }
 
+type DeployResource struct {
+	Key          string             `json:"key"`
+	DeploymentID string             `json:"deploymentId"`
+	Name         string             `json:"name"`
+	Type         DeployResourceType `json:"type"`
+}
+
 type DeploymentInput struct {
 	Name string `json:"name"`
 }
@@ -122,6 +129,51 @@ func (e *CommandType) UnmarshalGQL(v interface{}) error {
 }
 
 func (e CommandType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type DeployResourceType string
+
+const (
+	DeployResourceTypeUnknown DeployResourceType = "UNKNOWN"
+	DeployResourceTypeHost    DeployResourceType = "HOST"
+	DeployResourceTypeNetwork DeployResourceType = "NETWORK"
+	DeployResourceTypeRouter  DeployResourceType = "ROUTER"
+)
+
+var AllDeployResourceType = []DeployResourceType{
+	DeployResourceTypeUnknown,
+	DeployResourceTypeHost,
+	DeployResourceTypeNetwork,
+	DeployResourceTypeRouter,
+}
+
+func (e DeployResourceType) IsValid() bool {
+	switch e {
+	case DeployResourceTypeUnknown, DeployResourceTypeHost, DeployResourceTypeNetwork, DeployResourceTypeRouter:
+		return true
+	}
+	return false
+}
+
+func (e DeployResourceType) String() string {
+	return string(e)
+}
+
+func (e *DeployResourceType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = DeployResourceType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid DeployResourceType", str)
+	}
+	return nil
+}
+
+func (e DeployResourceType) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 

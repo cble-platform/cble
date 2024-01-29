@@ -30,6 +30,20 @@ type Deployment {
   requester: User!
 }
 
+enum DeployResourceType {
+  UNKNOWN
+  HOST
+  NETWORK
+  ROUTER
+}
+
+type DeployResource {
+  key: String!
+  deploymentId: ID!
+  name: String!
+  type: DeployResourceType!
+}
+
 type Group {
   id: UUID!
   createdAt: Time!
@@ -102,7 +116,7 @@ type ProviderCommand {
   startTime: Time
   endTime: Time
   output: String!
-  error: String!
+  errors: [String!]!
 }
 
 type User {
@@ -296,4 +310,8 @@ type Mutation {
   Get a vm console (requires permission `com.cble.deployments.console`)
   """
   getConsole(id: UUID!, hostKey: String!): String! @permission(key: "com.cble.deployments.console")
+  """
+  Get a list of resources in a deployment (requires permission `com.cble.deployments.resources`)
+  """
+  deploymentResources(id: UUID!): [DeployResource!]! @permission(key: "com.cble.deployments.resources")
 }
