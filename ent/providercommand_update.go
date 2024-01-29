@@ -125,30 +125,20 @@ func (pcu *ProviderCommandUpdate) ClearEndTime() *ProviderCommandUpdate {
 }
 
 // SetOutput sets the "output" field.
-func (pcu *ProviderCommandUpdate) SetOutput(s string) *ProviderCommandUpdate {
-	pcu.mutation.SetOutput(s)
+func (pcu *ProviderCommandUpdate) SetOutput(b []byte) *ProviderCommandUpdate {
+	pcu.mutation.SetOutput(b)
 	return pcu
 }
 
-// SetNillableOutput sets the "output" field if the given value is not nil.
-func (pcu *ProviderCommandUpdate) SetNillableOutput(s *string) *ProviderCommandUpdate {
-	if s != nil {
-		pcu.SetOutput(*s)
-	}
+// SetErrors sets the "errors" field.
+func (pcu *ProviderCommandUpdate) SetErrors(s []string) *ProviderCommandUpdate {
+	pcu.mutation.SetErrors(s)
 	return pcu
 }
 
-// SetError sets the "error" field.
-func (pcu *ProviderCommandUpdate) SetError(s string) *ProviderCommandUpdate {
-	pcu.mutation.SetError(s)
-	return pcu
-}
-
-// SetNillableError sets the "error" field if the given value is not nil.
-func (pcu *ProviderCommandUpdate) SetNillableError(s *string) *ProviderCommandUpdate {
-	if s != nil {
-		pcu.SetError(*s)
-	}
+// AppendErrors appends s to the "errors" field.
+func (pcu *ProviderCommandUpdate) AppendErrors(s []string) *ProviderCommandUpdate {
+	pcu.mutation.AppendErrors(s)
 	return pcu
 }
 
@@ -298,10 +288,15 @@ func (pcu *ProviderCommandUpdate) sqlSave(ctx context.Context) (n int, err error
 		_spec.ClearField(providercommand.FieldEndTime, field.TypeTime)
 	}
 	if value, ok := pcu.mutation.Output(); ok {
-		_spec.SetField(providercommand.FieldOutput, field.TypeString, value)
+		_spec.SetField(providercommand.FieldOutput, field.TypeBytes, value)
 	}
-	if value, ok := pcu.mutation.Error(); ok {
-		_spec.SetField(providercommand.FieldError, field.TypeString, value)
+	if value, ok := pcu.mutation.Errors(); ok {
+		_spec.SetField(providercommand.FieldErrors, field.TypeJSON, value)
+	}
+	if value, ok := pcu.mutation.AppendedErrors(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, providercommand.FieldErrors, value)
+		})
 	}
 	if pcu.mutation.ProviderCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -474,30 +469,20 @@ func (pcuo *ProviderCommandUpdateOne) ClearEndTime() *ProviderCommandUpdateOne {
 }
 
 // SetOutput sets the "output" field.
-func (pcuo *ProviderCommandUpdateOne) SetOutput(s string) *ProviderCommandUpdateOne {
-	pcuo.mutation.SetOutput(s)
+func (pcuo *ProviderCommandUpdateOne) SetOutput(b []byte) *ProviderCommandUpdateOne {
+	pcuo.mutation.SetOutput(b)
 	return pcuo
 }
 
-// SetNillableOutput sets the "output" field if the given value is not nil.
-func (pcuo *ProviderCommandUpdateOne) SetNillableOutput(s *string) *ProviderCommandUpdateOne {
-	if s != nil {
-		pcuo.SetOutput(*s)
-	}
+// SetErrors sets the "errors" field.
+func (pcuo *ProviderCommandUpdateOne) SetErrors(s []string) *ProviderCommandUpdateOne {
+	pcuo.mutation.SetErrors(s)
 	return pcuo
 }
 
-// SetError sets the "error" field.
-func (pcuo *ProviderCommandUpdateOne) SetError(s string) *ProviderCommandUpdateOne {
-	pcuo.mutation.SetError(s)
-	return pcuo
-}
-
-// SetNillableError sets the "error" field if the given value is not nil.
-func (pcuo *ProviderCommandUpdateOne) SetNillableError(s *string) *ProviderCommandUpdateOne {
-	if s != nil {
-		pcuo.SetError(*s)
-	}
+// AppendErrors appends s to the "errors" field.
+func (pcuo *ProviderCommandUpdateOne) AppendErrors(s []string) *ProviderCommandUpdateOne {
+	pcuo.mutation.AppendErrors(s)
 	return pcuo
 }
 
@@ -677,10 +662,15 @@ func (pcuo *ProviderCommandUpdateOne) sqlSave(ctx context.Context) (_node *Provi
 		_spec.ClearField(providercommand.FieldEndTime, field.TypeTime)
 	}
 	if value, ok := pcuo.mutation.Output(); ok {
-		_spec.SetField(providercommand.FieldOutput, field.TypeString, value)
+		_spec.SetField(providercommand.FieldOutput, field.TypeBytes, value)
 	}
-	if value, ok := pcuo.mutation.Error(); ok {
-		_spec.SetField(providercommand.FieldError, field.TypeString, value)
+	if value, ok := pcuo.mutation.Errors(); ok {
+		_spec.SetField(providercommand.FieldErrors, field.TypeJSON, value)
+	}
+	if value, ok := pcuo.mutation.AppendedErrors(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, providercommand.FieldErrors, value)
+		})
 	}
 	if pcuo.mutation.ProviderCleared() {
 		edge := &sqlgraph.EdgeSpec{

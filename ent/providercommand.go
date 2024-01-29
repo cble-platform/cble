@@ -36,9 +36,9 @@ type ProviderCommand struct {
 	// EndTime holds the value of the "end_time" field.
 	EndTime time.Time `json:"end_time,omitempty"`
 	// Output holds the value of the "output" field.
-	Output string `json:"output,omitempty"`
-	// Error holds the value of the "error" field.
-	Error string `json:"error,omitempty"`
+	Output []byte `json:"output,omitempty"`
+	// Errors holds the value of the "errors" field.
+	Errors []string `json:"errors,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ProviderCommandQuery when eager-loading is set.
 	Edges                       ProviderCommandEdges `json:"edges"`
@@ -89,9 +89,9 @@ func (*ProviderCommand) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case providercommand.FieldArguments:
+		case providercommand.FieldArguments, providercommand.FieldOutput, providercommand.FieldErrors:
 			values[i] = new([]byte)
-		case providercommand.FieldCommandType, providercommand.FieldStatus, providercommand.FieldOutput, providercommand.FieldError:
+		case providercommand.FieldCommandType, providercommand.FieldStatus:
 			values[i] = new(sql.NullString)
 		case providercommand.FieldCreatedAt, providercommand.FieldUpdatedAt, providercommand.FieldStartTime, providercommand.FieldEndTime:
 			values[i] = new(sql.NullTime)
@@ -167,16 +167,18 @@ func (pc *ProviderCommand) assignValues(columns []string, values []any) error {
 				pc.EndTime = value.Time
 			}
 		case providercommand.FieldOutput:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field output", values[i])
-			} else if value.Valid {
-				pc.Output = value.String
+			} else if value != nil {
+				pc.Output = *value
 			}
-		case providercommand.FieldError:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field error", values[i])
-			} else if value.Valid {
-				pc.Error = value.String
+		case providercommand.FieldErrors:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field errors", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &pc.Errors); err != nil {
+					return fmt.Errorf("unmarshal field errors: %w", err)
+				}
 			}
 		case providercommand.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -260,10 +262,10 @@ func (pc *ProviderCommand) String() string {
 	builder.WriteString(pc.EndTime.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("output=")
-	builder.WriteString(pc.Output)
+	builder.WriteString(fmt.Sprintf("%v", pc.Output))
 	builder.WriteString(", ")
-	builder.WriteString("error=")
-	builder.WriteString(pc.Error)
+	builder.WriteString("errors=")
+	builder.WriteString(fmt.Sprintf("%v", pc.Errors))
 	builder.WriteByte(')')
 	return builder.String()
 }

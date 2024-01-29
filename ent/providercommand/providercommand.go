@@ -32,8 +32,8 @@ const (
 	FieldEndTime = "end_time"
 	// FieldOutput holds the string denoting the output field in the database.
 	FieldOutput = "output"
-	// FieldError holds the string denoting the error field in the database.
-	FieldError = "error"
+	// FieldErrors holds the string denoting the errors field in the database.
+	FieldErrors = "errors"
 	// EdgeProvider holds the string denoting the provider edge name in mutations.
 	EdgeProvider = "provider"
 	// EdgeDeployment holds the string denoting the deployment edge name in mutations.
@@ -67,7 +67,7 @@ var Columns = []string{
 	FieldStartTime,
 	FieldEndTime,
 	FieldOutput,
-	FieldError,
+	FieldErrors,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "provider_commands"
@@ -100,9 +100,9 @@ var (
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
 	// DefaultOutput holds the default value on creation for the "output" field.
-	DefaultOutput string
-	// DefaultError holds the default value on creation for the "error" field.
-	DefaultError string
+	DefaultOutput []byte
+	// DefaultErrors holds the default value on creation for the "errors" field.
+	DefaultErrors []string
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -197,16 +197,6 @@ func ByStartTime(opts ...sql.OrderTermOption) OrderOption {
 // ByEndTime orders the results by the end_time field.
 func ByEndTime(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEndTime, opts...).ToFunc()
-}
-
-// ByOutput orders the results by the output field.
-func ByOutput(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldOutput, opts...).ToFunc()
-}
-
-// ByError orders the results by the error field.
-func ByError(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldError, opts...).ToFunc()
 }
 
 // ByProviderField orders the results by provider field.

@@ -166,8 +166,8 @@ var (
 		{Name: "arguments", Type: field.TypeJSON, Nullable: true},
 		{Name: "start_time", Type: field.TypeTime, Nullable: true},
 		{Name: "end_time", Type: field.TypeTime, Nullable: true},
-		{Name: "output", Type: field.TypeString, Default: ""},
-		{Name: "error", Type: field.TypeString, Default: ""},
+		{Name: "output", Type: field.TypeBytes},
+		{Name: "errors", Type: field.TypeJSON},
 		{Name: "provider_command_provider", Type: field.TypeUUID},
 		{Name: "provider_command_deployment", Type: field.TypeUUID, Nullable: true},
 	}

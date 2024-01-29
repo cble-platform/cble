@@ -156,11 +156,11 @@ func init() {
 	// providercommandDescOutput is the schema descriptor for output field.
 	providercommandDescOutput := providercommandFields[8].Descriptor()
 	// providercommand.DefaultOutput holds the default value on creation for the output field.
-	providercommand.DefaultOutput = providercommandDescOutput.Default.(string)
-	// providercommandDescError is the schema descriptor for error field.
-	providercommandDescError := providercommandFields[9].Descriptor()
-	// providercommand.DefaultError holds the default value on creation for the error field.
-	providercommand.DefaultError = providercommandDescError.Default.(string)
+	providercommand.DefaultOutput = providercommandDescOutput.Default.([]byte)
+	// providercommandDescErrors is the schema descriptor for errors field.
+	providercommandDescErrors := providercommandFields[9].Descriptor()
+	// providercommand.DefaultErrors holds the default value on creation for the errors field.
+	providercommand.DefaultErrors = providercommandDescErrors.Default.([]string)
 	// providercommandDescID is the schema descriptor for id field.
 	providercommandDescID := providercommandFields[0].Descriptor()
 	// providercommand.DefaultID holds the default value on creation for the id field.

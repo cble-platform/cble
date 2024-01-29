@@ -31,8 +31,8 @@ func (ProviderCommand) Fields() []ent.Field {
 		field.Strings("arguments").Optional(),
 		field.Time("start_time").Optional(),
 		field.Time("end_time").Optional(),
-		field.String("output").Default(""),
-		field.String("error").Default(""),
+		field.Bytes("output").Default([]byte{}),
+		field.Strings("errors").Default(nil),
 	}
 }
 
