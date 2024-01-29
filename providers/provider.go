@@ -379,6 +379,65 @@ func (ps *CBLEServer) handleProviderCommand(ctx context.Context, client provider
 		if err != nil {
 			logrus.Errorf("failed to update command state and output")
 		}
+
+	case providercommand.CommandTypeCONSOLE:
+		// Get the deployment and blueprint associated with command
+		entDeployment, err := entCommand.QueryDeployment().Only(ctx)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to query deployment from command", err)
+			return
+		}
+
+		// Convert maps into protobuf-friendly structs
+		deploymentVarsStruct, err := structpb.NewStruct(entDeployment.DeploymentVars)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to parse deployment vars into structpb", err)
+			return
+		}
+		// Deployment state is of type map[string]string and needs to be converted to map[string]interface{}
+		deploymentState := make(map[string]interface{}, len(entDeployment.DeploymentState))
+		for k, v := range entDeployment.DeploymentState {
+			deploymentState[k] = v
+		}
+		deploymentStateStruct, err := structpb.NewStruct(deploymentState)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to parse deployment state into structpb", err)
+			return
+		}
+
+		// Generate the console command
+		getConsoleCommand := &providerGRPC.GetConsoleRequest{
+			DeploymentId:    entDeployment.ID.String(),
+			HostKey:         entCommand.Arguments[0], // TODO: check this
+			DeploymentState: deploymentStateStruct,
+			DeploymentVars:  deploymentVarsStruct,
+		}
+
+		// Send the destroy request
+		reply, err := client.GetConsole(ctx, getConsoleCommand)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to call provider destroy", err)
+			return
+		}
+
+		var status providercommand.Status
+		switch reply.Status {
+		case common.RPCStatus_FAILURE:
+			status = providercommand.StatusFAILED
+		default:
+			status = providercommand.StatusSUCCEEDED
+		}
+
+		// Update the output of the command
+		err = entCommand.Update().
+			SetStatus(status).
+			SetOutput(reply.Console).
+			SetError(fmt.Sprintf("Errors:\n%s", strings.Join(reply.Errors, "\n"))).
+			SetEndTime(time.Now()).
+			Exec(ctx)
+		if err != nil {
+			logrus.Errorf("failed to update command state and output")
+		}
 	}
 }
 

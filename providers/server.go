@@ -40,7 +40,7 @@ type CBLEServer struct {
 type RegisteredProvider struct {
 	ID       string
 	SocketID string
-	Features map[string]bool
+	Features *cbleGRPC.ProviderFeatures
 }
 
 func NewServer(entClient *ent.Client, providersConfig *config.ProvidersConfig) *CBLEServer {
