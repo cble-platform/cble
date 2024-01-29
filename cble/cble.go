@@ -107,9 +107,11 @@ func (s *CBLEServer) Run(ctx context.Context, wg *sync.WaitGroup) {
 	// Providers //
 	//-----------//
 
-	err := s.GRPCServer.RunAllProviders(ctx)
-	if err != nil {
-		logrus.Errorf("failed to initialize providers: %v", err)
+	if s.Config.Providers.AutoLoad == nil || *s.Config.Providers.AutoLoad {
+		err := s.GRPCServer.RunAllProviders(ctx)
+		if err != nil {
+			logrus.Errorf("failed to initialize providers: %v", err)
+		}
 	}
 
 	//-----------//
