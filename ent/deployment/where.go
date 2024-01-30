@@ -296,6 +296,26 @@ func DescriptionContainsFold(v string) predicate.Deployment {
 	return predicate.Deployment(sql.FieldContainsFold(FieldDescription, v))
 }
 
+// StateEQ applies the EQ predicate on the "state" field.
+func StateEQ(v State) predicate.Deployment {
+	return predicate.Deployment(sql.FieldEQ(FieldState, v))
+}
+
+// StateNEQ applies the NEQ predicate on the "state" field.
+func StateNEQ(v State) predicate.Deployment {
+	return predicate.Deployment(sql.FieldNEQ(FieldState, v))
+}
+
+// StateIn applies the In predicate on the "state" field.
+func StateIn(vs ...State) predicate.Deployment {
+	return predicate.Deployment(sql.FieldIn(FieldState, vs...))
+}
+
+// StateNotIn applies the NotIn predicate on the "state" field.
+func StateNotIn(vs ...State) predicate.Deployment {
+	return predicate.Deployment(sql.FieldNotIn(FieldState, vs...))
+}
+
 // HasBlueprint applies the HasEdge predicate on the "blueprint" edge.
 func HasBlueprint() predicate.Deployment {
 	return predicate.Deployment(func(s *sql.Selector) {

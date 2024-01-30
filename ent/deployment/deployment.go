@@ -3,6 +3,7 @@
 package deployment
 
 import (
+	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -29,6 +30,8 @@ const (
 	FieldDeploymentVars = "deployment_vars"
 	// FieldDeploymentState holds the string denoting the deployment_state field in the database.
 	FieldDeploymentState = "deployment_state"
+	// FieldState holds the string denoting the state field in the database.
+	FieldState = "state"
 	// EdgeBlueprint holds the string denoting the blueprint edge name in mutations.
 	EdgeBlueprint = "blueprint"
 	// EdgeRequester holds the string denoting the requester edge name in mutations.
@@ -61,6 +64,7 @@ var Columns = []string{
 	FieldTemplateVars,
 	FieldDeploymentVars,
 	FieldDeploymentState,
+	FieldState,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "deployments"
@@ -104,6 +108,34 @@ var (
 	DefaultID func() uuid.UUID
 )
 
+// State defines the type for the "state" enum field.
+type State string
+
+// StateUNKNOWN is the default value of the State enum.
+const DefaultState = StateUNKNOWN
+
+// State values.
+const (
+	StateUNKNOWN    State = "UNKNOWN"
+	StateINPROGRESS State = "INPROGRESS"
+	StateACTIVE     State = "ACTIVE"
+	StateDESTROYED  State = "DESTROYED"
+)
+
+func (s State) String() string {
+	return string(s)
+}
+
+// StateValidator is a validator for the "state" field enum values. It is called by the builders before save.
+func StateValidator(s State) error {
+	switch s {
+	case StateUNKNOWN, StateINPROGRESS, StateACTIVE, StateDESTROYED:
+		return nil
+	default:
+		return fmt.Errorf("deployment: invalid enum value for state field: %q", s)
+	}
+}
+
 // OrderOption defines the ordering options for the Deployment queries.
 type OrderOption func(*sql.Selector)
 
@@ -130,6 +162,11 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 // ByDescription orders the results by the description field.
 func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDescription, opts...).ToFunc()
+}
+
+// ByState orders the results by the state field.
+func ByState(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldState, opts...).ToFunc()
 }
 
 // ByBlueprintField orders the results by blueprint field.

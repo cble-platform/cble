@@ -89,6 +89,20 @@ func (du *DeploymentUpdate) SetDeploymentState(m map[string]string) *DeploymentU
 	return du
 }
 
+// SetState sets the "state" field.
+func (du *DeploymentUpdate) SetState(d deployment.State) *DeploymentUpdate {
+	du.mutation.SetState(d)
+	return du
+}
+
+// SetNillableState sets the "state" field if the given value is not nil.
+func (du *DeploymentUpdate) SetNillableState(d *deployment.State) *DeploymentUpdate {
+	if d != nil {
+		du.SetState(*d)
+	}
+	return du
+}
+
 // SetBlueprintID sets the "blueprint" edge to the Blueprint entity by ID.
 func (du *DeploymentUpdate) SetBlueprintID(id uuid.UUID) *DeploymentUpdate {
 	du.mutation.SetBlueprintID(id)
@@ -166,6 +180,11 @@ func (du *DeploymentUpdate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (du *DeploymentUpdate) check() error {
+	if v, ok := du.mutation.State(); ok {
+		if err := deployment.StateValidator(v); err != nil {
+			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "Deployment.state": %w`, err)}
+		}
+	}
 	if _, ok := du.mutation.BlueprintID(); du.mutation.BlueprintCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Deployment.blueprint"`)
 	}
@@ -207,6 +226,9 @@ func (du *DeploymentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := du.mutation.DeploymentState(); ok {
 		_spec.SetField(deployment.FieldDeploymentState, field.TypeJSON, value)
+	}
+	if value, ok := du.mutation.State(); ok {
+		_spec.SetField(deployment.FieldState, field.TypeEnum, value)
 	}
 	if du.mutation.BlueprintCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -344,6 +366,20 @@ func (duo *DeploymentUpdateOne) SetDeploymentState(m map[string]string) *Deploym
 	return duo
 }
 
+// SetState sets the "state" field.
+func (duo *DeploymentUpdateOne) SetState(d deployment.State) *DeploymentUpdateOne {
+	duo.mutation.SetState(d)
+	return duo
+}
+
+// SetNillableState sets the "state" field if the given value is not nil.
+func (duo *DeploymentUpdateOne) SetNillableState(d *deployment.State) *DeploymentUpdateOne {
+	if d != nil {
+		duo.SetState(*d)
+	}
+	return duo
+}
+
 // SetBlueprintID sets the "blueprint" edge to the Blueprint entity by ID.
 func (duo *DeploymentUpdateOne) SetBlueprintID(id uuid.UUID) *DeploymentUpdateOne {
 	duo.mutation.SetBlueprintID(id)
@@ -434,6 +470,11 @@ func (duo *DeploymentUpdateOne) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (duo *DeploymentUpdateOne) check() error {
+	if v, ok := duo.mutation.State(); ok {
+		if err := deployment.StateValidator(v); err != nil {
+			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "Deployment.state": %w`, err)}
+		}
+	}
 	if _, ok := duo.mutation.BlueprintID(); duo.mutation.BlueprintCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Deployment.blueprint"`)
 	}
@@ -492,6 +533,9 @@ func (duo *DeploymentUpdateOne) sqlSave(ctx context.Context) (_node *Deployment,
 	}
 	if value, ok := duo.mutation.DeploymentState(); ok {
 		_spec.SetField(deployment.FieldDeploymentState, field.TypeJSON, value)
+	}
+	if value, ok := duo.mutation.State(); ok {
+		_spec.SetField(deployment.FieldState, field.TypeEnum, value)
 	}
 	if duo.mutation.BlueprintCleared() {
 		edge := &sqlgraph.EdgeSpec{

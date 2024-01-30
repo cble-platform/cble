@@ -49,6 +49,7 @@ var (
 		{Name: "template_vars", Type: field.TypeJSON},
 		{Name: "deployment_vars", Type: field.TypeJSON},
 		{Name: "deployment_state", Type: field.TypeJSON},
+		{Name: "state", Type: field.TypeEnum, Enums: []string{"UNKNOWN", "INPROGRESS", "ACTIVE", "DESTROYED"}, Default: "UNKNOWN"},
 		{Name: "deployment_blueprint", Type: field.TypeUUID},
 		{Name: "deployment_requester", Type: field.TypeUUID},
 	}
@@ -60,13 +61,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "deployments_blueprints_blueprint",
-				Columns:    []*schema.Column{DeploymentsColumns[8]},
+				Columns:    []*schema.Column{DeploymentsColumns[9]},
 				RefColumns: []*schema.Column{BlueprintsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "deployments_users_requester",
-				Columns:    []*schema.Column{DeploymentsColumns[9]},
+				Columns:    []*schema.Column{DeploymentsColumns[10]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
