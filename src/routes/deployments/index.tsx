@@ -15,7 +15,7 @@ import {
   Button,
   Link,
 } from "@mui/material";
-import { useListDeploymentsQuery, useUpdateDeploymentMutation } from "../../api/graphql/generated";
+import { useListDeploymentsQuery, useUpdateDeploymentMutation } from "../../api/generated";
 import { useSnackbar } from "notistack";
 import React, { useEffect, useState } from "react";
 import { Cancel, Edit, ExpandMore, Save } from "@mui/icons-material";

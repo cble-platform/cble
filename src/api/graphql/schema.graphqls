@@ -1,6 +1,7 @@
 scalar Time
 scalar Map
 scalar StrMap
+scalar UUID
 
 type Blueprint {
   id: ID!
@@ -27,6 +28,20 @@ type Deployment {
 
   blueprint: Blueprint!
   requester: User!
+}
+
+enum DeployResourceType {
+  UNKNOWN
+  HOST
+  NETWORK
+  ROUTER
+}
+
+type DeployResource {
+  key: String!
+  deploymentId: ID!
+  name: String!
+  type: DeployResourceType!
 }
 
 type Group {
@@ -101,7 +116,7 @@ type ProviderCommand {
   startTime: Time
   endTime: Time
   output: String!
-  error: String!
+  errors: [String!]!
 }
 
 type User {
@@ -155,11 +170,13 @@ type Query {
   """
   List provider commands (requires permission `com.cble.providercommands.list`)
   """
-  providerCommands: [ProviderCommand!]! @permission(key: "com.cble.providercommands.list")
+  providerCommands: [ProviderCommand!]!
+    @permission(key: "com.cble.providercommands.list")
   """
   Get a provider command (requires permission `com.cble.providercommands.read`)
   """
-  providerCommand(id: ID!): ProviderCommand! @permission(key: "com.cble.providercommands.read")
+  providerCommand(id: ID!): ProviderCommand!
+    @permission(key: "com.cble.providercommands.read")
   """
   List blueprints (requires permission `com.cble.blueprints.list`)
   """
@@ -176,6 +193,11 @@ type Query {
   Get a deployment (requires permission `com.cble.deployments.read`)
   """
   deployment(id: ID!): Deployment! @permission(key: "com.cble.deployments.read")
+  """
+  Get a list of resources in a deployment (requires permission `com.cble.deployments.resources`)
+  """
+  deploymentResources(id: ID!): [DeployResource!]!
+    @permission(key: "com.cble.deployments.resources")
 }
 
 input BlueprintInput {
@@ -203,6 +225,8 @@ input UserInput {
   email: String!
   firstName: String!
   lastName: String!
+
+  groupIds: [ID!]!
 }
 
 type Mutation {
@@ -226,7 +250,8 @@ type Mutation {
   """
   Update a user (requires permission `com.cble.users.update`)
   """
-  updateUser(id: ID!, input: UserInput!): User! @permission(key: "com.cble.users.update")
+  updateUser(id: ID!, input: UserInput!): User!
+    @permission(key: "com.cble.users.update")
   """
   Delete a user (requires permission `com.cble.users.delete`)
   """
@@ -234,31 +259,38 @@ type Mutation {
   """
   Create a provider (requires permission `com.cble.providers.create`)
   """
-  createProvider(input: ProviderInput!): Provider! @permission(key: "com.cble.providers.create")
+  createProvider(input: ProviderInput!): Provider!
+    @permission(key: "com.cble.providers.create")
   """
   Update a provider (requires permission `com.cble.providers.update`)
   """
-  updateProvider(id: ID!, input: ProviderInput!): Provider! @permission(key: "com.cble.providers.update")
+  updateProvider(id: ID!, input: ProviderInput!): Provider!
+    @permission(key: "com.cble.providers.update")
   """
   Delete a provider (requires permission `com.cble.providers.delete`)
   """
-  deleteProvider(id: ID!): Boolean! @permission(key: "com.cble.providers.delete")
+  deleteProvider(id: ID!): Boolean!
+    @permission(key: "com.cble.providers.delete")
   """
   Create a blueprint (requires permission `com.cble.blueprints.create`)
   """
-  createBlueprint(input: BlueprintInput!): Blueprint! @permission(key: "com.cble.blueprints.create")
+  createBlueprint(input: BlueprintInput!): Blueprint!
+    @permission(key: "com.cble.blueprints.create")
   """
   Update a blueprint (requires permission `com.cble.blueprints.update`)
   """
-  updateBlueprint(id: ID!, input: BlueprintInput!): Blueprint! @permission(key: "com.cble.blueprints.update")
+  updateBlueprint(id: ID!, input: BlueprintInput!): Blueprint!
+    @permission(key: "com.cble.blueprints.update")
   """
   Delete a blueprint (requires permission `com.cble.blueprints.delete`)
   """
-  deleteBlueprint(id: ID!): Boolean! @permission(key: "com.cble.blueprints.delete")
+  deleteBlueprint(id: ID!): Boolean!
+    @permission(key: "com.cble.blueprints.delete")
   """
   Update a deployment (requires permission `com.cble.deployments.update`)
   """
-  updateDeployment(id: ID!, input: DeploymentInput!): Deployment! @permission(key: "com.cble.deployments.update")
+  updateDeployment(id: ID!, input: DeploymentInput!): Deployment!
+    @permission(key: "com.cble.deployments.update")
 
   #############
   # PROVIDERS #
@@ -271,11 +303,13 @@ type Mutation {
   """
   Unload a provider to disconnect it from CBLE (requires permission `com.cble.providers.unload`)
   """
-  unloadProvider(id: ID!): Provider! @permission(key: "com.cble.providers.unload")
+  unloadProvider(id: ID!): Provider!
+    @permission(key: "com.cble.providers.unload")
   """
   Applies the stored configuration to the provider (requires permission `com.cble.providers.configure`)
   """
-  configureProvider(id: ID!): Provider! @permission(key: "com.cble.providers.configure")
+  configureProvider(id: ID!): Provider!
+    @permission(key: "com.cble.providers.configure")
 
   ##############
   # DEPLOYMENT #
@@ -284,9 +318,16 @@ type Mutation {
   """
   Deploy a blueprint (requires permission `com.cble.blueprints.deploy`)
   """
-  deployBlueprint(id: ID!): Deployment! @permission(key: "com.cble.blueprints.deploy")
+  deployBlueprint(id: ID!): Deployment!
+    @permission(key: "com.cble.blueprints.deploy")
   """
   Destroy a deployment (requires permission `com.cble.deployments.destroy`)
   """
-  destroyDeployment(id: ID!): Deployment! @permission(key: "com.cble.deployments.destroy")
+  destroyDeployment(id: ID!): Deployment!
+    @permission(key: "com.cble.deployments.destroy")
+  """
+  Get a vm console (requires permission `com.cble.deployments.console`)
+  """
+  getConsole(id: ID!, hostKey: String!): String!
+    @permission(key: "com.cble.deployments.console")
 }

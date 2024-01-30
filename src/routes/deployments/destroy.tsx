@@ -1,6 +1,6 @@
 import { Button, Container, Divider, LinearProgress, Typography, styled } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
-import { useDestroyDeploymentMutation, useGetDeploymentLazyQuery } from "../../api/graphql/generated";
+import { useDestroyDeploymentMutation, useGetDeploymentLazyQuery } from "../../api/generated";
 import { useEffect } from "react";
 import { useSnackbar } from "notistack";
 import { ChevronLeft, Delete } from "@mui/icons-material";

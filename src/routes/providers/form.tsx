@@ -22,7 +22,7 @@ import {
   useLoadProviderMutation,
   useUnloadProviderMutation,
   useUpdateProviderMutation,
-} from "../../api/graphql/generated";
+} from "../../api/generated";
 import { useContext, useEffect, useState } from "react";
 import { ThemeContext } from "../../theme";
 import MonacoEditor, { useMonaco } from "@monaco-editor/react";

@@ -19,7 +19,7 @@ import {
   useLoadProviderMutation,
   useMeHasPermissionQuery,
   useUnloadProviderMutation,
-} from "../../api/graphql/generated";
+} from "../../api/generated";
 import { useEffect, useState } from "react";
 import { TypographyCode } from "../../components/custom-typography";
 import { Add, Circle, ExpandMore } from "@mui/icons-material";
