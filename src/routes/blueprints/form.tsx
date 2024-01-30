@@ -20,7 +20,7 @@ import {
   useListGroupsQuery,
   useListProvidersQuery,
   useUpdateBlueprintMutation,
-} from "../../api/graphql/generated";
+} from "../../api/generated";
 import MonacoEditor, { useMonaco } from "@monaco-editor/react";
 import { configureMonacoYaml } from "monaco-yaml";
 import { ThemeContext } from "../../theme";

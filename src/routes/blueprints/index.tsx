@@ -12,7 +12,7 @@ import {
   IconButton,
   LinearProgress,
 } from "@mui/material";
-import { useBlueprintsQuery, useMeHasPermissionQuery } from "../../api/graphql/generated";
+import { useBlueprintsQuery, useMeHasPermissionQuery } from "../../api/generated";
 import { useEffect } from "react";
 import { MuiMarkdown, getOverrides } from "mui-markdown";
 import { useSnackbar } from "notistack";

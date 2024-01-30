@@ -26,6 +26,15 @@ query GetDeployment($id: ID!) {
   }
 }
 
+query GetResources($id: ID!) {
+  deploymentResources(id: $id) {
+    key
+    deploymentId
+    name
+    type
+  }
+}
+
 mutation UpdateDeployment($id: ID!, $input: DeploymentInput!) {
   updateDeployment(id: $id, input: $input) {
     ...DeploymentFragment
@@ -40,13 +49,4 @@ mutation DestroyDeployment($id: ID!) {
 
 mutation GetConsole($id: ID!, $hostKey: String!) {
   getConsole(id: $id, hostKey: $hostKey)
-}
-
-mutation GetResources($id: ID!) {
-  deploymentResources(id: $id) {
-    key
-    deploymentId
-    name
-    type
-  }
 }

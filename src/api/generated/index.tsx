@@ -119,8 +119,6 @@ export type Mutation = {
   deleteUser: Scalars['Boolean']['output'];
   /** Deploy a blueprint (requires permission `com.cble.blueprints.deploy`) */
   deployBlueprint: Deployment;
-  /** Get a list of resources in a deployment (requires permission `com.cble.deployments.resources`) */
-  deploymentResources: Array<DeployResource>;
   /** Destroy a deployment (requires permission `com.cble.deployments.destroy`) */
   destroyDeployment: Deployment;
   /** Get a vm console (requires permission `com.cble.deployments.console`) */
@@ -178,11 +176,6 @@ export type MutationDeleteUserArgs = {
 
 
 export type MutationDeployBlueprintArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type MutationDeploymentResourcesArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -302,6 +295,8 @@ export type Query = {
   blueprints: Array<Blueprint>;
   /** Get a deployment (requires permission `com.cble.deployments.read`) */
   deployment: Deployment;
+  /** Get a list of resources in a deployment (requires permission `com.cble.deployments.resources`) */
+  deploymentResources: Array<DeployResource>;
   /** List deployments (requires permission `com.cble.deployments.list`) */
   deployments: Array<Deployment>;
   /** Get a group (requires permission `com.cble.groups.read`) */
@@ -333,6 +328,11 @@ export type QueryBlueprintArgs = {
 
 
 export type QueryDeploymentArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryDeploymentResourcesArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -432,6 +432,13 @@ export type GetDeploymentQueryVariables = Exact<{
 
 export type GetDeploymentQuery = { __typename?: 'Query', deployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, deploymentVars: any, deploymentState: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } } };
 
+export type GetResourcesQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetResourcesQuery = { __typename?: 'Query', deploymentResources: Array<{ __typename?: 'DeployResource', key: string, deploymentId: string, name: string, type: DeployResourceType }> };
+
 export type UpdateDeploymentMutationVariables = Exact<{
   id: Scalars['ID']['input'];
   input: DeploymentInput;
@@ -454,13 +461,6 @@ export type GetConsoleMutationVariables = Exact<{
 
 
 export type GetConsoleMutation = { __typename?: 'Mutation', getConsole: string };
-
-export type GetResourcesMutationVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type GetResourcesMutation = { __typename?: 'Mutation', deploymentResources: Array<{ __typename?: 'DeployResource', key: string, deploymentId: string, name: string, type: DeployResourceType }> };
 
 export type GroupFragmentFragment = { __typename?: 'Group', id: string, createdAt: any, updatedAt: any, name: string };
 
@@ -867,6 +867,49 @@ export type GetDeploymentQueryHookResult = ReturnType<typeof useGetDeploymentQue
 export type GetDeploymentLazyQueryHookResult = ReturnType<typeof useGetDeploymentLazyQuery>;
 export type GetDeploymentSuspenseQueryHookResult = ReturnType<typeof useGetDeploymentSuspenseQuery>;
 export type GetDeploymentQueryResult = Apollo.QueryResult<GetDeploymentQuery, GetDeploymentQueryVariables>;
+export const GetResourcesDocument = gql`
+    query GetResources($id: ID!) {
+  deploymentResources(id: $id) {
+    key
+    deploymentId
+    name
+    type
+  }
+}
+    `;
+
+/**
+ * __useGetResourcesQuery__
+ *
+ * To run a query within a React component, call `useGetResourcesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetResourcesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetResourcesQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetResourcesQuery(baseOptions: Apollo.QueryHookOptions<GetResourcesQuery, GetResourcesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetResourcesQuery, GetResourcesQueryVariables>(GetResourcesDocument, options);
+      }
+export function useGetResourcesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetResourcesQuery, GetResourcesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetResourcesQuery, GetResourcesQueryVariables>(GetResourcesDocument, options);
+        }
+export function useGetResourcesSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<GetResourcesQuery, GetResourcesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetResourcesQuery, GetResourcesQueryVariables>(GetResourcesDocument, options);
+        }
+export type GetResourcesQueryHookResult = ReturnType<typeof useGetResourcesQuery>;
+export type GetResourcesLazyQueryHookResult = ReturnType<typeof useGetResourcesLazyQuery>;
+export type GetResourcesSuspenseQueryHookResult = ReturnType<typeof useGetResourcesSuspenseQuery>;
+export type GetResourcesQueryResult = Apollo.QueryResult<GetResourcesQuery, GetResourcesQueryVariables>;
 export const UpdateDeploymentDocument = gql`
     mutation UpdateDeployment($id: ID!, $input: DeploymentInput!) {
   updateDeployment(id: $id, input: $input) {
@@ -966,42 +1009,6 @@ export function useGetConsoleMutation(baseOptions?: Apollo.MutationHookOptions<G
 export type GetConsoleMutationHookResult = ReturnType<typeof useGetConsoleMutation>;
 export type GetConsoleMutationResult = Apollo.MutationResult<GetConsoleMutation>;
 export type GetConsoleMutationOptions = Apollo.BaseMutationOptions<GetConsoleMutation, GetConsoleMutationVariables>;
-export const GetResourcesDocument = gql`
-    mutation GetResources($id: ID!) {
-  deploymentResources(id: $id) {
-    key
-    deploymentId
-    name
-    type
-  }
-}
-    `;
-export type GetResourcesMutationFn = Apollo.MutationFunction<GetResourcesMutation, GetResourcesMutationVariables>;
-
-/**
- * __useGetResourcesMutation__
- *
- * To run a mutation, you first call `useGetResourcesMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useGetResourcesMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [getResourcesMutation, { data, loading, error }] = useGetResourcesMutation({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useGetResourcesMutation(baseOptions?: Apollo.MutationHookOptions<GetResourcesMutation, GetResourcesMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<GetResourcesMutation, GetResourcesMutationVariables>(GetResourcesDocument, options);
-      }
-export type GetResourcesMutationHookResult = ReturnType<typeof useGetResourcesMutation>;
-export type GetResourcesMutationResult = Apollo.MutationResult<GetResourcesMutation>;
-export type GetResourcesMutationOptions = Apollo.BaseMutationOptions<GetResourcesMutation, GetResourcesMutationVariables>;
 export const ListGroupsDocument = gql`
     query ListGroups {
   groups {

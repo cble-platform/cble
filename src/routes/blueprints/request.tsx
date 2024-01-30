@@ -1,7 +1,7 @@
 import { Box, Container, Divider, Typography } from "@mui/material";
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useDeployBlueprintMutation, useGetBlueprintLazyQuery } from "../../api/graphql/generated";
+import { useDeployBlueprintMutation, useGetBlueprintLazyQuery } from "../../api/generated";
 import { MuiMarkdown } from "mui-markdown";
 import { Send } from "@mui/icons-material";
 import { useSnackbar } from "notistack";
