@@ -20,7 +20,7 @@ type BlueprintInput struct {
 
 type DeployResource struct {
 	Key          string             `json:"key"`
-	DeploymentID string             `json:"deploymentId"`
+	DeploymentID uuid.UUID          `json:"deploymentId"`
 	Name         string             `json:"name"`
 	Type         DeployResourceType `json:"type"`
 }
@@ -37,11 +37,11 @@ type ProviderInput struct {
 }
 
 type UserInput struct {
-	Username  string   `json:"username"`
-	Email     string   `json:"email"`
-	FirstName string   `json:"firstName"`
-	LastName  string   `json:"lastName"`
-	GroupIds  []string `json:"groupIds"`
+	Username  string      `json:"username"`
+	Email     string      `json:"email"`
+	FirstName string      `json:"firstName"`
+	LastName  string      `json:"lastName"`
+	GroupIds  []uuid.UUID `json:"groupIds"`
 }
 
 type CommandStatus string
@@ -174,6 +174,51 @@ func (e *DeployResourceType) UnmarshalGQL(v interface{}) error {
 }
 
 func (e DeployResourceType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type DeploymentState string
+
+const (
+	DeploymentStateUnknown    DeploymentState = "UNKNOWN"
+	DeploymentStateInprogress DeploymentState = "INPROGRESS"
+	DeploymentStateActive     DeploymentState = "ACTIVE"
+	DeploymentStateDestroyed  DeploymentState = "DESTROYED"
+)
+
+var AllDeploymentState = []DeploymentState{
+	DeploymentStateUnknown,
+	DeploymentStateInprogress,
+	DeploymentStateActive,
+	DeploymentStateDestroyed,
+}
+
+func (e DeploymentState) IsValid() bool {
+	switch e {
+	case DeploymentStateUnknown, DeploymentStateInprogress, DeploymentStateActive, DeploymentStateDestroyed:
+		return true
+	}
+	return false
+}
+
+func (e DeploymentState) String() string {
+	return string(e)
+}
+
+func (e *DeploymentState) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = DeploymentState(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid DeploymentState", str)
+	}
+	return nil
+}
+
+func (e DeploymentState) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 

@@ -6,9 +6,7 @@ package graph
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/cble-platform/cble-backend/auth"
@@ -18,6 +16,8 @@ import (
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/cble-platform/cble-backend/graph/generated"
 	"github.com/cble-platform/cble-backend/graph/model"
+	"github.com/cble-platform/cble-backend/providers"
+	commonGRPC "github.com/cble-platform/cble-provider-grpc/pkg/common"
 	providerGRPC "github.com/cble-platform/cble-provider-grpc/pkg/provider"
 	"github.com/google/uuid"
 	"github.com/vektah/gqlparser/v2/gqlerror"
@@ -49,6 +49,11 @@ func (r *blueprintResolver) Provider(ctx context.Context, obj *ent.Blueprint) (*
 // Deployments is the resolver for the deployments field.
 func (r *blueprintResolver) Deployments(ctx context.Context, obj *ent.Blueprint) ([]*ent.Deployment, error) {
 	return obj.QueryDeployments().All(ctx)
+}
+
+// State is the resolver for the state field.
+func (r *deploymentResolver) State(ctx context.Context, obj *ent.Deployment) (model.DeploymentState, error) {
+	return model.DeploymentState(obj.State), nil
 }
 
 // Blueprint is the resolver for the blueprint field.
@@ -105,23 +110,13 @@ func (r *mutationResolver) SelfChangePassword(ctx context.Context, currentPasswo
 
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.UserInput) (*ent.User, error) {
-	// Convert Group IDs to UUIDS
-	groupUuids := make([]uuid.UUID, len(input.GroupIds))
-	for i, gid := range input.GroupIds {
-		gUuid, err := uuid.Parse(gid)
-		if err != nil {
-			return nil, gqlerror.Errorf("group id (%s) is not valid UUID: %v", gid, err)
-		}
-		groupUuids[i] = gUuid
-	}
-
 	// Create the user
 	entUser, err := r.ent.User.Create().
 		SetEmail(input.Email).
 		SetFirstName(input.FirstName).
 		SetLastName(input.LastName).
 		SetUsername(input.Username).
-		AddGroupIDs(groupUuids...).
+		AddGroupIDs(input.GroupIds...).
 		Save(ctx)
 	if err != nil {
 		return nil, gqlerror.Errorf("failed to create user: %v", err)
@@ -384,112 +379,26 @@ func (r *mutationResolver) GetConsole(ctx context.Context, id uuid.UUID, hostKey
 		return "", gqlerror.Errorf("failed to query provider from deployment: %v", err)
 	}
 
-	// Queue a destroy command for blueprint
-	entCommand, err := r.ent.ProviderCommand.Create().
-		SetCommandType(providercommand.CommandTypeCONSOLE).
-		SetArguments([]string{hostKey}).
-		SetProvider(entProvider).
-		SetDeployment(entDeployment).
-		Save(ctx)
+	// Convert maps into protobuf-friendly structs
+	_, deploymentVarsStruct, deploymentStateStruct, err := providers.DeploymentMapsToStructs(entDeployment)
 	if err != nil {
-		return "", gqlerror.Errorf("failed to create deployment CONSOLE command: %v", err)
+		return "", gqlerror.Errorf("failed to convert deployment maps: %v", err)
 	}
 
-	// Wait for the command to finish
-	// TODO: potentially make this command synchronous somehow
-	for {
-		entCommand, err = r.ent.ProviderCommand.Get(ctx, entCommand.ID)
-		if err != nil {
-			return "", fmt.Errorf("failed to query ent command")
-		}
-		if entCommand.Status == providercommand.StatusSUCCEEDED {
-			break
-		}
-		if entCommand.Status == providercommand.StatusFAILED {
-			return "", fmt.Errorf("%s", entCommand.Errors)
-		}
-
-		// Sleep before checking again
-		time.Sleep(1 * time.Second)
-	}
-
-	var output *providerGRPC.GetConsoleReply
-	err = json.Unmarshal(entCommand.Output, &output)
+	reply, err := r.cbleServer.GetConsoleSync(ctx, entProvider.ID.String(), &providerGRPC.GetConsoleRequest{
+		DeploymentId:    entDeployment.ID.String(),
+		HostKey:         hostKey,
+		DeploymentState: deploymentStateStruct,
+		DeploymentVars:  deploymentVarsStruct,
+	})
 	if err != nil {
-		return "", fmt.Errorf("failed to unmarshal command output: %v", err)
+		return "", gqlerror.Errorf("failed to get console: %v", err)
 	}
 
-	return output.Console, nil
-}
-
-// DeploymentResources is the resolver for the deploymentResources field.
-func (r *mutationResolver) DeploymentResources(ctx context.Context, id uuid.UUID) ([]*model.DeployResource, error) {
-	// Get the deployment
-	entDeployment, err := r.ent.Deployment.Get(ctx, id)
-	if err != nil {
-		return nil, gqlerror.Errorf("failed to create deployment from blueprint: %v", err)
+	if reply.Status != commonGRPC.RPCStatus_SUCCESS {
+		return "", gqlerror.Errorf("failed to get console: %v", reply.Errors)
 	}
-	entProvider, err := entDeployment.QueryBlueprint().QueryProvider().Only(ctx)
-	if err != nil {
-		return nil, gqlerror.Errorf("failed to query provider from deployment: %v", err)
-	}
-
-	// Queue a destroy command for blueprint
-	entCommand, err := r.ent.ProviderCommand.Create().
-		SetCommandType(providercommand.CommandTypeRESOURCES).
-		SetProvider(entProvider).
-		SetDeployment(entDeployment).
-		Save(ctx)
-	if err != nil {
-		return nil, gqlerror.Errorf("failed to create deployment CONSOLE command: %v", err)
-	}
-
-	// Wait for the command to finish
-	// TODO: potentially make this command synchronous somehow
-	for {
-		entCommand, err = r.ent.ProviderCommand.Get(ctx, entCommand.ID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to query ent command")
-		}
-		if entCommand.Status == providercommand.StatusSUCCEEDED {
-			break
-		}
-		if entCommand.Status == providercommand.StatusFAILED {
-			return nil, fmt.Errorf("%s", entCommand.Errors)
-		}
-
-		// Sleep before checking again
-		time.Sleep(1 * time.Second)
-	}
-
-	var output *providerGRPC.GetResourceListReply
-	err = json.Unmarshal(entCommand.Output, &output)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal command output: %v", err)
-	}
-
-	// Convert resources to GraphQL type
-	resources := make([]*model.DeployResource, 0)
-	for _, resource := range output.Resources {
-		r := &model.DeployResource{
-			Key:          resource.Key,
-			DeploymentID: resource.DeploymentId,
-			Name:         resource.Name,
-		}
-		switch resource.Type {
-		case providerGRPC.ResourceType_HOST:
-			r.Type = model.DeployResourceTypeHost
-		case providerGRPC.ResourceType_NETWORK:
-			r.Type = model.DeployResourceTypeNetwork
-		case providerGRPC.ResourceType_ROUTER:
-			r.Type = model.DeployResourceTypeRouter
-		default:
-			r.Type = model.DeployResourceTypeUnknown
-		}
-		resources = append(resources, r)
-	}
-
-	return resources, nil
+	return reply.Console, nil
 }
 
 // PermissionPolicies is the resolver for the permissionPolicies field.
@@ -616,7 +525,13 @@ func (r *queryResolver) Deployments(ctx context.Context) ([]*ent.Deployment, err
 		return nil, gqlerror.Errorf("failed to get user from context: %v", err)
 	}
 
-	return r.ent.Deployment.Query().Where(deployment.HasRequesterWith(user.IDEQ(currentUser.ID))).All(ctx)
+	// Return deployments requested by self which aren't destroyed
+	return r.ent.Deployment.Query().Where(
+		deployment.And(
+			deployment.HasRequesterWith(user.IDEQ(currentUser.ID)),
+			deployment.StateNEQ(deployment.StateDESTROYED),
+		),
+	).All(ctx)
 }
 
 // Deployment is the resolver for the deployment field.
@@ -630,6 +545,63 @@ func (r *queryResolver) Deployment(ctx context.Context, id uuid.UUID) (*ent.Depl
 		deployment.HasRequesterWith(user.IDEQ(currentUser.ID)),
 		deployment.IDEQ(id),
 	)).Only(ctx)
+}
+
+// DeploymentResources is the resolver for the deploymentResources field.
+func (r *queryResolver) DeploymentResources(ctx context.Context, id uuid.UUID) ([]*model.DeployResource, error) {
+	// Get the deployment
+	entDeployment, err := r.ent.Deployment.Get(ctx, id)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to create deployment from blueprint: %v", err)
+	}
+	entBlueprint, err := entDeployment.QueryBlueprint().Only(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query blueprint from deployment")
+	}
+	entProvider, err := entBlueprint.QueryProvider().Only(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query provider from blueprint: %v", err)
+	}
+
+	// Convert maps into protobuf-friendly structs
+	templateVarsStruct, deploymentVarsStruct, deploymentStateStruct, err := providers.DeploymentMapsToStructs(entDeployment)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to convert deployment maps: %v", err)
+	}
+
+	reply, err := r.cbleServer.GetResourceListSync(ctx, entProvider.ID.String(), &providerGRPC.GetResourceListRequest{
+		DeploymentId:    entDeployment.ID.String(),
+		Blueprint:       entBlueprint.BlueprintTemplate,
+		TemplateVars:    templateVarsStruct,
+		DeploymentState: deploymentStateStruct,
+		DeploymentVars:  deploymentVarsStruct,
+	})
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to get resource list: %v", err)
+	}
+
+	// Convert resources to GraphQL type
+	resources := make([]*model.DeployResource, 0)
+	for _, resource := range reply.Resources {
+		r := &model.DeployResource{
+			Key:          resource.Key,
+			DeploymentID: entDeployment.ID,
+			Name:         resource.Name,
+		}
+		switch resource.Type {
+		case providerGRPC.ResourceType_HOST:
+			r.Type = model.DeployResourceTypeHost
+		case providerGRPC.ResourceType_NETWORK:
+			r.Type = model.DeployResourceTypeNetwork
+		case providerGRPC.ResourceType_ROUTER:
+			r.Type = model.DeployResourceTypeRouter
+		default:
+			r.Type = model.DeployResourceTypeUnknown
+		}
+		resources = append(resources, r)
+	}
+
+	return resources, nil
 }
 
 // Groups is the resolver for the groups field.

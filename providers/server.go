@@ -33,6 +33,8 @@ type CBLEServer struct {
 
 	// Register individual provider registrations
 	registeredProviders *sync.Map
+	// Individual provider client references
+	providerClients *sync.Map
 	// Queue of providers to connect to after registration
 	connectionQueue chan string
 }
@@ -51,6 +53,7 @@ func NewServer(entClient *ent.Client, providersConfig *config.ProvidersConfig) *
 		serverShutdown:      new(sync.Map),
 		clientShutdown:      new(sync.Map),
 		registeredProviders: new(sync.Map),
+		providerClients:     new(sync.Map),
 		connectionQueue:     make(chan string, 10),
 	}
 }
