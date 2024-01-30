@@ -276,16 +276,6 @@ func DescriptionHasSuffix(v string) predicate.Deployment {
 	return predicate.Deployment(sql.FieldHasSuffix(FieldDescription, v))
 }
 
-// DescriptionIsNil applies the IsNil predicate on the "description" field.
-func DescriptionIsNil() predicate.Deployment {
-	return predicate.Deployment(sql.FieldIsNull(FieldDescription))
-}
-
-// DescriptionNotNil applies the NotNil predicate on the "description" field.
-func DescriptionNotNil() predicate.Deployment {
-	return predicate.Deployment(sql.FieldNotNull(FieldDescription))
-}
-
 // DescriptionEqualFold applies the EqualFold predicate on the "description" field.
 func DescriptionEqualFold(v string) predicate.Deployment {
 	return predicate.Deployment(sql.FieldEqualFold(FieldDescription, v))
@@ -339,21 +329,44 @@ func HasBlueprintWith(preds ...predicate.Blueprint) predicate.Deployment {
 	})
 }
 
-// HasRequester applies the HasEdge predicate on the "requester" edge.
-func HasRequester() predicate.Deployment {
+// HasRootNodes applies the HasEdge predicate on the "root_nodes" edge.
+func HasRootNodes() predicate.Deployment {
 	return predicate.Deployment(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, RequesterTable, RequesterColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, RootNodesTable, RootNodesColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasRequesterWith applies the HasEdge predicate on the "requester" edge with a given conditions (other predicates).
-func HasRequesterWith(preds ...predicate.User) predicate.Deployment {
+// HasRootNodesWith applies the HasEdge predicate on the "root_nodes" edge with a given conditions (other predicates).
+func HasRootNodesWith(preds ...predicate.DeploymentNode) predicate.Deployment {
 	return predicate.Deployment(func(s *sql.Selector) {
-		step := newRequesterStep()
+		step := newRootNodesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasDeploymentNodes applies the HasEdge predicate on the "deployment_nodes" edge.
+func HasDeploymentNodes() predicate.Deployment {
+	return predicate.Deployment(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, DeploymentNodesTable, DeploymentNodesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasDeploymentNodesWith applies the HasEdge predicate on the "deployment_nodes" edge with a given conditions (other predicates).
+func HasDeploymentNodesWith(preds ...predicate.DeploymentNode) predicate.Deployment {
+	return predicate.Deployment(func(s *sql.Selector) {
+		step := newDeploymentNodesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

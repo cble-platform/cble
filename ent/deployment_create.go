@@ -12,7 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
-	"github.com/cble-platform/cble-backend/ent/user"
+	"github.com/cble-platform/cble-backend/ent/deploymentnode"
 	"github.com/google/uuid"
 )
 
@@ -63,43 +63,15 @@ func (dc *DeploymentCreate) SetDescription(s string) *DeploymentCreate {
 	return dc
 }
 
-// SetNillableDescription sets the "description" field if the given value is not nil.
-func (dc *DeploymentCreate) SetNillableDescription(s *string) *DeploymentCreate {
-	if s != nil {
-		dc.SetDescription(*s)
-	}
-	return dc
-}
-
-// SetTemplateVars sets the "template_vars" field.
-func (dc *DeploymentCreate) SetTemplateVars(m map[string]interface{}) *DeploymentCreate {
-	dc.mutation.SetTemplateVars(m)
-	return dc
-}
-
-// SetDeploymentVars sets the "deployment_vars" field.
-func (dc *DeploymentCreate) SetDeploymentVars(m map[string]interface{}) *DeploymentCreate {
-	dc.mutation.SetDeploymentVars(m)
-	return dc
-}
-
-// SetDeploymentState sets the "deployment_state" field.
-func (dc *DeploymentCreate) SetDeploymentState(m map[string]string) *DeploymentCreate {
-	dc.mutation.SetDeploymentState(m)
-	return dc
-}
-
 // SetState sets the "state" field.
 func (dc *DeploymentCreate) SetState(d deployment.State) *DeploymentCreate {
 	dc.mutation.SetState(d)
 	return dc
 }
 
-// SetNillableState sets the "state" field if the given value is not nil.
-func (dc *DeploymentCreate) SetNillableState(d *deployment.State) *DeploymentCreate {
-	if d != nil {
-		dc.SetState(*d)
-	}
+// SetTemplateVars sets the "template_vars" field.
+func (dc *DeploymentCreate) SetTemplateVars(m map[string]interface{}) *DeploymentCreate {
+	dc.mutation.SetTemplateVars(m)
 	return dc
 }
 
@@ -128,15 +100,34 @@ func (dc *DeploymentCreate) SetBlueprint(b *Blueprint) *DeploymentCreate {
 	return dc.SetBlueprintID(b.ID)
 }
 
-// SetRequesterID sets the "requester" edge to the User entity by ID.
-func (dc *DeploymentCreate) SetRequesterID(id uuid.UUID) *DeploymentCreate {
-	dc.mutation.SetRequesterID(id)
+// AddRootNodeIDs adds the "root_nodes" edge to the DeploymentNode entity by IDs.
+func (dc *DeploymentCreate) AddRootNodeIDs(ids ...uuid.UUID) *DeploymentCreate {
+	dc.mutation.AddRootNodeIDs(ids...)
 	return dc
 }
 
-// SetRequester sets the "requester" edge to the User entity.
-func (dc *DeploymentCreate) SetRequester(u *User) *DeploymentCreate {
-	return dc.SetRequesterID(u.ID)
+// AddRootNodes adds the "root_nodes" edges to the DeploymentNode entity.
+func (dc *DeploymentCreate) AddRootNodes(d ...*DeploymentNode) *DeploymentCreate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return dc.AddRootNodeIDs(ids...)
+}
+
+// AddDeploymentNodeIDs adds the "deployment_nodes" edge to the DeploymentNode entity by IDs.
+func (dc *DeploymentCreate) AddDeploymentNodeIDs(ids ...uuid.UUID) *DeploymentCreate {
+	dc.mutation.AddDeploymentNodeIDs(ids...)
+	return dc
+}
+
+// AddDeploymentNodes adds the "deployment_nodes" edges to the DeploymentNode entity.
+func (dc *DeploymentCreate) AddDeploymentNodes(d ...*DeploymentNode) *DeploymentCreate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return dc.AddDeploymentNodeIDs(ids...)
 }
 
 // Mutation returns the DeploymentMutation object of the builder.
@@ -182,25 +173,9 @@ func (dc *DeploymentCreate) defaults() {
 		v := deployment.DefaultUpdatedAt()
 		dc.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := dc.mutation.Description(); !ok {
-		v := deployment.DefaultDescription
-		dc.mutation.SetDescription(v)
-	}
 	if _, ok := dc.mutation.TemplateVars(); !ok {
 		v := deployment.DefaultTemplateVars
 		dc.mutation.SetTemplateVars(v)
-	}
-	if _, ok := dc.mutation.DeploymentVars(); !ok {
-		v := deployment.DefaultDeploymentVars
-		dc.mutation.SetDeploymentVars(v)
-	}
-	if _, ok := dc.mutation.DeploymentState(); !ok {
-		v := deployment.DefaultDeploymentState
-		dc.mutation.SetDeploymentState(v)
-	}
-	if _, ok := dc.mutation.State(); !ok {
-		v := deployment.DefaultState
-		dc.mutation.SetState(v)
 	}
 	if _, ok := dc.mutation.ID(); !ok {
 		v := deployment.DefaultID()
@@ -219,14 +194,8 @@ func (dc *DeploymentCreate) check() error {
 	if _, ok := dc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Deployment.name"`)}
 	}
-	if _, ok := dc.mutation.TemplateVars(); !ok {
-		return &ValidationError{Name: "template_vars", err: errors.New(`ent: missing required field "Deployment.template_vars"`)}
-	}
-	if _, ok := dc.mutation.DeploymentVars(); !ok {
-		return &ValidationError{Name: "deployment_vars", err: errors.New(`ent: missing required field "Deployment.deployment_vars"`)}
-	}
-	if _, ok := dc.mutation.DeploymentState(); !ok {
-		return &ValidationError{Name: "deployment_state", err: errors.New(`ent: missing required field "Deployment.deployment_state"`)}
+	if _, ok := dc.mutation.Description(); !ok {
+		return &ValidationError{Name: "description", err: errors.New(`ent: missing required field "Deployment.description"`)}
 	}
 	if _, ok := dc.mutation.State(); !ok {
 		return &ValidationError{Name: "state", err: errors.New(`ent: missing required field "Deployment.state"`)}
@@ -236,11 +205,11 @@ func (dc *DeploymentCreate) check() error {
 			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "Deployment.state": %w`, err)}
 		}
 	}
+	if _, ok := dc.mutation.TemplateVars(); !ok {
+		return &ValidationError{Name: "template_vars", err: errors.New(`ent: missing required field "Deployment.template_vars"`)}
+	}
 	if _, ok := dc.mutation.BlueprintID(); !ok {
 		return &ValidationError{Name: "blueprint", err: errors.New(`ent: missing required edge "Deployment.blueprint"`)}
-	}
-	if _, ok := dc.mutation.RequesterID(); !ok {
-		return &ValidationError{Name: "requester", err: errors.New(`ent: missing required edge "Deployment.requester"`)}
 	}
 	return nil
 }
@@ -293,21 +262,13 @@ func (dc *DeploymentCreate) createSpec() (*Deployment, *sqlgraph.CreateSpec) {
 		_spec.SetField(deployment.FieldDescription, field.TypeString, value)
 		_node.Description = value
 	}
-	if value, ok := dc.mutation.TemplateVars(); ok {
-		_spec.SetField(deployment.FieldTemplateVars, field.TypeJSON, value)
-		_node.TemplateVars = value
-	}
-	if value, ok := dc.mutation.DeploymentVars(); ok {
-		_spec.SetField(deployment.FieldDeploymentVars, field.TypeJSON, value)
-		_node.DeploymentVars = value
-	}
-	if value, ok := dc.mutation.DeploymentState(); ok {
-		_spec.SetField(deployment.FieldDeploymentState, field.TypeJSON, value)
-		_node.DeploymentState = value
-	}
 	if value, ok := dc.mutation.State(); ok {
 		_spec.SetField(deployment.FieldState, field.TypeEnum, value)
 		_node.State = value
+	}
+	if value, ok := dc.mutation.TemplateVars(); ok {
+		_spec.SetField(deployment.FieldTemplateVars, field.TypeJSON, value)
+		_node.TemplateVars = value
 	}
 	if nodes := dc.mutation.BlueprintIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -326,21 +287,36 @@ func (dc *DeploymentCreate) createSpec() (*Deployment, *sqlgraph.CreateSpec) {
 		_node.deployment_blueprint = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := dc.mutation.RequesterIDs(); len(nodes) > 0 {
+	if nodes := dc.mutation.RootNodesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   deployment.RequesterTable,
-			Columns: []string{deployment.RequesterColumn},
+			Table:   deployment.RootNodesTable,
+			Columns: []string{deployment.RootNodesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(deploymentnode.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.deployment_requester = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := dc.mutation.DeploymentNodesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   deployment.DeploymentNodesTable,
+			Columns: []string{deployment.DeploymentNodesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(deploymentnode.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

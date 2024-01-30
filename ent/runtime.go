@@ -7,11 +7,13 @@ import (
 
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
+	"github.com/cble-platform/cble-backend/ent/deploymentnode"
 	"github.com/cble-platform/cble-backend/ent/group"
 	"github.com/cble-platform/cble-backend/ent/permission"
 	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
 	"github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/cble-platform/cble-backend/ent/providercommand"
+	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/cble-platform/cble-backend/ent/schema"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
@@ -49,26 +51,30 @@ func init() {
 	deployment.DefaultUpdatedAt = deploymentDescUpdatedAt.Default.(func() time.Time)
 	// deployment.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	deployment.UpdateDefaultUpdatedAt = deploymentDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// deploymentDescDescription is the schema descriptor for description field.
-	deploymentDescDescription := deploymentFields[4].Descriptor()
-	// deployment.DefaultDescription holds the default value on creation for the description field.
-	deployment.DefaultDescription = deploymentDescDescription.Default.(string)
 	// deploymentDescTemplateVars is the schema descriptor for template_vars field.
-	deploymentDescTemplateVars := deploymentFields[5].Descriptor()
+	deploymentDescTemplateVars := deploymentFields[6].Descriptor()
 	// deployment.DefaultTemplateVars holds the default value on creation for the template_vars field.
 	deployment.DefaultTemplateVars = deploymentDescTemplateVars.Default.(map[string]interface{})
-	// deploymentDescDeploymentVars is the schema descriptor for deployment_vars field.
-	deploymentDescDeploymentVars := deploymentFields[6].Descriptor()
-	// deployment.DefaultDeploymentVars holds the default value on creation for the deployment_vars field.
-	deployment.DefaultDeploymentVars = deploymentDescDeploymentVars.Default.(map[string]interface{})
-	// deploymentDescDeploymentState is the schema descriptor for deployment_state field.
-	deploymentDescDeploymentState := deploymentFields[7].Descriptor()
-	// deployment.DefaultDeploymentState holds the default value on creation for the deployment_state field.
-	deployment.DefaultDeploymentState = deploymentDescDeploymentState.Default.(map[string]string)
 	// deploymentDescID is the schema descriptor for id field.
 	deploymentDescID := deploymentFields[0].Descriptor()
 	// deployment.DefaultID holds the default value on creation for the id field.
 	deployment.DefaultID = deploymentDescID.Default.(func() uuid.UUID)
+	deploymentnodeFields := schema.DeploymentNode{}.Fields()
+	_ = deploymentnodeFields
+	// deploymentnodeDescCreatedAt is the schema descriptor for created_at field.
+	deploymentnodeDescCreatedAt := deploymentnodeFields[1].Descriptor()
+	// deploymentnode.DefaultCreatedAt holds the default value on creation for the created_at field.
+	deploymentnode.DefaultCreatedAt = deploymentnodeDescCreatedAt.Default.(func() time.Time)
+	// deploymentnodeDescUpdatedAt is the schema descriptor for updated_at field.
+	deploymentnodeDescUpdatedAt := deploymentnodeFields[2].Descriptor()
+	// deploymentnode.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	deploymentnode.DefaultUpdatedAt = deploymentnodeDescUpdatedAt.Default.(func() time.Time)
+	// deploymentnode.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	deploymentnode.UpdateDefaultUpdatedAt = deploymentnodeDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// deploymentnodeDescID is the schema descriptor for id field.
+	deploymentnodeDescID := deploymentnodeFields[0].Descriptor()
+	// deploymentnode.DefaultID holds the default value on creation for the id field.
+	deploymentnode.DefaultID = deploymentnodeDescID.Default.(func() uuid.UUID)
 	groupFields := schema.Group{}.Fields()
 	_ = groupFields
 	// groupDescCreatedAt is the schema descriptor for created_at field.
@@ -165,6 +171,22 @@ func init() {
 	providercommandDescID := providercommandFields[0].Descriptor()
 	// providercommand.DefaultID holds the default value on creation for the id field.
 	providercommand.DefaultID = providercommandDescID.Default.(func() uuid.UUID)
+	resourceFields := schema.Resource{}.Fields()
+	_ = resourceFields
+	// resourceDescCreatedAt is the schema descriptor for created_at field.
+	resourceDescCreatedAt := resourceFields[1].Descriptor()
+	// resource.DefaultCreatedAt holds the default value on creation for the created_at field.
+	resource.DefaultCreatedAt = resourceDescCreatedAt.Default.(func() time.Time)
+	// resourceDescUpdatedAt is the schema descriptor for updated_at field.
+	resourceDescUpdatedAt := resourceFields[2].Descriptor()
+	// resource.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	resource.DefaultUpdatedAt = resourceDescUpdatedAt.Default.(func() time.Time)
+	// resource.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	resource.UpdateDefaultUpdatedAt = resourceDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// resourceDescID is the schema descriptor for id field.
+	resourceDescID := resourceFields[0].Descriptor()
+	// resource.DefaultID holds the default value on creation for the id field.
+	resource.DefaultID = resourceDescID.Default.(func() uuid.UUID)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescCreatedAt is the schema descriptor for created_at field.

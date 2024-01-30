@@ -25,21 +25,16 @@ const (
 	FieldDescription = "description"
 	// FieldBlueprintTemplate holds the string denoting the blueprint_template field in the database.
 	FieldBlueprintTemplate = "blueprint_template"
-	// EdgeParentGroup holds the string denoting the parent_group edge name in mutations.
-	EdgeParentGroup = "parent_group"
+	// FieldVariableTypes holds the string denoting the variable_types field in the database.
+	FieldVariableTypes = "variable_types"
 	// EdgeProvider holds the string denoting the provider edge name in mutations.
 	EdgeProvider = "provider"
+	// EdgeResources holds the string denoting the resources edge name in mutations.
+	EdgeResources = "resources"
 	// EdgeDeployments holds the string denoting the deployments edge name in mutations.
 	EdgeDeployments = "deployments"
 	// Table holds the table name of the blueprint in the database.
 	Table = "blueprints"
-	// ParentGroupTable is the table that holds the parent_group relation/edge.
-	ParentGroupTable = "blueprints"
-	// ParentGroupInverseTable is the table name for the Group entity.
-	// It exists in this package in order to avoid circular dependency with the "group" package.
-	ParentGroupInverseTable = "groups"
-	// ParentGroupColumn is the table column denoting the parent_group relation/edge.
-	ParentGroupColumn = "blueprint_parent_group"
 	// ProviderTable is the table that holds the provider relation/edge.
 	ProviderTable = "blueprints"
 	// ProviderInverseTable is the table name for the Provider entity.
@@ -47,6 +42,13 @@ const (
 	ProviderInverseTable = "providers"
 	// ProviderColumn is the table column denoting the provider relation/edge.
 	ProviderColumn = "blueprint_provider"
+	// ResourcesTable is the table that holds the resources relation/edge.
+	ResourcesTable = "resources"
+	// ResourcesInverseTable is the table name for the Resource entity.
+	// It exists in this package in order to avoid circular dependency with the "resource" package.
+	ResourcesInverseTable = "resources"
+	// ResourcesColumn is the table column denoting the resources relation/edge.
+	ResourcesColumn = "resource_blueprint"
 	// DeploymentsTable is the table that holds the deployments relation/edge.
 	DeploymentsTable = "deployments"
 	// DeploymentsInverseTable is the table name for the Deployment entity.
@@ -64,12 +66,12 @@ var Columns = []string{
 	FieldName,
 	FieldDescription,
 	FieldBlueprintTemplate,
+	FieldVariableTypes,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "blueprints"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
-	"blueprint_parent_group",
 	"blueprint_provider",
 }
 
@@ -127,17 +129,24 @@ func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDescription, opts...).ToFunc()
 }
 
-// ByParentGroupField orders the results by parent_group field.
-func ByParentGroupField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newParentGroupStep(), sql.OrderByField(field, opts...))
-	}
-}
-
 // ByProviderField orders the results by provider field.
 func ByProviderField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newProviderStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByResourcesCount orders the results by resources count.
+func ByResourcesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newResourcesStep(), opts...)
+	}
+}
+
+// ByResources orders the results by resources terms.
+func ByResources(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newResourcesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -154,18 +163,18 @@ func ByDeployments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newDeploymentsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-func newParentGroupStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(ParentGroupInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, ParentGroupTable, ParentGroupColumn),
-	)
-}
 func newProviderStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ProviderInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, false, ProviderTable, ProviderColumn),
+	)
+}
+func newResourcesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ResourcesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, ResourcesTable, ResourcesColumn),
 	)
 }
 func newDeploymentsStep() *sqlgraph.Step {

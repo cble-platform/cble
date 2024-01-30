@@ -331,29 +331,6 @@ func BlueprintTemplateLTE(v []byte) predicate.Blueprint {
 	return predicate.Blueprint(sql.FieldLTE(FieldBlueprintTemplate, v))
 }
 
-// HasParentGroup applies the HasEdge predicate on the "parent_group" edge.
-func HasParentGroup() predicate.Blueprint {
-	return predicate.Blueprint(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, ParentGroupTable, ParentGroupColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasParentGroupWith applies the HasEdge predicate on the "parent_group" edge with a given conditions (other predicates).
-func HasParentGroupWith(preds ...predicate.Group) predicate.Blueprint {
-	return predicate.Blueprint(func(s *sql.Selector) {
-		step := newParentGroupStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // HasProvider applies the HasEdge predicate on the "provider" edge.
 func HasProvider() predicate.Blueprint {
 	return predicate.Blueprint(func(s *sql.Selector) {
@@ -369,6 +346,29 @@ func HasProvider() predicate.Blueprint {
 func HasProviderWith(preds ...predicate.Provider) predicate.Blueprint {
 	return predicate.Blueprint(func(s *sql.Selector) {
 		step := newProviderStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasResources applies the HasEdge predicate on the "resources" edge.
+func HasResources() predicate.Blueprint {
+	return predicate.Blueprint(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, ResourcesTable, ResourcesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasResourcesWith applies the HasEdge predicate on the "resources" edge with a given conditions (other predicates).
+func HasResourcesWith(preds ...predicate.Resource) predicate.Blueprint {
+	return predicate.Blueprint(func(s *sql.Selector) {
+		step := newResourcesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

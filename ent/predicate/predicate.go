@@ -12,6 +12,9 @@ type Blueprint func(*sql.Selector)
 // Deployment is the predicate function for deployment builders.
 type Deployment func(*sql.Selector)
 
+// DeploymentNode is the predicate function for deploymentnode builders.
+type DeploymentNode func(*sql.Selector)
+
 // Group is the predicate function for group builders.
 type Group func(*sql.Selector)
 
@@ -26,6 +29,9 @@ type Provider func(*sql.Selector)
 
 // ProviderCommand is the predicate function for providercommand builders.
 type ProviderCommand func(*sql.Selector)
+
+// Resource is the predicate function for resource builders.
+type Resource func(*sql.Selector)
 
 // User is the predicate function for user builders.
 type User func(*sql.Selector)

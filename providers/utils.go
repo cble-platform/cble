@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cble-platform/cble-backend/ent"
 	providerGRPC "github.com/cble-platform/cble-provider-grpc/pkg/provider"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func (ps *CBLEServer) RunAllProviders(ctx context.Context) error {
@@ -23,29 +21,29 @@ func (ps *CBLEServer) RunAllProviders(ctx context.Context) error {
 	return nil
 }
 
-// Converts all deployment maps into protobuf-friendly structs
-func DeploymentMapsToStructs(entDeployment *ent.Deployment) (*structpb.Struct, *structpb.Struct, *structpb.Struct, error) {
-	// Convert maps into protobuf-friendly structs
-	templateVarsStruct, err := structpb.NewStruct(entDeployment.TemplateVars)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to parse template vars into structpb: %v", err)
-	}
-	deploymentVarsStruct, err := structpb.NewStruct(entDeployment.DeploymentVars)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to parse deployment vars into structpb: %v", err)
-	}
-	// Deployment state is of type map[string]string and needs to be converted to map[string]interface{}
-	deploymentState := make(map[string]interface{}, len(entDeployment.DeploymentState))
-	for k, v := range entDeployment.DeploymentState {
-		deploymentState[k] = v
-	}
-	deploymentStateStruct, err := structpb.NewStruct(deploymentState)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to parse deployment state into structpb: %v", err)
-	}
+// // Converts all deployment maps into protobuf-friendly structs
+// func DeploymentMapsToStructs(entDeployment *ent.Deployment) (*structpb.Struct, *structpb.Struct, *structpb.Struct, error) {
+// 	// Convert maps into protobuf-friendly structs
+// 	templateVarsStruct, err := structpb.NewStruct(entDeployment.TemplateVars)
+// 	if err != nil {
+// 		return nil, nil, nil, fmt.Errorf("failed to parse template vars into structpb: %v", err)
+// 	}
+// 	deploymentVarsStruct, err := structpb.NewStruct(entDeployment.DeploymentVars)
+// 	if err != nil {
+// 		return nil, nil, nil, fmt.Errorf("failed to parse deployment vars into structpb: %v", err)
+// 	}
+// 	// Deployment state is of type map[string]string and needs to be converted to map[string]interface{}
+// 	deploymentState := make(map[string]interface{}, len(entDeployment.DeploymentState))
+// 	for k, v := range entDeployment.DeploymentState {
+// 		deploymentState[k] = v
+// 	}
+// 	deploymentStateStruct, err := structpb.NewStruct(deploymentState)
+// 	if err != nil {
+// 		return nil, nil, nil, fmt.Errorf("failed to parse deployment state into structpb: %v", err)
+// 	}
 
-	return templateVarsStruct, deploymentVarsStruct, deploymentStateStruct, nil
-}
+// 	return templateVarsStruct, deploymentVarsStruct, deploymentStateStruct, nil
+// }
 
 func (ps *CBLEServer) getProviderClient(providerId string) (providerGRPC.ProviderClient, error) {
 	clientRaw, ok := ps.providerClients.Load(providerId)

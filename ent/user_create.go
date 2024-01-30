@@ -10,7 +10,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/group"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
@@ -108,21 +107,6 @@ func (uc *UserCreate) AddGroups(g ...*Group) *UserCreate {
 		ids[i] = g[i].ID
 	}
 	return uc.AddGroupIDs(ids...)
-}
-
-// AddDeploymentIDs adds the "deployments" edge to the Deployment entity by IDs.
-func (uc *UserCreate) AddDeploymentIDs(ids ...uuid.UUID) *UserCreate {
-	uc.mutation.AddDeploymentIDs(ids...)
-	return uc
-}
-
-// AddDeployments adds the "deployments" edges to the Deployment entity.
-func (uc *UserCreate) AddDeployments(d ...*Deployment) *UserCreate {
-	ids := make([]uuid.UUID, len(d))
-	for i := range d {
-		ids[i] = d[i].ID
-	}
-	return uc.AddDeploymentIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -269,22 +253,6 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := uc.mutation.DeploymentsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   user.DeploymentsTable,
-			Columns: []string{user.DeploymentsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(deployment.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

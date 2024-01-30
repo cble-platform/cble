@@ -13,8 +13,8 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
+	"github.com/cble-platform/cble-backend/ent/deploymentnode"
 	"github.com/cble-platform/cble-backend/ent/predicate"
-	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -65,30 +65,6 @@ func (du *DeploymentUpdate) SetNillableDescription(s *string) *DeploymentUpdate 
 	return du
 }
 
-// ClearDescription clears the value of the "description" field.
-func (du *DeploymentUpdate) ClearDescription() *DeploymentUpdate {
-	du.mutation.ClearDescription()
-	return du
-}
-
-// SetTemplateVars sets the "template_vars" field.
-func (du *DeploymentUpdate) SetTemplateVars(m map[string]interface{}) *DeploymentUpdate {
-	du.mutation.SetTemplateVars(m)
-	return du
-}
-
-// SetDeploymentVars sets the "deployment_vars" field.
-func (du *DeploymentUpdate) SetDeploymentVars(m map[string]interface{}) *DeploymentUpdate {
-	du.mutation.SetDeploymentVars(m)
-	return du
-}
-
-// SetDeploymentState sets the "deployment_state" field.
-func (du *DeploymentUpdate) SetDeploymentState(m map[string]string) *DeploymentUpdate {
-	du.mutation.SetDeploymentState(m)
-	return du
-}
-
 // SetState sets the "state" field.
 func (du *DeploymentUpdate) SetState(d deployment.State) *DeploymentUpdate {
 	du.mutation.SetState(d)
@@ -103,6 +79,12 @@ func (du *DeploymentUpdate) SetNillableState(d *deployment.State) *DeploymentUpd
 	return du
 }
 
+// SetTemplateVars sets the "template_vars" field.
+func (du *DeploymentUpdate) SetTemplateVars(m map[string]interface{}) *DeploymentUpdate {
+	du.mutation.SetTemplateVars(m)
+	return du
+}
+
 // SetBlueprintID sets the "blueprint" edge to the Blueprint entity by ID.
 func (du *DeploymentUpdate) SetBlueprintID(id uuid.UUID) *DeploymentUpdate {
 	du.mutation.SetBlueprintID(id)
@@ -114,15 +96,34 @@ func (du *DeploymentUpdate) SetBlueprint(b *Blueprint) *DeploymentUpdate {
 	return du.SetBlueprintID(b.ID)
 }
 
-// SetRequesterID sets the "requester" edge to the User entity by ID.
-func (du *DeploymentUpdate) SetRequesterID(id uuid.UUID) *DeploymentUpdate {
-	du.mutation.SetRequesterID(id)
+// AddRootNodeIDs adds the "root_nodes" edge to the DeploymentNode entity by IDs.
+func (du *DeploymentUpdate) AddRootNodeIDs(ids ...uuid.UUID) *DeploymentUpdate {
+	du.mutation.AddRootNodeIDs(ids...)
 	return du
 }
 
-// SetRequester sets the "requester" edge to the User entity.
-func (du *DeploymentUpdate) SetRequester(u *User) *DeploymentUpdate {
-	return du.SetRequesterID(u.ID)
+// AddRootNodes adds the "root_nodes" edges to the DeploymentNode entity.
+func (du *DeploymentUpdate) AddRootNodes(d ...*DeploymentNode) *DeploymentUpdate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return du.AddRootNodeIDs(ids...)
+}
+
+// AddDeploymentNodeIDs adds the "deployment_nodes" edge to the DeploymentNode entity by IDs.
+func (du *DeploymentUpdate) AddDeploymentNodeIDs(ids ...uuid.UUID) *DeploymentUpdate {
+	du.mutation.AddDeploymentNodeIDs(ids...)
+	return du
+}
+
+// AddDeploymentNodes adds the "deployment_nodes" edges to the DeploymentNode entity.
+func (du *DeploymentUpdate) AddDeploymentNodes(d ...*DeploymentNode) *DeploymentUpdate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return du.AddDeploymentNodeIDs(ids...)
 }
 
 // Mutation returns the DeploymentMutation object of the builder.
@@ -136,10 +137,46 @@ func (du *DeploymentUpdate) ClearBlueprint() *DeploymentUpdate {
 	return du
 }
 
-// ClearRequester clears the "requester" edge to the User entity.
-func (du *DeploymentUpdate) ClearRequester() *DeploymentUpdate {
-	du.mutation.ClearRequester()
+// ClearRootNodes clears all "root_nodes" edges to the DeploymentNode entity.
+func (du *DeploymentUpdate) ClearRootNodes() *DeploymentUpdate {
+	du.mutation.ClearRootNodes()
 	return du
+}
+
+// RemoveRootNodeIDs removes the "root_nodes" edge to DeploymentNode entities by IDs.
+func (du *DeploymentUpdate) RemoveRootNodeIDs(ids ...uuid.UUID) *DeploymentUpdate {
+	du.mutation.RemoveRootNodeIDs(ids...)
+	return du
+}
+
+// RemoveRootNodes removes "root_nodes" edges to DeploymentNode entities.
+func (du *DeploymentUpdate) RemoveRootNodes(d ...*DeploymentNode) *DeploymentUpdate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return du.RemoveRootNodeIDs(ids...)
+}
+
+// ClearDeploymentNodes clears all "deployment_nodes" edges to the DeploymentNode entity.
+func (du *DeploymentUpdate) ClearDeploymentNodes() *DeploymentUpdate {
+	du.mutation.ClearDeploymentNodes()
+	return du
+}
+
+// RemoveDeploymentNodeIDs removes the "deployment_nodes" edge to DeploymentNode entities by IDs.
+func (du *DeploymentUpdate) RemoveDeploymentNodeIDs(ids ...uuid.UUID) *DeploymentUpdate {
+	du.mutation.RemoveDeploymentNodeIDs(ids...)
+	return du
+}
+
+// RemoveDeploymentNodes removes "deployment_nodes" edges to DeploymentNode entities.
+func (du *DeploymentUpdate) RemoveDeploymentNodes(d ...*DeploymentNode) *DeploymentUpdate {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return du.RemoveDeploymentNodeIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -188,9 +225,6 @@ func (du *DeploymentUpdate) check() error {
 	if _, ok := du.mutation.BlueprintID(); du.mutation.BlueprintCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Deployment.blueprint"`)
 	}
-	if _, ok := du.mutation.RequesterID(); du.mutation.RequesterCleared() && !ok {
-		return errors.New(`ent: clearing a required unique edge "Deployment.requester"`)
-	}
 	return nil
 }
 
@@ -215,20 +249,11 @@ func (du *DeploymentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := du.mutation.Description(); ok {
 		_spec.SetField(deployment.FieldDescription, field.TypeString, value)
 	}
-	if du.mutation.DescriptionCleared() {
-		_spec.ClearField(deployment.FieldDescription, field.TypeString)
+	if value, ok := du.mutation.State(); ok {
+		_spec.SetField(deployment.FieldState, field.TypeEnum, value)
 	}
 	if value, ok := du.mutation.TemplateVars(); ok {
 		_spec.SetField(deployment.FieldTemplateVars, field.TypeJSON, value)
-	}
-	if value, ok := du.mutation.DeploymentVars(); ok {
-		_spec.SetField(deployment.FieldDeploymentVars, field.TypeJSON, value)
-	}
-	if value, ok := du.mutation.DeploymentState(); ok {
-		_spec.SetField(deployment.FieldDeploymentState, field.TypeJSON, value)
-	}
-	if value, ok := du.mutation.State(); ok {
-		_spec.SetField(deployment.FieldState, field.TypeEnum, value)
 	}
 	if du.mutation.BlueprintCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -259,28 +284,89 @@ func (du *DeploymentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if du.mutation.RequesterCleared() {
+	if du.mutation.RootNodesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   deployment.RequesterTable,
-			Columns: []string{deployment.RequesterColumn},
+			Table:   deployment.RootNodesTable,
+			Columns: []string{deployment.RootNodesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(deploymentnode.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := du.mutation.RequesterIDs(); len(nodes) > 0 {
+	if nodes := du.mutation.RemovedRootNodesIDs(); len(nodes) > 0 && !du.mutation.RootNodesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   deployment.RequesterTable,
-			Columns: []string{deployment.RequesterColumn},
+			Table:   deployment.RootNodesTable,
+			Columns: []string{deployment.RootNodesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(deploymentnode.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.RootNodesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   deployment.RootNodesTable,
+			Columns: []string{deployment.RootNodesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(deploymentnode.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if du.mutation.DeploymentNodesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   deployment.DeploymentNodesTable,
+			Columns: []string{deployment.DeploymentNodesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(deploymentnode.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.RemovedDeploymentNodesIDs(); len(nodes) > 0 && !du.mutation.DeploymentNodesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   deployment.DeploymentNodesTable,
+			Columns: []string{deployment.DeploymentNodesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(deploymentnode.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.DeploymentNodesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   deployment.DeploymentNodesTable,
+			Columns: []string{deployment.DeploymentNodesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(deploymentnode.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -342,30 +428,6 @@ func (duo *DeploymentUpdateOne) SetNillableDescription(s *string) *DeploymentUpd
 	return duo
 }
 
-// ClearDescription clears the value of the "description" field.
-func (duo *DeploymentUpdateOne) ClearDescription() *DeploymentUpdateOne {
-	duo.mutation.ClearDescription()
-	return duo
-}
-
-// SetTemplateVars sets the "template_vars" field.
-func (duo *DeploymentUpdateOne) SetTemplateVars(m map[string]interface{}) *DeploymentUpdateOne {
-	duo.mutation.SetTemplateVars(m)
-	return duo
-}
-
-// SetDeploymentVars sets the "deployment_vars" field.
-func (duo *DeploymentUpdateOne) SetDeploymentVars(m map[string]interface{}) *DeploymentUpdateOne {
-	duo.mutation.SetDeploymentVars(m)
-	return duo
-}
-
-// SetDeploymentState sets the "deployment_state" field.
-func (duo *DeploymentUpdateOne) SetDeploymentState(m map[string]string) *DeploymentUpdateOne {
-	duo.mutation.SetDeploymentState(m)
-	return duo
-}
-
 // SetState sets the "state" field.
 func (duo *DeploymentUpdateOne) SetState(d deployment.State) *DeploymentUpdateOne {
 	duo.mutation.SetState(d)
@@ -380,6 +442,12 @@ func (duo *DeploymentUpdateOne) SetNillableState(d *deployment.State) *Deploymen
 	return duo
 }
 
+// SetTemplateVars sets the "template_vars" field.
+func (duo *DeploymentUpdateOne) SetTemplateVars(m map[string]interface{}) *DeploymentUpdateOne {
+	duo.mutation.SetTemplateVars(m)
+	return duo
+}
+
 // SetBlueprintID sets the "blueprint" edge to the Blueprint entity by ID.
 func (duo *DeploymentUpdateOne) SetBlueprintID(id uuid.UUID) *DeploymentUpdateOne {
 	duo.mutation.SetBlueprintID(id)
@@ -391,15 +459,34 @@ func (duo *DeploymentUpdateOne) SetBlueprint(b *Blueprint) *DeploymentUpdateOne 
 	return duo.SetBlueprintID(b.ID)
 }
 
-// SetRequesterID sets the "requester" edge to the User entity by ID.
-func (duo *DeploymentUpdateOne) SetRequesterID(id uuid.UUID) *DeploymentUpdateOne {
-	duo.mutation.SetRequesterID(id)
+// AddRootNodeIDs adds the "root_nodes" edge to the DeploymentNode entity by IDs.
+func (duo *DeploymentUpdateOne) AddRootNodeIDs(ids ...uuid.UUID) *DeploymentUpdateOne {
+	duo.mutation.AddRootNodeIDs(ids...)
 	return duo
 }
 
-// SetRequester sets the "requester" edge to the User entity.
-func (duo *DeploymentUpdateOne) SetRequester(u *User) *DeploymentUpdateOne {
-	return duo.SetRequesterID(u.ID)
+// AddRootNodes adds the "root_nodes" edges to the DeploymentNode entity.
+func (duo *DeploymentUpdateOne) AddRootNodes(d ...*DeploymentNode) *DeploymentUpdateOne {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return duo.AddRootNodeIDs(ids...)
+}
+
+// AddDeploymentNodeIDs adds the "deployment_nodes" edge to the DeploymentNode entity by IDs.
+func (duo *DeploymentUpdateOne) AddDeploymentNodeIDs(ids ...uuid.UUID) *DeploymentUpdateOne {
+	duo.mutation.AddDeploymentNodeIDs(ids...)
+	return duo
+}
+
+// AddDeploymentNodes adds the "deployment_nodes" edges to the DeploymentNode entity.
+func (duo *DeploymentUpdateOne) AddDeploymentNodes(d ...*DeploymentNode) *DeploymentUpdateOne {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return duo.AddDeploymentNodeIDs(ids...)
 }
 
 // Mutation returns the DeploymentMutation object of the builder.
@@ -413,10 +500,46 @@ func (duo *DeploymentUpdateOne) ClearBlueprint() *DeploymentUpdateOne {
 	return duo
 }
 
-// ClearRequester clears the "requester" edge to the User entity.
-func (duo *DeploymentUpdateOne) ClearRequester() *DeploymentUpdateOne {
-	duo.mutation.ClearRequester()
+// ClearRootNodes clears all "root_nodes" edges to the DeploymentNode entity.
+func (duo *DeploymentUpdateOne) ClearRootNodes() *DeploymentUpdateOne {
+	duo.mutation.ClearRootNodes()
 	return duo
+}
+
+// RemoveRootNodeIDs removes the "root_nodes" edge to DeploymentNode entities by IDs.
+func (duo *DeploymentUpdateOne) RemoveRootNodeIDs(ids ...uuid.UUID) *DeploymentUpdateOne {
+	duo.mutation.RemoveRootNodeIDs(ids...)
+	return duo
+}
+
+// RemoveRootNodes removes "root_nodes" edges to DeploymentNode entities.
+func (duo *DeploymentUpdateOne) RemoveRootNodes(d ...*DeploymentNode) *DeploymentUpdateOne {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return duo.RemoveRootNodeIDs(ids...)
+}
+
+// ClearDeploymentNodes clears all "deployment_nodes" edges to the DeploymentNode entity.
+func (duo *DeploymentUpdateOne) ClearDeploymentNodes() *DeploymentUpdateOne {
+	duo.mutation.ClearDeploymentNodes()
+	return duo
+}
+
+// RemoveDeploymentNodeIDs removes the "deployment_nodes" edge to DeploymentNode entities by IDs.
+func (duo *DeploymentUpdateOne) RemoveDeploymentNodeIDs(ids ...uuid.UUID) *DeploymentUpdateOne {
+	duo.mutation.RemoveDeploymentNodeIDs(ids...)
+	return duo
+}
+
+// RemoveDeploymentNodes removes "deployment_nodes" edges to DeploymentNode entities.
+func (duo *DeploymentUpdateOne) RemoveDeploymentNodes(d ...*DeploymentNode) *DeploymentUpdateOne {
+	ids := make([]uuid.UUID, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return duo.RemoveDeploymentNodeIDs(ids...)
 }
 
 // Where appends a list predicates to the DeploymentUpdate builder.
@@ -478,9 +601,6 @@ func (duo *DeploymentUpdateOne) check() error {
 	if _, ok := duo.mutation.BlueprintID(); duo.mutation.BlueprintCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Deployment.blueprint"`)
 	}
-	if _, ok := duo.mutation.RequesterID(); duo.mutation.RequesterCleared() && !ok {
-		return errors.New(`ent: clearing a required unique edge "Deployment.requester"`)
-	}
 	return nil
 }
 
@@ -522,20 +642,11 @@ func (duo *DeploymentUpdateOne) sqlSave(ctx context.Context) (_node *Deployment,
 	if value, ok := duo.mutation.Description(); ok {
 		_spec.SetField(deployment.FieldDescription, field.TypeString, value)
 	}
-	if duo.mutation.DescriptionCleared() {
-		_spec.ClearField(deployment.FieldDescription, field.TypeString)
+	if value, ok := duo.mutation.State(); ok {
+		_spec.SetField(deployment.FieldState, field.TypeEnum, value)
 	}
 	if value, ok := duo.mutation.TemplateVars(); ok {
 		_spec.SetField(deployment.FieldTemplateVars, field.TypeJSON, value)
-	}
-	if value, ok := duo.mutation.DeploymentVars(); ok {
-		_spec.SetField(deployment.FieldDeploymentVars, field.TypeJSON, value)
-	}
-	if value, ok := duo.mutation.DeploymentState(); ok {
-		_spec.SetField(deployment.FieldDeploymentState, field.TypeJSON, value)
-	}
-	if value, ok := duo.mutation.State(); ok {
-		_spec.SetField(deployment.FieldState, field.TypeEnum, value)
 	}
 	if duo.mutation.BlueprintCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -566,28 +677,89 @@ func (duo *DeploymentUpdateOne) sqlSave(ctx context.Context) (_node *Deployment,
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if duo.mutation.RequesterCleared() {
+	if duo.mutation.RootNodesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   deployment.RequesterTable,
-			Columns: []string{deployment.RequesterColumn},
+			Table:   deployment.RootNodesTable,
+			Columns: []string{deployment.RootNodesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(deploymentnode.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := duo.mutation.RequesterIDs(); len(nodes) > 0 {
+	if nodes := duo.mutation.RemovedRootNodesIDs(); len(nodes) > 0 && !duo.mutation.RootNodesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   deployment.RequesterTable,
-			Columns: []string{deployment.RequesterColumn},
+			Table:   deployment.RootNodesTable,
+			Columns: []string{deployment.RootNodesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(deploymentnode.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.RootNodesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   deployment.RootNodesTable,
+			Columns: []string{deployment.RootNodesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(deploymentnode.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if duo.mutation.DeploymentNodesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   deployment.DeploymentNodesTable,
+			Columns: []string{deployment.DeploymentNodesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(deploymentnode.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.RemovedDeploymentNodesIDs(); len(nodes) > 0 && !duo.mutation.DeploymentNodesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   deployment.DeploymentNodesTable,
+			Columns: []string{deployment.DeploymentNodesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(deploymentnode.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.DeploymentNodesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   deployment.DeploymentNodesTable,
+			Columns: []string{deployment.DeploymentNodesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(deploymentnode.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -18,11 +18,13 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
+	"github.com/cble-platform/cble-backend/ent/deploymentnode"
 	"github.com/cble-platform/cble-backend/ent/group"
 	"github.com/cble-platform/cble-backend/ent/permission"
 	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
 	"github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/cble-platform/cble-backend/ent/providercommand"
+	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/cble-platform/cble-backend/ent/user"
 )
 
@@ -35,6 +37,8 @@ type Client struct {
 	Blueprint *BlueprintClient
 	// Deployment is the client for interacting with the Deployment builders.
 	Deployment *DeploymentClient
+	// DeploymentNode is the client for interacting with the DeploymentNode builders.
+	DeploymentNode *DeploymentNodeClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
 	// Permission is the client for interacting with the Permission builders.
@@ -45,6 +49,8 @@ type Client struct {
 	Provider *ProviderClient
 	// ProviderCommand is the client for interacting with the ProviderCommand builders.
 	ProviderCommand *ProviderCommandClient
+	// Resource is the client for interacting with the Resource builders.
+	Resource *ResourceClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -60,11 +66,13 @@ func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Blueprint = NewBlueprintClient(c.config)
 	c.Deployment = NewDeploymentClient(c.config)
+	c.DeploymentNode = NewDeploymentNodeClient(c.config)
 	c.Group = NewGroupClient(c.config)
 	c.Permission = NewPermissionClient(c.config)
 	c.PermissionPolicy = NewPermissionPolicyClient(c.config)
 	c.Provider = NewProviderClient(c.config)
 	c.ProviderCommand = NewProviderCommandClient(c.config)
+	c.Resource = NewResourceClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -160,11 +168,13 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		config:           cfg,
 		Blueprint:        NewBlueprintClient(cfg),
 		Deployment:       NewDeploymentClient(cfg),
+		DeploymentNode:   NewDeploymentNodeClient(cfg),
 		Group:            NewGroupClient(cfg),
 		Permission:       NewPermissionClient(cfg),
 		PermissionPolicy: NewPermissionPolicyClient(cfg),
 		Provider:         NewProviderClient(cfg),
 		ProviderCommand:  NewProviderCommandClient(cfg),
+		Resource:         NewResourceClient(cfg),
 		User:             NewUserClient(cfg),
 	}, nil
 }
@@ -187,11 +197,13 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		config:           cfg,
 		Blueprint:        NewBlueprintClient(cfg),
 		Deployment:       NewDeploymentClient(cfg),
+		DeploymentNode:   NewDeploymentNodeClient(cfg),
 		Group:            NewGroupClient(cfg),
 		Permission:       NewPermissionClient(cfg),
 		PermissionPolicy: NewPermissionPolicyClient(cfg),
 		Provider:         NewProviderClient(cfg),
 		ProviderCommand:  NewProviderCommandClient(cfg),
+		Resource:         NewResourceClient(cfg),
 		User:             NewUserClient(cfg),
 	}, nil
 }
@@ -222,8 +234,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Blueprint, c.Deployment, c.Group, c.Permission, c.PermissionPolicy,
-		c.Provider, c.ProviderCommand, c.User,
+		c.Blueprint, c.Deployment, c.DeploymentNode, c.Group, c.Permission,
+		c.PermissionPolicy, c.Provider, c.ProviderCommand, c.Resource, c.User,
 	} {
 		n.Use(hooks...)
 	}
@@ -233,8 +245,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Blueprint, c.Deployment, c.Group, c.Permission, c.PermissionPolicy,
-		c.Provider, c.ProviderCommand, c.User,
+		c.Blueprint, c.Deployment, c.DeploymentNode, c.Group, c.Permission,
+		c.PermissionPolicy, c.Provider, c.ProviderCommand, c.Resource, c.User,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -247,6 +259,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Blueprint.mutate(ctx, m)
 	case *DeploymentMutation:
 		return c.Deployment.mutate(ctx, m)
+	case *DeploymentNodeMutation:
+		return c.DeploymentNode.mutate(ctx, m)
 	case *GroupMutation:
 		return c.Group.mutate(ctx, m)
 	case *PermissionMutation:
@@ -257,6 +271,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Provider.mutate(ctx, m)
 	case *ProviderCommandMutation:
 		return c.ProviderCommand.mutate(ctx, m)
+	case *ResourceMutation:
+		return c.Resource.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
 	default:
@@ -372,22 +388,6 @@ func (c *BlueprintClient) GetX(ctx context.Context, id uuid.UUID) *Blueprint {
 	return obj
 }
 
-// QueryParentGroup queries the parent_group edge of a Blueprint.
-func (c *BlueprintClient) QueryParentGroup(b *Blueprint) *GroupQuery {
-	query := (&GroupClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := b.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blueprint.Table, blueprint.FieldID, id),
-			sqlgraph.To(group.Table, group.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, blueprint.ParentGroupTable, blueprint.ParentGroupColumn),
-		)
-		fromV = sqlgraph.Neighbors(b.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryProvider queries the provider edge of a Blueprint.
 func (c *BlueprintClient) QueryProvider(b *Blueprint) *ProviderQuery {
 	query := (&ProviderClient{config: c.config}).Query()
@@ -397,6 +397,22 @@ func (c *BlueprintClient) QueryProvider(b *Blueprint) *ProviderQuery {
 			sqlgraph.From(blueprint.Table, blueprint.FieldID, id),
 			sqlgraph.To(provider.Table, provider.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, blueprint.ProviderTable, blueprint.ProviderColumn),
+		)
+		fromV = sqlgraph.Neighbors(b.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryResources queries the resources edge of a Blueprint.
+func (c *BlueprintClient) QueryResources(b *Blueprint) *ResourceQuery {
+	query := (&ResourceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := b.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(blueprint.Table, blueprint.FieldID, id),
+			sqlgraph.To(resource.Table, resource.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, blueprint.ResourcesTable, blueprint.ResourcesColumn),
 		)
 		fromV = sqlgraph.Neighbors(b.driver.Dialect(), step)
 		return fromV, nil
@@ -569,15 +585,31 @@ func (c *DeploymentClient) QueryBlueprint(d *Deployment) *BlueprintQuery {
 	return query
 }
 
-// QueryRequester queries the requester edge of a Deployment.
-func (c *DeploymentClient) QueryRequester(d *Deployment) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
+// QueryRootNodes queries the root_nodes edge of a Deployment.
+func (c *DeploymentClient) QueryRootNodes(d *Deployment) *DeploymentNodeQuery {
+	query := (&DeploymentNodeClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := d.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(deployment.Table, deployment.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, deployment.RequesterTable, deployment.RequesterColumn),
+			sqlgraph.To(deploymentnode.Table, deploymentnode.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, deployment.RootNodesTable, deployment.RootNodesColumn),
+		)
+		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryDeploymentNodes queries the deployment_nodes edge of a Deployment.
+func (c *DeploymentClient) QueryDeploymentNodes(d *Deployment) *DeploymentNodeQuery {
+	query := (&DeploymentNodeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := d.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(deployment.Table, deployment.FieldID, id),
+			sqlgraph.To(deploymentnode.Table, deploymentnode.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, deployment.DeploymentNodesTable, deployment.DeploymentNodesColumn),
 		)
 		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
 		return fromV, nil
@@ -607,6 +639,203 @@ func (c *DeploymentClient) mutate(ctx context.Context, m *DeploymentMutation) (V
 		return (&DeploymentDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Deployment mutation op: %q", m.Op())
+	}
+}
+
+// DeploymentNodeClient is a client for the DeploymentNode schema.
+type DeploymentNodeClient struct {
+	config
+}
+
+// NewDeploymentNodeClient returns a client for the DeploymentNode from the given config.
+func NewDeploymentNodeClient(c config) *DeploymentNodeClient {
+	return &DeploymentNodeClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `deploymentnode.Hooks(f(g(h())))`.
+func (c *DeploymentNodeClient) Use(hooks ...Hook) {
+	c.hooks.DeploymentNode = append(c.hooks.DeploymentNode, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `deploymentnode.Intercept(f(g(h())))`.
+func (c *DeploymentNodeClient) Intercept(interceptors ...Interceptor) {
+	c.inters.DeploymentNode = append(c.inters.DeploymentNode, interceptors...)
+}
+
+// Create returns a builder for creating a DeploymentNode entity.
+func (c *DeploymentNodeClient) Create() *DeploymentNodeCreate {
+	mutation := newDeploymentNodeMutation(c.config, OpCreate)
+	return &DeploymentNodeCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of DeploymentNode entities.
+func (c *DeploymentNodeClient) CreateBulk(builders ...*DeploymentNodeCreate) *DeploymentNodeCreateBulk {
+	return &DeploymentNodeCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *DeploymentNodeClient) MapCreateBulk(slice any, setFunc func(*DeploymentNodeCreate, int)) *DeploymentNodeCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &DeploymentNodeCreateBulk{err: fmt.Errorf("calling to DeploymentNodeClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*DeploymentNodeCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &DeploymentNodeCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for DeploymentNode.
+func (c *DeploymentNodeClient) Update() *DeploymentNodeUpdate {
+	mutation := newDeploymentNodeMutation(c.config, OpUpdate)
+	return &DeploymentNodeUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *DeploymentNodeClient) UpdateOne(dn *DeploymentNode) *DeploymentNodeUpdateOne {
+	mutation := newDeploymentNodeMutation(c.config, OpUpdateOne, withDeploymentNode(dn))
+	return &DeploymentNodeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *DeploymentNodeClient) UpdateOneID(id uuid.UUID) *DeploymentNodeUpdateOne {
+	mutation := newDeploymentNodeMutation(c.config, OpUpdateOne, withDeploymentNodeID(id))
+	return &DeploymentNodeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for DeploymentNode.
+func (c *DeploymentNodeClient) Delete() *DeploymentNodeDelete {
+	mutation := newDeploymentNodeMutation(c.config, OpDelete)
+	return &DeploymentNodeDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *DeploymentNodeClient) DeleteOne(dn *DeploymentNode) *DeploymentNodeDeleteOne {
+	return c.DeleteOneID(dn.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *DeploymentNodeClient) DeleteOneID(id uuid.UUID) *DeploymentNodeDeleteOne {
+	builder := c.Delete().Where(deploymentnode.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &DeploymentNodeDeleteOne{builder}
+}
+
+// Query returns a query builder for DeploymentNode.
+func (c *DeploymentNodeClient) Query() *DeploymentNodeQuery {
+	return &DeploymentNodeQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeDeploymentNode},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a DeploymentNode entity by its id.
+func (c *DeploymentNodeClient) Get(ctx context.Context, id uuid.UUID) (*DeploymentNode, error) {
+	return c.Query().Where(deploymentnode.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *DeploymentNodeClient) GetX(ctx context.Context, id uuid.UUID) *DeploymentNode {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryDeployment queries the deployment edge of a DeploymentNode.
+func (c *DeploymentNodeClient) QueryDeployment(dn *DeploymentNode) *DeploymentQuery {
+	query := (&DeploymentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := dn.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(deploymentnode.Table, deploymentnode.FieldID, id),
+			sqlgraph.To(deployment.Table, deployment.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, deploymentnode.DeploymentTable, deploymentnode.DeploymentColumn),
+		)
+		fromV = sqlgraph.Neighbors(dn.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryResource queries the resource edge of a DeploymentNode.
+func (c *DeploymentNodeClient) QueryResource(dn *DeploymentNode) *ResourceQuery {
+	query := (&ResourceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := dn.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(deploymentnode.Table, deploymentnode.FieldID, id),
+			sqlgraph.To(resource.Table, resource.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, deploymentnode.ResourceTable, deploymentnode.ResourceColumn),
+		)
+		fromV = sqlgraph.Neighbors(dn.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPrevNodes queries the prev_nodes edge of a DeploymentNode.
+func (c *DeploymentNodeClient) QueryPrevNodes(dn *DeploymentNode) *DeploymentNodeQuery {
+	query := (&DeploymentNodeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := dn.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(deploymentnode.Table, deploymentnode.FieldID, id),
+			sqlgraph.To(deploymentnode.Table, deploymentnode.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, deploymentnode.PrevNodesTable, deploymentnode.PrevNodesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(dn.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryNextNodes queries the next_nodes edge of a DeploymentNode.
+func (c *DeploymentNodeClient) QueryNextNodes(dn *DeploymentNode) *DeploymentNodeQuery {
+	query := (&DeploymentNodeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := dn.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(deploymentnode.Table, deploymentnode.FieldID, id),
+			sqlgraph.To(deploymentnode.Table, deploymentnode.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, deploymentnode.NextNodesTable, deploymentnode.NextNodesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(dn.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *DeploymentNodeClient) Hooks() []Hook {
+	return c.hooks.DeploymentNode
+}
+
+// Interceptors returns the client interceptors.
+func (c *DeploymentNodeClient) Interceptors() []Interceptor {
+	return c.inters.DeploymentNode
+}
+
+func (c *DeploymentNodeClient) mutate(ctx context.Context, m *DeploymentNodeMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&DeploymentNodeCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&DeploymentNodeUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&DeploymentNodeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&DeploymentNodeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown DeploymentNode mutation op: %q", m.Op())
 	}
 }
 
@@ -775,22 +1004,6 @@ func (c *GroupClient) QueryPermissionPolicies(gr *Group) *PermissionPolicyQuery 
 			sqlgraph.From(group.Table, group.FieldID, id),
 			sqlgraph.To(permissionpolicy.Table, permissionpolicy.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, group.PermissionPoliciesTable, group.PermissionPoliciesColumn),
-		)
-		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryBlueprints queries the blueprints edge of a Group.
-func (c *GroupClient) QueryBlueprints(gr *Group) *BlueprintQuery {
-	query := (&BlueprintClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := gr.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(group.Table, group.FieldID, id),
-			sqlgraph.To(blueprint.Table, blueprint.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, group.BlueprintsTable, group.BlueprintsColumn),
 		)
 		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
 		return fromV, nil
@@ -1451,6 +1664,187 @@ func (c *ProviderCommandClient) mutate(ctx context.Context, m *ProviderCommandMu
 	}
 }
 
+// ResourceClient is a client for the Resource schema.
+type ResourceClient struct {
+	config
+}
+
+// NewResourceClient returns a client for the Resource from the given config.
+func NewResourceClient(c config) *ResourceClient {
+	return &ResourceClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `resource.Hooks(f(g(h())))`.
+func (c *ResourceClient) Use(hooks ...Hook) {
+	c.hooks.Resource = append(c.hooks.Resource, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `resource.Intercept(f(g(h())))`.
+func (c *ResourceClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Resource = append(c.inters.Resource, interceptors...)
+}
+
+// Create returns a builder for creating a Resource entity.
+func (c *ResourceClient) Create() *ResourceCreate {
+	mutation := newResourceMutation(c.config, OpCreate)
+	return &ResourceCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Resource entities.
+func (c *ResourceClient) CreateBulk(builders ...*ResourceCreate) *ResourceCreateBulk {
+	return &ResourceCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ResourceClient) MapCreateBulk(slice any, setFunc func(*ResourceCreate, int)) *ResourceCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ResourceCreateBulk{err: fmt.Errorf("calling to ResourceClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ResourceCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ResourceCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Resource.
+func (c *ResourceClient) Update() *ResourceUpdate {
+	mutation := newResourceMutation(c.config, OpUpdate)
+	return &ResourceUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ResourceClient) UpdateOne(r *Resource) *ResourceUpdateOne {
+	mutation := newResourceMutation(c.config, OpUpdateOne, withResource(r))
+	return &ResourceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ResourceClient) UpdateOneID(id uuid.UUID) *ResourceUpdateOne {
+	mutation := newResourceMutation(c.config, OpUpdateOne, withResourceID(id))
+	return &ResourceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Resource.
+func (c *ResourceClient) Delete() *ResourceDelete {
+	mutation := newResourceMutation(c.config, OpDelete)
+	return &ResourceDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ResourceClient) DeleteOne(r *Resource) *ResourceDeleteOne {
+	return c.DeleteOneID(r.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ResourceClient) DeleteOneID(id uuid.UUID) *ResourceDeleteOne {
+	builder := c.Delete().Where(resource.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ResourceDeleteOne{builder}
+}
+
+// Query returns a query builder for Resource.
+func (c *ResourceClient) Query() *ResourceQuery {
+	return &ResourceQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeResource},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Resource entity by its id.
+func (c *ResourceClient) Get(ctx context.Context, id uuid.UUID) (*Resource, error) {
+	return c.Query().Where(resource.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ResourceClient) GetX(ctx context.Context, id uuid.UUID) *Resource {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryBlueprint queries the blueprint edge of a Resource.
+func (c *ResourceClient) QueryBlueprint(r *Resource) *BlueprintQuery {
+	query := (&BlueprintClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(resource.Table, resource.FieldID, id),
+			sqlgraph.To(blueprint.Table, blueprint.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, resource.BlueprintTable, resource.BlueprintColumn),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryDependsOn queries the depends_on edge of a Resource.
+func (c *ResourceClient) QueryDependsOn(r *Resource) *ResourceQuery {
+	query := (&ResourceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(resource.Table, resource.FieldID, id),
+			sqlgraph.To(resource.Table, resource.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, resource.DependsOnTable, resource.DependsOnPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRequiredBy queries the required_by edge of a Resource.
+func (c *ResourceClient) QueryRequiredBy(r *Resource) *ResourceQuery {
+	query := (&ResourceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(resource.Table, resource.FieldID, id),
+			sqlgraph.To(resource.Table, resource.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, resource.RequiredByTable, resource.RequiredByPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ResourceClient) Hooks() []Hook {
+	return c.hooks.Resource
+}
+
+// Interceptors returns the client interceptors.
+func (c *ResourceClient) Interceptors() []Interceptor {
+	return c.inters.Resource
+}
+
+func (c *ResourceClient) mutate(ctx context.Context, m *ResourceMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ResourceCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ResourceUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ResourceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ResourceDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Resource mutation op: %q", m.Op())
+	}
+}
+
 // UserClient is a client for the User schema.
 type UserClient struct {
 	config
@@ -1575,22 +1969,6 @@ func (c *UserClient) QueryGroups(u *User) *GroupQuery {
 	return query
 }
 
-// QueryDeployments queries the deployments edge of a User.
-func (c *UserClient) QueryDeployments(u *User) *DeploymentQuery {
-	query := (&DeploymentClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := u.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(deployment.Table, deployment.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, user.DeploymentsTable, user.DeploymentsColumn),
-		)
-		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -1619,11 +1997,11 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Blueprint, Deployment, Group, Permission, PermissionPolicy, Provider,
-		ProviderCommand, User []ent.Hook
+		Blueprint, Deployment, DeploymentNode, Group, Permission, PermissionPolicy,
+		Provider, ProviderCommand, Resource, User []ent.Hook
 	}
 	inters struct {
-		Blueprint, Deployment, Group, Permission, PermissionPolicy, Provider,
-		ProviderCommand, User []ent.Interceptor
+		Blueprint, Deployment, DeploymentNode, Group, Permission, PermissionPolicy,
+		Provider, ProviderCommand, Resource, User []ent.Interceptor
 	}
 )

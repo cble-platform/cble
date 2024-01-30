@@ -2,22 +2,14 @@ package providers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
 	"syscall"
-	"time"
 
 	"github.com/cble-platform/cble-backend/ent"
-	"github.com/cble-platform/cble-backend/ent/deployment"
-	provider "github.com/cble-platform/cble-backend/ent/provider"
-	"github.com/cble-platform/cble-backend/ent/providercommand"
 	"github.com/cble-platform/cble-backend/internal/git"
-	"github.com/cble-platform/cble-provider-grpc/pkg/common"
-	providerGRPC "github.com/cble-platform/cble-provider-grpc/pkg/provider"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -92,425 +84,425 @@ func (ps *CBLEServer) runProvider(ctx context.Context, entProvider *ent.Provider
 }
 
 func (ps *CBLEServer) startProviderConnection(ctx context.Context, shutdown chan bool, providerId string) {
-	registeredProvider, exists := ps.registeredProviders.Load(providerId)
-	if !exists {
-		logrus.Errorf("attempted to start provider on non-registered provider (%s)", providerId)
-		return
-	}
+	// registeredProvider, exists := ps.registeredProviders.Load(providerId)
+	// if !exists {
+	// 	logrus.Errorf("attempted to start provider on non-registered provider (%s)", providerId)
+	// 	return
+	// }
 
-	logrus.Debugf("starting provider connection to provider %s with socket ID %s", providerId, registeredProvider.(RegisteredProvider).SocketID)
+	// logrus.Debugf("starting provider connection to provider %s with socket ID %s", providerId, registeredProvider.(RegisteredProvider).SocketID)
 
-	providerOpts := &providerGRPC.ProviderClientOptions{
-		// TODO: implement TLS for provider connections
-		TLS:      false,
-		CAFile:   "",
-		SocketID: registeredProvider.(RegisteredProvider).SocketID,
-	}
-	providerConn, err := providerGRPC.Connect(providerOpts)
-	if err != nil {
-		logrus.Errorf("failed to connect to provider gRPC server (%s): %v", providerId, err)
-		return
-	}
-	client, err := providerGRPC.NewClient(ctx, providerConn)
-	if err != nil {
-		logrus.Errorf("failed to create client for provider (%s): %v", providerId, err)
-		return
-	}
-	// Store the client reference for synchronous use
-	ps.providerClients.Store(providerId, client)
+	// providerOpts := &providerGRPC.ProviderClientOptions{
+	// 	// TODO: implement TLS for provider connections
+	// 	TLS:      false,
+	// 	CAFile:   "",
+	// 	SocketID: registeredProvider.(RegisteredProvider).SocketID,
+	// }
+	// providerConn, err := providerGRPC.Connect(providerOpts)
+	// if err != nil {
+	// 	logrus.Errorf("failed to connect to provider gRPC server (%s): %v", providerId, err)
+	// 	return
+	// }
+	// client, err := providerGRPC.NewClient(ctx, providerConn)
+	// if err != nil {
+	// 	logrus.Errorf("failed to create client for provider (%s): %v", providerId, err)
+	// 	return
+	// }
+	// // Store the client reference for synchronous use
+	// ps.providerClients.Store(providerId, client)
 
-	// Convert provider ID to UUID for ENT queries
-	providerUuid, err := uuid.Parse(providerId)
-	if err != nil {
-		logrus.Errorf("failed to parse provider key \"%s\" when starting provider connection: %v", providerId, err)
-		return
-	}
+	// // Convert provider ID to UUID for ENT queries
+	// providerUuid, err := uuid.Parse(providerId)
+	// if err != nil {
+	// 	logrus.Errorf("failed to parse provider key \"%s\" when starting provider connection: %v", providerId, err)
+	// 	return
+	// }
 
-	// Provider connection event loop
-	for {
-		select {
-		case <-shutdown:
-			logrus.Warnf("Gracefully shutting down provider client %s", providerId)
-			return
-		case <-ctx.Done():
-			logrus.Warnf("Gracefully shutting down provider client %s", providerId)
-			return
-		default:
-			// If not cancelling, query ent for all queued commands for this provider
-			entCommands, err := ps.entClient.ProviderCommand.Query().Where(
-				providercommand.And(
-					providercommand.StatusEQ(providercommand.StatusQUEUED),
-					providercommand.HasProviderWith(provider.IDEQ(providerUuid)),
-				),
-			).All(ctx)
-			if err != nil {
-				logrus.Errorf("failed to query commands for provider \"%s\": %v", providerId, err)
-				continue
-			}
+	// // Provider connection event loop
+	// for {
+	// 	select {
+	// 	case <-shutdown:
+	// 		logrus.Warnf("Gracefully shutting down provider client %s", providerId)
+	// 		return
+	// 	case <-ctx.Done():
+	// 		logrus.Warnf("Gracefully shutting down provider client %s", providerId)
+	// 		return
+	// 	default:
+	// 		// If not cancelling, query ent for all queued commands for this provider
+	// 		entCommands, err := ps.entClient.ProviderCommand.Query().Where(
+	// 			providercommand.And(
+	// 				providercommand.StatusEQ(providercommand.StatusQUEUED),
+	// 				providercommand.HasProviderWith(provider.IDEQ(providerUuid)),
+	// 			),
+	// 		).All(ctx)
+	// 		if err != nil {
+	// 			logrus.Errorf("failed to query commands for provider \"%s\": %v", providerId, err)
+	// 			continue
+	// 		}
 
-			// Run all of the commands in go routines
-			for _, entCommand := range entCommands {
-				go ps.handleProviderCommand(ctx, client, entCommand)
-			}
+	// 		// Run all of the commands in go routines
+	// 		for _, entCommand := range entCommands {
+	// 			// go ps.handleProviderCommand(ctx, client, entCommand)
+	// 		}
 
-			// Wait 10 seconds before querying again
-			time.Sleep(10 * time.Second)
-		}
-	}
+	// 		// Wait 10 seconds before querying again
+	// 		time.Sleep(10 * time.Second)
+	// 	}
+	// }
 }
 
-func (ps *CBLEServer) handleProviderCommand(ctx context.Context, client providerGRPC.ProviderClient, entCommand *ent.ProviderCommand) {
-	// Set the command start time and mark as in progress
-	err := entCommand.Update().SetStatus(providercommand.StatusINPROGRESS).SetStartTime(time.Now()).Exec(ctx)
-	if err != nil {
-		logrus.Errorf("failed to set command status to in progress and start time to time.Now()")
-		// Proceed as this isn't a critical failure
-	}
+// func (ps *CBLEServer) handleProviderCommand(ctx context.Context, client providerGRPC.ProviderClient, entCommand *ent.ProviderCommand) {
+// 	// Set the command start time and mark as in progress
+// 	err := entCommand.Update().SetStatus(providercommand.StatusINPROGRESS).SetStartTime(time.Now()).Exec(ctx)
+// 	if err != nil {
+// 		logrus.Errorf("failed to set command status to in progress and start time to time.Now()")
+// 		// Proceed as this isn't a critical failure
+// 	}
 
-	switch entCommand.CommandType {
-	case providercommand.CommandTypeCONFIGURE:
-		// Get the provider associated with command
-		entProvider, err := entCommand.QueryProvider().Only(ctx)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to query provider from command", err)
-			return
-		}
+// 	switch entCommand.CommandType {
+// 	case providercommand.CommandTypeCONFIGURE:
+// 		// Get the provider associated with command
+// 		entProvider, err := entCommand.QueryProvider().Only(ctx)
+// 		if err != nil {
+// 			failCommand(ctx, entCommand, "failed to query provider from command", err)
+// 			return
+// 		}
 
-		// Generate the configuration command
-		configureCommand := &providerGRPC.ConfigureRequest{
-			Config: entProvider.ConfigBytes,
-		}
+// 		// Generate the configuration command
+// 		configureCommand := &providerGRPC.ConfigureRequest{
+// 			Config: entProvider.ConfigBytes,
+// 		}
 
-		// Send the configuration request
-		reply, err := client.Configure(ctx, configureCommand)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to call provider configure", err)
-			return
-		}
+// 		// Send the configuration request
+// 		reply, err := client.Configure(ctx, configureCommand)
+// 		if err != nil {
+// 			failCommand(ctx, entCommand, "failed to call provider configure", err)
+// 			return
+// 		}
 
-		// Encode response into bytes for database
-		replyBytes, err := json.Marshal(reply)
-		if err != nil {
-			logrus.Error("failed to marshal reply bytes into database")
-		}
+// 		// Encode response into bytes for database
+// 		replyBytes, err := json.Marshal(reply)
+// 		if err != nil {
+// 			logrus.Error("failed to marshal reply bytes into database")
+// 		}
 
-		// Update the output of the command
-		err = entCommand.Update().
-			SetStatus(providercommand.StatusSUCCEEDED).
-			SetOutput(replyBytes).
-			SetEndTime(time.Now()).
-			Exec(ctx)
-		if err != nil {
-			logrus.Errorf("failed to update command state and output")
-		}
+// 		// Update the output of the command
+// 		err = entCommand.Update().
+// 			SetStatus(providercommand.StatusSUCCEEDED).
+// 			SetOutput(replyBytes).
+// 			SetEndTime(time.Now()).
+// 			Exec(ctx)
+// 		if err != nil {
+// 			logrus.Errorf("failed to update command state and output")
+// 		}
 
-	case providercommand.CommandTypeDEPLOY:
-		// Get the deployment and blueprint associated with command
-		entDeployment, err := entCommand.QueryDeployment().Only(ctx)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to query deployment from command", err)
-			return
-		}
-		entBlueprint, err := entDeployment.QueryBlueprint().Only(ctx)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to query blueprint from deployment", err)
-			return
-		}
+// 	case providercommand.CommandTypeDEPLOY:
+// 		// Get the deployment and blueprint associated with command
+// 		entDeployment, err := entCommand.QueryDeployment().Only(ctx)
+// 		if err != nil {
+// 			failCommand(ctx, entCommand, "failed to query deployment from command", err)
+// 			return
+// 		}
+// 		entBlueprint, err := entDeployment.QueryBlueprint().Only(ctx)
+// 		if err != nil {
+// 			failCommand(ctx, entCommand, "failed to query blueprint from deployment", err)
+// 			return
+// 		}
 
-		// Mark deployment as in-progress
-		entDeployment, err = entDeployment.Update().
-			SetState(deployment.StateINPROGRESS).
-			Save(ctx)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to set deployment state", err)
-		}
+// 		// Mark deployment as in-progress
+// 		entDeployment, err = entDeployment.Update().
+// 			SetState(deployment.StateINPROGRESS).
+// 			Save(ctx)
+// 		if err != nil {
+// 			failCommand(ctx, entCommand, "failed to set deployment state", err)
+// 		}
 
-		// Convert maps into protobuf-friendly structs
-		templateVarsStruct, deploymentVarsStruct, deploymentStateStruct, err := DeploymentMapsToStructs(entDeployment)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to convert deployment maps", err)
-			return
-		}
+// 		// Convert maps into protobuf-friendly structs
+// 		templateVarsStruct, deploymentVarsStruct, deploymentStateStruct, err := DeploymentMapsToStructs(entDeployment)
+// 		if err != nil {
+// 			failCommand(ctx, entCommand, "failed to convert deployment maps", err)
+// 			return
+// 		}
 
-		// Generate the deployment command
-		deployCommand := &providerGRPC.DeployRequest{
-			DeploymentId:    entDeployment.ID.String(),
-			Blueprint:       entBlueprint.BlueprintTemplate,
-			TemplateVars:    templateVarsStruct,
-			DeploymentState: deploymentStateStruct,
-			DeploymentVars:  deploymentVarsStruct,
-		}
+// 		// Generate the deployment command
+// 		deployCommand := &providerGRPC.DeployRequest{
+// 			DeploymentId:    entDeployment.ID.String(),
+// 			Blueprint:       entBlueprint.BlueprintTemplate,
+// 			TemplateVars:    templateVarsStruct,
+// 			DeploymentState: deploymentStateStruct,
+// 			DeploymentVars:  deploymentVarsStruct,
+// 		}
 
-		// Send the deploy request
-		reply, err := client.Deploy(ctx, deployCommand)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to call provider deploy", err)
-			return
-		}
+// 		// Send the deploy request
+// 		reply, err := client.Deploy(ctx, deployCommand)
+// 		if err != nil {
+// 			failCommand(ctx, entCommand, "failed to call provider deploy", err)
+// 			return
+// 		}
 
-		// Convert deployment state from map[string]interface{} to map[string]string
-		newDeploymentState := make(map[string]string, len(reply.DeploymentState.AsMap()))
-		for k, v := range reply.DeploymentState.AsMap() {
-			stateVal, ok := v.(string)
-			if ok {
-				newDeploymentState[k] = stateVal
-			} else {
-				logrus.Warnf("deployment state value of %v is not string type as expected", v)
-			}
-		}
+// 		// Convert deployment state from map[string]interface{} to map[string]string
+// 		newDeploymentState := make(map[string]string, len(reply.DeploymentState.AsMap()))
+// 		for k, v := range reply.DeploymentState.AsMap() {
+// 			stateVal, ok := v.(string)
+// 			if ok {
+// 				newDeploymentState[k] = stateVal
+// 			} else {
+// 				logrus.Warnf("deployment state value of %v is not string type as expected", v)
+// 			}
+// 		}
 
-		// Update the deployment with the resulting state and variables
-		err = entDeployment.Update().
-			SetDeploymentState(newDeploymentState).
-			SetDeploymentVars(reply.DeploymentVars.AsMap()).
-			SetState(deployment.StateACTIVE).
-			Exec(ctx)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to update deployment state and vars", err)
-			return
-		}
+// 		// Update the deployment with the resulting state and variables
+// 		err = entDeployment.Update().
+// 			SetDeploymentState(newDeploymentState).
+// 			SetDeploymentVars(reply.DeploymentVars.AsMap()).
+// 			SetState(deployment.StateACTIVE).
+// 			Exec(ctx)
+// 		if err != nil {
+// 			failCommand(ctx, entCommand, "failed to update deployment state and vars", err)
+// 			return
+// 		}
 
-		var status providercommand.Status
-		switch reply.Status {
-		case common.RPCStatus_FAILURE:
-			status = providercommand.StatusFAILED
-		default:
-			status = providercommand.StatusSUCCEEDED
-		}
+// 		var status providercommand.Status
+// 		switch reply.Status {
+// 		case common.RPCStatus_FAILURE:
+// 			status = providercommand.StatusFAILED
+// 		default:
+// 			status = providercommand.StatusSUCCEEDED
+// 		}
 
-		// Encode response into bytes for database
-		replyBytes, err := json.Marshal(reply)
-		if err != nil {
-			reply.Errors = append(reply.Errors, "failed to marshal reply bytes into database")
-		}
+// 		// Encode response into bytes for database
+// 		replyBytes, err := json.Marshal(reply)
+// 		if err != nil {
+// 			reply.Errors = append(reply.Errors, "failed to marshal reply bytes into database")
+// 		}
 
-		// Update the output of the command
-		err = entCommand.Update().
-			SetStatus(status).
-			SetOutput(replyBytes).
-			SetErrors(reply.Errors).
-			SetEndTime(time.Now()).
-			Exec(ctx)
-		if err != nil {
-			logrus.Errorf("failed to update command state and output")
-		}
+// 		// Update the output of the command
+// 		err = entCommand.Update().
+// 			SetStatus(status).
+// 			SetOutput(replyBytes).
+// 			SetErrors(reply.Errors).
+// 			SetEndTime(time.Now()).
+// 			Exec(ctx)
+// 		if err != nil {
+// 			logrus.Errorf("failed to update command state and output")
+// 		}
 
-	case providercommand.CommandTypeDESTROY:
-		// Get the deployment and blueprint associated with command
-		entDeployment, err := entCommand.QueryDeployment().Only(ctx)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to query deployment from command", err)
-			return
-		}
-		entBlueprint, err := entDeployment.QueryBlueprint().Only(ctx)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to query blueprint from deployment", err)
-			return
-		}
+// 	case providercommand.CommandTypeDESTROY:
+// 		// Get the deployment and blueprint associated with command
+// 		entDeployment, err := entCommand.QueryDeployment().Only(ctx)
+// 		if err != nil {
+// 			failCommand(ctx, entCommand, "failed to query deployment from command", err)
+// 			return
+// 		}
+// 		entBlueprint, err := entDeployment.QueryBlueprint().Only(ctx)
+// 		if err != nil {
+// 			failCommand(ctx, entCommand, "failed to query blueprint from deployment", err)
+// 			return
+// 		}
 
-		// Mark deployment as in-progress
-		entDeployment, err = entDeployment.Update().
-			SetState(deployment.StateINPROGRESS).
-			Save(ctx)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to set deployment state", err)
-		}
+// 		// Mark deployment as in-progress
+// 		entDeployment, err = entDeployment.Update().
+// 			SetState(deployment.StateINPROGRESS).
+// 			Save(ctx)
+// 		if err != nil {
+// 			failCommand(ctx, entCommand, "failed to set deployment state", err)
+// 		}
 
-		// Convert maps into protobuf-friendly structs
-		templateVarsStruct, deploymentVarsStruct, deploymentStateStruct, err := DeploymentMapsToStructs(entDeployment)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to convert deployment maps", err)
-			return
-		}
+// 		// Convert maps into protobuf-friendly structs
+// 		templateVarsStruct, deploymentVarsStruct, deploymentStateStruct, err := DeploymentMapsToStructs(entDeployment)
+// 		if err != nil {
+// 			failCommand(ctx, entCommand, "failed to convert deployment maps", err)
+// 			return
+// 		}
 
-		// Generate the deployment command
-		destroyCommand := &providerGRPC.DestroyRequest{
-			DeploymentId:    entDeployment.ID.String(),
-			Blueprint:       entBlueprint.BlueprintTemplate,
-			TemplateVars:    templateVarsStruct,
-			DeploymentState: deploymentStateStruct,
-			DeploymentVars:  deploymentVarsStruct,
-		}
+// 		// Generate the deployment command
+// 		destroyCommand := &providerGRPC.DestroyRequest{
+// 			DeploymentId:    entDeployment.ID.String(),
+// 			Blueprint:       entBlueprint.BlueprintTemplate,
+// 			TemplateVars:    templateVarsStruct,
+// 			DeploymentState: deploymentStateStruct,
+// 			DeploymentVars:  deploymentVarsStruct,
+// 		}
 
-		// Send the destroy request
-		reply, err := client.Destroy(ctx, destroyCommand)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to call provider destroy", err)
-			return
-		}
+// 		// Send the destroy request
+// 		reply, err := client.Destroy(ctx, destroyCommand)
+// 		if err != nil {
+// 			failCommand(ctx, entCommand, "failed to call provider destroy", err)
+// 			return
+// 		}
 
-		// Convert deployment state from map[string]interface{} to map[string]string
-		newDeploymentState := make(map[string]string, len(reply.DeploymentState.AsMap()))
-		for k, v := range reply.DeploymentState.AsMap() {
-			stateVal, ok := v.(string)
-			if ok {
-				newDeploymentState[k] = stateVal
-			} else {
-				logrus.Warnf("deployment state value of %v is not string type as expected", v)
-			}
-		}
+// 		// Convert deployment state from map[string]interface{} to map[string]string
+// 		newDeploymentState := make(map[string]string, len(reply.DeploymentState.AsMap()))
+// 		for k, v := range reply.DeploymentState.AsMap() {
+// 			stateVal, ok := v.(string)
+// 			if ok {
+// 				newDeploymentState[k] = stateVal
+// 			} else {
+// 				logrus.Warnf("deployment state value of %v is not string type as expected", v)
+// 			}
+// 		}
 
-		// Update the deployment with the resulting state and variables
-		err = entDeployment.Update().
-			SetDeploymentState(newDeploymentState).
-			SetDeploymentVars(reply.DeploymentVars.AsMap()).
-			SetState(deployment.StateDESTROYED).
-			Exec(ctx)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to update deployment state and vars", err)
-			return
-		}
+// 		// Update the deployment with the resulting state and variables
+// 		err = entDeployment.Update().
+// 			SetDeploymentState(newDeploymentState).
+// 			SetDeploymentVars(reply.DeploymentVars.AsMap()).
+// 			SetState(deployment.StateDESTROYED).
+// 			Exec(ctx)
+// 		if err != nil {
+// 			failCommand(ctx, entCommand, "failed to update deployment state and vars", err)
+// 			return
+// 		}
 
-		var status providercommand.Status
-		switch reply.Status {
-		case common.RPCStatus_FAILURE:
-			status = providercommand.StatusFAILED
-		default:
-			status = providercommand.StatusSUCCEEDED
-		}
+// 		var status providercommand.Status
+// 		switch reply.Status {
+// 		case common.RPCStatus_FAILURE:
+// 			status = providercommand.StatusFAILED
+// 		default:
+// 			status = providercommand.StatusSUCCEEDED
+// 		}
 
-		// Encode response into bytes for database
-		replyBytes, err := json.Marshal(reply)
-		if err != nil {
-			reply.Errors = append(reply.Errors, "failed to marshal reply bytes into database")
-		}
+// 		// Encode response into bytes for database
+// 		replyBytes, err := json.Marshal(reply)
+// 		if err != nil {
+// 			reply.Errors = append(reply.Errors, "failed to marshal reply bytes into database")
+// 		}
 
-		// Update the output of the command
-		err = entCommand.Update().
-			SetStatus(status).
-			SetOutput(replyBytes).
-			SetErrors(reply.Errors).
-			SetEndTime(time.Now()).
-			Exec(ctx)
-		if err != nil {
-			logrus.Errorf("failed to update command state and output")
-		}
+// 		// Update the output of the command
+// 		err = entCommand.Update().
+// 			SetStatus(status).
+// 			SetOutput(replyBytes).
+// 			SetErrors(reply.Errors).
+// 			SetEndTime(time.Now()).
+// 			Exec(ctx)
+// 		if err != nil {
+// 			logrus.Errorf("failed to update command state and output")
+// 		}
 
-	case providercommand.CommandTypeCONSOLE:
-		// Get the deployment and blueprint associated with command
-		entDeployment, err := entCommand.QueryDeployment().Only(ctx)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to query deployment from command", err)
-			return
-		}
+// 	case providercommand.CommandTypeCONSOLE:
+// 		// Get the deployment and blueprint associated with command
+// 		entDeployment, err := entCommand.QueryDeployment().Only(ctx)
+// 		if err != nil {
+// 			failCommand(ctx, entCommand, "failed to query deployment from command", err)
+// 			return
+// 		}
 
-		// Convert maps into protobuf-friendly structs
-		_, deploymentVarsStruct, deploymentStateStruct, err := DeploymentMapsToStructs(entDeployment)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to convert deployment maps", err)
-			return
-		}
+// 		// Convert maps into protobuf-friendly structs
+// 		_, deploymentVarsStruct, deploymentStateStruct, err := DeploymentMapsToStructs(entDeployment)
+// 		if err != nil {
+// 			failCommand(ctx, entCommand, "failed to convert deployment maps", err)
+// 			return
+// 		}
 
-		// Generate the console command
-		getConsoleCommand := &providerGRPC.GetConsoleRequest{
-			DeploymentId:    entDeployment.ID.String(),
-			HostKey:         entCommand.Arguments[0], // TODO: check this
-			DeploymentState: deploymentStateStruct,
-			DeploymentVars:  deploymentVarsStruct,
-		}
+// 		// Generate the console command
+// 		getConsoleCommand := &providerGRPC.GetConsoleRequest{
+// 			DeploymentId:    entDeployment.ID.String(),
+// 			HostKey:         entCommand.Arguments[0], // TODO: check this
+// 			DeploymentState: deploymentStateStruct,
+// 			DeploymentVars:  deploymentVarsStruct,
+// 		}
 
-		// Send the destroy request
-		reply, err := client.GetConsole(ctx, getConsoleCommand)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to call provider destroy", err)
-			return
-		}
+// 		// Send the destroy request
+// 		reply, err := client.GetConsole(ctx, getConsoleCommand)
+// 		if err != nil {
+// 			failCommand(ctx, entCommand, "failed to call provider destroy", err)
+// 			return
+// 		}
 
-		var status providercommand.Status
-		switch reply.Status {
-		case common.RPCStatus_FAILURE:
-			status = providercommand.StatusFAILED
-		default:
-			status = providercommand.StatusSUCCEEDED
-		}
+// 		var status providercommand.Status
+// 		switch reply.Status {
+// 		case common.RPCStatus_FAILURE:
+// 			status = providercommand.StatusFAILED
+// 		default:
+// 			status = providercommand.StatusSUCCEEDED
+// 		}
 
-		// Encode response into bytes for database
-		replyBytes, err := json.Marshal(reply)
-		if err != nil {
-			logrus.Error("failed to marshal reply bytes into database")
-		}
+// 		// Encode response into bytes for database
+// 		replyBytes, err := json.Marshal(reply)
+// 		if err != nil {
+// 			logrus.Error("failed to marshal reply bytes into database")
+// 		}
 
-		// Update the output of the command
-		err = entCommand.Update().
-			SetStatus(status).
-			SetOutput(replyBytes).
-			SetErrors(reply.Errors).
-			SetEndTime(time.Now()).
-			Exec(ctx)
-		if err != nil {
-			logrus.Errorf("failed to update command state and output")
-		}
+// 		// Update the output of the command
+// 		err = entCommand.Update().
+// 			SetStatus(status).
+// 			SetOutput(replyBytes).
+// 			SetErrors(reply.Errors).
+// 			SetEndTime(time.Now()).
+// 			Exec(ctx)
+// 		if err != nil {
+// 			logrus.Errorf("failed to update command state and output")
+// 		}
 
-	case providercommand.CommandTypeRESOURCES:
-		// Get the deployment and blueprint associated with command
-		entDeployment, err := entCommand.QueryDeployment().Only(ctx)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to query deployment from command", err)
-			return
-		}
-		entBlueprint, err := entDeployment.QueryBlueprint().Only(ctx)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to query blueprint from deployment", err)
-			return
-		}
+// 	case providercommand.CommandTypeRESOURCES:
+// 		// Get the deployment and blueprint associated with command
+// 		entDeployment, err := entCommand.QueryDeployment().Only(ctx)
+// 		if err != nil {
+// 			failCommand(ctx, entCommand, "failed to query deployment from command", err)
+// 			return
+// 		}
+// 		entBlueprint, err := entDeployment.QueryBlueprint().Only(ctx)
+// 		if err != nil {
+// 			failCommand(ctx, entCommand, "failed to query blueprint from deployment", err)
+// 			return
+// 		}
 
-		// Convert maps into protobuf-friendly structs
-		templateVarsStruct, deploymentVarsStruct, deploymentStateStruct, err := DeploymentMapsToStructs(entDeployment)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to convert deployment maps", err)
-			return
-		}
+// 		// Convert maps into protobuf-friendly structs
+// 		templateVarsStruct, deploymentVarsStruct, deploymentStateStruct, err := DeploymentMapsToStructs(entDeployment)
+// 		if err != nil {
+// 			failCommand(ctx, entCommand, "failed to convert deployment maps", err)
+// 			return
+// 		}
 
-		// Generate the console command
-		getResourceListCommand := &providerGRPC.GetResourceListRequest{
-			DeploymentId:    entDeployment.ID.String(),
-			Blueprint:       entBlueprint.BlueprintTemplate,
-			TemplateVars:    templateVarsStruct,
-			DeploymentState: deploymentStateStruct,
-			DeploymentVars:  deploymentVarsStruct,
-		}
+// 		// Generate the console command
+// 		getResourceListCommand := &providerGRPC.GetResourceListRequest{
+// 			DeploymentId:    entDeployment.ID.String(),
+// 			Blueprint:       entBlueprint.BlueprintTemplate,
+// 			TemplateVars:    templateVarsStruct,
+// 			DeploymentState: deploymentStateStruct,
+// 			DeploymentVars:  deploymentVarsStruct,
+// 		}
 
-		// Send the destroy request
-		reply, err := client.GetResourceList(ctx, getResourceListCommand)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to call provider destroy", err)
-			return
-		}
+// 		// Send the destroy request
+// 		reply, err := client.GetResourceList(ctx, getResourceListCommand)
+// 		if err != nil {
+// 			failCommand(ctx, entCommand, "failed to call provider destroy", err)
+// 			return
+// 		}
 
-		var status providercommand.Status
-		switch reply.Status {
-		case common.RPCStatus_FAILURE:
-			status = providercommand.StatusFAILED
-		default:
-			status = providercommand.StatusSUCCEEDED
-		}
+// 		var status providercommand.Status
+// 		switch reply.Status {
+// 		case common.RPCStatus_FAILURE:
+// 			status = providercommand.StatusFAILED
+// 		default:
+// 			status = providercommand.StatusSUCCEEDED
+// 		}
 
-		// Encode response into bytes for database
-		replyBytes, err := json.Marshal(reply)
-		if err != nil {
-			logrus.Error("failed to marshal reply bytes into database")
-		}
+// 		// Encode response into bytes for database
+// 		replyBytes, err := json.Marshal(reply)
+// 		if err != nil {
+// 			logrus.Error("failed to marshal reply bytes into database")
+// 		}
 
-		// Update the output of the command
-		err = entCommand.Update().
-			SetStatus(status).
-			SetOutput(replyBytes).
-			SetErrors(reply.Errors).
-			SetEndTime(time.Now()).
-			Exec(ctx)
-		if err != nil {
-			logrus.Errorf("failed to update command state and output")
-		}
-	}
-}
+// 		// Update the output of the command
+// 		err = entCommand.Update().
+// 			SetStatus(status).
+// 			SetOutput(replyBytes).
+// 			SetErrors(reply.Errors).
+// 			SetEndTime(time.Now()).
+// 			Exec(ctx)
+// 		if err != nil {
+// 			logrus.Errorf("failed to update command state and output")
+// 		}
+// 	}
+// }
 
-func failCommand(ctx context.Context, entCommand *ent.ProviderCommand, message string, err error) {
-	updateErr := entCommand.Update().
-		SetStatus(providercommand.StatusFAILED).
-		SetErrors([]string{fmt.Sprintf("%s: %v", message, err)}).
-		SetEndTime(time.Now()).
-		Exec(ctx)
-	if updateErr != nil {
-		logrus.Errorf("failed to update command state and error: %v", updateErr)
-	}
-}
+// func failCommand(ctx context.Context, entCommand *ent.ProviderCommand, message string, err error) {
+// 	updateErr := entCommand.Update().
+// 		SetStatus(providercommand.StatusFAILED).
+// 		SetErrors([]string{fmt.Sprintf("%s: %v", message, err)}).
+// 		SetEndTime(time.Now()).
+// 		Exec(ctx)
+// 	if updateErr != nil {
+// 		logrus.Errorf("failed to update command state and error: %v", updateErr)
+// 	}
+// }

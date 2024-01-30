@@ -41,11 +41,9 @@ type GroupEdges struct {
 	Users []*User `json:"users,omitempty"`
 	// PermissionPolicies holds the value of the permission_policies edge.
 	PermissionPolicies []*PermissionPolicy `json:"permission_policies,omitempty"`
-	// Blueprints holds the value of the blueprints edge.
-	Blueprints []*Blueprint `json:"blueprints,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [4]bool
 }
 
 // ParentOrErr returns the Parent value or an error if the edge
@@ -86,15 +84,6 @@ func (e GroupEdges) PermissionPoliciesOrErr() ([]*PermissionPolicy, error) {
 		return e.PermissionPolicies, nil
 	}
 	return nil, &NotLoadedError{edge: "permission_policies"}
-}
-
-// BlueprintsOrErr returns the Blueprints value or an error if the edge
-// was not loaded in eager-loading.
-func (e GroupEdges) BlueprintsOrErr() ([]*Blueprint, error) {
-	if e.loadedTypes[4] {
-		return e.Blueprints, nil
-	}
-	return nil, &NotLoadedError{edge: "blueprints"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -187,11 +176,6 @@ func (gr *Group) QueryUsers() *UserQuery {
 // QueryPermissionPolicies queries the "permission_policies" edge of the Group entity.
 func (gr *Group) QueryPermissionPolicies() *PermissionPolicyQuery {
 	return NewGroupClient(gr.config).QueryPermissionPolicies(gr)
-}
-
-// QueryBlueprints queries the "blueprints" edge of the Group entity.
-func (gr *Group) QueryBlueprints() *BlueprintQuery {
-	return NewGroupClient(gr.config).QueryBlueprints(gr)
 }
 
 // Update returns a builder for updating this Group.

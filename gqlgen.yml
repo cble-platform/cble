@@ -61,6 +61,12 @@ models:
   StrMap:
     model:
       - github.com/cble-platform/cble-backend/graph/model.StrMap
+  VarTypeMap:
+    model:
+      - github.com/cble-platform/cble-backend/graph/model.VarTypeMap
+  BlueprintObject:
+    model:
+      - github.com/cble-platform/cble-backend/blueprintengine/models.Object
   UUID:
     model:
       - github.com/cble-platform/cble-backend/graph/model.UUID

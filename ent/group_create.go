@@ -10,7 +10,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/group"
 	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
 	"github.com/cble-platform/cble-backend/ent/user"
@@ -134,21 +133,6 @@ func (gc *GroupCreate) AddPermissionPolicies(p ...*PermissionPolicy) *GroupCreat
 		ids[i] = p[i].ID
 	}
 	return gc.AddPermissionPolicyIDs(ids...)
-}
-
-// AddBlueprintIDs adds the "blueprints" edge to the Blueprint entity by IDs.
-func (gc *GroupCreate) AddBlueprintIDs(ids ...uuid.UUID) *GroupCreate {
-	gc.mutation.AddBlueprintIDs(ids...)
-	return gc
-}
-
-// AddBlueprints adds the "blueprints" edges to the Blueprint entity.
-func (gc *GroupCreate) AddBlueprints(b ...*Blueprint) *GroupCreate {
-	ids := make([]uuid.UUID, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return gc.AddBlueprintIDs(ids...)
 }
 
 // Mutation returns the GroupMutation object of the builder.
@@ -316,22 +300,6 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(permissionpolicy.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := gc.mutation.BlueprintsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   group.BlueprintsTable,
-			Columns: []string{group.BlueprintsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blueprint.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

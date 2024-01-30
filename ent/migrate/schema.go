@@ -16,7 +16,7 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString},
 		{Name: "blueprint_template", Type: field.TypeBytes},
-		{Name: "blueprint_parent_group", Type: field.TypeUUID},
+		{Name: "variable_types", Type: field.TypeJSON},
 		{Name: "blueprint_provider", Type: field.TypeUUID},
 	}
 	// BlueprintsTable holds the schema information for the "blueprints" table.
@@ -25,12 +25,6 @@ var (
 		Columns:    BlueprintsColumns,
 		PrimaryKey: []*schema.Column{BlueprintsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "blueprints_groups_parent_group",
-				Columns:    []*schema.Column{BlueprintsColumns[6]},
-				RefColumns: []*schema.Column{GroupsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
 			{
 				Symbol:     "blueprints_providers_provider",
 				Columns:    []*schema.Column{BlueprintsColumns[7]},
@@ -45,13 +39,10 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString},
-		{Name: "description", Type: field.TypeString, Nullable: true, Default: ""},
+		{Name: "description", Type: field.TypeString},
+		{Name: "state", Type: field.TypeEnum, Enums: []string{"awaiting", "in_progress", "complete", "failed", "deleted"}},
 		{Name: "template_vars", Type: field.TypeJSON},
-		{Name: "deployment_vars", Type: field.TypeJSON},
-		{Name: "deployment_state", Type: field.TypeJSON},
-		{Name: "state", Type: field.TypeEnum, Enums: []string{"UNKNOWN", "INPROGRESS", "ACTIVE", "DESTROYED"}, Default: "UNKNOWN"},
 		{Name: "deployment_blueprint", Type: field.TypeUUID},
-		{Name: "deployment_requester", Type: field.TypeUUID},
 	}
 	// DeploymentsTable holds the schema information for the "deployments" table.
 	DeploymentsTable = &schema.Table{
@@ -61,14 +52,45 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "deployments_blueprints_blueprint",
-				Columns:    []*schema.Column{DeploymentsColumns[9]},
+				Columns:    []*schema.Column{DeploymentsColumns[7]},
 				RefColumns: []*schema.Column{BlueprintsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
+		},
+	}
+	// DeploymentNodesColumns holds the columns for the "deployment_nodes" table.
+	DeploymentNodesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "state", Type: field.TypeEnum, Enums: []string{"awaiting", "parent_awaiting", "in_progress", "complete", "tainted", "failed", "to_delete", "deleted", "to_rebuild"}},
+		{Name: "vars", Type: field.TypeJSON},
+		{Name: "deployment_root_nodes", Type: field.TypeUUID, Nullable: true},
+		{Name: "deployment_node_deployment", Type: field.TypeUUID},
+		{Name: "deployment_node_resource", Type: field.TypeUUID},
+	}
+	// DeploymentNodesTable holds the schema information for the "deployment_nodes" table.
+	DeploymentNodesTable = &schema.Table{
+		Name:       "deployment_nodes",
+		Columns:    DeploymentNodesColumns,
+		PrimaryKey: []*schema.Column{DeploymentNodesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "deployments_users_requester",
-				Columns:    []*schema.Column{DeploymentsColumns[10]},
-				RefColumns: []*schema.Column{UsersColumns[0]},
+				Symbol:     "deployment_nodes_deployments_root_nodes",
+				Columns:    []*schema.Column{DeploymentNodesColumns[5]},
+				RefColumns: []*schema.Column{DeploymentsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "deployment_nodes_deployments_deployment",
+				Columns:    []*schema.Column{DeploymentNodesColumns[6]},
+				RefColumns: []*schema.Column{DeploymentsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "deployment_nodes_resources_resource",
+				Columns:    []*schema.Column{DeploymentNodesColumns[7]},
+				RefColumns: []*schema.Column{ResourcesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 		},
@@ -192,6 +214,29 @@ var (
 			},
 		},
 	}
+	// ResourcesColumns holds the columns for the "resources" table.
+	ResourcesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "key", Type: field.TypeString},
+		{Name: "object", Type: field.TypeJSON},
+		{Name: "resource_blueprint", Type: field.TypeUUID},
+	}
+	// ResourcesTable holds the schema information for the "resources" table.
+	ResourcesTable = &schema.Table{
+		Name:       "resources",
+		Columns:    ResourcesColumns,
+		PrimaryKey: []*schema.Column{ResourcesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "resources_blueprints_blueprint",
+				Columns:    []*schema.Column{ResourcesColumns[5]},
+				RefColumns: []*schema.Column{BlueprintsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -208,6 +253,56 @@ var (
 		Name:       "users",
 		Columns:    UsersColumns,
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
+	}
+	// DeploymentNodeNextNodesColumns holds the columns for the "deployment_node_next_nodes" table.
+	DeploymentNodeNextNodesColumns = []*schema.Column{
+		{Name: "deployment_node_id", Type: field.TypeUUID},
+		{Name: "prev_node_id", Type: field.TypeUUID},
+	}
+	// DeploymentNodeNextNodesTable holds the schema information for the "deployment_node_next_nodes" table.
+	DeploymentNodeNextNodesTable = &schema.Table{
+		Name:       "deployment_node_next_nodes",
+		Columns:    DeploymentNodeNextNodesColumns,
+		PrimaryKey: []*schema.Column{DeploymentNodeNextNodesColumns[0], DeploymentNodeNextNodesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "deployment_node_next_nodes_deployment_node_id",
+				Columns:    []*schema.Column{DeploymentNodeNextNodesColumns[0]},
+				RefColumns: []*schema.Column{DeploymentNodesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "deployment_node_next_nodes_prev_node_id",
+				Columns:    []*schema.Column{DeploymentNodeNextNodesColumns[1]},
+				RefColumns: []*schema.Column{DeploymentNodesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// ResourceRequiredByColumns holds the columns for the "resource_required_by" table.
+	ResourceRequiredByColumns = []*schema.Column{
+		{Name: "resource_id", Type: field.TypeUUID},
+		{Name: "depends_on_id", Type: field.TypeUUID},
+	}
+	// ResourceRequiredByTable holds the schema information for the "resource_required_by" table.
+	ResourceRequiredByTable = &schema.Table{
+		Name:       "resource_required_by",
+		Columns:    ResourceRequiredByColumns,
+		PrimaryKey: []*schema.Column{ResourceRequiredByColumns[0], ResourceRequiredByColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "resource_required_by_resource_id",
+				Columns:    []*schema.Column{ResourceRequiredByColumns[0]},
+				RefColumns: []*schema.Column{ResourcesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "resource_required_by_depends_on_id",
+				Columns:    []*schema.Column{ResourceRequiredByColumns[1]},
+				RefColumns: []*schema.Column{ResourcesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
 	}
 	// UserGroupsColumns holds the columns for the "user_groups" table.
 	UserGroupsColumns = []*schema.Column{
@@ -238,26 +333,36 @@ var (
 	Tables = []*schema.Table{
 		BlueprintsTable,
 		DeploymentsTable,
+		DeploymentNodesTable,
 		GroupsTable,
 		PermissionsTable,
 		PermissionPoliciesTable,
 		ProvidersTable,
 		ProviderCommandsTable,
+		ResourcesTable,
 		UsersTable,
+		DeploymentNodeNextNodesTable,
+		ResourceRequiredByTable,
 		UserGroupsTable,
 	}
 )
 
 func init() {
-	BlueprintsTable.ForeignKeys[0].RefTable = GroupsTable
-	BlueprintsTable.ForeignKeys[1].RefTable = ProvidersTable
+	BlueprintsTable.ForeignKeys[0].RefTable = ProvidersTable
 	DeploymentsTable.ForeignKeys[0].RefTable = BlueprintsTable
-	DeploymentsTable.ForeignKeys[1].RefTable = UsersTable
+	DeploymentNodesTable.ForeignKeys[0].RefTable = DeploymentsTable
+	DeploymentNodesTable.ForeignKeys[1].RefTable = DeploymentsTable
+	DeploymentNodesTable.ForeignKeys[2].RefTable = ResourcesTable
 	GroupsTable.ForeignKeys[0].RefTable = GroupsTable
 	PermissionPoliciesTable.ForeignKeys[0].RefTable = PermissionsTable
 	PermissionPoliciesTable.ForeignKeys[1].RefTable = GroupsTable
 	ProviderCommandsTable.ForeignKeys[0].RefTable = ProvidersTable
 	ProviderCommandsTable.ForeignKeys[1].RefTable = DeploymentsTable
+	ResourcesTable.ForeignKeys[0].RefTable = BlueprintsTable
+	DeploymentNodeNextNodesTable.ForeignKeys[0].RefTable = DeploymentNodesTable
+	DeploymentNodeNextNodesTable.ForeignKeys[1].RefTable = DeploymentNodesTable
+	ResourceRequiredByTable.ForeignKeys[0].RefTable = ResourcesTable
+	ResourceRequiredByTable.ForeignKeys[1].RefTable = ResourcesTable
 	UserGroupsTable.ForeignKeys[0].RefTable = UsersTable
 	UserGroupsTable.ForeignKeys[1].RefTable = GroupsTable
 }

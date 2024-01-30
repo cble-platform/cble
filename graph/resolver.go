@@ -26,12 +26,12 @@ type Resolver struct {
 }
 
 // NewSchema creates a graphql executable schema.
-func NewSchema(client *ent.Client, cbleServer *providers.CBLEServer, permissionEngine *permissionengine.PermissionEngine) graphql.ExecutableSchema {
+func NewSchema(client *ent.Client, cbleServer *providers.CBLEServer, pe *permissionengine.PermissionEngine) graphql.ExecutableSchema {
 	c := generated.Config{
 		Resolvers: &Resolver{
 			ent:              client,
 			cbleServer:       cbleServer,
-			permissionEngine: permissionEngine,
+			permissionEngine: pe,
 			// rdb:           rdb,
 		},
 	}
@@ -40,7 +40,7 @@ func NewSchema(client *ent.Client, cbleServer *providers.CBLEServer, permissionE
 		if err != nil {
 			return nil, fmt.Errorf("user not authenticated")
 		}
-		hasPermission, err := permissionEngine.RequestPermission(ctx, currentUser, key)
+		hasPermission, err := pe.RequestPermission(ctx, currentUser, key)
 		if err != nil {
 			return nil, err
 		}
