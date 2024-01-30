@@ -48,6 +48,7 @@ type DefaultAdminConfig struct {
 }
 
 type ProvidersConfig struct {
+	AutoLoad *bool  `yaml:"auto_load,omitempty"`
 	CacheDir string `yaml:"cache"`
 }
 

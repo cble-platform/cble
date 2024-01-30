@@ -43,6 +43,14 @@ func (du *DeploymentUpdate) SetName(s string) *DeploymentUpdate {
 	return du
 }
 
+// SetNillableName sets the "name" field if the given value is not nil.
+func (du *DeploymentUpdate) SetNillableName(s *string) *DeploymentUpdate {
+	if s != nil {
+		du.SetName(*s)
+	}
+	return du
+}
+
 // SetDescription sets the "description" field.
 func (du *DeploymentUpdate) SetDescription(s string) *DeploymentUpdate {
 	du.mutation.SetDescription(s)
@@ -78,6 +86,20 @@ func (du *DeploymentUpdate) SetDeploymentVars(m map[string]interface{}) *Deploym
 // SetDeploymentState sets the "deployment_state" field.
 func (du *DeploymentUpdate) SetDeploymentState(m map[string]string) *DeploymentUpdate {
 	du.mutation.SetDeploymentState(m)
+	return du
+}
+
+// SetState sets the "state" field.
+func (du *DeploymentUpdate) SetState(d deployment.State) *DeploymentUpdate {
+	du.mutation.SetState(d)
+	return du
+}
+
+// SetNillableState sets the "state" field if the given value is not nil.
+func (du *DeploymentUpdate) SetNillableState(d *deployment.State) *DeploymentUpdate {
+	if d != nil {
+		du.SetState(*d)
+	}
 	return du
 }
 
@@ -158,6 +180,11 @@ func (du *DeploymentUpdate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (du *DeploymentUpdate) check() error {
+	if v, ok := du.mutation.State(); ok {
+		if err := deployment.StateValidator(v); err != nil {
+			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "Deployment.state": %w`, err)}
+		}
+	}
 	if _, ok := du.mutation.BlueprintID(); du.mutation.BlueprintCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Deployment.blueprint"`)
 	}
@@ -199,6 +226,9 @@ func (du *DeploymentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := du.mutation.DeploymentState(); ok {
 		_spec.SetField(deployment.FieldDeploymentState, field.TypeJSON, value)
+	}
+	if value, ok := du.mutation.State(); ok {
+		_spec.SetField(deployment.FieldState, field.TypeEnum, value)
 	}
 	if du.mutation.BlueprintCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -290,6 +320,14 @@ func (duo *DeploymentUpdateOne) SetName(s string) *DeploymentUpdateOne {
 	return duo
 }
 
+// SetNillableName sets the "name" field if the given value is not nil.
+func (duo *DeploymentUpdateOne) SetNillableName(s *string) *DeploymentUpdateOne {
+	if s != nil {
+		duo.SetName(*s)
+	}
+	return duo
+}
+
 // SetDescription sets the "description" field.
 func (duo *DeploymentUpdateOne) SetDescription(s string) *DeploymentUpdateOne {
 	duo.mutation.SetDescription(s)
@@ -325,6 +363,20 @@ func (duo *DeploymentUpdateOne) SetDeploymentVars(m map[string]interface{}) *Dep
 // SetDeploymentState sets the "deployment_state" field.
 func (duo *DeploymentUpdateOne) SetDeploymentState(m map[string]string) *DeploymentUpdateOne {
 	duo.mutation.SetDeploymentState(m)
+	return duo
+}
+
+// SetState sets the "state" field.
+func (duo *DeploymentUpdateOne) SetState(d deployment.State) *DeploymentUpdateOne {
+	duo.mutation.SetState(d)
+	return duo
+}
+
+// SetNillableState sets the "state" field if the given value is not nil.
+func (duo *DeploymentUpdateOne) SetNillableState(d *deployment.State) *DeploymentUpdateOne {
+	if d != nil {
+		duo.SetState(*d)
+	}
 	return duo
 }
 
@@ -418,6 +470,11 @@ func (duo *DeploymentUpdateOne) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (duo *DeploymentUpdateOne) check() error {
+	if v, ok := duo.mutation.State(); ok {
+		if err := deployment.StateValidator(v); err != nil {
+			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "Deployment.state": %w`, err)}
+		}
+	}
 	if _, ok := duo.mutation.BlueprintID(); duo.mutation.BlueprintCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Deployment.blueprint"`)
 	}
@@ -476,6 +533,9 @@ func (duo *DeploymentUpdateOne) sqlSave(ctx context.Context) (_node *Deployment,
 	}
 	if value, ok := duo.mutation.DeploymentState(); ok {
 		_spec.SetField(deployment.FieldDeploymentState, field.TypeJSON, value)
+	}
+	if value, ok := duo.mutation.State(); ok {
+		_spec.SetField(deployment.FieldState, field.TypeEnum, value)
 	}
 	if duo.mutation.BlueprintCleared() {
 		edge := &sqlgraph.EdgeSpec{

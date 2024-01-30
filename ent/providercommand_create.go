@@ -106,30 +106,14 @@ func (pcc *ProviderCommandCreate) SetNillableEndTime(t *time.Time) *ProviderComm
 }
 
 // SetOutput sets the "output" field.
-func (pcc *ProviderCommandCreate) SetOutput(s string) *ProviderCommandCreate {
-	pcc.mutation.SetOutput(s)
+func (pcc *ProviderCommandCreate) SetOutput(b []byte) *ProviderCommandCreate {
+	pcc.mutation.SetOutput(b)
 	return pcc
 }
 
-// SetNillableOutput sets the "output" field if the given value is not nil.
-func (pcc *ProviderCommandCreate) SetNillableOutput(s *string) *ProviderCommandCreate {
-	if s != nil {
-		pcc.SetOutput(*s)
-	}
-	return pcc
-}
-
-// SetError sets the "error" field.
-func (pcc *ProviderCommandCreate) SetError(s string) *ProviderCommandCreate {
-	pcc.mutation.SetError(s)
-	return pcc
-}
-
-// SetNillableError sets the "error" field if the given value is not nil.
-func (pcc *ProviderCommandCreate) SetNillableError(s *string) *ProviderCommandCreate {
-	if s != nil {
-		pcc.SetError(*s)
-	}
+// SetErrors sets the "errors" field.
+func (pcc *ProviderCommandCreate) SetErrors(s []string) *ProviderCommandCreate {
+	pcc.mutation.SetErrors(s)
 	return pcc
 }
 
@@ -228,9 +212,9 @@ func (pcc *ProviderCommandCreate) defaults() {
 		v := providercommand.DefaultOutput
 		pcc.mutation.SetOutput(v)
 	}
-	if _, ok := pcc.mutation.Error(); !ok {
-		v := providercommand.DefaultError
-		pcc.mutation.SetError(v)
+	if _, ok := pcc.mutation.Errors(); !ok {
+		v := providercommand.DefaultErrors
+		pcc.mutation.SetErrors(v)
 	}
 	if _, ok := pcc.mutation.ID(); !ok {
 		v := providercommand.DefaultID()
@@ -265,8 +249,8 @@ func (pcc *ProviderCommandCreate) check() error {
 	if _, ok := pcc.mutation.Output(); !ok {
 		return &ValidationError{Name: "output", err: errors.New(`ent: missing required field "ProviderCommand.output"`)}
 	}
-	if _, ok := pcc.mutation.Error(); !ok {
-		return &ValidationError{Name: "error", err: errors.New(`ent: missing required field "ProviderCommand.error"`)}
+	if _, ok := pcc.mutation.Errors(); !ok {
+		return &ValidationError{Name: "errors", err: errors.New(`ent: missing required field "ProviderCommand.errors"`)}
 	}
 	if _, ok := pcc.mutation.ProviderID(); !ok {
 		return &ValidationError{Name: "provider", err: errors.New(`ent: missing required edge "ProviderCommand.provider"`)}
@@ -335,12 +319,12 @@ func (pcc *ProviderCommandCreate) createSpec() (*ProviderCommand, *sqlgraph.Crea
 		_node.EndTime = value
 	}
 	if value, ok := pcc.mutation.Output(); ok {
-		_spec.SetField(providercommand.FieldOutput, field.TypeString, value)
+		_spec.SetField(providercommand.FieldOutput, field.TypeBytes, value)
 		_node.Output = value
 	}
-	if value, ok := pcc.mutation.Error(); ok {
-		_spec.SetField(providercommand.FieldError, field.TypeString, value)
-		_node.Error = value
+	if value, ok := pcc.mutation.Errors(); ok {
+		_spec.SetField(providercommand.FieldErrors, field.TypeJSON, value)
+		_node.Errors = value
 	}
 	if nodes := pcc.mutation.ProviderIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

@@ -77,13 +77,8 @@ func EndTime(v time.Time) predicate.ProviderCommand {
 }
 
 // Output applies equality check predicate on the "output" field. It's identical to OutputEQ.
-func Output(v string) predicate.ProviderCommand {
+func Output(v []byte) predicate.ProviderCommand {
 	return predicate.ProviderCommand(sql.FieldEQ(FieldOutput, v))
-}
-
-// Error applies equality check predicate on the "error" field. It's identical to ErrorEQ.
-func Error(v string) predicate.ProviderCommand {
-	return predicate.ProviderCommand(sql.FieldEQ(FieldError, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -317,133 +312,43 @@ func EndTimeNotNil() predicate.ProviderCommand {
 }
 
 // OutputEQ applies the EQ predicate on the "output" field.
-func OutputEQ(v string) predicate.ProviderCommand {
+func OutputEQ(v []byte) predicate.ProviderCommand {
 	return predicate.ProviderCommand(sql.FieldEQ(FieldOutput, v))
 }
 
 // OutputNEQ applies the NEQ predicate on the "output" field.
-func OutputNEQ(v string) predicate.ProviderCommand {
+func OutputNEQ(v []byte) predicate.ProviderCommand {
 	return predicate.ProviderCommand(sql.FieldNEQ(FieldOutput, v))
 }
 
 // OutputIn applies the In predicate on the "output" field.
-func OutputIn(vs ...string) predicate.ProviderCommand {
+func OutputIn(vs ...[]byte) predicate.ProviderCommand {
 	return predicate.ProviderCommand(sql.FieldIn(FieldOutput, vs...))
 }
 
 // OutputNotIn applies the NotIn predicate on the "output" field.
-func OutputNotIn(vs ...string) predicate.ProviderCommand {
+func OutputNotIn(vs ...[]byte) predicate.ProviderCommand {
 	return predicate.ProviderCommand(sql.FieldNotIn(FieldOutput, vs...))
 }
 
 // OutputGT applies the GT predicate on the "output" field.
-func OutputGT(v string) predicate.ProviderCommand {
+func OutputGT(v []byte) predicate.ProviderCommand {
 	return predicate.ProviderCommand(sql.FieldGT(FieldOutput, v))
 }
 
 // OutputGTE applies the GTE predicate on the "output" field.
-func OutputGTE(v string) predicate.ProviderCommand {
+func OutputGTE(v []byte) predicate.ProviderCommand {
 	return predicate.ProviderCommand(sql.FieldGTE(FieldOutput, v))
 }
 
 // OutputLT applies the LT predicate on the "output" field.
-func OutputLT(v string) predicate.ProviderCommand {
+func OutputLT(v []byte) predicate.ProviderCommand {
 	return predicate.ProviderCommand(sql.FieldLT(FieldOutput, v))
 }
 
 // OutputLTE applies the LTE predicate on the "output" field.
-func OutputLTE(v string) predicate.ProviderCommand {
+func OutputLTE(v []byte) predicate.ProviderCommand {
 	return predicate.ProviderCommand(sql.FieldLTE(FieldOutput, v))
-}
-
-// OutputContains applies the Contains predicate on the "output" field.
-func OutputContains(v string) predicate.ProviderCommand {
-	return predicate.ProviderCommand(sql.FieldContains(FieldOutput, v))
-}
-
-// OutputHasPrefix applies the HasPrefix predicate on the "output" field.
-func OutputHasPrefix(v string) predicate.ProviderCommand {
-	return predicate.ProviderCommand(sql.FieldHasPrefix(FieldOutput, v))
-}
-
-// OutputHasSuffix applies the HasSuffix predicate on the "output" field.
-func OutputHasSuffix(v string) predicate.ProviderCommand {
-	return predicate.ProviderCommand(sql.FieldHasSuffix(FieldOutput, v))
-}
-
-// OutputEqualFold applies the EqualFold predicate on the "output" field.
-func OutputEqualFold(v string) predicate.ProviderCommand {
-	return predicate.ProviderCommand(sql.FieldEqualFold(FieldOutput, v))
-}
-
-// OutputContainsFold applies the ContainsFold predicate on the "output" field.
-func OutputContainsFold(v string) predicate.ProviderCommand {
-	return predicate.ProviderCommand(sql.FieldContainsFold(FieldOutput, v))
-}
-
-// ErrorEQ applies the EQ predicate on the "error" field.
-func ErrorEQ(v string) predicate.ProviderCommand {
-	return predicate.ProviderCommand(sql.FieldEQ(FieldError, v))
-}
-
-// ErrorNEQ applies the NEQ predicate on the "error" field.
-func ErrorNEQ(v string) predicate.ProviderCommand {
-	return predicate.ProviderCommand(sql.FieldNEQ(FieldError, v))
-}
-
-// ErrorIn applies the In predicate on the "error" field.
-func ErrorIn(vs ...string) predicate.ProviderCommand {
-	return predicate.ProviderCommand(sql.FieldIn(FieldError, vs...))
-}
-
-// ErrorNotIn applies the NotIn predicate on the "error" field.
-func ErrorNotIn(vs ...string) predicate.ProviderCommand {
-	return predicate.ProviderCommand(sql.FieldNotIn(FieldError, vs...))
-}
-
-// ErrorGT applies the GT predicate on the "error" field.
-func ErrorGT(v string) predicate.ProviderCommand {
-	return predicate.ProviderCommand(sql.FieldGT(FieldError, v))
-}
-
-// ErrorGTE applies the GTE predicate on the "error" field.
-func ErrorGTE(v string) predicate.ProviderCommand {
-	return predicate.ProviderCommand(sql.FieldGTE(FieldError, v))
-}
-
-// ErrorLT applies the LT predicate on the "error" field.
-func ErrorLT(v string) predicate.ProviderCommand {
-	return predicate.ProviderCommand(sql.FieldLT(FieldError, v))
-}
-
-// ErrorLTE applies the LTE predicate on the "error" field.
-func ErrorLTE(v string) predicate.ProviderCommand {
-	return predicate.ProviderCommand(sql.FieldLTE(FieldError, v))
-}
-
-// ErrorContains applies the Contains predicate on the "error" field.
-func ErrorContains(v string) predicate.ProviderCommand {
-	return predicate.ProviderCommand(sql.FieldContains(FieldError, v))
-}
-
-// ErrorHasPrefix applies the HasPrefix predicate on the "error" field.
-func ErrorHasPrefix(v string) predicate.ProviderCommand {
-	return predicate.ProviderCommand(sql.FieldHasPrefix(FieldError, v))
-}
-
-// ErrorHasSuffix applies the HasSuffix predicate on the "error" field.
-func ErrorHasSuffix(v string) predicate.ProviderCommand {
-	return predicate.ProviderCommand(sql.FieldHasSuffix(FieldError, v))
-}
-
-// ErrorEqualFold applies the EqualFold predicate on the "error" field.
-func ErrorEqualFold(v string) predicate.ProviderCommand {
-	return predicate.ProviderCommand(sql.FieldEqualFold(FieldError, v))
-}
-
-// ErrorContainsFold applies the ContainsFold predicate on the "error" field.
-func ErrorContainsFold(v string) predicate.ProviderCommand {
-	return predicate.ProviderCommand(sql.FieldContainsFold(FieldError, v))
 }
 
 // HasProvider applies the HasEdge predicate on the "provider" edge.

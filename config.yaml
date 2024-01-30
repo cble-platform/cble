@@ -130,3 +130,6 @@ initialization:
     - key: com.cble.deployments.console
       component: Deployments
       description: Get deployment vm console
+    - key: com.cble.deployments.resources
+      component: Deployments
+      description: Get deployment vm resources

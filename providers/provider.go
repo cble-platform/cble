@@ -2,30 +2,30 @@ package providers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
-	"strings"
 	"syscall"
 	"time"
 
 	"github.com/cble-platform/cble-backend/ent"
-	"github.com/cble-platform/cble-backend/ent/provider"
+	"github.com/cble-platform/cble-backend/ent/deployment"
+	provider "github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/cble-platform/cble-backend/ent/providercommand"
 	"github.com/cble-platform/cble-backend/internal/git"
 	"github.com/cble-platform/cble-provider-grpc/pkg/common"
 	providerGRPC "github.com/cble-platform/cble-provider-grpc/pkg/provider"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func (ps *CBLEServer) downloadProvider(entProvider *ent.Provider) error {
 	providerRepoPath := path.Join(ps.providersConfig.CacheDir, entProvider.ID.String(), "source")
 	logrus.WithFields(logrus.Fields{"repo_path": providerRepoPath}).Debugf("Downloading provider %s", entProvider.ID.String())
 
-	// Clone/checkout the provider from git
+	// Clone/checkout the provider from git if needed
 	if _, err := os.Stat(providerRepoPath); os.IsNotExist(err) {
 		logrus.Debugf("Provider does not exist, cloning repo")
 		// Provider dir doesn't exist so clone repo
@@ -33,13 +33,11 @@ func (ps *CBLEServer) downloadProvider(entProvider *ent.Provider) error {
 		if err != nil {
 			return fmt.Errorf("failed to clone provider repo: %v", err)
 		}
-	} else {
-		logrus.Debugf("Provider exists, checking out version")
-		// Provider dir exists so just checkout new version
-		err := git.CheckoutProvider(providerRepoPath, entProvider)
-		if err != nil {
-			return fmt.Errorf("failed to checkout provider repo: %v", err)
-		}
+	}
+	// Checkout requested version
+	err := git.CheckoutProvider(providerRepoPath, entProvider)
+	if err != nil {
+		return fmt.Errorf("failed to checkout provider repo: %v", err)
 	}
 
 	providerBinaryPath := path.Join(ps.providersConfig.CacheDir, entProvider.ID.String(), "provider")
@@ -93,14 +91,14 @@ func (ps *CBLEServer) runProvider(ctx context.Context, entProvider *ent.Provider
 	}
 }
 
-func (ps *CBLEServer) startProviderConnection(ctx context.Context, shutdown chan bool, providerKey string) {
-	registeredProvider, exists := ps.registeredProviders.Load(providerKey)
+func (ps *CBLEServer) startProviderConnection(ctx context.Context, shutdown chan bool, providerId string) {
+	registeredProvider, exists := ps.registeredProviders.Load(providerId)
 	if !exists {
-		logrus.Errorf("attempted to start provider on non-registered provider (%s)", providerKey)
+		logrus.Errorf("attempted to start provider on non-registered provider (%s)", providerId)
 		return
 	}
 
-	logrus.Debugf("starting provider connection to provider %s with socket ID %s", providerKey, registeredProvider.(RegisteredProvider).SocketID)
+	logrus.Debugf("starting provider connection to provider %s with socket ID %s", providerId, registeredProvider.(RegisteredProvider).SocketID)
 
 	providerOpts := &providerGRPC.ProviderClientOptions{
 		// TODO: implement TLS for provider connections
@@ -110,19 +108,21 @@ func (ps *CBLEServer) startProviderConnection(ctx context.Context, shutdown chan
 	}
 	providerConn, err := providerGRPC.Connect(providerOpts)
 	if err != nil {
-		logrus.Errorf("failed to connect to provider gRPC server (%s): %v", providerKey, err)
+		logrus.Errorf("failed to connect to provider gRPC server (%s): %v", providerId, err)
 		return
 	}
 	client, err := providerGRPC.NewClient(ctx, providerConn)
 	if err != nil {
-		logrus.Errorf("failed to create client for provider (%s): %v", providerKey, err)
+		logrus.Errorf("failed to create client for provider (%s): %v", providerId, err)
 		return
 	}
+	// Store the client reference for synchronous use
+	ps.providerClients.Store(providerId, client)
 
 	// Convert provider ID to UUID for ENT queries
-	providerUuid, err := uuid.Parse(providerKey)
+	providerUuid, err := uuid.Parse(providerId)
 	if err != nil {
-		logrus.Errorf("failed to parse provider key \"%s\" when starting provider connection: %v", providerKey, err)
+		logrus.Errorf("failed to parse provider key \"%s\" when starting provider connection: %v", providerId, err)
 		return
 	}
 
@@ -130,10 +130,10 @@ func (ps *CBLEServer) startProviderConnection(ctx context.Context, shutdown chan
 	for {
 		select {
 		case <-shutdown:
-			logrus.Warnf("Gracefully shutting down provider client %s", providerKey)
+			logrus.Warnf("Gracefully shutting down provider client %s", providerId)
 			return
 		case <-ctx.Done():
-			logrus.Warnf("Gracefully shutting down provider client %s", providerKey)
+			logrus.Warnf("Gracefully shutting down provider client %s", providerId)
 			return
 		default:
 			// If not cancelling, query ent for all queued commands for this provider
@@ -144,7 +144,7 @@ func (ps *CBLEServer) startProviderConnection(ctx context.Context, shutdown chan
 				),
 			).All(ctx)
 			if err != nil {
-				logrus.Errorf("failed to query commands for provider \"%s\": %v", providerKey, err)
+				logrus.Errorf("failed to query commands for provider \"%s\": %v", providerId, err)
 				continue
 			}
 
@@ -188,10 +188,16 @@ func (ps *CBLEServer) handleProviderCommand(ctx context.Context, client provider
 			return
 		}
 
+		// Encode response into bytes for database
+		replyBytes, err := json.Marshal(reply)
+		if err != nil {
+			logrus.Error("failed to marshal reply bytes into database")
+		}
+
 		// Update the output of the command
 		err = entCommand.Update().
 			SetStatus(providercommand.StatusSUCCEEDED).
-			SetOutput(fmt.Sprintf("RPC status is:\n%s", reply.Status.String())).
+			SetOutput(replyBytes).
 			SetEndTime(time.Now()).
 			Exec(ctx)
 		if err != nil {
@@ -211,25 +217,18 @@ func (ps *CBLEServer) handleProviderCommand(ctx context.Context, client provider
 			return
 		}
 
+		// Mark deployment as in-progress
+		entDeployment, err = entDeployment.Update().
+			SetState(deployment.StateINPROGRESS).
+			Save(ctx)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to set deployment state", err)
+		}
+
 		// Convert maps into protobuf-friendly structs
-		templateVarsStruct, err := structpb.NewStruct(entDeployment.TemplateVars)
+		templateVarsStruct, deploymentVarsStruct, deploymentStateStruct, err := DeploymentMapsToStructs(entDeployment)
 		if err != nil {
-			failCommand(ctx, entCommand, "failed to parse template vars into structpb", err)
-			return
-		}
-		deploymentVarsStruct, err := structpb.NewStruct(entDeployment.DeploymentVars)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to parse deployment vars into structpb", err)
-			return
-		}
-		// Deployment state is of type map[string]string and needs to be converted to map[string]interface{}
-		deploymentState := make(map[string]interface{}, len(entDeployment.DeploymentState))
-		for k, v := range entDeployment.DeploymentState {
-			deploymentState[k] = v
-		}
-		deploymentStateStruct, err := structpb.NewStruct(deploymentState)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to parse deployment state into structpb", err)
+			failCommand(ctx, entCommand, "failed to convert deployment maps", err)
 			return
 		}
 
@@ -264,6 +263,7 @@ func (ps *CBLEServer) handleProviderCommand(ctx context.Context, client provider
 		err = entDeployment.Update().
 			SetDeploymentState(newDeploymentState).
 			SetDeploymentVars(reply.DeploymentVars.AsMap()).
+			SetState(deployment.StateACTIVE).
 			Exec(ctx)
 		if err != nil {
 			failCommand(ctx, entCommand, "failed to update deployment state and vars", err)
@@ -278,11 +278,17 @@ func (ps *CBLEServer) handleProviderCommand(ctx context.Context, client provider
 			status = providercommand.StatusSUCCEEDED
 		}
 
+		// Encode response into bytes for database
+		replyBytes, err := json.Marshal(reply)
+		if err != nil {
+			reply.Errors = append(reply.Errors, "failed to marshal reply bytes into database")
+		}
+
 		// Update the output of the command
 		err = entCommand.Update().
 			SetStatus(status).
-			SetOutput(fmt.Sprintf("RPC status is:\n%s", reply.Status.String())).
-			SetError(fmt.Sprintf("Errors:\n%s", strings.Join(reply.Errors, "\n"))).
+			SetOutput(replyBytes).
+			SetErrors(reply.Errors).
 			SetEndTime(time.Now()).
 			Exec(ctx)
 		if err != nil {
@@ -302,25 +308,18 @@ func (ps *CBLEServer) handleProviderCommand(ctx context.Context, client provider
 			return
 		}
 
+		// Mark deployment as in-progress
+		entDeployment, err = entDeployment.Update().
+			SetState(deployment.StateINPROGRESS).
+			Save(ctx)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to set deployment state", err)
+		}
+
 		// Convert maps into protobuf-friendly structs
-		templateVarsStruct, err := structpb.NewStruct(entDeployment.TemplateVars)
+		templateVarsStruct, deploymentVarsStruct, deploymentStateStruct, err := DeploymentMapsToStructs(entDeployment)
 		if err != nil {
-			failCommand(ctx, entCommand, "failed to parse template vars into structpb", err)
-			return
-		}
-		deploymentVarsStruct, err := structpb.NewStruct(entDeployment.DeploymentVars)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to parse deployment vars into structpb", err)
-			return
-		}
-		// Deployment state is of type map[string]string and needs to be converted to map[string]interface{}
-		deploymentState := make(map[string]interface{}, len(entDeployment.DeploymentState))
-		for k, v := range entDeployment.DeploymentState {
-			deploymentState[k] = v
-		}
-		deploymentStateStruct, err := structpb.NewStruct(deploymentState)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to parse deployment state into structpb", err)
+			failCommand(ctx, entCommand, "failed to convert deployment maps", err)
 			return
 		}
 
@@ -355,6 +354,7 @@ func (ps *CBLEServer) handleProviderCommand(ctx context.Context, client provider
 		err = entDeployment.Update().
 			SetDeploymentState(newDeploymentState).
 			SetDeploymentVars(reply.DeploymentVars.AsMap()).
+			SetState(deployment.StateDESTROYED).
 			Exec(ctx)
 		if err != nil {
 			failCommand(ctx, entCommand, "failed to update deployment state and vars", err)
@@ -369,11 +369,17 @@ func (ps *CBLEServer) handleProviderCommand(ctx context.Context, client provider
 			status = providercommand.StatusSUCCEEDED
 		}
 
+		// Encode response into bytes for database
+		replyBytes, err := json.Marshal(reply)
+		if err != nil {
+			reply.Errors = append(reply.Errors, "failed to marshal reply bytes into database")
+		}
+
 		// Update the output of the command
 		err = entCommand.Update().
 			SetStatus(status).
-			SetOutput(fmt.Sprintf("RPC status is:\n%s", reply.Status.String())).
-			SetError(fmt.Sprintf("Errors:\n%s", strings.Join(reply.Errors, "\n"))).
+			SetOutput(replyBytes).
+			SetErrors(reply.Errors).
 			SetEndTime(time.Now()).
 			Exec(ctx)
 		if err != nil {
@@ -389,19 +395,9 @@ func (ps *CBLEServer) handleProviderCommand(ctx context.Context, client provider
 		}
 
 		// Convert maps into protobuf-friendly structs
-		deploymentVarsStruct, err := structpb.NewStruct(entDeployment.DeploymentVars)
+		_, deploymentVarsStruct, deploymentStateStruct, err := DeploymentMapsToStructs(entDeployment)
 		if err != nil {
-			failCommand(ctx, entCommand, "failed to parse deployment vars into structpb", err)
-			return
-		}
-		// Deployment state is of type map[string]string and needs to be converted to map[string]interface{}
-		deploymentState := make(map[string]interface{}, len(entDeployment.DeploymentState))
-		for k, v := range entDeployment.DeploymentState {
-			deploymentState[k] = v
-		}
-		deploymentStateStruct, err := structpb.NewStruct(deploymentState)
-		if err != nil {
-			failCommand(ctx, entCommand, "failed to parse deployment state into structpb", err)
+			failCommand(ctx, entCommand, "failed to convert deployment maps", err)
 			return
 		}
 
@@ -428,11 +424,78 @@ func (ps *CBLEServer) handleProviderCommand(ctx context.Context, client provider
 			status = providercommand.StatusSUCCEEDED
 		}
 
+		// Encode response into bytes for database
+		replyBytes, err := json.Marshal(reply)
+		if err != nil {
+			logrus.Error("failed to marshal reply bytes into database")
+		}
+
 		// Update the output of the command
 		err = entCommand.Update().
 			SetStatus(status).
-			SetOutput(reply.Console).
-			SetError(fmt.Sprintf("Errors:\n%s", strings.Join(reply.Errors, "\n"))).
+			SetOutput(replyBytes).
+			SetErrors(reply.Errors).
+			SetEndTime(time.Now()).
+			Exec(ctx)
+		if err != nil {
+			logrus.Errorf("failed to update command state and output")
+		}
+
+	case providercommand.CommandTypeRESOURCES:
+		// Get the deployment and blueprint associated with command
+		entDeployment, err := entCommand.QueryDeployment().Only(ctx)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to query deployment from command", err)
+			return
+		}
+		entBlueprint, err := entDeployment.QueryBlueprint().Only(ctx)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to query blueprint from deployment", err)
+			return
+		}
+
+		// Convert maps into protobuf-friendly structs
+		templateVarsStruct, deploymentVarsStruct, deploymentStateStruct, err := DeploymentMapsToStructs(entDeployment)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to convert deployment maps", err)
+			return
+		}
+
+		// Generate the console command
+		getResourceListCommand := &providerGRPC.GetResourceListRequest{
+			DeploymentId:    entDeployment.ID.String(),
+			Blueprint:       entBlueprint.BlueprintTemplate,
+			TemplateVars:    templateVarsStruct,
+			DeploymentState: deploymentStateStruct,
+			DeploymentVars:  deploymentVarsStruct,
+		}
+
+		// Send the destroy request
+		reply, err := client.GetResourceList(ctx, getResourceListCommand)
+		if err != nil {
+			failCommand(ctx, entCommand, "failed to call provider destroy", err)
+			return
+		}
+
+		var status providercommand.Status
+		switch reply.Status {
+		case common.RPCStatus_FAILURE:
+			status = providercommand.StatusFAILED
+		default:
+			status = providercommand.StatusSUCCEEDED
+		}
+
+		// Encode response into bytes for database
+		replyBytes, err := json.Marshal(reply)
+		if err != nil {
+			logrus.Error("failed to marshal reply bytes into database")
+		}
+
+		// Update the output of the command
+		err = entCommand.Update().
+			SetStatus(status).
+			SetOutput(replyBytes).
+			SetErrors(reply.Errors).
 			SetEndTime(time.Now()).
 			Exec(ctx)
 		if err != nil {
@@ -444,7 +507,7 @@ func (ps *CBLEServer) handleProviderCommand(ctx context.Context, client provider
 func failCommand(ctx context.Context, entCommand *ent.ProviderCommand, message string, err error) {
 	updateErr := entCommand.Update().
 		SetStatus(providercommand.StatusFAILED).
-		SetError(fmt.Sprintf("%s: %v", message, err)).
+		SetErrors([]string{fmt.Sprintf("%s: %v", message, err)}).
 		SetEndTime(time.Now()).
 		Exec(ctx)
 	if updateErr != nil {

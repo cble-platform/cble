@@ -36,6 +36,9 @@ func (Deployment) Fields() []ent.Field {
 			Default(make(map[string]interface{})),
 		field.JSON("deployment_state", map[string]string{}).
 			Default(make(map[string]string)),
+		field.Enum("state").
+			Values("UNKNOWN", "INPROGRESS", "ACTIVE", "DESTROYED").
+			Default("UNKNOWN"),
 	}
 }
 

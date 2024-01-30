@@ -35,6 +35,8 @@ type Deployment struct {
 	DeploymentVars map[string]interface{} `json:"deployment_vars,omitempty"`
 	// DeploymentState holds the value of the "deployment_state" field.
 	DeploymentState map[string]string `json:"deployment_state,omitempty"`
+	// State holds the value of the "state" field.
+	State deployment.State `json:"state,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DeploymentQuery when eager-loading is set.
 	Edges                DeploymentEdges `json:"edges"`
@@ -87,7 +89,7 @@ func (*Deployment) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case deployment.FieldTemplateVars, deployment.FieldDeploymentVars, deployment.FieldDeploymentState:
 			values[i] = new([]byte)
-		case deployment.FieldName, deployment.FieldDescription:
+		case deployment.FieldName, deployment.FieldDescription, deployment.FieldState:
 			values[i] = new(sql.NullString)
 		case deployment.FieldCreatedAt, deployment.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -165,6 +167,12 @@ func (d *Deployment) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &d.DeploymentState); err != nil {
 					return fmt.Errorf("unmarshal field deployment_state: %w", err)
 				}
+			}
+		case deployment.FieldState:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field state", values[i])
+			} else if value.Valid {
+				d.State = deployment.State(value.String)
 			}
 		case deployment.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -246,6 +254,9 @@ func (d *Deployment) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("deployment_state=")
 	builder.WriteString(fmt.Sprintf("%v", d.DeploymentState))
+	builder.WriteString(", ")
+	builder.WriteString("state=")
+	builder.WriteString(fmt.Sprintf("%v", d.State))
 	builder.WriteByte(')')
 	return builder.String()
 }

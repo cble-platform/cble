@@ -49,6 +49,7 @@ var (
 		{Name: "template_vars", Type: field.TypeJSON},
 		{Name: "deployment_vars", Type: field.TypeJSON},
 		{Name: "deployment_state", Type: field.TypeJSON},
+		{Name: "state", Type: field.TypeEnum, Enums: []string{"UNKNOWN", "INPROGRESS", "ACTIVE", "DESTROYED"}, Default: "UNKNOWN"},
 		{Name: "deployment_blueprint", Type: field.TypeUUID},
 		{Name: "deployment_requester", Type: field.TypeUUID},
 	}
@@ -60,13 +61,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "deployments_blueprints_blueprint",
-				Columns:    []*schema.Column{DeploymentsColumns[8]},
+				Columns:    []*schema.Column{DeploymentsColumns[9]},
 				RefColumns: []*schema.Column{BlueprintsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "deployments_users_requester",
-				Columns:    []*schema.Column{DeploymentsColumns[9]},
+				Columns:    []*schema.Column{DeploymentsColumns[10]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -161,13 +162,13 @@ var (
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "command_type", Type: field.TypeEnum, Enums: []string{"CONFIGURE", "DEPLOY", "DESTROY", "CONSOLE"}},
+		{Name: "command_type", Type: field.TypeEnum, Enums: []string{"CONFIGURE", "DEPLOY", "DESTROY", "CONSOLE", "RESOURCES"}},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"QUEUED", "FAILED", "SUCCEEDED", "INPROGRESS"}, Default: "QUEUED"},
 		{Name: "arguments", Type: field.TypeJSON, Nullable: true},
 		{Name: "start_time", Type: field.TypeTime, Nullable: true},
 		{Name: "end_time", Type: field.TypeTime, Nullable: true},
-		{Name: "output", Type: field.TypeString, Default: ""},
-		{Name: "error", Type: field.TypeString, Default: ""},
+		{Name: "output", Type: field.TypeBytes},
+		{Name: "errors", Type: field.TypeJSON},
 		{Name: "provider_command_provider", Type: field.TypeUUID},
 		{Name: "provider_command_deployment", Type: field.TypeUUID, Nullable: true},
 	}

@@ -25,7 +25,7 @@ func RepoExists(url string) bool {
 	return err == nil
 }
 
-// Confirms the git repo has a tag with given tag name.
+// Confirms the git repo has a tag/hash with given value.
 //
 // URL can be any valid git URL (e.g. https://github.com..., git@github.com:..., etc.)
 func RepoTagExists(url, tagName string) bool {
@@ -36,7 +36,7 @@ func RepoTagExists(url, tagName string) bool {
 
 	// Look at all tag refs to see if tag exists
 	for _, ref := range refs {
-		if ref.Name().IsTag() && ref.Name().Short() == tagName {
+		if ref.Name() == plumbing.ReferenceName(tagName) {
 			return true
 		}
 	}
@@ -52,7 +52,6 @@ func ValidateProviderGit(entProvider *ent.Provider) bool {
 func CloneProvider(repoPath string, entProvider *ent.Provider) error {
 	_, err := git.PlainClone(repoPath, false, &git.CloneOptions{
 		URL:               entProvider.ProviderGitURL,
-		ReferenceName:     plumbing.ReferenceName(entProvider.ProviderVersion),
 		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
 	})
 	return err
@@ -71,12 +70,12 @@ func CheckoutProvider(repoPath string, entProvider *ent.Provider) error {
 	}
 
 	// Update the git repo from the remote
-	err = w.Pull(&git.PullOptions{})
+	err = repo.Fetch(&git.FetchOptions{})
 	if err != nil && err != git.NoErrAlreadyUpToDate {
 		return err
 	}
 
-	// Find the hash for the given tag
+	// Find the hash for the given tag (or commit hash directly)
 	tagHash, err := repo.ResolveRevision(plumbing.Revision(entProvider.ProviderVersion))
 	if err != nil {
 		return err
