@@ -18,6 +18,7 @@ export type Scalars = {
   Map: { input: any; output: any; }
   StrMap: { input: any; output: any; }
   Time: { input: any; output: any; }
+  UUID: { input: any; output: any; }
 };
 
 export type Blueprint = {
@@ -52,6 +53,21 @@ export enum CommandType {
   Configure = 'CONFIGURE',
   Deploy = 'DEPLOY',
   Destroy = 'DESTROY'
+}
+
+export type DeployResource = {
+  __typename?: 'DeployResource';
+  deploymentId: Scalars['ID']['output'];
+  key: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  type: DeployResourceType;
+};
+
+export enum DeployResourceType {
+  Host = 'HOST',
+  Network = 'NETWORK',
+  Router = 'ROUTER',
+  Unknown = 'UNKNOWN'
 }
 
 export type Deployment = {
@@ -103,8 +119,12 @@ export type Mutation = {
   deleteUser: Scalars['Boolean']['output'];
   /** Deploy a blueprint (requires permission `com.cble.blueprints.deploy`) */
   deployBlueprint: Deployment;
+  /** Get a list of resources in a deployment (requires permission `com.cble.deployments.resources`) */
+  deploymentResources: Array<DeployResource>;
   /** Destroy a deployment (requires permission `com.cble.deployments.destroy`) */
   destroyDeployment: Deployment;
+  /** Get a vm console (requires permission `com.cble.deployments.console`) */
+  getConsole: Scalars['String']['output'];
   /** Load a provider to connect it to CBLE (requires permission `com.cble.providers.load`) */
   loadProvider: Provider;
   /** Change current user's password */
@@ -162,7 +182,18 @@ export type MutationDeployBlueprintArgs = {
 };
 
 
+export type MutationDeploymentResourcesArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationDestroyDeploymentArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationGetConsoleArgs = {
+  hostKey: Scalars['String']['input'];
   id: Scalars['ID']['input'];
 };
 
@@ -248,7 +279,7 @@ export type ProviderCommand = {
   commandType: CommandType;
   createdAt: Scalars['Time']['output'];
   endTime?: Maybe<Scalars['Time']['output']>;
-  error: Scalars['String']['output'];
+  errors: Array<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   output: Scalars['String']['output'];
   startTime?: Maybe<Scalars['Time']['output']>;
@@ -346,6 +377,7 @@ export type User = {
 export type UserInput = {
   email: Scalars['String']['input'];
   firstName: Scalars['String']['input'];
+  groupIds: Array<Scalars['ID']['input']>;
   lastName: Scalars['String']['input'];
   username: Scalars['String']['input'];
 };
@@ -414,6 +446,21 @@ export type DestroyDeploymentMutationVariables = Exact<{
 
 
 export type DestroyDeploymentMutation = { __typename?: 'Mutation', destroyDeployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, deploymentVars: any, deploymentState: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } } };
+
+export type GetConsoleMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  hostKey: Scalars['String']['input'];
+}>;
+
+
+export type GetConsoleMutation = { __typename?: 'Mutation', getConsole: string };
+
+export type GetResourcesMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetResourcesMutation = { __typename?: 'Mutation', deploymentResources: Array<{ __typename?: 'DeployResource', key: string, deploymentId: string, name: string, type: DeployResourceType }> };
 
 export type GroupFragmentFragment = { __typename?: 'Group', id: string, createdAt: any, updatedAt: any, name: string };
 
@@ -887,6 +934,74 @@ export function useDestroyDeploymentMutation(baseOptions?: Apollo.MutationHookOp
 export type DestroyDeploymentMutationHookResult = ReturnType<typeof useDestroyDeploymentMutation>;
 export type DestroyDeploymentMutationResult = Apollo.MutationResult<DestroyDeploymentMutation>;
 export type DestroyDeploymentMutationOptions = Apollo.BaseMutationOptions<DestroyDeploymentMutation, DestroyDeploymentMutationVariables>;
+export const GetConsoleDocument = gql`
+    mutation GetConsole($id: ID!, $hostKey: String!) {
+  getConsole(id: $id, hostKey: $hostKey)
+}
+    `;
+export type GetConsoleMutationFn = Apollo.MutationFunction<GetConsoleMutation, GetConsoleMutationVariables>;
+
+/**
+ * __useGetConsoleMutation__
+ *
+ * To run a mutation, you first call `useGetConsoleMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useGetConsoleMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [getConsoleMutation, { data, loading, error }] = useGetConsoleMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      hostKey: // value for 'hostKey'
+ *   },
+ * });
+ */
+export function useGetConsoleMutation(baseOptions?: Apollo.MutationHookOptions<GetConsoleMutation, GetConsoleMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<GetConsoleMutation, GetConsoleMutationVariables>(GetConsoleDocument, options);
+      }
+export type GetConsoleMutationHookResult = ReturnType<typeof useGetConsoleMutation>;
+export type GetConsoleMutationResult = Apollo.MutationResult<GetConsoleMutation>;
+export type GetConsoleMutationOptions = Apollo.BaseMutationOptions<GetConsoleMutation, GetConsoleMutationVariables>;
+export const GetResourcesDocument = gql`
+    mutation GetResources($id: ID!) {
+  deploymentResources(id: $id) {
+    key
+    deploymentId
+    name
+    type
+  }
+}
+    `;
+export type GetResourcesMutationFn = Apollo.MutationFunction<GetResourcesMutation, GetResourcesMutationVariables>;
+
+/**
+ * __useGetResourcesMutation__
+ *
+ * To run a mutation, you first call `useGetResourcesMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useGetResourcesMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [getResourcesMutation, { data, loading, error }] = useGetResourcesMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetResourcesMutation(baseOptions?: Apollo.MutationHookOptions<GetResourcesMutation, GetResourcesMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<GetResourcesMutation, GetResourcesMutationVariables>(GetResourcesDocument, options);
+      }
+export type GetResourcesMutationHookResult = ReturnType<typeof useGetResourcesMutation>;
+export type GetResourcesMutationResult = Apollo.MutationResult<GetResourcesMutation>;
+export type GetResourcesMutationOptions = Apollo.BaseMutationOptions<GetResourcesMutation, GetResourcesMutationVariables>;
 export const ListGroupsDocument = gql`
     query ListGroups {
   groups {

@@ -1,6 +1,7 @@
 scalar Time
 scalar Map
 scalar StrMap
+scalar UUID
 
 type Blueprint {
   id: ID!
@@ -27,6 +28,20 @@ type Deployment {
 
   blueprint: Blueprint!
   requester: User!
+}
+
+enum DeployResourceType {
+  UNKNOWN
+  HOST
+  NETWORK
+  ROUTER
+}
+
+type DeployResource {
+  key: String!
+  deploymentId: ID!
+  name: String!
+  type: DeployResourceType!
 }
 
 type Group {
@@ -101,7 +116,7 @@ type ProviderCommand {
   startTime: Time
   endTime: Time
   output: String!
-  error: String!
+  errors: [String!]!
 }
 
 type User {
@@ -203,6 +218,8 @@ input UserInput {
   email: String!
   firstName: String!
   lastName: String!
+
+  groupIds: [ID!]!
 }
 
 type Mutation {
@@ -289,4 +306,12 @@ type Mutation {
   Destroy a deployment (requires permission `com.cble.deployments.destroy`)
   """
   destroyDeployment(id: ID!): Deployment! @permission(key: "com.cble.deployments.destroy")
+  """
+  Get a vm console (requires permission `com.cble.deployments.console`)
+  """
+  getConsole(id: ID!, hostKey: String!): String! @permission(key: "com.cble.deployments.console")
+  """
+  Get a list of resources in a deployment (requires permission `com.cble.deployments.resources`)
+  """
+  deploymentResources(id: ID!): [DeployResource!]! @permission(key: "com.cble.deployments.resources")
 }

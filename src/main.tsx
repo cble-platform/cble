@@ -1,92 +1,102 @@
 // Styles
-import "./index.css";
+import './index.css'
 // Fonts
-import "@fontsource/roboto/300.css";
-import "@fontsource/roboto/400.css";
-import "@fontsource/roboto/500.css";
-import "@fontsource/roboto/700.css";
+import '@fontsource/roboto/300.css'
+import '@fontsource/roboto/400.css'
+import '@fontsource/roboto/500.css'
+import '@fontsource/roboto/700.css'
 
 // Pages
-import Root from "./routes/root";
-import ErrorPage from "./error-page";
-import Login from "./routes/auth/login";
+import Root from './routes/root'
+import ErrorPage from './error-page'
+import Login from './routes/auth/login'
 
-import React from "react";
-import ReactDOM from "react-dom/client";
-import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
-import { ThemeWrapper } from "./theme";
-import { client } from "./api/apollo";
-import { ApolloProvider } from "@apollo/client";
-import Blueprints from "./routes/blueprints";
-import YamlWorker from "./yaml.worker.js?worker";
-import { SnackbarProvider } from "notistack";
-import RequestBlueprint from "./routes/blueprints/request";
-import BlueprintForm from "./routes/blueprints/form";
-import Deployments from "./routes/deployments";
-import DestroyDeployment from "./routes/deployments/destroy";
-import DeploymentDetails from "./routes/deployments/details";
-import Providers from "./routes/providers";
-import ProviderForm from "./routes/providers/form";
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
+import { ThemeWrapper } from './theme'
+import { client } from './api/apollo'
+import { ApolloProvider } from '@apollo/client'
+import Blueprints from './routes/blueprints'
+import YamlWorker from './yaml.worker.js?worker'
+import { SnackbarProvider } from 'notistack'
+import RequestBlueprint from './routes/blueprints/request'
+import BlueprintForm from './routes/blueprints/form'
+import Deployments from './routes/deployments'
+import DestroyDeployment from './routes/deployments/destroy'
+import DeploymentDetails from './routes/deployments/details'
+import Providers from './routes/providers'
+import ProviderForm from './routes/providers/form'
+import Users from './routes/users'
+import UserForm from './routes/users/form'
 
 window.MonacoEnvironment = {
   getWorker(_, label) {
     switch (label) {
       // Handle other cases
-      case "yaml":
-        return new YamlWorker();
+      case 'yaml':
+        return new YamlWorker()
       default:
-        throw new Error(`Unknown label ${label}`);
+        throw new Error(`Unknown label ${label}`)
     }
   },
-};
+}
 
 const router = createBrowserRouter([
   {
-    path: "/",
+    path: '/',
     element: <Root />,
     children: [
       { index: true, element: <Navigate to="/blueprints" replace /> },
       {
-        path: "blueprints",
+        path: 'blueprints',
         children: [
           { index: true, element: <Blueprints /> },
-          { path: "create", element: <BlueprintForm action="create" /> },
-          { path: "edit/:id", element: <BlueprintForm action="edit" /> },
-          { path: "request/:id", element: <RequestBlueprint /> },
+          { path: 'create', element: <BlueprintForm action="create" /> },
+          { path: 'edit/:id', element: <BlueprintForm action="edit" /> },
+          { path: 'request/:id', element: <RequestBlueprint /> },
         ],
       },
       {
-        path: "deployments",
+        path: 'deployments',
         children: [
           { index: true, element: <Deployments /> },
-          { path: ":id", element: <DeploymentDetails /> },
-          { path: "destroy/:id", element: <DestroyDeployment /> },
+          { path: ':id', element: <DeploymentDetails /> },
+          { path: 'destroy/:id', element: <DestroyDeployment /> },
         ],
       },
       {
-        path: "providers",
+        path: 'providers',
         children: [
           { index: true, element: <Providers /> },
-          { path: "create", element: <ProviderForm action="create" /> },
-          { path: "edit/:id", element: <ProviderForm action="edit" /> },
+          { path: 'create', element: <ProviderForm action="create" /> },
+          { path: 'edit/:id', element: <ProviderForm action="edit" /> },
+        ],
+      },
+      {
+        path: 'users',
+        children: [
+          { index: true, element: <Users /> },
+          { path: 'create', element: <UserForm action="create" /> },
+          { path: 'edit/:id', element: <UserForm action="edit" /> },
         ],
       },
     ],
     errorElement: <ErrorPage />,
   },
   {
-    path: "/auth",
+    path: '/auth',
     children: [
       {
-        path: "login",
+        path: 'login',
         element: <Login />,
       },
     ],
     errorElement: <ErrorPage />,
   },
-]);
+])
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
+ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ApolloProvider client={client}>
       <ThemeWrapper>
@@ -96,4 +106,4 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       </ThemeWrapper>
     </ApolloProvider>
   </React.StrictMode>
-);
+)

@@ -137,8 +137,8 @@ export default function BlueprintForm({ action }: { action: "create" | "edit" })
           autoComplete
           clearOnEscape
           options={groupsData?.groups ?? []}
-          getOptionKey={(option: ListGroupsQuery["groups"][0]) => `${option.id}`}
-          getOptionLabel={(option: ListGroupsQuery["groups"][0]) => `${option.name}`}
+          getOptionKey={(option: ListGroupsQuery["groups"][number]) => `${option.id}`}
+          getOptionLabel={(option: ListGroupsQuery["groups"][number]) => `${option.name}`}
           sx={{ width: 300 }}
           value={(groupsData?.groups.find((g) => g.id === blueprint.parentGroupId) || null) ?? null}
           onChange={(_, val) => {
@@ -152,8 +152,8 @@ export default function BlueprintForm({ action }: { action: "create" | "edit" })
           autoComplete
           clearOnEscape
           options={providersData?.providers ?? []}
-          getOptionKey={(option: ListProvidersQuery["providers"][0]) => `${option.id}`}
-          getOptionLabel={(option: ListProvidersQuery["providers"][0]) => `${option.displayName} (${option.providerVersion})`}
+          getOptionKey={(option: ListProvidersQuery["providers"][number]) => `${option.id}`}
+          getOptionLabel={(option: ListProvidersQuery["providers"][number]) => `${option.displayName} (${option.providerVersion})`}
           sx={{ width: 300 }}
           value={(providersData?.providers.find((p) => p.id === blueprint.providerId) || null) ?? null}
           onChange={(_, val) => {
