@@ -12,12 +12,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// func New(entClient *ent.Client) *BlueprintEngine {
-// 	return &BlueprintEngine{
-// 		entClient: entClient,
-// 	}
-// }
-
 func LoadResources(ctx context.Context, client *ent.Client, entBlueprint *ent.Blueprint) error {
 	// Parse the template into our generic objects
 	var parsedBlueprint *models.Blueprint
