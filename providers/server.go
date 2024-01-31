@@ -72,9 +72,15 @@ func (ps *CBLEServer) Listen(ctx context.Context, wg *sync.WaitGroup) {
 
 	// Wait for parent context to close
 	<-ctx.Done()
+	// Set timeout timestamp
+	timeoutTime := time.Now().Add(time.Minute)
 	// Wait for all providers to unregister
 	for {
-		logrus.Info("Waiting for all providers to unregister...")
+		// If we reached the timeout, just quit
+		if time.Until(timeoutTime) == 0 {
+			break
+		}
+		logrus.Infof("Waiting for all providers to unregister (%fs)...", time.Until(timeoutTime).Seconds())
 		providersAreLoaded := false
 		ps.registeredProviders.Range(func(key, value any) bool {
 			providersAreLoaded = true

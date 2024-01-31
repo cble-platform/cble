@@ -31,7 +31,7 @@ type Deployment struct {
 	// The overall state of the deployment (should only by updated by the deploy engine)
 	State deployment.State `json:"state,omitempty"`
 	// Stores the variable values to be injected into the blueprint template
-	TemplateVars map[string]interface{} `json:"template_vars,omitempty"`
+	TemplateVars map[string]string `json:"template_vars,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DeploymentQuery when eager-loading is set.
 	Edges                DeploymentEdges `json:"edges"`
@@ -43,13 +43,11 @@ type Deployment struct {
 type DeploymentEdges struct {
 	// The blueprint for this deployment
 	Blueprint *Blueprint `json:"blueprint,omitempty"`
-	// The deployment nodes with no dependencies to start the deploy with
-	RootNodes []*DeploymentNode `json:"root_nodes,omitempty"`
 	// The deployment nodes belonging to this deployment
 	DeploymentNodes []*DeploymentNode `json:"deployment_nodes,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [2]bool
 }
 
 // BlueprintOrErr returns the Blueprint value or an error if the edge
@@ -65,19 +63,10 @@ func (e DeploymentEdges) BlueprintOrErr() (*Blueprint, error) {
 	return nil, &NotLoadedError{edge: "blueprint"}
 }
 
-// RootNodesOrErr returns the RootNodes value or an error if the edge
-// was not loaded in eager-loading.
-func (e DeploymentEdges) RootNodesOrErr() ([]*DeploymentNode, error) {
-	if e.loadedTypes[1] {
-		return e.RootNodes, nil
-	}
-	return nil, &NotLoadedError{edge: "root_nodes"}
-}
-
 // DeploymentNodesOrErr returns the DeploymentNodes value or an error if the edge
 // was not loaded in eager-loading.
 func (e DeploymentEdges) DeploymentNodesOrErr() ([]*DeploymentNode, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[1] {
 		return e.DeploymentNodes, nil
 	}
 	return nil, &NotLoadedError{edge: "deployment_nodes"}
@@ -180,11 +169,6 @@ func (d *Deployment) Value(name string) (ent.Value, error) {
 // QueryBlueprint queries the "blueprint" edge of the Deployment entity.
 func (d *Deployment) QueryBlueprint() *BlueprintQuery {
 	return NewDeploymentClient(d.config).QueryBlueprint(d)
-}
-
-// QueryRootNodes queries the "root_nodes" edge of the Deployment entity.
-func (d *Deployment) QueryRootNodes() *DeploymentNodeQuery {
-	return NewDeploymentClient(d.config).QueryRootNodes(d)
 }
 
 // QueryDeploymentNodes queries the "deployment_nodes" edge of the Deployment entity.

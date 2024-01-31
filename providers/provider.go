@@ -10,6 +10,7 @@ import (
 
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/internal/git"
+	providerGRPC "github.com/cble-platform/cble-provider-grpc/pkg/provider"
 	"github.com/sirupsen/logrus"
 )
 
@@ -84,32 +85,32 @@ func (ps *CBLEServer) runProvider(ctx context.Context, entProvider *ent.Provider
 }
 
 func (ps *CBLEServer) startProviderConnection(ctx context.Context, shutdown chan bool, providerId string) {
-	// registeredProvider, exists := ps.registeredProviders.Load(providerId)
-	// if !exists {
-	// 	logrus.Errorf("attempted to start provider on non-registered provider (%s)", providerId)
-	// 	return
-	// }
+	registeredProvider, exists := ps.registeredProviders.Load(providerId)
+	if !exists {
+		logrus.Errorf("attempted to start provider on non-registered provider (%s)", providerId)
+		return
+	}
 
-	// logrus.Debugf("starting provider connection to provider %s with socket ID %s", providerId, registeredProvider.(RegisteredProvider).SocketID)
+	logrus.Debugf("starting provider connection to provider %s with socket ID %s", providerId, registeredProvider.(RegisteredProvider).SocketID)
 
-	// providerOpts := &providerGRPC.ProviderClientOptions{
-	// 	// TODO: implement TLS for provider connections
-	// 	TLS:      false,
-	// 	CAFile:   "",
-	// 	SocketID: registeredProvider.(RegisteredProvider).SocketID,
-	// }
-	// providerConn, err := providerGRPC.Connect(providerOpts)
-	// if err != nil {
-	// 	logrus.Errorf("failed to connect to provider gRPC server (%s): %v", providerId, err)
-	// 	return
-	// }
-	// client, err := providerGRPC.NewClient(ctx, providerConn)
-	// if err != nil {
-	// 	logrus.Errorf("failed to create client for provider (%s): %v", providerId, err)
-	// 	return
-	// }
-	// // Store the client reference for synchronous use
-	// ps.providerClients.Store(providerId, client)
+	providerOpts := &providerGRPC.ProviderClientOptions{
+		// TODO: implement TLS for provider connections
+		TLS:      false,
+		CAFile:   "",
+		SocketID: registeredProvider.(RegisteredProvider).SocketID,
+	}
+	providerConn, err := providerGRPC.Connect(providerOpts)
+	if err != nil {
+		logrus.Errorf("failed to connect to provider gRPC server (%s): %v", providerId, err)
+		return
+	}
+	client, err := providerGRPC.NewClient(ctx, providerConn)
+	if err != nil {
+		logrus.Errorf("failed to create client for provider (%s): %v", providerId, err)
+		return
+	}
+	// Store the client reference for synchronous use
+	ps.providerClients.Store(providerId, client)
 
 	// // Convert provider ID to UUID for ENT queries
 	// providerUuid, err := uuid.Parse(providerId)

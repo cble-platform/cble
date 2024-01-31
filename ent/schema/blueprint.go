@@ -6,7 +6,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/cble-backend/blueprintengine/models"
+	"github.com/cble-platform/cble-backend/engine/models"
 	"github.com/google/uuid"
 )
 

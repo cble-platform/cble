@@ -65,7 +65,6 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "state", Type: field.TypeEnum, Enums: []string{"awaiting", "parent_awaiting", "in_progress", "complete", "tainted", "failed", "to_delete", "deleted", "to_rebuild"}},
 		{Name: "vars", Type: field.TypeJSON},
-		{Name: "deployment_root_nodes", Type: field.TypeUUID, Nullable: true},
 		{Name: "deployment_node_deployment", Type: field.TypeUUID},
 		{Name: "deployment_node_resource", Type: field.TypeUUID},
 	}
@@ -76,20 +75,14 @@ var (
 		PrimaryKey: []*schema.Column{DeploymentNodesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "deployment_nodes_deployments_root_nodes",
-				Columns:    []*schema.Column{DeploymentNodesColumns[5]},
-				RefColumns: []*schema.Column{DeploymentsColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
 				Symbol:     "deployment_nodes_deployments_deployment",
-				Columns:    []*schema.Column{DeploymentNodesColumns[6]},
+				Columns:    []*schema.Column{DeploymentNodesColumns[5]},
 				RefColumns: []*schema.Column{DeploymentsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "deployment_nodes_resources_resource",
-				Columns:    []*schema.Column{DeploymentNodesColumns[7]},
+				Columns:    []*schema.Column{DeploymentNodesColumns[6]},
 				RefColumns: []*schema.Column{ResourcesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -351,8 +344,7 @@ func init() {
 	BlueprintsTable.ForeignKeys[0].RefTable = ProvidersTable
 	DeploymentsTable.ForeignKeys[0].RefTable = BlueprintsTable
 	DeploymentNodesTable.ForeignKeys[0].RefTable = DeploymentsTable
-	DeploymentNodesTable.ForeignKeys[1].RefTable = DeploymentsTable
-	DeploymentNodesTable.ForeignKeys[2].RefTable = ResourcesTable
+	DeploymentNodesTable.ForeignKeys[1].RefTable = ResourcesTable
 	GroupsTable.ForeignKeys[0].RefTable = GroupsTable
 	PermissionPoliciesTable.ForeignKeys[0].RefTable = PermissionsTable
 	PermissionPoliciesTable.ForeignKeys[1].RefTable = GroupsTable

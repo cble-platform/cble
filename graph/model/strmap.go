@@ -20,8 +20,16 @@ func MarshalStrMap(val map[string]string) graphql.Marshaler {
 }
 
 func UnmarshalStrMap(v interface{}) (map[string]string, error) {
-	if m, ok := v.(map[string]string); ok {
-		return m, nil
+	if m, ok := v.(map[string]interface{}); ok {
+		strMap := make(map[string]string)
+		for k, v := range m {
+			value, ok := v.(string)
+			if !ok {
+				return nil, fmt.Errorf("key %s contains non-string value", k)
+			}
+			strMap[k] = value
+		}
+		return strMap, nil
 	}
 
 	return nil, fmt.Errorf("%T is not a map", v)

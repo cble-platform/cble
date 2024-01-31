@@ -585,22 +585,6 @@ func (c *DeploymentClient) QueryBlueprint(d *Deployment) *BlueprintQuery {
 	return query
 }
 
-// QueryRootNodes queries the root_nodes edge of a Deployment.
-func (c *DeploymentClient) QueryRootNodes(d *Deployment) *DeploymentNodeQuery {
-	query := (&DeploymentNodeClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := d.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(deployment.Table, deployment.FieldID, id),
-			sqlgraph.To(deploymentnode.Table, deploymentnode.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, deployment.RootNodesTable, deployment.RootNodesColumn),
-		)
-		fromV = sqlgraph.Neighbors(d.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryDeploymentNodes queries the deployment_nodes edge of a Deployment.
 func (c *DeploymentClient) QueryDeploymentNodes(d *Deployment) *DeploymentNodeQuery {
 	query := (&DeploymentNodeClient{config: c.config}).Query()

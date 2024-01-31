@@ -31,27 +31,52 @@ type Resource {
   dependsOn: [Resource!]!
 }
 
-# enum DeploymentState {
-#   UNKNOWN
-#   INPROGRESS
-#   ACTIVE
-#   DESTROYED
-# }
+enum DeploymentState {
+  AWAITING
+  INPROGRESS
+  COMPLETE
+  FAILED
+  DELETED
+}
 
-# type Deployment {
-#   id: ID!
-#   createdAt: Time!
-#   updatedAt: Time!
-#   name: String!
-#   description: String!
-#   templateVars: Map!
-#   deploymentVars: Map!
-#   deploymentState: StrMap!
-#   state: DeploymentState!
+type Deployment {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  name: String!
+  description: String!
+  state: DeploymentState!
+  templateVars: StrMap!
 
-#   blueprint: Blueprint!
-#   requester: User!
-# }
+  blueprint: Blueprint!
+  deploymentNodes: [DeploymentNode!]!
+  # requester: User!
+}
+
+enum DeploymentNodeState {
+  AWAITING
+  PARENTAWAITING
+  INPROGRESS
+  COMPLETE
+  TAINTED
+  FAILED
+  TODELETE
+  DELETED
+  TOREBUILD
+}
+
+type DeploymentNode {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  state: DeploymentNodeState!
+  vars: StrMap!
+
+  deployment: Deployment!
+  resource: Resource!
+  nextNodes: [DeploymentNode!]!
+  prevNodes: [DeploymentNode!]!
+}
 
 # enum DeployResourceType {
 #   UNKNOWN
@@ -206,18 +231,14 @@ type Query {
   Get a blueprint (requires permission `com.cble.blueprints.read`)
   """
   blueprint(id: ID!): Blueprint! @permission(key: "com.cble.blueprints.read")
-  # """
-  # List deployments (requires permission `com.cble.deployments.list`)
-  # """
-  # deployments: [Deployment!]! @permission(key: "com.cble.deployments.list")
-  # """
-  # Get a deployment (requires permission `com.cble.deployments.read`)
-  # """
-  # deployment(id: ID!): Deployment! @permission(key: "com.cble.deployments.read")
-  # """
-  # Get a list of resources in a deployment (requires permission `com.cble.deployments.resources`)
-  # """
-  # deploymentResources(id: ID!): [DeployResource!]! @permission(key: "com.cble.deployments.resources")
+  """
+  List deployments (requires permission `com.cble.deployments.list`)
+  """
+  deployments: [Deployment!]! @permission(key: "com.cble.deployments.list")
+  """
+  Get a deployment (requires permission `com.cble.deployments.read`)
+  """
+  deployment(id: ID!): Deployment! @permission(key: "com.cble.deployments.read")
 }
 
 input BlueprintInput {
@@ -316,19 +337,19 @@ type Mutation {
   # Unload a provider to disconnect it from CBLE (requires permission `com.cble.providers.unload`)
   # """
   # unloadProvider(id: ID!): Provider! @permission(key: "com.cble.providers.unload")
-  # """
-  # Applies the stored configuration to the provider (requires permission `com.cble.providers.configure`)
-  # """
-  # configureProvider(id: ID!): Provider! @permission(key: "com.cble.providers.configure")
+  """
+  Applies the stored configuration to the provider (requires permission `com.cble.providers.configure`)
+  """
+  configureProvider(id: ID!): Provider! @permission(key: "com.cble.providers.configure")
 
   # ##############
   # # DEPLOYMENT #
   # ##############
 
-  # """
-  # Deploy a blueprint (requires permission `com.cble.blueprints.deploy`)
-  # """
-  # deployBlueprint(id: ID!): Deployment! @permission(key: "com.cble.blueprints.deploy")
+  """
+  Deploy a blueprint (requires permission `com.cble.blueprints.deploy`)
+  """
+  deployBlueprint(id: ID!, templateVars: StrMap!): Deployment! @permission(key: "com.cble.blueprints.deploy")
   # """
   # Destroy a deployment (requires permission `com.cble.deployments.destroy`)
   # """

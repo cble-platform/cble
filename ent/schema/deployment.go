@@ -33,8 +33,8 @@ func (Deployment) Fields() []ent.Field {
 		field.Enum("state").
 			Values("awaiting", "in_progress", "complete", "failed", "deleted").
 			Comment("The overall state of the deployment (should only by updated by the deploy engine)"),
-		field.JSON("template_vars", map[string]interface{}{}).
-			Default(make(map[string]interface{})).
+		field.JSON("template_vars", map[string]string{}).
+			Default(make(map[string]string)).
 			Comment("Stores the variable values to be injected into the blueprint template"),
 	}
 }
@@ -46,8 +46,6 @@ func (Deployment) Edges() []ent.Edge {
 			Unique().
 			Required().
 			Comment("The blueprint for this deployment"),
-		edge.To("root_nodes", DeploymentNode.Type).
-			Comment("The deployment nodes with no dependencies to start the deploy with"),
 		edge.From("deployment_nodes", DeploymentNode.Type).
 			Ref("deployment").
 			Comment("The deployment nodes belonging to this deployment"),

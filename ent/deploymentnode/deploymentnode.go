@@ -66,7 +66,6 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the "deployment_nodes"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
-	"deployment_root_nodes",
 	"deployment_node_deployment",
 	"deployment_node_resource",
 }

@@ -30,8 +30,6 @@ const (
 	FieldTemplateVars = "template_vars"
 	// EdgeBlueprint holds the string denoting the blueprint edge name in mutations.
 	EdgeBlueprint = "blueprint"
-	// EdgeRootNodes holds the string denoting the root_nodes edge name in mutations.
-	EdgeRootNodes = "root_nodes"
 	// EdgeDeploymentNodes holds the string denoting the deployment_nodes edge name in mutations.
 	EdgeDeploymentNodes = "deployment_nodes"
 	// Table holds the table name of the deployment in the database.
@@ -43,13 +41,6 @@ const (
 	BlueprintInverseTable = "blueprints"
 	// BlueprintColumn is the table column denoting the blueprint relation/edge.
 	BlueprintColumn = "deployment_blueprint"
-	// RootNodesTable is the table that holds the root_nodes relation/edge.
-	RootNodesTable = "deployment_nodes"
-	// RootNodesInverseTable is the table name for the DeploymentNode entity.
-	// It exists in this package in order to avoid circular dependency with the "deploymentnode" package.
-	RootNodesInverseTable = "deployment_nodes"
-	// RootNodesColumn is the table column denoting the root_nodes relation/edge.
-	RootNodesColumn = "deployment_root_nodes"
 	// DeploymentNodesTable is the table that holds the deployment_nodes relation/edge.
 	DeploymentNodesTable = "deployment_nodes"
 	// DeploymentNodesInverseTable is the table name for the DeploymentNode entity.
@@ -99,7 +90,7 @@ var (
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
 	// DefaultTemplateVars holds the default value on creation for the "template_vars" field.
-	DefaultTemplateVars map[string]interface{}
+	DefaultTemplateVars map[string]string
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -170,20 +161,6 @@ func ByBlueprintField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
-// ByRootNodesCount orders the results by root_nodes count.
-func ByRootNodesCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newRootNodesStep(), opts...)
-	}
-}
-
-// ByRootNodes orders the results by root_nodes terms.
-func ByRootNodes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newRootNodesStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
 // ByDeploymentNodesCount orders the results by deployment_nodes count.
 func ByDeploymentNodesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -202,13 +179,6 @@ func newBlueprintStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(BlueprintInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, false, BlueprintTable, BlueprintColumn),
-	)
-}
-func newRootNodesStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(RootNodesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, RootNodesTable, RootNodesColumn),
 	)
 }
 func newDeploymentNodesStep() *sqlgraph.Step {
