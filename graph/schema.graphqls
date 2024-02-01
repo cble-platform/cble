@@ -354,6 +354,10 @@ type Mutation {
   Destroy a deployment (requires permission `com.cble.deployments.destroy`)
   """
   destroyDeployment(id: ID!): Deployment! @permission(key: "com.cble.deployments.destroy")
+  """
+  Destroy a deployment (requires permission `com.cble.deployments.redeploy`)
+  """
+  redeployDeployment(id: ID!, nodeIds: [ID!]!): Deployment! @permission(key: "com.cble.deployments.redeploy")
   # """
   # Get a vm console (requires permission `com.cble.deployments.console`)
   # """
