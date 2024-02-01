@@ -152,10 +152,20 @@ func deployRoutine(ctx context.Context, client *ent.Client, cbleServer *provider
 		return
 	}
 
+	// Template the object definition
+	templatedObject, err := templateObject(ctx, deploymentNode)
+	if err != nil {
+		// Mark node as failed
+		failNode(ctx, deploymentNode)
+		// Log error
+		logrus.WithField("node", deploymentNode.ID).Errorf("failed to to template node object definition: %v", err)
+		return
+	}
+
 	logrus.WithField("node", deploymentNode.ID).Debug("deploying resource...")
 
 	// Have the provider deploy the resource
-	reply, err := cbleServer.DeployResource(ctx, entProvider, deploymentNode)
+	reply, err := cbleServer.DeployResource(ctx, entProvider, deploymentNode, templatedObject)
 	if err != nil {
 		// Mark node as failed
 		failNode(ctx, deploymentNode)
