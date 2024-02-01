@@ -32,7 +32,6 @@ type DeploymentNode struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DeploymentNodeQuery when eager-loading is set.
 	Edges                      DeploymentNodeEdges `json:"edges"`
-	deployment_root_nodes      *uuid.UUID
 	deployment_node_deployment *uuid.UUID
 	deployment_node_resource   *uuid.UUID
 	selectValues               sql.SelectValues
@@ -110,11 +109,9 @@ func (*DeploymentNode) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullTime)
 		case deploymentnode.FieldID:
 			values[i] = new(uuid.UUID)
-		case deploymentnode.ForeignKeys[0]: // deployment_root_nodes
+		case deploymentnode.ForeignKeys[0]: // deployment_node_deployment
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case deploymentnode.ForeignKeys[1]: // deployment_node_deployment
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case deploymentnode.ForeignKeys[2]: // deployment_node_resource
+		case deploymentnode.ForeignKeys[1]: // deployment_node_resource
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
@@ -165,19 +162,12 @@ func (dn *DeploymentNode) assignValues(columns []string, values []any) error {
 			}
 		case deploymentnode.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
-				return fmt.Errorf("unexpected type %T for field deployment_root_nodes", values[i])
-			} else if value.Valid {
-				dn.deployment_root_nodes = new(uuid.UUID)
-				*dn.deployment_root_nodes = *value.S.(*uuid.UUID)
-			}
-		case deploymentnode.ForeignKeys[1]:
-			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field deployment_node_deployment", values[i])
 			} else if value.Valid {
 				dn.deployment_node_deployment = new(uuid.UUID)
 				*dn.deployment_node_deployment = *value.S.(*uuid.UUID)
 			}
-		case deploymentnode.ForeignKeys[2]:
+		case deploymentnode.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field deployment_node_resource", values[i])
 			} else if value.Valid {

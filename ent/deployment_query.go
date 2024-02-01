@@ -26,7 +26,6 @@ type DeploymentQuery struct {
 	inters              []Interceptor
 	predicates          []predicate.Deployment
 	withBlueprint       *BlueprintQuery
-	withRootNodes       *DeploymentNodeQuery
 	withDeploymentNodes *DeploymentNodeQuery
 	withFKs             bool
 	// intermediate query (i.e. traversal path).
@@ -80,28 +79,6 @@ func (dq *DeploymentQuery) QueryBlueprint() *BlueprintQuery {
 			sqlgraph.From(deployment.Table, deployment.FieldID, selector),
 			sqlgraph.To(blueprint.Table, blueprint.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, deployment.BlueprintTable, deployment.BlueprintColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryRootNodes chains the current query on the "root_nodes" edge.
-func (dq *DeploymentQuery) QueryRootNodes() *DeploymentNodeQuery {
-	query := (&DeploymentNodeClient{config: dq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := dq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := dq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(deployment.Table, deployment.FieldID, selector),
-			sqlgraph.To(deploymentnode.Table, deploymentnode.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, deployment.RootNodesTable, deployment.RootNodesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
 		return fromU, nil
@@ -324,7 +301,6 @@ func (dq *DeploymentQuery) Clone() *DeploymentQuery {
 		inters:              append([]Interceptor{}, dq.inters...),
 		predicates:          append([]predicate.Deployment{}, dq.predicates...),
 		withBlueprint:       dq.withBlueprint.Clone(),
-		withRootNodes:       dq.withRootNodes.Clone(),
 		withDeploymentNodes: dq.withDeploymentNodes.Clone(),
 		// clone intermediate query.
 		sql:  dq.sql.Clone(),
@@ -340,17 +316,6 @@ func (dq *DeploymentQuery) WithBlueprint(opts ...func(*BlueprintQuery)) *Deploym
 		opt(query)
 	}
 	dq.withBlueprint = query
-	return dq
-}
-
-// WithRootNodes tells the query-builder to eager-load the nodes that are connected to
-// the "root_nodes" edge. The optional arguments are used to configure the query builder of the edge.
-func (dq *DeploymentQuery) WithRootNodes(opts ...func(*DeploymentNodeQuery)) *DeploymentQuery {
-	query := (&DeploymentNodeClient{config: dq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	dq.withRootNodes = query
 	return dq
 }
 
@@ -444,9 +409,8 @@ func (dq *DeploymentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*D
 		nodes       = []*Deployment{}
 		withFKs     = dq.withFKs
 		_spec       = dq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [2]bool{
 			dq.withBlueprint != nil,
-			dq.withRootNodes != nil,
 			dq.withDeploymentNodes != nil,
 		}
 	)
@@ -477,13 +441,6 @@ func (dq *DeploymentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*D
 	if query := dq.withBlueprint; query != nil {
 		if err := dq.loadBlueprint(ctx, query, nodes, nil,
 			func(n *Deployment, e *Blueprint) { n.Edges.Blueprint = e }); err != nil {
-			return nil, err
-		}
-	}
-	if query := dq.withRootNodes; query != nil {
-		if err := dq.loadRootNodes(ctx, query, nodes,
-			func(n *Deployment) { n.Edges.RootNodes = []*DeploymentNode{} },
-			func(n *Deployment, e *DeploymentNode) { n.Edges.RootNodes = append(n.Edges.RootNodes, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -526,37 +483,6 @@ func (dq *DeploymentQuery) loadBlueprint(ctx context.Context, query *BlueprintQu
 		for i := range nodes {
 			assign(nodes[i], n)
 		}
-	}
-	return nil
-}
-func (dq *DeploymentQuery) loadRootNodes(ctx context.Context, query *DeploymentNodeQuery, nodes []*Deployment, init func(*Deployment), assign func(*Deployment, *DeploymentNode)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Deployment)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	query.withFKs = true
-	query.Where(predicate.DeploymentNode(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(deployment.RootNodesColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.deployment_root_nodes
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "deployment_root_nodes" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "deployment_root_nodes" returned %v for node %v`, *fk, n.ID)
-		}
-		assign(node, n)
 	}
 	return nil
 }

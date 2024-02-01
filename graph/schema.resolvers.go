@@ -8,13 +8,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cble-platform/cble-backend/blueprintengine"
+	"github.com/cble-platform/cble-backend/engine"
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/graph/generated"
 	"github.com/cble-platform/cble-backend/graph/model"
 	"github.com/google/uuid"
 	"github.com/vektah/gqlparser/v2/gqlerror"
-	"gopkg.in/yaml.v3"
+	yaml "gopkg.in/yaml.v3"
 )
 
 // BlueprintTemplate is the resolver for the blueprintTemplate field.
@@ -34,6 +34,46 @@ func (r *blueprintResolver) Provider(ctx context.Context, obj *ent.Blueprint) (*
 // Resources is the resolver for the resources field.
 func (r *blueprintResolver) Resources(ctx context.Context, obj *ent.Blueprint) ([]*ent.Resource, error) {
 	return obj.QueryResources().All(ctx)
+}
+
+// State is the resolver for the state field.
+func (r *deploymentResolver) State(ctx context.Context, obj *ent.Deployment) (model.DeploymentState, error) {
+	return model.DeploymentState(obj.State), nil
+}
+
+// Blueprint is the resolver for the blueprint field.
+func (r *deploymentResolver) Blueprint(ctx context.Context, obj *ent.Deployment) (*ent.Blueprint, error) {
+	return obj.QueryBlueprint().Only(ctx)
+}
+
+// DeploymentNodes is the resolver for the deploymentNodes field.
+func (r *deploymentResolver) DeploymentNodes(ctx context.Context, obj *ent.Deployment) ([]*ent.DeploymentNode, error) {
+	return obj.QueryDeploymentNodes().All(ctx)
+}
+
+// State is the resolver for the state field.
+func (r *deploymentNodeResolver) State(ctx context.Context, obj *ent.DeploymentNode) (model.DeploymentNodeState, error) {
+	return model.DeploymentNodeState(obj.State), nil
+}
+
+// Deployment is the resolver for the deployment field.
+func (r *deploymentNodeResolver) Deployment(ctx context.Context, obj *ent.DeploymentNode) (*ent.Deployment, error) {
+	return obj.QueryDeployment().Only(ctx)
+}
+
+// Resource is the resolver for the resource field.
+func (r *deploymentNodeResolver) Resource(ctx context.Context, obj *ent.DeploymentNode) (*ent.Resource, error) {
+	return obj.QueryResource().Only(ctx)
+}
+
+// NextNodes is the resolver for the nextNodes field.
+func (r *deploymentNodeResolver) NextNodes(ctx context.Context, obj *ent.DeploymentNode) ([]*ent.DeploymentNode, error) {
+	return obj.QueryNextNodes().All(ctx)
+}
+
+// PrevNodes is the resolver for the prevNodes field.
+func (r *deploymentNodeResolver) PrevNodes(ctx context.Context, obj *ent.DeploymentNode) ([]*ent.DeploymentNode, error) {
+	return obj.QueryPrevNodes().All(ctx)
 }
 
 // CreateProvider is the resolver for the createProvider field.
@@ -90,7 +130,7 @@ func (r *mutationResolver) CreateBlueprint(ctx context.Context, input model.Blue
 	}
 
 	// Load all of the blueprint resources
-	err = blueprintengine.LoadResources(ctx, tx.Client(), entBlueprint)
+	err = engine.LoadResources(ctx, tx.Client(), r.cbleServer, entBlueprint)
 	if err != nil {
 		tx.Rollback()
 		return nil, gqlerror.Errorf("failed to load resource: %v", err)
@@ -150,7 +190,7 @@ func (r *mutationResolver) UpdateBlueprint(ctx context.Context, id uuid.UUID, in
 	}
 
 	// Load all of the blueprint resources
-	err = blueprintengine.LoadResources(ctx, tx.Client(), entBlueprint)
+	err = engine.LoadResources(ctx, tx.Client(), r.cbleServer, entBlueprint)
 	if err != nil {
 		tx.Rollback()
 		return nil, gqlerror.Errorf("failed to load resource: %v", err)
@@ -169,6 +209,65 @@ func (r *mutationResolver) UpdateBlueprint(ctx context.Context, id uuid.UUID, in
 // DeleteBlueprint is the resolver for the deleteBlueprint field.
 func (r *mutationResolver) DeleteBlueprint(ctx context.Context, id uuid.UUID) (bool, error) {
 	panic(fmt.Errorf("not implemented: DeleteBlueprint - deleteBlueprint"))
+}
+
+// ConfigureProvider is the resolver for the configureProvider field.
+func (r *mutationResolver) ConfigureProvider(ctx context.Context, id uuid.UUID) (*ent.Provider, error) {
+	// Get the provider
+	entProvider, err := r.ent.Provider.Get(ctx, id)
+	if err != nil {
+		return nil, gqlerror.Errorf("could not find provider with id %s: %v", id, err)
+	}
+
+	reply, err := r.cbleServer.Configure(ctx, entProvider)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to configure provider: %v", err)
+	}
+	if !reply.Success {
+		return nil, gqlerror.Errorf("failed to configure provider: unknown error")
+	}
+
+	return entProvider, nil
+}
+
+// DeployBlueprint is the resolver for the deployBlueprint field.
+func (r *mutationResolver) DeployBlueprint(ctx context.Context, id uuid.UUID, templateVars map[string]string) (*ent.Deployment, error) {
+	// Get the blueprint by ID
+	entBlueprint, err := r.ent.Blueprint.Get(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query blueprint: %v", err)
+	}
+
+	// Create a transactional client
+	tx, err := r.ent.Tx(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create transactional client: %v", err)
+	}
+
+	// Create the deployment
+	entDeployment, err := engine.CreateDeployment(ctx, tx.Client(), entBlueprint, templateVars)
+	if err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("failed to create deployment: %v", err)
+	}
+
+	// Commit the transaction
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
+	// Re-query deployment using non-transaction client
+	entDeployment, err = r.ent.Deployment.Get(ctx, entDeployment.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to re-query deployment: %v", err)
+	}
+
+	// Spawn deployment routine
+	go engine.StartDeployment(r.ent, r.cbleServer, entDeployment)
+
+	return entDeployment, nil
 }
 
 // ConfigBytes is the resolver for the configBytes field.
@@ -194,6 +293,16 @@ func (r *queryResolver) Blueprints(ctx context.Context) ([]*ent.Blueprint, error
 // Blueprint is the resolver for the blueprint field.
 func (r *queryResolver) Blueprint(ctx context.Context, id uuid.UUID) (*ent.Blueprint, error) {
 	return r.ent.Blueprint.Get(ctx, id)
+}
+
+// Deployments is the resolver for the deployments field.
+func (r *queryResolver) Deployments(ctx context.Context) ([]*ent.Deployment, error) {
+	return r.ent.Deployment.Query().All(ctx)
+}
+
+// Deployment is the resolver for the deployment field.
+func (r *queryResolver) Deployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error) {
+	return r.ent.Deployment.Get(ctx, id)
 }
 
 // Object is the resolver for the object field.
@@ -223,6 +332,14 @@ func (r *resourceResolver) DependsOn(ctx context.Context, obj *ent.Resource) ([]
 // Blueprint returns generated.BlueprintResolver implementation.
 func (r *Resolver) Blueprint() generated.BlueprintResolver { return &blueprintResolver{r} }
 
+// Deployment returns generated.DeploymentResolver implementation.
+func (r *Resolver) Deployment() generated.DeploymentResolver { return &deploymentResolver{r} }
+
+// DeploymentNode returns generated.DeploymentNodeResolver implementation.
+func (r *Resolver) DeploymentNode() generated.DeploymentNodeResolver {
+	return &deploymentNodeResolver{r}
+}
+
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
@@ -236,7 +353,19 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 func (r *Resolver) Resource() generated.ResourceResolver { return &resourceResolver{r} }
 
 type blueprintResolver struct{ *Resolver }
+type deploymentResolver struct{ *Resolver }
+type deploymentNodeResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type providerResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type resourceResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//     it when you're done.
+//   - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *deploymentResolver) TemplateVars(ctx context.Context, obj *ent.Deployment) (map[string]interface{}, error) {
+	panic(fmt.Errorf("not implemented: TemplateVars - templateVars"))
+}

@@ -14,7 +14,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
-	"github.com/cble-platform/cble-backend/blueprintengine/models"
+	"github.com/cble-platform/cble-backend/engine/models"
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/graph/model"
 	"github.com/google/uuid"
@@ -43,6 +43,8 @@ type Config struct {
 
 type ResolverRoot interface {
 	Blueprint() BlueprintResolver
+	Deployment() DeploymentResolver
+	DeploymentNode() DeploymentNodeResolver
 	Mutation() MutationResolver
 	Provider() ProviderResolver
 	Query() QueryResolver
@@ -66,11 +68,37 @@ type ComplexityRoot struct {
 		VariableTypes     func(childComplexity int) int
 	}
 
+	Deployment struct {
+		Blueprint       func(childComplexity int) int
+		CreatedAt       func(childComplexity int) int
+		DeploymentNodes func(childComplexity int) int
+		Description     func(childComplexity int) int
+		ID              func(childComplexity int) int
+		Name            func(childComplexity int) int
+		State           func(childComplexity int) int
+		TemplateVars    func(childComplexity int) int
+		UpdatedAt       func(childComplexity int) int
+	}
+
+	DeploymentNode struct {
+		CreatedAt  func(childComplexity int) int
+		Deployment func(childComplexity int) int
+		ID         func(childComplexity int) int
+		NextNodes  func(childComplexity int) int
+		PrevNodes  func(childComplexity int) int
+		Resource   func(childComplexity int) int
+		State      func(childComplexity int) int
+		UpdatedAt  func(childComplexity int) int
+		Vars       func(childComplexity int) int
+	}
+
 	Mutation struct {
-		CreateBlueprint func(childComplexity int, input model.BlueprintInput) int
-		CreateProvider  func(childComplexity int, input model.ProviderInput) int
-		DeleteBlueprint func(childComplexity int, id uuid.UUID) int
-		UpdateBlueprint func(childComplexity int, id uuid.UUID, input model.BlueprintInput) int
+		ConfigureProvider func(childComplexity int, id uuid.UUID) int
+		CreateBlueprint   func(childComplexity int, input model.BlueprintInput) int
+		CreateProvider    func(childComplexity int, input model.ProviderInput) int
+		DeleteBlueprint   func(childComplexity int, id uuid.UUID) int
+		DeployBlueprint   func(childComplexity int, id uuid.UUID, templateVars map[string]string) int
+		UpdateBlueprint   func(childComplexity int, id uuid.UUID, input model.BlueprintInput) int
 	}
 
 	Provider struct {
@@ -86,9 +114,11 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Blueprint  func(childComplexity int, id uuid.UUID) int
-		Blueprints func(childComplexity int) int
-		Providers  func(childComplexity int) int
+		Blueprint   func(childComplexity int, id uuid.UUID) int
+		Blueprints  func(childComplexity int) int
+		Deployment  func(childComplexity int, id uuid.UUID) int
+		Deployments func(childComplexity int) int
+		Providers   func(childComplexity int) int
 	}
 
 	Resource struct {
@@ -109,11 +139,27 @@ type BlueprintResolver interface {
 	Provider(ctx context.Context, obj *ent.Blueprint) (*ent.Provider, error)
 	Resources(ctx context.Context, obj *ent.Blueprint) ([]*ent.Resource, error)
 }
+type DeploymentResolver interface {
+	State(ctx context.Context, obj *ent.Deployment) (model.DeploymentState, error)
+
+	Blueprint(ctx context.Context, obj *ent.Deployment) (*ent.Blueprint, error)
+	DeploymentNodes(ctx context.Context, obj *ent.Deployment) ([]*ent.DeploymentNode, error)
+}
+type DeploymentNodeResolver interface {
+	State(ctx context.Context, obj *ent.DeploymentNode) (model.DeploymentNodeState, error)
+
+	Deployment(ctx context.Context, obj *ent.DeploymentNode) (*ent.Deployment, error)
+	Resource(ctx context.Context, obj *ent.DeploymentNode) (*ent.Resource, error)
+	NextNodes(ctx context.Context, obj *ent.DeploymentNode) ([]*ent.DeploymentNode, error)
+	PrevNodes(ctx context.Context, obj *ent.DeploymentNode) ([]*ent.DeploymentNode, error)
+}
 type MutationResolver interface {
 	CreateProvider(ctx context.Context, input model.ProviderInput) (*ent.Provider, error)
 	CreateBlueprint(ctx context.Context, input model.BlueprintInput) (*ent.Blueprint, error)
 	UpdateBlueprint(ctx context.Context, id uuid.UUID, input model.BlueprintInput) (*ent.Blueprint, error)
 	DeleteBlueprint(ctx context.Context, id uuid.UUID) (bool, error)
+	ConfigureProvider(ctx context.Context, id uuid.UUID) (*ent.Provider, error)
+	DeployBlueprint(ctx context.Context, id uuid.UUID, templateVars map[string]string) (*ent.Deployment, error)
 }
 type ProviderResolver interface {
 	ConfigBytes(ctx context.Context, obj *ent.Provider) (string, error)
@@ -124,6 +170,8 @@ type QueryResolver interface {
 	Providers(ctx context.Context) ([]*ent.Provider, error)
 	Blueprints(ctx context.Context) ([]*ent.Blueprint, error)
 	Blueprint(ctx context.Context, id uuid.UUID) (*ent.Blueprint, error)
+	Deployments(ctx context.Context) ([]*ent.Deployment, error)
+	Deployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error)
 }
 type ResourceResolver interface {
 	Object(ctx context.Context, obj *ent.Resource) (string, error)
@@ -214,6 +262,144 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Blueprint.VariableTypes(childComplexity), true
 
+	case "Deployment.blueprint":
+		if e.complexity.Deployment.Blueprint == nil {
+			break
+		}
+
+		return e.complexity.Deployment.Blueprint(childComplexity), true
+
+	case "Deployment.createdAt":
+		if e.complexity.Deployment.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Deployment.CreatedAt(childComplexity), true
+
+	case "Deployment.deploymentNodes":
+		if e.complexity.Deployment.DeploymentNodes == nil {
+			break
+		}
+
+		return e.complexity.Deployment.DeploymentNodes(childComplexity), true
+
+	case "Deployment.description":
+		if e.complexity.Deployment.Description == nil {
+			break
+		}
+
+		return e.complexity.Deployment.Description(childComplexity), true
+
+	case "Deployment.id":
+		if e.complexity.Deployment.ID == nil {
+			break
+		}
+
+		return e.complexity.Deployment.ID(childComplexity), true
+
+	case "Deployment.name":
+		if e.complexity.Deployment.Name == nil {
+			break
+		}
+
+		return e.complexity.Deployment.Name(childComplexity), true
+
+	case "Deployment.state":
+		if e.complexity.Deployment.State == nil {
+			break
+		}
+
+		return e.complexity.Deployment.State(childComplexity), true
+
+	case "Deployment.templateVars":
+		if e.complexity.Deployment.TemplateVars == nil {
+			break
+		}
+
+		return e.complexity.Deployment.TemplateVars(childComplexity), true
+
+	case "Deployment.updatedAt":
+		if e.complexity.Deployment.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.Deployment.UpdatedAt(childComplexity), true
+
+	case "DeploymentNode.createdAt":
+		if e.complexity.DeploymentNode.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.DeploymentNode.CreatedAt(childComplexity), true
+
+	case "DeploymentNode.deployment":
+		if e.complexity.DeploymentNode.Deployment == nil {
+			break
+		}
+
+		return e.complexity.DeploymentNode.Deployment(childComplexity), true
+
+	case "DeploymentNode.id":
+		if e.complexity.DeploymentNode.ID == nil {
+			break
+		}
+
+		return e.complexity.DeploymentNode.ID(childComplexity), true
+
+	case "DeploymentNode.nextNodes":
+		if e.complexity.DeploymentNode.NextNodes == nil {
+			break
+		}
+
+		return e.complexity.DeploymentNode.NextNodes(childComplexity), true
+
+	case "DeploymentNode.prevNodes":
+		if e.complexity.DeploymentNode.PrevNodes == nil {
+			break
+		}
+
+		return e.complexity.DeploymentNode.PrevNodes(childComplexity), true
+
+	case "DeploymentNode.resource":
+		if e.complexity.DeploymentNode.Resource == nil {
+			break
+		}
+
+		return e.complexity.DeploymentNode.Resource(childComplexity), true
+
+	case "DeploymentNode.state":
+		if e.complexity.DeploymentNode.State == nil {
+			break
+		}
+
+		return e.complexity.DeploymentNode.State(childComplexity), true
+
+	case "DeploymentNode.updatedAt":
+		if e.complexity.DeploymentNode.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.DeploymentNode.UpdatedAt(childComplexity), true
+
+	case "DeploymentNode.vars":
+		if e.complexity.DeploymentNode.Vars == nil {
+			break
+		}
+
+		return e.complexity.DeploymentNode.Vars(childComplexity), true
+
+	case "Mutation.configureProvider":
+		if e.complexity.Mutation.ConfigureProvider == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_configureProvider_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ConfigureProvider(childComplexity, args["id"].(uuid.UUID)), true
+
 	case "Mutation.createBlueprint":
 		if e.complexity.Mutation.CreateBlueprint == nil {
 			break
@@ -249,6 +435,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.DeleteBlueprint(childComplexity, args["id"].(uuid.UUID)), true
+
+	case "Mutation.deployBlueprint":
+		if e.complexity.Mutation.DeployBlueprint == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deployBlueprint_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeployBlueprint(childComplexity, args["id"].(uuid.UUID), args["templateVars"].(map[string]string)), true
 
 	case "Mutation.updateBlueprint":
 		if e.complexity.Mutation.UpdateBlueprint == nil {
@@ -343,6 +541,25 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Blueprints(childComplexity), true
+
+	case "Query.deployment":
+		if e.complexity.Query.Deployment == nil {
+			break
+		}
+
+		args, err := ec.field_Query_deployment_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Deployment(childComplexity, args["id"].(uuid.UUID)), true
+
+	case "Query.deployments":
+		if e.complexity.Query.Deployments == nil {
+			break
+		}
+
+		return e.complexity.Query.Deployments(childComplexity), true
 
 	case "Query.providers":
 		if e.complexity.Query.Providers == nil {
@@ -547,27 +764,52 @@ type Resource {
   dependsOn: [Resource!]!
 }
 
-# enum DeploymentState {
-#   UNKNOWN
-#   INPROGRESS
-#   ACTIVE
-#   DESTROYED
-# }
+enum DeploymentState {
+  AWAITING
+  INPROGRESS
+  COMPLETE
+  FAILED
+  DELETED
+}
 
-# type Deployment {
-#   id: ID!
-#   createdAt: Time!
-#   updatedAt: Time!
-#   name: String!
-#   description: String!
-#   templateVars: Map!
-#   deploymentVars: Map!
-#   deploymentState: StrMap!
-#   state: DeploymentState!
+type Deployment {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  name: String!
+  description: String!
+  state: DeploymentState!
+  templateVars: StrMap!
 
-#   blueprint: Blueprint!
-#   requester: User!
-# }
+  blueprint: Blueprint!
+  deploymentNodes: [DeploymentNode!]!
+  # requester: User!
+}
+
+enum DeploymentNodeState {
+  AWAITING
+  PARENTAWAITING
+  INPROGRESS
+  COMPLETE
+  TAINTED
+  FAILED
+  TODELETE
+  DELETED
+  TOREBUILD
+}
+
+type DeploymentNode {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  state: DeploymentNodeState!
+  vars: StrMap!
+
+  deployment: Deployment!
+  resource: Resource!
+  nextNodes: [DeploymentNode!]!
+  prevNodes: [DeploymentNode!]!
+}
 
 # enum DeployResourceType {
 #   UNKNOWN
@@ -722,18 +964,14 @@ type Query {
   Get a blueprint (requires permission ` + "`" + `com.cble.blueprints.read` + "`" + `)
   """
   blueprint(id: ID!): Blueprint! @permission(key: "com.cble.blueprints.read")
-  # """
-  # List deployments (requires permission ` + "`" + `com.cble.deployments.list` + "`" + `)
-  # """
-  # deployments: [Deployment!]! @permission(key: "com.cble.deployments.list")
-  # """
-  # Get a deployment (requires permission ` + "`" + `com.cble.deployments.read` + "`" + `)
-  # """
-  # deployment(id: ID!): Deployment! @permission(key: "com.cble.deployments.read")
-  # """
-  # Get a list of resources in a deployment (requires permission ` + "`" + `com.cble.deployments.resources` + "`" + `)
-  # """
-  # deploymentResources(id: ID!): [DeployResource!]! @permission(key: "com.cble.deployments.resources")
+  """
+  List deployments (requires permission ` + "`" + `com.cble.deployments.list` + "`" + `)
+  """
+  deployments: [Deployment!]! @permission(key: "com.cble.deployments.list")
+  """
+  Get a deployment (requires permission ` + "`" + `com.cble.deployments.read` + "`" + `)
+  """
+  deployment(id: ID!): Deployment! @permission(key: "com.cble.deployments.read")
 }
 
 input BlueprintInput {
@@ -832,19 +1070,19 @@ type Mutation {
   # Unload a provider to disconnect it from CBLE (requires permission ` + "`" + `com.cble.providers.unload` + "`" + `)
   # """
   # unloadProvider(id: ID!): Provider! @permission(key: "com.cble.providers.unload")
-  # """
-  # Applies the stored configuration to the provider (requires permission ` + "`" + `com.cble.providers.configure` + "`" + `)
-  # """
-  # configureProvider(id: ID!): Provider! @permission(key: "com.cble.providers.configure")
+  """
+  Applies the stored configuration to the provider (requires permission ` + "`" + `com.cble.providers.configure` + "`" + `)
+  """
+  configureProvider(id: ID!): Provider! @permission(key: "com.cble.providers.configure")
 
   # ##############
   # # DEPLOYMENT #
   # ##############
 
-  # """
-  # Deploy a blueprint (requires permission ` + "`" + `com.cble.blueprints.deploy` + "`" + `)
-  # """
-  # deployBlueprint(id: ID!): Deployment! @permission(key: "com.cble.blueprints.deploy")
+  """
+  Deploy a blueprint (requires permission ` + "`" + `com.cble.blueprints.deploy` + "`" + `)
+  """
+  deployBlueprint(id: ID!, templateVars: StrMap!): Deployment! @permission(key: "com.cble.blueprints.deploy")
   # """
   # Destroy a deployment (requires permission ` + "`" + `com.cble.deployments.destroy` + "`" + `)
   # """
@@ -874,6 +1112,21 @@ func (ec *executionContext) dir_permission_args(ctx context.Context, rawArgs map
 		}
 	}
 	args["key"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_configureProvider_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uuid.UUID
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -922,6 +1175,30 @@ func (ec *executionContext) field_Mutation_deleteBlueprint_args(ctx context.Cont
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_deployBlueprint_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uuid.UUID
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 map[string]string
+	if tmp, ok := rawArgs["templateVars"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateVars"))
+		arg1, err = ec.unmarshalNStrMap2map(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["templateVars"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_updateBlueprint_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -962,6 +1239,21 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 }
 
 func (ec *executionContext) field_Query_blueprint_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uuid.UUID
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_deployment_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 uuid.UUID
@@ -1448,6 +1740,916 @@ func (ec *executionContext) fieldContext_Blueprint_resources(ctx context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _Deployment_id(ctx context.Context, field graphql.CollectedField, obj *ent.Deployment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Deployment_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uuid.UUID)
+	fc.Result = res
+	return ec.marshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Deployment_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Deployment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Deployment_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.Deployment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Deployment_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Deployment_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Deployment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Deployment_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.Deployment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Deployment_updatedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Deployment_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Deployment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Deployment_name(ctx context.Context, field graphql.CollectedField, obj *ent.Deployment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Deployment_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Deployment_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Deployment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Deployment_description(ctx context.Context, field graphql.CollectedField, obj *ent.Deployment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Deployment_description(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Deployment_description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Deployment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Deployment_state(ctx context.Context, field graphql.CollectedField, obj *ent.Deployment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Deployment_state(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Deployment().State(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.DeploymentState)
+	fc.Result = res
+	return ec.marshalNDeploymentState2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐDeploymentState(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Deployment_state(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Deployment",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DeploymentState does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Deployment_templateVars(ctx context.Context, field graphql.CollectedField, obj *ent.Deployment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Deployment_templateVars(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TemplateVars, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(map[string]string)
+	fc.Result = res
+	return ec.marshalNStrMap2map(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Deployment_templateVars(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Deployment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type StrMap does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Deployment_blueprint(ctx context.Context, field graphql.CollectedField, obj *ent.Deployment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Deployment_blueprint(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Deployment().Blueprint(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Blueprint)
+	fc.Result = res
+	return ec.marshalNBlueprint2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐBlueprint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Deployment_blueprint(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Deployment",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Blueprint_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Blueprint_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Blueprint_updatedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_Blueprint_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Blueprint_description(ctx, field)
+			case "blueprintTemplate":
+				return ec.fieldContext_Blueprint_blueprintTemplate(ctx, field)
+			case "variableTypes":
+				return ec.fieldContext_Blueprint_variableTypes(ctx, field)
+			case "provider":
+				return ec.fieldContext_Blueprint_provider(ctx, field)
+			case "resources":
+				return ec.fieldContext_Blueprint_resources(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Blueprint", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Deployment_deploymentNodes(ctx context.Context, field graphql.CollectedField, obj *ent.Deployment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Deployment_deploymentNodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Deployment().DeploymentNodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.DeploymentNode)
+	fc.Result = res
+	return ec.marshalNDeploymentNode2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeploymentNodeᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Deployment_deploymentNodes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Deployment",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_DeploymentNode_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_DeploymentNode_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_DeploymentNode_updatedAt(ctx, field)
+			case "state":
+				return ec.fieldContext_DeploymentNode_state(ctx, field)
+			case "vars":
+				return ec.fieldContext_DeploymentNode_vars(ctx, field)
+			case "deployment":
+				return ec.fieldContext_DeploymentNode_deployment(ctx, field)
+			case "resource":
+				return ec.fieldContext_DeploymentNode_resource(ctx, field)
+			case "nextNodes":
+				return ec.fieldContext_DeploymentNode_nextNodes(ctx, field)
+			case "prevNodes":
+				return ec.fieldContext_DeploymentNode_prevNodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DeploymentNode", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeploymentNode_id(ctx context.Context, field graphql.CollectedField, obj *ent.DeploymentNode) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeploymentNode_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uuid.UUID)
+	fc.Result = res
+	return ec.marshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeploymentNode_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeploymentNode",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeploymentNode_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.DeploymentNode) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeploymentNode_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeploymentNode_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeploymentNode",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeploymentNode_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.DeploymentNode) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeploymentNode_updatedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeploymentNode_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeploymentNode",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeploymentNode_state(ctx context.Context, field graphql.CollectedField, obj *ent.DeploymentNode) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeploymentNode_state(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.DeploymentNode().State(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.DeploymentNodeState)
+	fc.Result = res
+	return ec.marshalNDeploymentNodeState2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐDeploymentNodeState(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeploymentNode_state(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeploymentNode",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DeploymentNodeState does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeploymentNode_vars(ctx context.Context, field graphql.CollectedField, obj *ent.DeploymentNode) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeploymentNode_vars(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Vars, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(map[string]string)
+	fc.Result = res
+	return ec.marshalNStrMap2map(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeploymentNode_vars(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeploymentNode",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type StrMap does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeploymentNode_deployment(ctx context.Context, field graphql.CollectedField, obj *ent.DeploymentNode) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeploymentNode_deployment(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.DeploymentNode().Deployment(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Deployment)
+	fc.Result = res
+	return ec.marshalNDeployment2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeployment(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeploymentNode_deployment(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeploymentNode",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Deployment_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Deployment_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Deployment_updatedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_Deployment_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Deployment_description(ctx, field)
+			case "state":
+				return ec.fieldContext_Deployment_state(ctx, field)
+			case "templateVars":
+				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "blueprint":
+				return ec.fieldContext_Deployment_blueprint(ctx, field)
+			case "deploymentNodes":
+				return ec.fieldContext_Deployment_deploymentNodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Deployment", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeploymentNode_resource(ctx context.Context, field graphql.CollectedField, obj *ent.DeploymentNode) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeploymentNode_resource(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.DeploymentNode().Resource(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Resource)
+	fc.Result = res
+	return ec.marshalNResource2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐResource(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeploymentNode_resource(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeploymentNode",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Resource_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Resource_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Resource_updatedAt(ctx, field)
+			case "key":
+				return ec.fieldContext_Resource_key(ctx, field)
+			case "object":
+				return ec.fieldContext_Resource_object(ctx, field)
+			case "blueprint":
+				return ec.fieldContext_Resource_blueprint(ctx, field)
+			case "requiredBy":
+				return ec.fieldContext_Resource_requiredBy(ctx, field)
+			case "dependsOn":
+				return ec.fieldContext_Resource_dependsOn(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Resource", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeploymentNode_nextNodes(ctx context.Context, field graphql.CollectedField, obj *ent.DeploymentNode) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeploymentNode_nextNodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.DeploymentNode().NextNodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.DeploymentNode)
+	fc.Result = res
+	return ec.marshalNDeploymentNode2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeploymentNodeᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeploymentNode_nextNodes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeploymentNode",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_DeploymentNode_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_DeploymentNode_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_DeploymentNode_updatedAt(ctx, field)
+			case "state":
+				return ec.fieldContext_DeploymentNode_state(ctx, field)
+			case "vars":
+				return ec.fieldContext_DeploymentNode_vars(ctx, field)
+			case "deployment":
+				return ec.fieldContext_DeploymentNode_deployment(ctx, field)
+			case "resource":
+				return ec.fieldContext_DeploymentNode_resource(ctx, field)
+			case "nextNodes":
+				return ec.fieldContext_DeploymentNode_nextNodes(ctx, field)
+			case "prevNodes":
+				return ec.fieldContext_DeploymentNode_prevNodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DeploymentNode", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeploymentNode_prevNodes(ctx context.Context, field graphql.CollectedField, obj *ent.DeploymentNode) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeploymentNode_prevNodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.DeploymentNode().PrevNodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.DeploymentNode)
+	fc.Result = res
+	return ec.marshalNDeploymentNode2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeploymentNodeᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeploymentNode_prevNodes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeploymentNode",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_DeploymentNode_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_DeploymentNode_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_DeploymentNode_updatedAt(ctx, field)
+			case "state":
+				return ec.fieldContext_DeploymentNode_state(ctx, field)
+			case "vars":
+				return ec.fieldContext_DeploymentNode_vars(ctx, field)
+			case "deployment":
+				return ec.fieldContext_DeploymentNode_deployment(ctx, field)
+			case "resource":
+				return ec.fieldContext_DeploymentNode_resource(ctx, field)
+			case "nextNodes":
+				return ec.fieldContext_DeploymentNode_nextNodes(ctx, field)
+			case "prevNodes":
+				return ec.fieldContext_DeploymentNode_prevNodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DeploymentNode", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_createProvider(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_createProvider(ctx, field)
 	if err != nil {
@@ -1818,6 +3020,204 @@ func (ec *executionContext) fieldContext_Mutation_deleteBlueprint(ctx context.Co
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteBlueprint_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_configureProvider(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_configureProvider(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().ConfigureProvider(rctx, fc.Args["id"].(uuid.UUID))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			key, err := ec.unmarshalNString2string(ctx, "com.cble.providers.configure")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Permission == nil {
+				return nil, errors.New("directive permission is not implemented")
+			}
+			return ec.directives.Permission(ctx, nil, directive0, key)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*ent.Provider); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/cble-platform/cble-backend/ent.Provider`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Provider)
+	fc.Result = res
+	return ec.marshalNProvider2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐProvider(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_configureProvider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Provider_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Provider_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Provider_updatedAt(ctx, field)
+			case "displayName":
+				return ec.fieldContext_Provider_displayName(ctx, field)
+			case "providerGitUrl":
+				return ec.fieldContext_Provider_providerGitUrl(ctx, field)
+			case "providerVersion":
+				return ec.fieldContext_Provider_providerVersion(ctx, field)
+			case "configBytes":
+				return ec.fieldContext_Provider_configBytes(ctx, field)
+			case "isLoaded":
+				return ec.fieldContext_Provider_isLoaded(ctx, field)
+			case "blueprints":
+				return ec.fieldContext_Provider_blueprints(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Provider", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_configureProvider_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deployBlueprint(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deployBlueprint(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().DeployBlueprint(rctx, fc.Args["id"].(uuid.UUID), fc.Args["templateVars"].(map[string]string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			key, err := ec.unmarshalNString2string(ctx, "com.cble.blueprints.deploy")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Permission == nil {
+				return nil, errors.New("directive permission is not implemented")
+			}
+			return ec.directives.Permission(ctx, nil, directive0, key)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*ent.Deployment); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/cble-platform/cble-backend/ent.Deployment`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Deployment)
+	fc.Result = res
+	return ec.marshalNDeployment2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeployment(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deployBlueprint(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Deployment_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Deployment_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Deployment_updatedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_Deployment_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Deployment_description(ctx, field)
+			case "state":
+				return ec.fieldContext_Deployment_state(ctx, field)
+			case "templateVars":
+				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "blueprint":
+				return ec.fieldContext_Deployment_blueprint(ctx, field)
+			case "deploymentNodes":
+				return ec.fieldContext_Deployment_deploymentNodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Deployment", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deployBlueprint_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -2506,6 +3906,193 @@ func (ec *executionContext) fieldContext_Query_blueprint(ctx context.Context, fi
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_blueprint_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_deployments(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_deployments(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().Deployments(rctx)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			key, err := ec.unmarshalNString2string(ctx, "com.cble.deployments.list")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Permission == nil {
+				return nil, errors.New("directive permission is not implemented")
+			}
+			return ec.directives.Permission(ctx, nil, directive0, key)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.([]*ent.Deployment); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/cble-platform/cble-backend/ent.Deployment`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.Deployment)
+	fc.Result = res
+	return ec.marshalNDeployment2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeploymentᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_deployments(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Deployment_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Deployment_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Deployment_updatedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_Deployment_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Deployment_description(ctx, field)
+			case "state":
+				return ec.fieldContext_Deployment_state(ctx, field)
+			case "templateVars":
+				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "blueprint":
+				return ec.fieldContext_Deployment_blueprint(ctx, field)
+			case "deploymentNodes":
+				return ec.fieldContext_Deployment_deploymentNodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Deployment", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_deployment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_deployment(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().Deployment(rctx, fc.Args["id"].(uuid.UUID))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			key, err := ec.unmarshalNString2string(ctx, "com.cble.deployments.read")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Permission == nil {
+				return nil, errors.New("directive permission is not implemented")
+			}
+			return ec.directives.Permission(ctx, nil, directive0, key)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*ent.Deployment); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/cble-platform/cble-backend/ent.Deployment`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Deployment)
+	fc.Result = res
+	return ec.marshalNDeployment2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeployment(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_deployment(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Deployment_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Deployment_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Deployment_updatedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_Deployment_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Deployment_description(ctx, field)
+			case "state":
+				return ec.fieldContext_Deployment_state(ctx, field)
+			case "templateVars":
+				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "blueprint":
+				return ec.fieldContext_Deployment_blueprint(ctx, field)
+			case "deploymentNodes":
+				return ec.fieldContext_Deployment_deploymentNodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Deployment", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_deployment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -5123,6 +6710,412 @@ func (ec *executionContext) _Blueprint(ctx context.Context, sel ast.SelectionSet
 	return out
 }
 
+var deploymentImplementors = []string{"Deployment"}
+
+func (ec *executionContext) _Deployment(ctx context.Context, sel ast.SelectionSet, obj *ent.Deployment) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deploymentImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Deployment")
+		case "id":
+			out.Values[i] = ec._Deployment_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._Deployment_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._Deployment_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "name":
+			out.Values[i] = ec._Deployment_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "description":
+			out.Values[i] = ec._Deployment_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "state":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Deployment_state(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "templateVars":
+			out.Values[i] = ec._Deployment_templateVars(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "blueprint":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Deployment_blueprint(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "deploymentNodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Deployment_deploymentNodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var deploymentNodeImplementors = []string{"DeploymentNode"}
+
+func (ec *executionContext) _DeploymentNode(ctx context.Context, sel ast.SelectionSet, obj *ent.DeploymentNode) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deploymentNodeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeploymentNode")
+		case "id":
+			out.Values[i] = ec._DeploymentNode_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._DeploymentNode_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._DeploymentNode_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "state":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._DeploymentNode_state(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "vars":
+			out.Values[i] = ec._DeploymentNode_vars(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "deployment":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._DeploymentNode_deployment(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "resource":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._DeploymentNode_resource(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "nextNodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._DeploymentNode_nextNodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "prevNodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._DeploymentNode_prevNodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -5166,6 +7159,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "deleteBlueprint":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteBlueprint(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "configureProvider":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_configureProvider(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deployBlueprint":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deployBlueprint(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -5404,6 +7411,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_blueprint(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "deployments":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_deployments(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "deployment":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_deployment(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -6049,6 +8100,138 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNDeployment2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeployment(ctx context.Context, sel ast.SelectionSet, v ent.Deployment) graphql.Marshaler {
+	return ec._Deployment(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDeployment2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeploymentᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.Deployment) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNDeployment2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeployment(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNDeployment2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeployment(ctx context.Context, sel ast.SelectionSet, v *ent.Deployment) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Deployment(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDeploymentNode2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeploymentNodeᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.DeploymentNode) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNDeploymentNode2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeploymentNode(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNDeploymentNode2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeploymentNode(ctx context.Context, sel ast.SelectionSet, v *ent.DeploymentNode) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeploymentNode(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDeploymentNodeState2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐDeploymentNodeState(ctx context.Context, v interface{}) (model.DeploymentNodeState, error) {
+	var res model.DeploymentNodeState
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDeploymentNodeState2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐDeploymentNodeState(ctx context.Context, sel ast.SelectionSet, v model.DeploymentNodeState) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNDeploymentState2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐDeploymentState(ctx context.Context, v interface{}) (model.DeploymentState, error) {
+	var res model.DeploymentState
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDeploymentState2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐDeploymentState(ctx context.Context, sel ast.SelectionSet, v model.DeploymentState) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx context.Context, v interface{}) (uuid.UUID, error) {
 	res, err := model.UnmarshalUUID(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -6127,6 +8310,10 @@ func (ec *executionContext) unmarshalNProviderInput2githubᚗcomᚋcbleᚑplatfo
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNResource2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐResource(ctx context.Context, sel ast.SelectionSet, v ent.Resource) graphql.Marshaler {
+	return ec._Resource(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNResource2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐResourceᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.Resource) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -6179,6 +8366,27 @@ func (ec *executionContext) marshalNResource2ᚖgithubᚗcomᚋcbleᚑplatform�
 		return graphql.Null
 	}
 	return ec._Resource(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNStrMap2map(ctx context.Context, v interface{}) (map[string]string, error) {
+	res, err := model.UnmarshalStrMap(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNStrMap2map(ctx context.Context, sel ast.SelectionSet, v map[string]string) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	res := model.MarshalStrMap(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {

@@ -11,7 +11,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/cble-platform/cble-backend/blueprintengine/models"
+	"github.com/cble-platform/cble-backend/engine/models"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/deploymentnode"
@@ -895,13 +895,10 @@ type DeploymentMutation struct {
 	name                    *string
 	description             *string
 	state                   *deployment.State
-	template_vars           *map[string]interface{}
+	template_vars           *map[string]string
 	clearedFields           map[string]struct{}
 	blueprint               *uuid.UUID
 	clearedblueprint        bool
-	root_nodes              map[uuid.UUID]struct{}
-	removedroot_nodes       map[uuid.UUID]struct{}
-	clearedroot_nodes       bool
 	deployment_nodes        map[uuid.UUID]struct{}
 	removeddeployment_nodes map[uuid.UUID]struct{}
 	cleareddeployment_nodes bool
@@ -1195,12 +1192,12 @@ func (m *DeploymentMutation) ResetState() {
 }
 
 // SetTemplateVars sets the "template_vars" field.
-func (m *DeploymentMutation) SetTemplateVars(value map[string]interface{}) {
+func (m *DeploymentMutation) SetTemplateVars(value map[string]string) {
 	m.template_vars = &value
 }
 
 // TemplateVars returns the value of the "template_vars" field in the mutation.
-func (m *DeploymentMutation) TemplateVars() (r map[string]interface{}, exists bool) {
+func (m *DeploymentMutation) TemplateVars() (r map[string]string, exists bool) {
 	v := m.template_vars
 	if v == nil {
 		return
@@ -1211,7 +1208,7 @@ func (m *DeploymentMutation) TemplateVars() (r map[string]interface{}, exists bo
 // OldTemplateVars returns the old "template_vars" field's value of the Deployment entity.
 // If the Deployment object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DeploymentMutation) OldTemplateVars(ctx context.Context) (v map[string]interface{}, err error) {
+func (m *DeploymentMutation) OldTemplateVars(ctx context.Context) (v map[string]string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldTemplateVars is only allowed on UpdateOne operations")
 	}
@@ -1267,60 +1264,6 @@ func (m *DeploymentMutation) BlueprintIDs() (ids []uuid.UUID) {
 func (m *DeploymentMutation) ResetBlueprint() {
 	m.blueprint = nil
 	m.clearedblueprint = false
-}
-
-// AddRootNodeIDs adds the "root_nodes" edge to the DeploymentNode entity by ids.
-func (m *DeploymentMutation) AddRootNodeIDs(ids ...uuid.UUID) {
-	if m.root_nodes == nil {
-		m.root_nodes = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		m.root_nodes[ids[i]] = struct{}{}
-	}
-}
-
-// ClearRootNodes clears the "root_nodes" edge to the DeploymentNode entity.
-func (m *DeploymentMutation) ClearRootNodes() {
-	m.clearedroot_nodes = true
-}
-
-// RootNodesCleared reports if the "root_nodes" edge to the DeploymentNode entity was cleared.
-func (m *DeploymentMutation) RootNodesCleared() bool {
-	return m.clearedroot_nodes
-}
-
-// RemoveRootNodeIDs removes the "root_nodes" edge to the DeploymentNode entity by IDs.
-func (m *DeploymentMutation) RemoveRootNodeIDs(ids ...uuid.UUID) {
-	if m.removedroot_nodes == nil {
-		m.removedroot_nodes = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		delete(m.root_nodes, ids[i])
-		m.removedroot_nodes[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedRootNodes returns the removed IDs of the "root_nodes" edge to the DeploymentNode entity.
-func (m *DeploymentMutation) RemovedRootNodesIDs() (ids []uuid.UUID) {
-	for id := range m.removedroot_nodes {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// RootNodesIDs returns the "root_nodes" edge IDs in the mutation.
-func (m *DeploymentMutation) RootNodesIDs() (ids []uuid.UUID) {
-	for id := range m.root_nodes {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetRootNodes resets all changes to the "root_nodes" edge.
-func (m *DeploymentMutation) ResetRootNodes() {
-	m.root_nodes = nil
-	m.clearedroot_nodes = false
-	m.removedroot_nodes = nil
 }
 
 // AddDeploymentNodeIDs adds the "deployment_nodes" edge to the DeploymentNode entity by ids.
@@ -1516,7 +1459,7 @@ func (m *DeploymentMutation) SetField(name string, value ent.Value) error {
 		m.SetState(v)
 		return nil
 	case deployment.FieldTemplateVars:
-		v, ok := value.(map[string]interface{})
+		v, ok := value.(map[string]string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -1595,12 +1538,9 @@ func (m *DeploymentMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *DeploymentMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 2)
 	if m.blueprint != nil {
 		edges = append(edges, deployment.EdgeBlueprint)
-	}
-	if m.root_nodes != nil {
-		edges = append(edges, deployment.EdgeRootNodes)
 	}
 	if m.deployment_nodes != nil {
 		edges = append(edges, deployment.EdgeDeploymentNodes)
@@ -1616,12 +1556,6 @@ func (m *DeploymentMutation) AddedIDs(name string) []ent.Value {
 		if id := m.blueprint; id != nil {
 			return []ent.Value{*id}
 		}
-	case deployment.EdgeRootNodes:
-		ids := make([]ent.Value, 0, len(m.root_nodes))
-		for id := range m.root_nodes {
-			ids = append(ids, id)
-		}
-		return ids
 	case deployment.EdgeDeploymentNodes:
 		ids := make([]ent.Value, 0, len(m.deployment_nodes))
 		for id := range m.deployment_nodes {
@@ -1634,10 +1568,7 @@ func (m *DeploymentMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *DeploymentMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.removedroot_nodes != nil {
-		edges = append(edges, deployment.EdgeRootNodes)
-	}
+	edges := make([]string, 0, 2)
 	if m.removeddeployment_nodes != nil {
 		edges = append(edges, deployment.EdgeDeploymentNodes)
 	}
@@ -1648,12 +1579,6 @@ func (m *DeploymentMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *DeploymentMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
-	case deployment.EdgeRootNodes:
-		ids := make([]ent.Value, 0, len(m.removedroot_nodes))
-		for id := range m.removedroot_nodes {
-			ids = append(ids, id)
-		}
-		return ids
 	case deployment.EdgeDeploymentNodes:
 		ids := make([]ent.Value, 0, len(m.removeddeployment_nodes))
 		for id := range m.removeddeployment_nodes {
@@ -1666,12 +1591,9 @@ func (m *DeploymentMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *DeploymentMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 2)
 	if m.clearedblueprint {
 		edges = append(edges, deployment.EdgeBlueprint)
-	}
-	if m.clearedroot_nodes {
-		edges = append(edges, deployment.EdgeRootNodes)
 	}
 	if m.cleareddeployment_nodes {
 		edges = append(edges, deployment.EdgeDeploymentNodes)
@@ -1685,8 +1607,6 @@ func (m *DeploymentMutation) EdgeCleared(name string) bool {
 	switch name {
 	case deployment.EdgeBlueprint:
 		return m.clearedblueprint
-	case deployment.EdgeRootNodes:
-		return m.clearedroot_nodes
 	case deployment.EdgeDeploymentNodes:
 		return m.cleareddeployment_nodes
 	}
@@ -1710,9 +1630,6 @@ func (m *DeploymentMutation) ResetEdge(name string) error {
 	switch name {
 	case deployment.EdgeBlueprint:
 		m.ResetBlueprint()
-		return nil
-	case deployment.EdgeRootNodes:
-		m.ResetRootNodes()
 		return nil
 	case deployment.EdgeDeploymentNodes:
 		m.ResetDeploymentNodes()

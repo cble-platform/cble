@@ -54,7 +54,7 @@ func init() {
 	// deploymentDescTemplateVars is the schema descriptor for template_vars field.
 	deploymentDescTemplateVars := deploymentFields[6].Descriptor()
 	// deployment.DefaultTemplateVars holds the default value on creation for the template_vars field.
-	deployment.DefaultTemplateVars = deploymentDescTemplateVars.Default.(map[string]interface{})
+	deployment.DefaultTemplateVars = deploymentDescTemplateVars.Default.(map[string]string)
 	// deploymentDescID is the schema descriptor for id field.
 	deploymentDescID := deploymentFields[0].Descriptor()
 	// deployment.DefaultID holds the default value on creation for the id field.

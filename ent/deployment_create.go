@@ -70,7 +70,7 @@ func (dc *DeploymentCreate) SetState(d deployment.State) *DeploymentCreate {
 }
 
 // SetTemplateVars sets the "template_vars" field.
-func (dc *DeploymentCreate) SetTemplateVars(m map[string]interface{}) *DeploymentCreate {
+func (dc *DeploymentCreate) SetTemplateVars(m map[string]string) *DeploymentCreate {
 	dc.mutation.SetTemplateVars(m)
 	return dc
 }
@@ -98,21 +98,6 @@ func (dc *DeploymentCreate) SetBlueprintID(id uuid.UUID) *DeploymentCreate {
 // SetBlueprint sets the "blueprint" edge to the Blueprint entity.
 func (dc *DeploymentCreate) SetBlueprint(b *Blueprint) *DeploymentCreate {
 	return dc.SetBlueprintID(b.ID)
-}
-
-// AddRootNodeIDs adds the "root_nodes" edge to the DeploymentNode entity by IDs.
-func (dc *DeploymentCreate) AddRootNodeIDs(ids ...uuid.UUID) *DeploymentCreate {
-	dc.mutation.AddRootNodeIDs(ids...)
-	return dc
-}
-
-// AddRootNodes adds the "root_nodes" edges to the DeploymentNode entity.
-func (dc *DeploymentCreate) AddRootNodes(d ...*DeploymentNode) *DeploymentCreate {
-	ids := make([]uuid.UUID, len(d))
-	for i := range d {
-		ids[i] = d[i].ID
-	}
-	return dc.AddRootNodeIDs(ids...)
 }
 
 // AddDeploymentNodeIDs adds the "deployment_nodes" edge to the DeploymentNode entity by IDs.
@@ -285,22 +270,6 @@ func (dc *DeploymentCreate) createSpec() (*Deployment, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.deployment_blueprint = &nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := dc.mutation.RootNodesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   deployment.RootNodesTable,
-			Columns: []string{deployment.RootNodesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(deploymentnode.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := dc.mutation.DeploymentNodesIDs(); len(nodes) > 0 {
