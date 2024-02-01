@@ -3,7 +3,7 @@ module github.com/cble-platform/cble-backend
 go 1.21
 
 require (
-	entgo.io/ent v0.12.4
+	entgo.io/ent v0.12.5
 	github.com/99designs/gqlgen v0.17.40
 	github.com/cble-platform/cble-provider-grpc v0.1.3
 	github.com/crewjam/saml v0.4.14
@@ -22,7 +22,6 @@ require (
 	github.com/vektah/gqlparser v1.3.1
 	github.com/vektah/gqlparser/v2 v2.5.10
 	golang.org/x/crypto v0.18.0
-	google.golang.org/protobuf v1.32.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -94,5 +93,6 @@ require (
 	golang.org/x/tools v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240125205218-1f4bbc51befe // indirect
 	google.golang.org/grpc v1.61.0 // indirect
+	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )

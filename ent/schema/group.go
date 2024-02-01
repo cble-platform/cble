@@ -41,7 +41,7 @@ func (Group) Edges() []ent.Edge {
 			Ref("groups"),
 		edge.From("permission_policies", PermissionPolicy.Type).
 			Ref("group"),
-		edge.From("blueprints", Blueprint.Type).
-			Ref("parent_group"),
+		// edge.From("blueprints", Blueprint.Type).
+		// 	Ref("parent_group"),
 	}
 }

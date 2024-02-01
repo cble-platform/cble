@@ -308,29 +308,6 @@ func HasPermissionPoliciesWith(preds ...predicate.PermissionPolicy) predicate.Gr
 	})
 }
 
-// HasBlueprints applies the HasEdge predicate on the "blueprints" edge.
-func HasBlueprints() predicate.Group {
-	return predicate.Group(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, BlueprintsTable, BlueprintsColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasBlueprintsWith applies the HasEdge predicate on the "blueprints" edge with a given conditions (other predicates).
-func HasBlueprintsWith(preds ...predicate.Blueprint) predicate.Group {
-	return predicate.Group(func(s *sql.Selector) {
-		step := newBlueprintsStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Group) predicate.Group {
 	return predicate.Group(sql.AndPredicates(predicates...))

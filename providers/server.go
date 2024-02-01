@@ -10,7 +10,6 @@ import (
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/ent/providercommand"
 	cbleGRPC "github.com/cble-platform/cble-provider-grpc/pkg/cble"
-	"github.com/cble-platform/cble-provider-grpc/pkg/common"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -224,7 +223,7 @@ func (ps *CBLEServer) RegisterProvider(ctx context.Context, request *cbleGRPC.Re
 	logrus.Debugf("requesting provider %s start listening on socket ID %s", request.Id, socketId)
 	// Reply to the provider
 	return &cbleGRPC.RegistrationReply{
-		Status:   common.RPCStatus_SUCCESS,
+		Success:  true,
 		SocketId: socketId,
 	}, nil
 }
@@ -235,7 +234,7 @@ func (ps *CBLEServer) UnregisterProvider(ctx context.Context, request *cbleGRPC.
 	prov, exists := ps.registeredProviders.Load(request.Id)
 	if !exists {
 		return &cbleGRPC.UnregistrationReply{
-			Status: common.RPCStatus_FAILURE,
+			Success: false,
 		}, nil
 	}
 	// Check this is a valid UUID
@@ -251,7 +250,7 @@ func (ps *CBLEServer) UnregisterProvider(ctx context.Context, request *cbleGRPC.
 	// Make sure the unregister request is coming with the right ID... super basic security check :)
 	if prov.(RegisteredProvider).ID != request.Id {
 		return &cbleGRPC.UnregistrationReply{
-			Status: common.RPCStatus_FAILURE,
+			Success: false,
 		}, nil
 	}
 	// If all that passes, unregister the provider
@@ -262,6 +261,6 @@ func (ps *CBLEServer) UnregisterProvider(ctx context.Context, request *cbleGRPC.
 		return nil, fmt.Errorf("failed to set provider is_loaded state: %v", err)
 	}
 	return &cbleGRPC.UnregistrationReply{
-		Status: common.RPCStatus_SUCCESS,
+		Success: true,
 	}, nil
 }

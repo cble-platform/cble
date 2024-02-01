@@ -41,7 +41,7 @@ func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("groups", Group.Type),
 
-		edge.From("deployments", Deployment.Type).
-			Ref("requester"),
+		// edge.From("deployments", Deployment.Type).
+		// 	Ref("requester"),
 	}
 }

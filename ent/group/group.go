@@ -29,8 +29,6 @@ const (
 	EdgeUsers = "users"
 	// EdgePermissionPolicies holds the string denoting the permission_policies edge name in mutations.
 	EdgePermissionPolicies = "permission_policies"
-	// EdgeBlueprints holds the string denoting the blueprints edge name in mutations.
-	EdgeBlueprints = "blueprints"
 	// Table holds the table name of the group in the database.
 	Table = "groups"
 	// ParentTable is the table that holds the parent relation/edge.
@@ -53,13 +51,6 @@ const (
 	PermissionPoliciesInverseTable = "permission_policies"
 	// PermissionPoliciesColumn is the table column denoting the permission_policies relation/edge.
 	PermissionPoliciesColumn = "permission_policy_group"
-	// BlueprintsTable is the table that holds the blueprints relation/edge.
-	BlueprintsTable = "blueprints"
-	// BlueprintsInverseTable is the table name for the Blueprint entity.
-	// It exists in this package in order to avoid circular dependency with the "blueprint" package.
-	BlueprintsInverseTable = "blueprints"
-	// BlueprintsColumn is the table column denoting the blueprints relation/edge.
-	BlueprintsColumn = "blueprint_parent_group"
 )
 
 // Columns holds all SQL columns for group fields.
@@ -179,20 +170,6 @@ func ByPermissionPolicies(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOptio
 		sqlgraph.OrderByNeighborTerms(s, newPermissionPoliciesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-
-// ByBlueprintsCount orders the results by blueprints count.
-func ByBlueprintsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newBlueprintsStep(), opts...)
-	}
-}
-
-// ByBlueprints orders the results by blueprints terms.
-func ByBlueprints(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newBlueprintsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
 func newParentStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -219,12 +196,5 @@ func newPermissionPoliciesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(PermissionPoliciesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, true, PermissionPoliciesTable, PermissionPoliciesColumn),
-	)
-}
-func newBlueprintsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(BlueprintsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, true, BlueprintsTable, BlueprintsColumn),
 	)
 }

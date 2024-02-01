@@ -24,18 +24,16 @@ const (
 	FieldName = "name"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
-	// FieldTemplateVars holds the string denoting the template_vars field in the database.
-	FieldTemplateVars = "template_vars"
-	// FieldDeploymentVars holds the string denoting the deployment_vars field in the database.
-	FieldDeploymentVars = "deployment_vars"
-	// FieldDeploymentState holds the string denoting the deployment_state field in the database.
-	FieldDeploymentState = "deployment_state"
 	// FieldState holds the string denoting the state field in the database.
 	FieldState = "state"
+	// FieldTemplateVars holds the string denoting the template_vars field in the database.
+	FieldTemplateVars = "template_vars"
 	// EdgeBlueprint holds the string denoting the blueprint edge name in mutations.
 	EdgeBlueprint = "blueprint"
-	// EdgeRequester holds the string denoting the requester edge name in mutations.
-	EdgeRequester = "requester"
+	// EdgeRootNodes holds the string denoting the root_nodes edge name in mutations.
+	EdgeRootNodes = "root_nodes"
+	// EdgeDeploymentNodes holds the string denoting the deployment_nodes edge name in mutations.
+	EdgeDeploymentNodes = "deployment_nodes"
 	// Table holds the table name of the deployment in the database.
 	Table = "deployments"
 	// BlueprintTable is the table that holds the blueprint relation/edge.
@@ -45,13 +43,20 @@ const (
 	BlueprintInverseTable = "blueprints"
 	// BlueprintColumn is the table column denoting the blueprint relation/edge.
 	BlueprintColumn = "deployment_blueprint"
-	// RequesterTable is the table that holds the requester relation/edge.
-	RequesterTable = "deployments"
-	// RequesterInverseTable is the table name for the User entity.
-	// It exists in this package in order to avoid circular dependency with the "user" package.
-	RequesterInverseTable = "users"
-	// RequesterColumn is the table column denoting the requester relation/edge.
-	RequesterColumn = "deployment_requester"
+	// RootNodesTable is the table that holds the root_nodes relation/edge.
+	RootNodesTable = "deployment_nodes"
+	// RootNodesInverseTable is the table name for the DeploymentNode entity.
+	// It exists in this package in order to avoid circular dependency with the "deploymentnode" package.
+	RootNodesInverseTable = "deployment_nodes"
+	// RootNodesColumn is the table column denoting the root_nodes relation/edge.
+	RootNodesColumn = "deployment_root_nodes"
+	// DeploymentNodesTable is the table that holds the deployment_nodes relation/edge.
+	DeploymentNodesTable = "deployment_nodes"
+	// DeploymentNodesInverseTable is the table name for the DeploymentNode entity.
+	// It exists in this package in order to avoid circular dependency with the "deploymentnode" package.
+	DeploymentNodesInverseTable = "deployment_nodes"
+	// DeploymentNodesColumn is the table column denoting the deployment_nodes relation/edge.
+	DeploymentNodesColumn = "deployment_node_deployment"
 )
 
 // Columns holds all SQL columns for deployment fields.
@@ -61,17 +66,14 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldName,
 	FieldDescription,
-	FieldTemplateVars,
-	FieldDeploymentVars,
-	FieldDeploymentState,
 	FieldState,
+	FieldTemplateVars,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "deployments"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"deployment_blueprint",
-	"deployment_requester",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -96,14 +98,8 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
-	// DefaultDescription holds the default value on creation for the "description" field.
-	DefaultDescription string
 	// DefaultTemplateVars holds the default value on creation for the "template_vars" field.
 	DefaultTemplateVars map[string]interface{}
-	// DefaultDeploymentVars holds the default value on creation for the "deployment_vars" field.
-	DefaultDeploymentVars map[string]interface{}
-	// DefaultDeploymentState holds the default value on creation for the "deployment_state" field.
-	DefaultDeploymentState map[string]string
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -111,15 +107,13 @@ var (
 // State defines the type for the "state" enum field.
 type State string
 
-// StateUNKNOWN is the default value of the State enum.
-const DefaultState = StateUNKNOWN
-
 // State values.
 const (
-	StateUNKNOWN    State = "UNKNOWN"
-	StateINPROGRESS State = "INPROGRESS"
-	StateACTIVE     State = "ACTIVE"
-	StateDESTROYED  State = "DESTROYED"
+	StateAwaiting   State = "awaiting"
+	StateInProgress State = "in_progress"
+	StateComplete   State = "complete"
+	StateFailed     State = "failed"
+	StateDeleted    State = "deleted"
 )
 
 func (s State) String() string {
@@ -129,7 +123,7 @@ func (s State) String() string {
 // StateValidator is a validator for the "state" field enum values. It is called by the builders before save.
 func StateValidator(s State) error {
 	switch s {
-	case StateUNKNOWN, StateINPROGRESS, StateACTIVE, StateDESTROYED:
+	case StateAwaiting, StateInProgress, StateComplete, StateFailed, StateDeleted:
 		return nil
 	default:
 		return fmt.Errorf("deployment: invalid enum value for state field: %q", s)
@@ -176,10 +170,31 @@ func ByBlueprintField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
-// ByRequesterField orders the results by requester field.
-func ByRequesterField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByRootNodesCount orders the results by root_nodes count.
+func ByRootNodesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newRequesterStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborsCount(s, newRootNodesStep(), opts...)
+	}
+}
+
+// ByRootNodes orders the results by root_nodes terms.
+func ByRootNodes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRootNodesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByDeploymentNodesCount orders the results by deployment_nodes count.
+func ByDeploymentNodesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newDeploymentNodesStep(), opts...)
+	}
+}
+
+// ByDeploymentNodes orders the results by deployment_nodes terms.
+func ByDeploymentNodes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newDeploymentNodesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 func newBlueprintStep() *sqlgraph.Step {
@@ -189,10 +204,17 @@ func newBlueprintStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2O, false, BlueprintTable, BlueprintColumn),
 	)
 }
-func newRequesterStep() *sqlgraph.Step {
+func newRootNodesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(RequesterInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, RequesterTable, RequesterColumn),
+		sqlgraph.To(RootNodesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RootNodesTable, RootNodesColumn),
+	)
+}
+func newDeploymentNodesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(DeploymentNodesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, DeploymentNodesTable, DeploymentNodesColumn),
 	)
 }

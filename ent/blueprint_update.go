@@ -11,11 +11,12 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/cble-platform/cble-backend/blueprintengine/models"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
-	"github.com/cble-platform/cble-backend/ent/group"
 	"github.com/cble-platform/cble-backend/ent/predicate"
 	"github.com/cble-platform/cble-backend/ent/provider"
+	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/google/uuid"
 )
 
@@ -72,15 +73,10 @@ func (bu *BlueprintUpdate) SetBlueprintTemplate(b []byte) *BlueprintUpdate {
 	return bu
 }
 
-// SetParentGroupID sets the "parent_group" edge to the Group entity by ID.
-func (bu *BlueprintUpdate) SetParentGroupID(id uuid.UUID) *BlueprintUpdate {
-	bu.mutation.SetParentGroupID(id)
+// SetVariableTypes sets the "variable_types" field.
+func (bu *BlueprintUpdate) SetVariableTypes(mvt map[string]models.BlueprintVariableType) *BlueprintUpdate {
+	bu.mutation.SetVariableTypes(mvt)
 	return bu
-}
-
-// SetParentGroup sets the "parent_group" edge to the Group entity.
-func (bu *BlueprintUpdate) SetParentGroup(g *Group) *BlueprintUpdate {
-	return bu.SetParentGroupID(g.ID)
 }
 
 // SetProviderID sets the "provider" edge to the Provider entity by ID.
@@ -92,6 +88,21 @@ func (bu *BlueprintUpdate) SetProviderID(id uuid.UUID) *BlueprintUpdate {
 // SetProvider sets the "provider" edge to the Provider entity.
 func (bu *BlueprintUpdate) SetProvider(p *Provider) *BlueprintUpdate {
 	return bu.SetProviderID(p.ID)
+}
+
+// AddResourceIDs adds the "resources" edge to the Resource entity by IDs.
+func (bu *BlueprintUpdate) AddResourceIDs(ids ...uuid.UUID) *BlueprintUpdate {
+	bu.mutation.AddResourceIDs(ids...)
+	return bu
+}
+
+// AddResources adds the "resources" edges to the Resource entity.
+func (bu *BlueprintUpdate) AddResources(r ...*Resource) *BlueprintUpdate {
+	ids := make([]uuid.UUID, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return bu.AddResourceIDs(ids...)
 }
 
 // AddDeploymentIDs adds the "deployments" edge to the Deployment entity by IDs.
@@ -114,16 +125,31 @@ func (bu *BlueprintUpdate) Mutation() *BlueprintMutation {
 	return bu.mutation
 }
 
-// ClearParentGroup clears the "parent_group" edge to the Group entity.
-func (bu *BlueprintUpdate) ClearParentGroup() *BlueprintUpdate {
-	bu.mutation.ClearParentGroup()
-	return bu
-}
-
 // ClearProvider clears the "provider" edge to the Provider entity.
 func (bu *BlueprintUpdate) ClearProvider() *BlueprintUpdate {
 	bu.mutation.ClearProvider()
 	return bu
+}
+
+// ClearResources clears all "resources" edges to the Resource entity.
+func (bu *BlueprintUpdate) ClearResources() *BlueprintUpdate {
+	bu.mutation.ClearResources()
+	return bu
+}
+
+// RemoveResourceIDs removes the "resources" edge to Resource entities by IDs.
+func (bu *BlueprintUpdate) RemoveResourceIDs(ids ...uuid.UUID) *BlueprintUpdate {
+	bu.mutation.RemoveResourceIDs(ids...)
+	return bu
+}
+
+// RemoveResources removes "resources" edges to Resource entities.
+func (bu *BlueprintUpdate) RemoveResources(r ...*Resource) *BlueprintUpdate {
+	ids := make([]uuid.UUID, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return bu.RemoveResourceIDs(ids...)
 }
 
 // ClearDeployments clears all "deployments" edges to the Deployment entity.
@@ -185,9 +211,6 @@ func (bu *BlueprintUpdate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (bu *BlueprintUpdate) check() error {
-	if _, ok := bu.mutation.ParentGroupID(); bu.mutation.ParentGroupCleared() && !ok {
-		return errors.New(`ent: clearing a required unique edge "Blueprint.parent_group"`)
-	}
 	if _, ok := bu.mutation.ProviderID(); bu.mutation.ProviderCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Blueprint.provider"`)
 	}
@@ -218,34 +241,8 @@ func (bu *BlueprintUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := bu.mutation.BlueprintTemplate(); ok {
 		_spec.SetField(blueprint.FieldBlueprintTemplate, field.TypeBytes, value)
 	}
-	if bu.mutation.ParentGroupCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   blueprint.ParentGroupTable,
-			Columns: []string{blueprint.ParentGroupColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := bu.mutation.ParentGroupIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   blueprint.ParentGroupTable,
-			Columns: []string{blueprint.ParentGroupColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	if value, ok := bu.mutation.VariableTypes(); ok {
+		_spec.SetField(blueprint.FieldVariableTypes, field.TypeJSON, value)
 	}
 	if bu.mutation.ProviderCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -269,6 +266,51 @@ func (bu *BlueprintUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(provider.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if bu.mutation.ResourcesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   blueprint.ResourcesTable,
+			Columns: []string{blueprint.ResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(resource.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bu.mutation.RemovedResourcesIDs(); len(nodes) > 0 && !bu.mutation.ResourcesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   blueprint.ResourcesTable,
+			Columns: []string{blueprint.ResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(resource.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bu.mutation.ResourcesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   blueprint.ResourcesTable,
+			Columns: []string{blueprint.ResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(resource.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -381,15 +423,10 @@ func (buo *BlueprintUpdateOne) SetBlueprintTemplate(b []byte) *BlueprintUpdateOn
 	return buo
 }
 
-// SetParentGroupID sets the "parent_group" edge to the Group entity by ID.
-func (buo *BlueprintUpdateOne) SetParentGroupID(id uuid.UUID) *BlueprintUpdateOne {
-	buo.mutation.SetParentGroupID(id)
+// SetVariableTypes sets the "variable_types" field.
+func (buo *BlueprintUpdateOne) SetVariableTypes(mvt map[string]models.BlueprintVariableType) *BlueprintUpdateOne {
+	buo.mutation.SetVariableTypes(mvt)
 	return buo
-}
-
-// SetParentGroup sets the "parent_group" edge to the Group entity.
-func (buo *BlueprintUpdateOne) SetParentGroup(g *Group) *BlueprintUpdateOne {
-	return buo.SetParentGroupID(g.ID)
 }
 
 // SetProviderID sets the "provider" edge to the Provider entity by ID.
@@ -401,6 +438,21 @@ func (buo *BlueprintUpdateOne) SetProviderID(id uuid.UUID) *BlueprintUpdateOne {
 // SetProvider sets the "provider" edge to the Provider entity.
 func (buo *BlueprintUpdateOne) SetProvider(p *Provider) *BlueprintUpdateOne {
 	return buo.SetProviderID(p.ID)
+}
+
+// AddResourceIDs adds the "resources" edge to the Resource entity by IDs.
+func (buo *BlueprintUpdateOne) AddResourceIDs(ids ...uuid.UUID) *BlueprintUpdateOne {
+	buo.mutation.AddResourceIDs(ids...)
+	return buo
+}
+
+// AddResources adds the "resources" edges to the Resource entity.
+func (buo *BlueprintUpdateOne) AddResources(r ...*Resource) *BlueprintUpdateOne {
+	ids := make([]uuid.UUID, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return buo.AddResourceIDs(ids...)
 }
 
 // AddDeploymentIDs adds the "deployments" edge to the Deployment entity by IDs.
@@ -423,16 +475,31 @@ func (buo *BlueprintUpdateOne) Mutation() *BlueprintMutation {
 	return buo.mutation
 }
 
-// ClearParentGroup clears the "parent_group" edge to the Group entity.
-func (buo *BlueprintUpdateOne) ClearParentGroup() *BlueprintUpdateOne {
-	buo.mutation.ClearParentGroup()
-	return buo
-}
-
 // ClearProvider clears the "provider" edge to the Provider entity.
 func (buo *BlueprintUpdateOne) ClearProvider() *BlueprintUpdateOne {
 	buo.mutation.ClearProvider()
 	return buo
+}
+
+// ClearResources clears all "resources" edges to the Resource entity.
+func (buo *BlueprintUpdateOne) ClearResources() *BlueprintUpdateOne {
+	buo.mutation.ClearResources()
+	return buo
+}
+
+// RemoveResourceIDs removes the "resources" edge to Resource entities by IDs.
+func (buo *BlueprintUpdateOne) RemoveResourceIDs(ids ...uuid.UUID) *BlueprintUpdateOne {
+	buo.mutation.RemoveResourceIDs(ids...)
+	return buo
+}
+
+// RemoveResources removes "resources" edges to Resource entities.
+func (buo *BlueprintUpdateOne) RemoveResources(r ...*Resource) *BlueprintUpdateOne {
+	ids := make([]uuid.UUID, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return buo.RemoveResourceIDs(ids...)
 }
 
 // ClearDeployments clears all "deployments" edges to the Deployment entity.
@@ -507,9 +574,6 @@ func (buo *BlueprintUpdateOne) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (buo *BlueprintUpdateOne) check() error {
-	if _, ok := buo.mutation.ParentGroupID(); buo.mutation.ParentGroupCleared() && !ok {
-		return errors.New(`ent: clearing a required unique edge "Blueprint.parent_group"`)
-	}
 	if _, ok := buo.mutation.ProviderID(); buo.mutation.ProviderCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Blueprint.provider"`)
 	}
@@ -557,34 +621,8 @@ func (buo *BlueprintUpdateOne) sqlSave(ctx context.Context) (_node *Blueprint, e
 	if value, ok := buo.mutation.BlueprintTemplate(); ok {
 		_spec.SetField(blueprint.FieldBlueprintTemplate, field.TypeBytes, value)
 	}
-	if buo.mutation.ParentGroupCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   blueprint.ParentGroupTable,
-			Columns: []string{blueprint.ParentGroupColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := buo.mutation.ParentGroupIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   blueprint.ParentGroupTable,
-			Columns: []string{blueprint.ParentGroupColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	if value, ok := buo.mutation.VariableTypes(); ok {
+		_spec.SetField(blueprint.FieldVariableTypes, field.TypeJSON, value)
 	}
 	if buo.mutation.ProviderCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -608,6 +646,51 @@ func (buo *BlueprintUpdateOne) sqlSave(ctx context.Context) (_node *Blueprint, e
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(provider.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if buo.mutation.ResourcesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   blueprint.ResourcesTable,
+			Columns: []string{blueprint.ResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(resource.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := buo.mutation.RemovedResourcesIDs(); len(nodes) > 0 && !buo.mutation.ResourcesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   blueprint.ResourcesTable,
+			Columns: []string{blueprint.ResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(resource.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := buo.mutation.ResourcesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   blueprint.ResourcesTable,
+			Columns: []string{blueprint.ResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(resource.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

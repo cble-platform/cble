@@ -13,9 +13,9 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
-	"github.com/cble-platform/cble-backend/ent/group"
 	"github.com/cble-platform/cble-backend/ent/predicate"
 	"github.com/cble-platform/cble-backend/ent/provider"
+	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/google/uuid"
 )
 
@@ -26,8 +26,8 @@ type BlueprintQuery struct {
 	order           []blueprint.OrderOption
 	inters          []Interceptor
 	predicates      []predicate.Blueprint
-	withParentGroup *GroupQuery
 	withProvider    *ProviderQuery
+	withResources   *ResourceQuery
 	withDeployments *DeploymentQuery
 	withFKs         bool
 	// intermediate query (i.e. traversal path).
@@ -66,28 +66,6 @@ func (bq *BlueprintQuery) Order(o ...blueprint.OrderOption) *BlueprintQuery {
 	return bq
 }
 
-// QueryParentGroup chains the current query on the "parent_group" edge.
-func (bq *BlueprintQuery) QueryParentGroup() *GroupQuery {
-	query := (&GroupClient{config: bq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := bq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := bq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blueprint.Table, blueprint.FieldID, selector),
-			sqlgraph.To(group.Table, group.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, blueprint.ParentGroupTable, blueprint.ParentGroupColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(bq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
 // QueryProvider chains the current query on the "provider" edge.
 func (bq *BlueprintQuery) QueryProvider() *ProviderQuery {
 	query := (&ProviderClient{config: bq.config}).Query()
@@ -103,6 +81,28 @@ func (bq *BlueprintQuery) QueryProvider() *ProviderQuery {
 			sqlgraph.From(blueprint.Table, blueprint.FieldID, selector),
 			sqlgraph.To(provider.Table, provider.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, blueprint.ProviderTable, blueprint.ProviderColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(bq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryResources chains the current query on the "resources" edge.
+func (bq *BlueprintQuery) QueryResources() *ResourceQuery {
+	query := (&ResourceClient{config: bq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := bq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := bq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(blueprint.Table, blueprint.FieldID, selector),
+			sqlgraph.To(resource.Table, resource.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, blueprint.ResourcesTable, blueprint.ResourcesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(bq.driver.Dialect(), step)
 		return fromU, nil
@@ -324,24 +324,13 @@ func (bq *BlueprintQuery) Clone() *BlueprintQuery {
 		order:           append([]blueprint.OrderOption{}, bq.order...),
 		inters:          append([]Interceptor{}, bq.inters...),
 		predicates:      append([]predicate.Blueprint{}, bq.predicates...),
-		withParentGroup: bq.withParentGroup.Clone(),
 		withProvider:    bq.withProvider.Clone(),
+		withResources:   bq.withResources.Clone(),
 		withDeployments: bq.withDeployments.Clone(),
 		// clone intermediate query.
 		sql:  bq.sql.Clone(),
 		path: bq.path,
 	}
-}
-
-// WithParentGroup tells the query-builder to eager-load the nodes that are connected to
-// the "parent_group" edge. The optional arguments are used to configure the query builder of the edge.
-func (bq *BlueprintQuery) WithParentGroup(opts ...func(*GroupQuery)) *BlueprintQuery {
-	query := (&GroupClient{config: bq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	bq.withParentGroup = query
-	return bq
 }
 
 // WithProvider tells the query-builder to eager-load the nodes that are connected to
@@ -352,6 +341,17 @@ func (bq *BlueprintQuery) WithProvider(opts ...func(*ProviderQuery)) *BlueprintQ
 		opt(query)
 	}
 	bq.withProvider = query
+	return bq
+}
+
+// WithResources tells the query-builder to eager-load the nodes that are connected to
+// the "resources" edge. The optional arguments are used to configure the query builder of the edge.
+func (bq *BlueprintQuery) WithResources(opts ...func(*ResourceQuery)) *BlueprintQuery {
+	query := (&ResourceClient{config: bq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	bq.withResources = query
 	return bq
 }
 
@@ -446,12 +446,12 @@ func (bq *BlueprintQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Bl
 		withFKs     = bq.withFKs
 		_spec       = bq.querySpec()
 		loadedTypes = [3]bool{
-			bq.withParentGroup != nil,
 			bq.withProvider != nil,
+			bq.withResources != nil,
 			bq.withDeployments != nil,
 		}
 	)
-	if bq.withParentGroup != nil || bq.withProvider != nil {
+	if bq.withProvider != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -475,15 +475,16 @@ func (bq *BlueprintQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Bl
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := bq.withParentGroup; query != nil {
-		if err := bq.loadParentGroup(ctx, query, nodes, nil,
-			func(n *Blueprint, e *Group) { n.Edges.ParentGroup = e }); err != nil {
-			return nil, err
-		}
-	}
 	if query := bq.withProvider; query != nil {
 		if err := bq.loadProvider(ctx, query, nodes, nil,
 			func(n *Blueprint, e *Provider) { n.Edges.Provider = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := bq.withResources; query != nil {
+		if err := bq.loadResources(ctx, query, nodes,
+			func(n *Blueprint) { n.Edges.Resources = []*Resource{} },
+			func(n *Blueprint, e *Resource) { n.Edges.Resources = append(n.Edges.Resources, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -497,38 +498,6 @@ func (bq *BlueprintQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Bl
 	return nodes, nil
 }
 
-func (bq *BlueprintQuery) loadParentGroup(ctx context.Context, query *GroupQuery, nodes []*Blueprint, init func(*Blueprint), assign func(*Blueprint, *Group)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Blueprint)
-	for i := range nodes {
-		if nodes[i].blueprint_parent_group == nil {
-			continue
-		}
-		fk := *nodes[i].blueprint_parent_group
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(group.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "blueprint_parent_group" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
 func (bq *BlueprintQuery) loadProvider(ctx context.Context, query *ProviderQuery, nodes []*Blueprint, init func(*Blueprint), assign func(*Blueprint, *Provider)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*Blueprint)
@@ -558,6 +527,37 @@ func (bq *BlueprintQuery) loadProvider(ctx context.Context, query *ProviderQuery
 		for i := range nodes {
 			assign(nodes[i], n)
 		}
+	}
+	return nil
+}
+func (bq *BlueprintQuery) loadResources(ctx context.Context, query *ResourceQuery, nodes []*Blueprint, init func(*Blueprint), assign func(*Blueprint, *Resource)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Blueprint)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Resource(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(blueprint.ResourcesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.resource_blueprint
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "resource_blueprint" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "resource_blueprint" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
 	}
 	return nil
 }

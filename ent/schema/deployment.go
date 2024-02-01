@@ -26,19 +26,16 @@ func (Deployment) Fields() []ent.Field {
 		field.Time("updated_at").
 			Default(time.Now).
 			UpdateDefault(time.Now),
-		field.String("name"),
+		field.String("name").
+			Comment("Display name of the deployment (defaults to blueprint name)"),
 		field.String("description").
-			Optional().
-			Default(""),
-		field.JSON("template_vars", map[string]interface{}{}).
-			Default(make(map[string]interface{})),
-		field.JSON("deployment_vars", map[string]interface{}{}).
-			Default(make(map[string]interface{})),
-		field.JSON("deployment_state", map[string]string{}).
-			Default(make(map[string]string)),
+			Comment("Display description of the deployment (supports markdown; defaults to blueprint description)"),
 		field.Enum("state").
-			Values("UNKNOWN", "INPROGRESS", "ACTIVE", "DESTROYED").
-			Default("UNKNOWN"),
+			Values("awaiting", "in_progress", "complete", "failed", "deleted").
+			Comment("The overall state of the deployment (should only by updated by the deploy engine)"),
+		field.JSON("template_vars", map[string]interface{}{}).
+			Default(make(map[string]interface{})).
+			Comment("Stores the variable values to be injected into the blueprint template"),
 	}
 }
 
@@ -47,9 +44,12 @@ func (Deployment) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("blueprint", Blueprint.Type).
 			Unique().
-			Required(),
-		edge.To("requester", User.Type).
-			Unique().
-			Required(),
+			Required().
+			Comment("The blueprint for this deployment"),
+		edge.To("root_nodes", DeploymentNode.Type).
+			Comment("The deployment nodes with no dependencies to start the deploy with"),
+		edge.From("deployment_nodes", DeploymentNode.Type).
+			Ref("deployment").
+			Comment("The deployment nodes belonging to this deployment"),
 	}
 }

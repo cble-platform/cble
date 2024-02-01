@@ -11,7 +11,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/group"
 	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
 	"github.com/cble-platform/cble-backend/ent/predicate"
@@ -30,7 +29,6 @@ type GroupQuery struct {
 	withChildren           *GroupQuery
 	withUsers              *UserQuery
 	withPermissionPolicies *PermissionPolicyQuery
-	withBlueprints         *BlueprintQuery
 	withFKs                bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -149,28 +147,6 @@ func (gq *GroupQuery) QueryPermissionPolicies() *PermissionPolicyQuery {
 			sqlgraph.From(group.Table, group.FieldID, selector),
 			sqlgraph.To(permissionpolicy.Table, permissionpolicy.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, group.PermissionPoliciesTable, group.PermissionPoliciesColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(gq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryBlueprints chains the current query on the "blueprints" edge.
-func (gq *GroupQuery) QueryBlueprints() *BlueprintQuery {
-	query := (&BlueprintClient{config: gq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := gq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := gq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(group.Table, group.FieldID, selector),
-			sqlgraph.To(blueprint.Table, blueprint.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, group.BlueprintsTable, group.BlueprintsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(gq.driver.Dialect(), step)
 		return fromU, nil
@@ -374,7 +350,6 @@ func (gq *GroupQuery) Clone() *GroupQuery {
 		withChildren:           gq.withChildren.Clone(),
 		withUsers:              gq.withUsers.Clone(),
 		withPermissionPolicies: gq.withPermissionPolicies.Clone(),
-		withBlueprints:         gq.withBlueprints.Clone(),
 		// clone intermediate query.
 		sql:  gq.sql.Clone(),
 		path: gq.path,
@@ -422,17 +397,6 @@ func (gq *GroupQuery) WithPermissionPolicies(opts ...func(*PermissionPolicyQuery
 		opt(query)
 	}
 	gq.withPermissionPolicies = query
-	return gq
-}
-
-// WithBlueprints tells the query-builder to eager-load the nodes that are connected to
-// the "blueprints" edge. The optional arguments are used to configure the query builder of the edge.
-func (gq *GroupQuery) WithBlueprints(opts ...func(*BlueprintQuery)) *GroupQuery {
-	query := (&BlueprintClient{config: gq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	gq.withBlueprints = query
 	return gq
 }
 
@@ -515,12 +479,11 @@ func (gq *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 		nodes       = []*Group{}
 		withFKs     = gq.withFKs
 		_spec       = gq.querySpec()
-		loadedTypes = [5]bool{
+		loadedTypes = [4]bool{
 			gq.withParent != nil,
 			gq.withChildren != nil,
 			gq.withUsers != nil,
 			gq.withPermissionPolicies != nil,
-			gq.withBlueprints != nil,
 		}
 	)
 	if gq.withParent != nil {
@@ -573,13 +536,6 @@ func (gq *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 			func(n *Group, e *PermissionPolicy) {
 				n.Edges.PermissionPolicies = append(n.Edges.PermissionPolicies, e)
 			}); err != nil {
-			return nil, err
-		}
-	}
-	if query := gq.withBlueprints; query != nil {
-		if err := gq.loadBlueprints(ctx, query, nodes,
-			func(n *Group) { n.Edges.Blueprints = []*Blueprint{} },
-			func(n *Group, e *Blueprint) { n.Edges.Blueprints = append(n.Edges.Blueprints, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -736,37 +692,6 @@ func (gq *GroupQuery) loadPermissionPolicies(ctx context.Context, query *Permiss
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "permission_policy_group" returned %v for node %v`, *fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
-func (gq *GroupQuery) loadBlueprints(ctx context.Context, query *BlueprintQuery, nodes []*Group, init func(*Group), assign func(*Group, *Blueprint)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Group)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	query.withFKs = true
-	query.Where(predicate.Blueprint(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(group.BlueprintsColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.blueprint_parent_group
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "blueprint_parent_group" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "blueprint_parent_group" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

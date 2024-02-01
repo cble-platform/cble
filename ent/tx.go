@@ -16,6 +16,8 @@ type Tx struct {
 	Blueprint *BlueprintClient
 	// Deployment is the client for interacting with the Deployment builders.
 	Deployment *DeploymentClient
+	// DeploymentNode is the client for interacting with the DeploymentNode builders.
+	DeploymentNode *DeploymentNodeClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
 	// Permission is the client for interacting with the Permission builders.
@@ -26,6 +28,8 @@ type Tx struct {
 	Provider *ProviderClient
 	// ProviderCommand is the client for interacting with the ProviderCommand builders.
 	ProviderCommand *ProviderCommandClient
+	// Resource is the client for interacting with the Resource builders.
+	Resource *ResourceClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 
@@ -161,11 +165,13 @@ func (tx *Tx) Client() *Client {
 func (tx *Tx) init() {
 	tx.Blueprint = NewBlueprintClient(tx.config)
 	tx.Deployment = NewDeploymentClient(tx.config)
+	tx.DeploymentNode = NewDeploymentNodeClient(tx.config)
 	tx.Group = NewGroupClient(tx.config)
 	tx.Permission = NewPermissionClient(tx.config)
 	tx.PermissionPolicy = NewPermissionPolicyClient(tx.config)
 	tx.Provider = NewProviderClient(tx.config)
 	tx.ProviderCommand = NewProviderCommandClient(tx.config)
+	tx.Resource = NewResourceClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
 

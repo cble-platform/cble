@@ -3,14 +3,15 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/cble-platform/cble-backend/blueprintengine/models"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
-	"github.com/cble-platform/cble-backend/ent/group"
 	"github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/google/uuid"
 )
@@ -24,26 +25,27 @@ type Blueprint struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
-	// Name holds the value of the "name" field.
+	// Display name of the blueprint
 	Name string `json:"name,omitempty"`
-	// Description holds the value of the "description" field.
+	// Display description of the blueprint (supports markdown)
 	Description string `json:"description,omitempty"`
-	// BlueprintTemplate holds the value of the "blueprint_template" field.
+	// The blueprint file contents
 	BlueprintTemplate []byte `json:"blueprint_template,omitempty"`
+	// Stores the names of variables and their data type
+	VariableTypes map[string]models.BlueprintVariableType `json:"variable_types,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the BlueprintQuery when eager-loading is set.
-	Edges                  BlueprintEdges `json:"edges"`
-	blueprint_parent_group *uuid.UUID
-	blueprint_provider     *uuid.UUID
-	selectValues           sql.SelectValues
+	Edges              BlueprintEdges `json:"edges"`
+	blueprint_provider *uuid.UUID
+	selectValues       sql.SelectValues
 }
 
 // BlueprintEdges holds the relations/edges for other nodes in the graph.
 type BlueprintEdges struct {
-	// ParentGroup holds the value of the parent_group edge.
-	ParentGroup *Group `json:"parent_group,omitempty"`
-	// Provider holds the value of the provider edge.
+	// The provider to use for this blueprint
 	Provider *Provider `json:"provider,omitempty"`
+	// Resources holds the value of the resources edge.
+	Resources []*Resource `json:"resources,omitempty"`
 	// Deployments holds the value of the deployments edge.
 	Deployments []*Deployment `json:"deployments,omitempty"`
 	// loadedTypes holds the information for reporting if a
@@ -51,23 +53,10 @@ type BlueprintEdges struct {
 	loadedTypes [3]bool
 }
 
-// ParentGroupOrErr returns the ParentGroup value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e BlueprintEdges) ParentGroupOrErr() (*Group, error) {
-	if e.loadedTypes[0] {
-		if e.ParentGroup == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: group.Label}
-		}
-		return e.ParentGroup, nil
-	}
-	return nil, &NotLoadedError{edge: "parent_group"}
-}
-
 // ProviderOrErr returns the Provider value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e BlueprintEdges) ProviderOrErr() (*Provider, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[0] {
 		if e.Provider == nil {
 			// Edge was loaded but was not found.
 			return nil, &NotFoundError{label: provider.Label}
@@ -75,6 +64,15 @@ func (e BlueprintEdges) ProviderOrErr() (*Provider, error) {
 		return e.Provider, nil
 	}
 	return nil, &NotLoadedError{edge: "provider"}
+}
+
+// ResourcesOrErr returns the Resources value or an error if the edge
+// was not loaded in eager-loading.
+func (e BlueprintEdges) ResourcesOrErr() ([]*Resource, error) {
+	if e.loadedTypes[1] {
+		return e.Resources, nil
+	}
+	return nil, &NotLoadedError{edge: "resources"}
 }
 
 // DeploymentsOrErr returns the Deployments value or an error if the edge
@@ -91,7 +89,7 @@ func (*Blueprint) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case blueprint.FieldBlueprintTemplate:
+		case blueprint.FieldBlueprintTemplate, blueprint.FieldVariableTypes:
 			values[i] = new([]byte)
 		case blueprint.FieldName, blueprint.FieldDescription:
 			values[i] = new(sql.NullString)
@@ -99,9 +97,7 @@ func (*Blueprint) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullTime)
 		case blueprint.FieldID:
 			values[i] = new(uuid.UUID)
-		case blueprint.ForeignKeys[0]: // blueprint_parent_group
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case blueprint.ForeignKeys[1]: // blueprint_provider
+		case blueprint.ForeignKeys[0]: // blueprint_provider
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
@@ -154,14 +150,15 @@ func (b *Blueprint) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				b.BlueprintTemplate = *value
 			}
-		case blueprint.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullScanner); !ok {
-				return fmt.Errorf("unexpected type %T for field blueprint_parent_group", values[i])
-			} else if value.Valid {
-				b.blueprint_parent_group = new(uuid.UUID)
-				*b.blueprint_parent_group = *value.S.(*uuid.UUID)
+		case blueprint.FieldVariableTypes:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field variable_types", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &b.VariableTypes); err != nil {
+					return fmt.Errorf("unmarshal field variable_types: %w", err)
+				}
 			}
-		case blueprint.ForeignKeys[1]:
+		case blueprint.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field blueprint_provider", values[i])
 			} else if value.Valid {
@@ -181,14 +178,14 @@ func (b *Blueprint) Value(name string) (ent.Value, error) {
 	return b.selectValues.Get(name)
 }
 
-// QueryParentGroup queries the "parent_group" edge of the Blueprint entity.
-func (b *Blueprint) QueryParentGroup() *GroupQuery {
-	return NewBlueprintClient(b.config).QueryParentGroup(b)
-}
-
 // QueryProvider queries the "provider" edge of the Blueprint entity.
 func (b *Blueprint) QueryProvider() *ProviderQuery {
 	return NewBlueprintClient(b.config).QueryProvider(b)
+}
+
+// QueryResources queries the "resources" edge of the Blueprint entity.
+func (b *Blueprint) QueryResources() *ResourceQuery {
+	return NewBlueprintClient(b.config).QueryResources(b)
 }
 
 // QueryDeployments queries the "deployments" edge of the Blueprint entity.
@@ -233,6 +230,9 @@ func (b *Blueprint) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("blueprint_template=")
 	builder.WriteString(fmt.Sprintf("%v", b.BlueprintTemplate))
+	builder.WriteString(", ")
+	builder.WriteString("variable_types=")
+	builder.WriteString(fmt.Sprintf("%v", b.VariableTypes))
 	builder.WriteByte(')')
 	return builder.String()
 }

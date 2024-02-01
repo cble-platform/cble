@@ -11,14 +11,17 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/cble-platform/cble-backend/blueprintengine/models"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
+	"github.com/cble-platform/cble-backend/ent/deploymentnode"
 	"github.com/cble-platform/cble-backend/ent/group"
 	"github.com/cble-platform/cble-backend/ent/permission"
 	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
 	"github.com/cble-platform/cble-backend/ent/predicate"
 	"github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/cble-platform/cble-backend/ent/providercommand"
+	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
 )
@@ -34,36 +37,40 @@ const (
 	// Node types.
 	TypeBlueprint        = "Blueprint"
 	TypeDeployment       = "Deployment"
+	TypeDeploymentNode   = "DeploymentNode"
 	TypeGroup            = "Group"
 	TypePermission       = "Permission"
 	TypePermissionPolicy = "PermissionPolicy"
 	TypeProvider         = "Provider"
 	TypeProviderCommand  = "ProviderCommand"
+	TypeResource         = "Resource"
 	TypeUser             = "User"
 )
 
 // BlueprintMutation represents an operation that mutates the Blueprint nodes in the graph.
 type BlueprintMutation struct {
 	config
-	op                  Op
-	typ                 string
-	id                  *uuid.UUID
-	created_at          *time.Time
-	updated_at          *time.Time
-	name                *string
-	description         *string
-	blueprint_template  *[]byte
-	clearedFields       map[string]struct{}
-	parent_group        *uuid.UUID
-	clearedparent_group bool
-	provider            *uuid.UUID
-	clearedprovider     bool
-	deployments         map[uuid.UUID]struct{}
-	removeddeployments  map[uuid.UUID]struct{}
-	cleareddeployments  bool
-	done                bool
-	oldValue            func(context.Context) (*Blueprint, error)
-	predicates          []predicate.Blueprint
+	op                 Op
+	typ                string
+	id                 *uuid.UUID
+	created_at         *time.Time
+	updated_at         *time.Time
+	name               *string
+	description        *string
+	blueprint_template *[]byte
+	variable_types     *map[string]models.BlueprintVariableType
+	clearedFields      map[string]struct{}
+	provider           *uuid.UUID
+	clearedprovider    bool
+	resources          map[uuid.UUID]struct{}
+	removedresources   map[uuid.UUID]struct{}
+	clearedresources   bool
+	deployments        map[uuid.UUID]struct{}
+	removeddeployments map[uuid.UUID]struct{}
+	cleareddeployments bool
+	done               bool
+	oldValue           func(context.Context) (*Blueprint, error)
+	predicates         []predicate.Blueprint
 }
 
 var _ ent.Mutation = (*BlueprintMutation)(nil)
@@ -350,43 +357,40 @@ func (m *BlueprintMutation) ResetBlueprintTemplate() {
 	m.blueprint_template = nil
 }
 
-// SetParentGroupID sets the "parent_group" edge to the Group entity by id.
-func (m *BlueprintMutation) SetParentGroupID(id uuid.UUID) {
-	m.parent_group = &id
+// SetVariableTypes sets the "variable_types" field.
+func (m *BlueprintMutation) SetVariableTypes(mvt map[string]models.BlueprintVariableType) {
+	m.variable_types = &mvt
 }
 
-// ClearParentGroup clears the "parent_group" edge to the Group entity.
-func (m *BlueprintMutation) ClearParentGroup() {
-	m.clearedparent_group = true
-}
-
-// ParentGroupCleared reports if the "parent_group" edge to the Group entity was cleared.
-func (m *BlueprintMutation) ParentGroupCleared() bool {
-	return m.clearedparent_group
-}
-
-// ParentGroupID returns the "parent_group" edge ID in the mutation.
-func (m *BlueprintMutation) ParentGroupID() (id uuid.UUID, exists bool) {
-	if m.parent_group != nil {
-		return *m.parent_group, true
+// VariableTypes returns the value of the "variable_types" field in the mutation.
+func (m *BlueprintMutation) VariableTypes() (r map[string]models.BlueprintVariableType, exists bool) {
+	v := m.variable_types
+	if v == nil {
+		return
 	}
-	return
+	return *v, true
 }
 
-// ParentGroupIDs returns the "parent_group" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// ParentGroupID instead. It exists only for internal usage by the builders.
-func (m *BlueprintMutation) ParentGroupIDs() (ids []uuid.UUID) {
-	if id := m.parent_group; id != nil {
-		ids = append(ids, *id)
+// OldVariableTypes returns the old "variable_types" field's value of the Blueprint entity.
+// If the Blueprint object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BlueprintMutation) OldVariableTypes(ctx context.Context) (v map[string]models.BlueprintVariableType, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVariableTypes is only allowed on UpdateOne operations")
 	}
-	return
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVariableTypes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVariableTypes: %w", err)
+	}
+	return oldValue.VariableTypes, nil
 }
 
-// ResetParentGroup resets all changes to the "parent_group" edge.
-func (m *BlueprintMutation) ResetParentGroup() {
-	m.parent_group = nil
-	m.clearedparent_group = false
+// ResetVariableTypes resets all changes to the "variable_types" field.
+func (m *BlueprintMutation) ResetVariableTypes() {
+	m.variable_types = nil
 }
 
 // SetProviderID sets the "provider" edge to the Provider entity by id.
@@ -426,6 +430,60 @@ func (m *BlueprintMutation) ProviderIDs() (ids []uuid.UUID) {
 func (m *BlueprintMutation) ResetProvider() {
 	m.provider = nil
 	m.clearedprovider = false
+}
+
+// AddResourceIDs adds the "resources" edge to the Resource entity by ids.
+func (m *BlueprintMutation) AddResourceIDs(ids ...uuid.UUID) {
+	if m.resources == nil {
+		m.resources = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.resources[ids[i]] = struct{}{}
+	}
+}
+
+// ClearResources clears the "resources" edge to the Resource entity.
+func (m *BlueprintMutation) ClearResources() {
+	m.clearedresources = true
+}
+
+// ResourcesCleared reports if the "resources" edge to the Resource entity was cleared.
+func (m *BlueprintMutation) ResourcesCleared() bool {
+	return m.clearedresources
+}
+
+// RemoveResourceIDs removes the "resources" edge to the Resource entity by IDs.
+func (m *BlueprintMutation) RemoveResourceIDs(ids ...uuid.UUID) {
+	if m.removedresources == nil {
+		m.removedresources = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.resources, ids[i])
+		m.removedresources[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedResources returns the removed IDs of the "resources" edge to the Resource entity.
+func (m *BlueprintMutation) RemovedResourcesIDs() (ids []uuid.UUID) {
+	for id := range m.removedresources {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResourcesIDs returns the "resources" edge IDs in the mutation.
+func (m *BlueprintMutation) ResourcesIDs() (ids []uuid.UUID) {
+	for id := range m.resources {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetResources resets all changes to the "resources" edge.
+func (m *BlueprintMutation) ResetResources() {
+	m.resources = nil
+	m.clearedresources = false
+	m.removedresources = nil
 }
 
 // AddDeploymentIDs adds the "deployments" edge to the Deployment entity by ids.
@@ -516,7 +574,7 @@ func (m *BlueprintMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BlueprintMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.created_at != nil {
 		fields = append(fields, blueprint.FieldCreatedAt)
 	}
@@ -531,6 +589,9 @@ func (m *BlueprintMutation) Fields() []string {
 	}
 	if m.blueprint_template != nil {
 		fields = append(fields, blueprint.FieldBlueprintTemplate)
+	}
+	if m.variable_types != nil {
+		fields = append(fields, blueprint.FieldVariableTypes)
 	}
 	return fields
 }
@@ -550,6 +611,8 @@ func (m *BlueprintMutation) Field(name string) (ent.Value, bool) {
 		return m.Description()
 	case blueprint.FieldBlueprintTemplate:
 		return m.BlueprintTemplate()
+	case blueprint.FieldVariableTypes:
+		return m.VariableTypes()
 	}
 	return nil, false
 }
@@ -569,6 +632,8 @@ func (m *BlueprintMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldDescription(ctx)
 	case blueprint.FieldBlueprintTemplate:
 		return m.OldBlueprintTemplate(ctx)
+	case blueprint.FieldVariableTypes:
+		return m.OldVariableTypes(ctx)
 	}
 	return nil, fmt.Errorf("unknown Blueprint field %s", name)
 }
@@ -612,6 +677,13 @@ func (m *BlueprintMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetBlueprintTemplate(v)
+		return nil
+	case blueprint.FieldVariableTypes:
+		v, ok := value.(map[string]models.BlueprintVariableType)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVariableTypes(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Blueprint field %s", name)
@@ -677,6 +749,9 @@ func (m *BlueprintMutation) ResetField(name string) error {
 	case blueprint.FieldBlueprintTemplate:
 		m.ResetBlueprintTemplate()
 		return nil
+	case blueprint.FieldVariableTypes:
+		m.ResetVariableTypes()
+		return nil
 	}
 	return fmt.Errorf("unknown Blueprint field %s", name)
 }
@@ -684,11 +759,11 @@ func (m *BlueprintMutation) ResetField(name string) error {
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *BlueprintMutation) AddedEdges() []string {
 	edges := make([]string, 0, 3)
-	if m.parent_group != nil {
-		edges = append(edges, blueprint.EdgeParentGroup)
-	}
 	if m.provider != nil {
 		edges = append(edges, blueprint.EdgeProvider)
+	}
+	if m.resources != nil {
+		edges = append(edges, blueprint.EdgeResources)
 	}
 	if m.deployments != nil {
 		edges = append(edges, blueprint.EdgeDeployments)
@@ -700,14 +775,16 @@ func (m *BlueprintMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *BlueprintMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case blueprint.EdgeParentGroup:
-		if id := m.parent_group; id != nil {
-			return []ent.Value{*id}
-		}
 	case blueprint.EdgeProvider:
 		if id := m.provider; id != nil {
 			return []ent.Value{*id}
 		}
+	case blueprint.EdgeResources:
+		ids := make([]ent.Value, 0, len(m.resources))
+		for id := range m.resources {
+			ids = append(ids, id)
+		}
+		return ids
 	case blueprint.EdgeDeployments:
 		ids := make([]ent.Value, 0, len(m.deployments))
 		for id := range m.deployments {
@@ -721,6 +798,9 @@ func (m *BlueprintMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *BlueprintMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 3)
+	if m.removedresources != nil {
+		edges = append(edges, blueprint.EdgeResources)
+	}
 	if m.removeddeployments != nil {
 		edges = append(edges, blueprint.EdgeDeployments)
 	}
@@ -731,6 +811,12 @@ func (m *BlueprintMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *BlueprintMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
+	case blueprint.EdgeResources:
+		ids := make([]ent.Value, 0, len(m.removedresources))
+		for id := range m.removedresources {
+			ids = append(ids, id)
+		}
+		return ids
 	case blueprint.EdgeDeployments:
 		ids := make([]ent.Value, 0, len(m.removeddeployments))
 		for id := range m.removeddeployments {
@@ -744,11 +830,11 @@ func (m *BlueprintMutation) RemovedIDs(name string) []ent.Value {
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *BlueprintMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 3)
-	if m.clearedparent_group {
-		edges = append(edges, blueprint.EdgeParentGroup)
-	}
 	if m.clearedprovider {
 		edges = append(edges, blueprint.EdgeProvider)
+	}
+	if m.clearedresources {
+		edges = append(edges, blueprint.EdgeResources)
 	}
 	if m.cleareddeployments {
 		edges = append(edges, blueprint.EdgeDeployments)
@@ -760,10 +846,10 @@ func (m *BlueprintMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *BlueprintMutation) EdgeCleared(name string) bool {
 	switch name {
-	case blueprint.EdgeParentGroup:
-		return m.clearedparent_group
 	case blueprint.EdgeProvider:
 		return m.clearedprovider
+	case blueprint.EdgeResources:
+		return m.clearedresources
 	case blueprint.EdgeDeployments:
 		return m.cleareddeployments
 	}
@@ -774,9 +860,6 @@ func (m *BlueprintMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *BlueprintMutation) ClearEdge(name string) error {
 	switch name {
-	case blueprint.EdgeParentGroup:
-		m.ClearParentGroup()
-		return nil
 	case blueprint.EdgeProvider:
 		m.ClearProvider()
 		return nil
@@ -788,11 +871,11 @@ func (m *BlueprintMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *BlueprintMutation) ResetEdge(name string) error {
 	switch name {
-	case blueprint.EdgeParentGroup:
-		m.ResetParentGroup()
-		return nil
 	case blueprint.EdgeProvider:
 		m.ResetProvider()
+		return nil
+	case blueprint.EdgeResources:
+		m.ResetResources()
 		return nil
 	case blueprint.EdgeDeployments:
 		m.ResetDeployments()
@@ -804,25 +887,27 @@ func (m *BlueprintMutation) ResetEdge(name string) error {
 // DeploymentMutation represents an operation that mutates the Deployment nodes in the graph.
 type DeploymentMutation struct {
 	config
-	op               Op
-	typ              string
-	id               *uuid.UUID
-	created_at       *time.Time
-	updated_at       *time.Time
-	name             *string
-	description      *string
-	template_vars    *map[string]interface{}
-	deployment_vars  *map[string]interface{}
-	deployment_state *map[string]string
-	state            *deployment.State
-	clearedFields    map[string]struct{}
-	blueprint        *uuid.UUID
-	clearedblueprint bool
-	requester        *uuid.UUID
-	clearedrequester bool
-	done             bool
-	oldValue         func(context.Context) (*Deployment, error)
-	predicates       []predicate.Deployment
+	op                      Op
+	typ                     string
+	id                      *uuid.UUID
+	created_at              *time.Time
+	updated_at              *time.Time
+	name                    *string
+	description             *string
+	state                   *deployment.State
+	template_vars           *map[string]interface{}
+	clearedFields           map[string]struct{}
+	blueprint               *uuid.UUID
+	clearedblueprint        bool
+	root_nodes              map[uuid.UUID]struct{}
+	removedroot_nodes       map[uuid.UUID]struct{}
+	clearedroot_nodes       bool
+	deployment_nodes        map[uuid.UUID]struct{}
+	removeddeployment_nodes map[uuid.UUID]struct{}
+	cleareddeployment_nodes bool
+	done                    bool
+	oldValue                func(context.Context) (*Deployment, error)
+	predicates              []predicate.Deployment
 }
 
 var _ ent.Mutation = (*DeploymentMutation)(nil)
@@ -1068,130 +1153,9 @@ func (m *DeploymentMutation) OldDescription(ctx context.Context) (v string, err 
 	return oldValue.Description, nil
 }
 
-// ClearDescription clears the value of the "description" field.
-func (m *DeploymentMutation) ClearDescription() {
-	m.description = nil
-	m.clearedFields[deployment.FieldDescription] = struct{}{}
-}
-
-// DescriptionCleared returns if the "description" field was cleared in this mutation.
-func (m *DeploymentMutation) DescriptionCleared() bool {
-	_, ok := m.clearedFields[deployment.FieldDescription]
-	return ok
-}
-
 // ResetDescription resets all changes to the "description" field.
 func (m *DeploymentMutation) ResetDescription() {
 	m.description = nil
-	delete(m.clearedFields, deployment.FieldDescription)
-}
-
-// SetTemplateVars sets the "template_vars" field.
-func (m *DeploymentMutation) SetTemplateVars(value map[string]interface{}) {
-	m.template_vars = &value
-}
-
-// TemplateVars returns the value of the "template_vars" field in the mutation.
-func (m *DeploymentMutation) TemplateVars() (r map[string]interface{}, exists bool) {
-	v := m.template_vars
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldTemplateVars returns the old "template_vars" field's value of the Deployment entity.
-// If the Deployment object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DeploymentMutation) OldTemplateVars(ctx context.Context) (v map[string]interface{}, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldTemplateVars is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldTemplateVars requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldTemplateVars: %w", err)
-	}
-	return oldValue.TemplateVars, nil
-}
-
-// ResetTemplateVars resets all changes to the "template_vars" field.
-func (m *DeploymentMutation) ResetTemplateVars() {
-	m.template_vars = nil
-}
-
-// SetDeploymentVars sets the "deployment_vars" field.
-func (m *DeploymentMutation) SetDeploymentVars(value map[string]interface{}) {
-	m.deployment_vars = &value
-}
-
-// DeploymentVars returns the value of the "deployment_vars" field in the mutation.
-func (m *DeploymentMutation) DeploymentVars() (r map[string]interface{}, exists bool) {
-	v := m.deployment_vars
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDeploymentVars returns the old "deployment_vars" field's value of the Deployment entity.
-// If the Deployment object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DeploymentMutation) OldDeploymentVars(ctx context.Context) (v map[string]interface{}, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDeploymentVars is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDeploymentVars requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDeploymentVars: %w", err)
-	}
-	return oldValue.DeploymentVars, nil
-}
-
-// ResetDeploymentVars resets all changes to the "deployment_vars" field.
-func (m *DeploymentMutation) ResetDeploymentVars() {
-	m.deployment_vars = nil
-}
-
-// SetDeploymentState sets the "deployment_state" field.
-func (m *DeploymentMutation) SetDeploymentState(value map[string]string) {
-	m.deployment_state = &value
-}
-
-// DeploymentState returns the value of the "deployment_state" field in the mutation.
-func (m *DeploymentMutation) DeploymentState() (r map[string]string, exists bool) {
-	v := m.deployment_state
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDeploymentState returns the old "deployment_state" field's value of the Deployment entity.
-// If the Deployment object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DeploymentMutation) OldDeploymentState(ctx context.Context) (v map[string]string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDeploymentState is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDeploymentState requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDeploymentState: %w", err)
-	}
-	return oldValue.DeploymentState, nil
-}
-
-// ResetDeploymentState resets all changes to the "deployment_state" field.
-func (m *DeploymentMutation) ResetDeploymentState() {
-	m.deployment_state = nil
 }
 
 // SetState sets the "state" field.
@@ -1228,6 +1192,42 @@ func (m *DeploymentMutation) OldState(ctx context.Context) (v deployment.State, 
 // ResetState resets all changes to the "state" field.
 func (m *DeploymentMutation) ResetState() {
 	m.state = nil
+}
+
+// SetTemplateVars sets the "template_vars" field.
+func (m *DeploymentMutation) SetTemplateVars(value map[string]interface{}) {
+	m.template_vars = &value
+}
+
+// TemplateVars returns the value of the "template_vars" field in the mutation.
+func (m *DeploymentMutation) TemplateVars() (r map[string]interface{}, exists bool) {
+	v := m.template_vars
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTemplateVars returns the old "template_vars" field's value of the Deployment entity.
+// If the Deployment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DeploymentMutation) OldTemplateVars(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTemplateVars is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTemplateVars requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTemplateVars: %w", err)
+	}
+	return oldValue.TemplateVars, nil
+}
+
+// ResetTemplateVars resets all changes to the "template_vars" field.
+func (m *DeploymentMutation) ResetTemplateVars() {
+	m.template_vars = nil
 }
 
 // SetBlueprintID sets the "blueprint" edge to the Blueprint entity by id.
@@ -1269,43 +1269,112 @@ func (m *DeploymentMutation) ResetBlueprint() {
 	m.clearedblueprint = false
 }
 
-// SetRequesterID sets the "requester" edge to the User entity by id.
-func (m *DeploymentMutation) SetRequesterID(id uuid.UUID) {
-	m.requester = &id
+// AddRootNodeIDs adds the "root_nodes" edge to the DeploymentNode entity by ids.
+func (m *DeploymentMutation) AddRootNodeIDs(ids ...uuid.UUID) {
+	if m.root_nodes == nil {
+		m.root_nodes = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.root_nodes[ids[i]] = struct{}{}
+	}
 }
 
-// ClearRequester clears the "requester" edge to the User entity.
-func (m *DeploymentMutation) ClearRequester() {
-	m.clearedrequester = true
+// ClearRootNodes clears the "root_nodes" edge to the DeploymentNode entity.
+func (m *DeploymentMutation) ClearRootNodes() {
+	m.clearedroot_nodes = true
 }
 
-// RequesterCleared reports if the "requester" edge to the User entity was cleared.
-func (m *DeploymentMutation) RequesterCleared() bool {
-	return m.clearedrequester
+// RootNodesCleared reports if the "root_nodes" edge to the DeploymentNode entity was cleared.
+func (m *DeploymentMutation) RootNodesCleared() bool {
+	return m.clearedroot_nodes
 }
 
-// RequesterID returns the "requester" edge ID in the mutation.
-func (m *DeploymentMutation) RequesterID() (id uuid.UUID, exists bool) {
-	if m.requester != nil {
-		return *m.requester, true
+// RemoveRootNodeIDs removes the "root_nodes" edge to the DeploymentNode entity by IDs.
+func (m *DeploymentMutation) RemoveRootNodeIDs(ids ...uuid.UUID) {
+	if m.removedroot_nodes == nil {
+		m.removedroot_nodes = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.root_nodes, ids[i])
+		m.removedroot_nodes[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRootNodes returns the removed IDs of the "root_nodes" edge to the DeploymentNode entity.
+func (m *DeploymentMutation) RemovedRootNodesIDs() (ids []uuid.UUID) {
+	for id := range m.removedroot_nodes {
+		ids = append(ids, id)
 	}
 	return
 }
 
-// RequesterIDs returns the "requester" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// RequesterID instead. It exists only for internal usage by the builders.
-func (m *DeploymentMutation) RequesterIDs() (ids []uuid.UUID) {
-	if id := m.requester; id != nil {
-		ids = append(ids, *id)
+// RootNodesIDs returns the "root_nodes" edge IDs in the mutation.
+func (m *DeploymentMutation) RootNodesIDs() (ids []uuid.UUID) {
+	for id := range m.root_nodes {
+		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetRequester resets all changes to the "requester" edge.
-func (m *DeploymentMutation) ResetRequester() {
-	m.requester = nil
-	m.clearedrequester = false
+// ResetRootNodes resets all changes to the "root_nodes" edge.
+func (m *DeploymentMutation) ResetRootNodes() {
+	m.root_nodes = nil
+	m.clearedroot_nodes = false
+	m.removedroot_nodes = nil
+}
+
+// AddDeploymentNodeIDs adds the "deployment_nodes" edge to the DeploymentNode entity by ids.
+func (m *DeploymentMutation) AddDeploymentNodeIDs(ids ...uuid.UUID) {
+	if m.deployment_nodes == nil {
+		m.deployment_nodes = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.deployment_nodes[ids[i]] = struct{}{}
+	}
+}
+
+// ClearDeploymentNodes clears the "deployment_nodes" edge to the DeploymentNode entity.
+func (m *DeploymentMutation) ClearDeploymentNodes() {
+	m.cleareddeployment_nodes = true
+}
+
+// DeploymentNodesCleared reports if the "deployment_nodes" edge to the DeploymentNode entity was cleared.
+func (m *DeploymentMutation) DeploymentNodesCleared() bool {
+	return m.cleareddeployment_nodes
+}
+
+// RemoveDeploymentNodeIDs removes the "deployment_nodes" edge to the DeploymentNode entity by IDs.
+func (m *DeploymentMutation) RemoveDeploymentNodeIDs(ids ...uuid.UUID) {
+	if m.removeddeployment_nodes == nil {
+		m.removeddeployment_nodes = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.deployment_nodes, ids[i])
+		m.removeddeployment_nodes[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedDeploymentNodes returns the removed IDs of the "deployment_nodes" edge to the DeploymentNode entity.
+func (m *DeploymentMutation) RemovedDeploymentNodesIDs() (ids []uuid.UUID) {
+	for id := range m.removeddeployment_nodes {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// DeploymentNodesIDs returns the "deployment_nodes" edge IDs in the mutation.
+func (m *DeploymentMutation) DeploymentNodesIDs() (ids []uuid.UUID) {
+	for id := range m.deployment_nodes {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetDeploymentNodes resets all changes to the "deployment_nodes" edge.
+func (m *DeploymentMutation) ResetDeploymentNodes() {
+	m.deployment_nodes = nil
+	m.cleareddeployment_nodes = false
+	m.removeddeployment_nodes = nil
 }
 
 // Where appends a list predicates to the DeploymentMutation builder.
@@ -1342,7 +1411,7 @@ func (m *DeploymentMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *DeploymentMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 6)
 	if m.created_at != nil {
 		fields = append(fields, deployment.FieldCreatedAt)
 	}
@@ -1355,17 +1424,11 @@ func (m *DeploymentMutation) Fields() []string {
 	if m.description != nil {
 		fields = append(fields, deployment.FieldDescription)
 	}
-	if m.template_vars != nil {
-		fields = append(fields, deployment.FieldTemplateVars)
-	}
-	if m.deployment_vars != nil {
-		fields = append(fields, deployment.FieldDeploymentVars)
-	}
-	if m.deployment_state != nil {
-		fields = append(fields, deployment.FieldDeploymentState)
-	}
 	if m.state != nil {
 		fields = append(fields, deployment.FieldState)
+	}
+	if m.template_vars != nil {
+		fields = append(fields, deployment.FieldTemplateVars)
 	}
 	return fields
 }
@@ -1383,14 +1446,10 @@ func (m *DeploymentMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case deployment.FieldDescription:
 		return m.Description()
-	case deployment.FieldTemplateVars:
-		return m.TemplateVars()
-	case deployment.FieldDeploymentVars:
-		return m.DeploymentVars()
-	case deployment.FieldDeploymentState:
-		return m.DeploymentState()
 	case deployment.FieldState:
 		return m.State()
+	case deployment.FieldTemplateVars:
+		return m.TemplateVars()
 	}
 	return nil, false
 }
@@ -1408,14 +1467,10 @@ func (m *DeploymentMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldName(ctx)
 	case deployment.FieldDescription:
 		return m.OldDescription(ctx)
-	case deployment.FieldTemplateVars:
-		return m.OldTemplateVars(ctx)
-	case deployment.FieldDeploymentVars:
-		return m.OldDeploymentVars(ctx)
-	case deployment.FieldDeploymentState:
-		return m.OldDeploymentState(ctx)
 	case deployment.FieldState:
 		return m.OldState(ctx)
+	case deployment.FieldTemplateVars:
+		return m.OldTemplateVars(ctx)
 	}
 	return nil, fmt.Errorf("unknown Deployment field %s", name)
 }
@@ -1453,33 +1508,19 @@ func (m *DeploymentMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDescription(v)
 		return nil
-	case deployment.FieldTemplateVars:
-		v, ok := value.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetTemplateVars(v)
-		return nil
-	case deployment.FieldDeploymentVars:
-		v, ok := value.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDeploymentVars(v)
-		return nil
-	case deployment.FieldDeploymentState:
-		v, ok := value.(map[string]string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDeploymentState(v)
-		return nil
 	case deployment.FieldState:
 		v, ok := value.(deployment.State)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetState(v)
+		return nil
+	case deployment.FieldTemplateVars:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTemplateVars(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Deployment field %s", name)
@@ -1510,11 +1551,7 @@ func (m *DeploymentMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *DeploymentMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(deployment.FieldDescription) {
-		fields = append(fields, deployment.FieldDescription)
-	}
-	return fields
+	return nil
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -1527,11 +1564,6 @@ func (m *DeploymentMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *DeploymentMutation) ClearField(name string) error {
-	switch name {
-	case deployment.FieldDescription:
-		m.ClearDescription()
-		return nil
-	}
 	return fmt.Errorf("unknown Deployment nullable field %s", name)
 }
 
@@ -1551,17 +1583,11 @@ func (m *DeploymentMutation) ResetField(name string) error {
 	case deployment.FieldDescription:
 		m.ResetDescription()
 		return nil
-	case deployment.FieldTemplateVars:
-		m.ResetTemplateVars()
-		return nil
-	case deployment.FieldDeploymentVars:
-		m.ResetDeploymentVars()
-		return nil
-	case deployment.FieldDeploymentState:
-		m.ResetDeploymentState()
-		return nil
 	case deployment.FieldState:
 		m.ResetState()
+		return nil
+	case deployment.FieldTemplateVars:
+		m.ResetTemplateVars()
 		return nil
 	}
 	return fmt.Errorf("unknown Deployment field %s", name)
@@ -1569,12 +1595,15 @@ func (m *DeploymentMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *DeploymentMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.blueprint != nil {
 		edges = append(edges, deployment.EdgeBlueprint)
 	}
-	if m.requester != nil {
-		edges = append(edges, deployment.EdgeRequester)
+	if m.root_nodes != nil {
+		edges = append(edges, deployment.EdgeRootNodes)
+	}
+	if m.deployment_nodes != nil {
+		edges = append(edges, deployment.EdgeDeploymentNodes)
 	}
 	return edges
 }
@@ -1587,34 +1616,65 @@ func (m *DeploymentMutation) AddedIDs(name string) []ent.Value {
 		if id := m.blueprint; id != nil {
 			return []ent.Value{*id}
 		}
-	case deployment.EdgeRequester:
-		if id := m.requester; id != nil {
-			return []ent.Value{*id}
+	case deployment.EdgeRootNodes:
+		ids := make([]ent.Value, 0, len(m.root_nodes))
+		for id := range m.root_nodes {
+			ids = append(ids, id)
 		}
+		return ids
+	case deployment.EdgeDeploymentNodes:
+		ids := make([]ent.Value, 0, len(m.deployment_nodes))
+		for id := range m.deployment_nodes {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *DeploymentMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
+	if m.removedroot_nodes != nil {
+		edges = append(edges, deployment.EdgeRootNodes)
+	}
+	if m.removeddeployment_nodes != nil {
+		edges = append(edges, deployment.EdgeDeploymentNodes)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *DeploymentMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case deployment.EdgeRootNodes:
+		ids := make([]ent.Value, 0, len(m.removedroot_nodes))
+		for id := range m.removedroot_nodes {
+			ids = append(ids, id)
+		}
+		return ids
+	case deployment.EdgeDeploymentNodes:
+		ids := make([]ent.Value, 0, len(m.removeddeployment_nodes))
+		for id := range m.removeddeployment_nodes {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *DeploymentMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedblueprint {
 		edges = append(edges, deployment.EdgeBlueprint)
 	}
-	if m.clearedrequester {
-		edges = append(edges, deployment.EdgeRequester)
+	if m.clearedroot_nodes {
+		edges = append(edges, deployment.EdgeRootNodes)
+	}
+	if m.cleareddeployment_nodes {
+		edges = append(edges, deployment.EdgeDeploymentNodes)
 	}
 	return edges
 }
@@ -1625,8 +1685,10 @@ func (m *DeploymentMutation) EdgeCleared(name string) bool {
 	switch name {
 	case deployment.EdgeBlueprint:
 		return m.clearedblueprint
-	case deployment.EdgeRequester:
-		return m.clearedrequester
+	case deployment.EdgeRootNodes:
+		return m.clearedroot_nodes
+	case deployment.EdgeDeploymentNodes:
+		return m.cleareddeployment_nodes
 	}
 	return false
 }
@@ -1637,9 +1699,6 @@ func (m *DeploymentMutation) ClearEdge(name string) error {
 	switch name {
 	case deployment.EdgeBlueprint:
 		m.ClearBlueprint()
-		return nil
-	case deployment.EdgeRequester:
-		m.ClearRequester()
 		return nil
 	}
 	return fmt.Errorf("unknown Deployment unique edge %s", name)
@@ -1652,11 +1711,802 @@ func (m *DeploymentMutation) ResetEdge(name string) error {
 	case deployment.EdgeBlueprint:
 		m.ResetBlueprint()
 		return nil
-	case deployment.EdgeRequester:
-		m.ResetRequester()
+	case deployment.EdgeRootNodes:
+		m.ResetRootNodes()
+		return nil
+	case deployment.EdgeDeploymentNodes:
+		m.ResetDeploymentNodes()
 		return nil
 	}
 	return fmt.Errorf("unknown Deployment edge %s", name)
+}
+
+// DeploymentNodeMutation represents an operation that mutates the DeploymentNode nodes in the graph.
+type DeploymentNodeMutation struct {
+	config
+	op                Op
+	typ               string
+	id                *uuid.UUID
+	created_at        *time.Time
+	updated_at        *time.Time
+	state             *deploymentnode.State
+	vars              *map[string]string
+	clearedFields     map[string]struct{}
+	deployment        *uuid.UUID
+	cleareddeployment bool
+	resource          *uuid.UUID
+	clearedresource   bool
+	prev_nodes        map[uuid.UUID]struct{}
+	removedprev_nodes map[uuid.UUID]struct{}
+	clearedprev_nodes bool
+	next_nodes        map[uuid.UUID]struct{}
+	removednext_nodes map[uuid.UUID]struct{}
+	clearednext_nodes bool
+	done              bool
+	oldValue          func(context.Context) (*DeploymentNode, error)
+	predicates        []predicate.DeploymentNode
+}
+
+var _ ent.Mutation = (*DeploymentNodeMutation)(nil)
+
+// deploymentnodeOption allows management of the mutation configuration using functional options.
+type deploymentnodeOption func(*DeploymentNodeMutation)
+
+// newDeploymentNodeMutation creates new mutation for the DeploymentNode entity.
+func newDeploymentNodeMutation(c config, op Op, opts ...deploymentnodeOption) *DeploymentNodeMutation {
+	m := &DeploymentNodeMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeDeploymentNode,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withDeploymentNodeID sets the ID field of the mutation.
+func withDeploymentNodeID(id uuid.UUID) deploymentnodeOption {
+	return func(m *DeploymentNodeMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *DeploymentNode
+		)
+		m.oldValue = func(ctx context.Context) (*DeploymentNode, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().DeploymentNode.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withDeploymentNode sets the old DeploymentNode of the mutation.
+func withDeploymentNode(node *DeploymentNode) deploymentnodeOption {
+	return func(m *DeploymentNodeMutation) {
+		m.oldValue = func(context.Context) (*DeploymentNode, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m DeploymentNodeMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m DeploymentNodeMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of DeploymentNode entities.
+func (m *DeploymentNodeMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *DeploymentNodeMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *DeploymentNodeMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().DeploymentNode.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *DeploymentNodeMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *DeploymentNodeMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the DeploymentNode entity.
+// If the DeploymentNode object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DeploymentNodeMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *DeploymentNodeMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *DeploymentNodeMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *DeploymentNodeMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the DeploymentNode entity.
+// If the DeploymentNode object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DeploymentNodeMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *DeploymentNodeMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetState sets the "state" field.
+func (m *DeploymentNodeMutation) SetState(d deploymentnode.State) {
+	m.state = &d
+}
+
+// State returns the value of the "state" field in the mutation.
+func (m *DeploymentNodeMutation) State() (r deploymentnode.State, exists bool) {
+	v := m.state
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldState returns the old "state" field's value of the DeploymentNode entity.
+// If the DeploymentNode object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DeploymentNodeMutation) OldState(ctx context.Context) (v deploymentnode.State, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldState is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldState requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldState: %w", err)
+	}
+	return oldValue.State, nil
+}
+
+// ResetState resets all changes to the "state" field.
+func (m *DeploymentNodeMutation) ResetState() {
+	m.state = nil
+}
+
+// SetVars sets the "vars" field.
+func (m *DeploymentNodeMutation) SetVars(value map[string]string) {
+	m.vars = &value
+}
+
+// Vars returns the value of the "vars" field in the mutation.
+func (m *DeploymentNodeMutation) Vars() (r map[string]string, exists bool) {
+	v := m.vars
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVars returns the old "vars" field's value of the DeploymentNode entity.
+// If the DeploymentNode object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DeploymentNodeMutation) OldVars(ctx context.Context) (v map[string]string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVars is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVars requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVars: %w", err)
+	}
+	return oldValue.Vars, nil
+}
+
+// ResetVars resets all changes to the "vars" field.
+func (m *DeploymentNodeMutation) ResetVars() {
+	m.vars = nil
+}
+
+// SetDeploymentID sets the "deployment" edge to the Deployment entity by id.
+func (m *DeploymentNodeMutation) SetDeploymentID(id uuid.UUID) {
+	m.deployment = &id
+}
+
+// ClearDeployment clears the "deployment" edge to the Deployment entity.
+func (m *DeploymentNodeMutation) ClearDeployment() {
+	m.cleareddeployment = true
+}
+
+// DeploymentCleared reports if the "deployment" edge to the Deployment entity was cleared.
+func (m *DeploymentNodeMutation) DeploymentCleared() bool {
+	return m.cleareddeployment
+}
+
+// DeploymentID returns the "deployment" edge ID in the mutation.
+func (m *DeploymentNodeMutation) DeploymentID() (id uuid.UUID, exists bool) {
+	if m.deployment != nil {
+		return *m.deployment, true
+	}
+	return
+}
+
+// DeploymentIDs returns the "deployment" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// DeploymentID instead. It exists only for internal usage by the builders.
+func (m *DeploymentNodeMutation) DeploymentIDs() (ids []uuid.UUID) {
+	if id := m.deployment; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetDeployment resets all changes to the "deployment" edge.
+func (m *DeploymentNodeMutation) ResetDeployment() {
+	m.deployment = nil
+	m.cleareddeployment = false
+}
+
+// SetResourceID sets the "resource" edge to the Resource entity by id.
+func (m *DeploymentNodeMutation) SetResourceID(id uuid.UUID) {
+	m.resource = &id
+}
+
+// ClearResource clears the "resource" edge to the Resource entity.
+func (m *DeploymentNodeMutation) ClearResource() {
+	m.clearedresource = true
+}
+
+// ResourceCleared reports if the "resource" edge to the Resource entity was cleared.
+func (m *DeploymentNodeMutation) ResourceCleared() bool {
+	return m.clearedresource
+}
+
+// ResourceID returns the "resource" edge ID in the mutation.
+func (m *DeploymentNodeMutation) ResourceID() (id uuid.UUID, exists bool) {
+	if m.resource != nil {
+		return *m.resource, true
+	}
+	return
+}
+
+// ResourceIDs returns the "resource" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ResourceID instead. It exists only for internal usage by the builders.
+func (m *DeploymentNodeMutation) ResourceIDs() (ids []uuid.UUID) {
+	if id := m.resource; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetResource resets all changes to the "resource" edge.
+func (m *DeploymentNodeMutation) ResetResource() {
+	m.resource = nil
+	m.clearedresource = false
+}
+
+// AddPrevNodeIDs adds the "prev_nodes" edge to the DeploymentNode entity by ids.
+func (m *DeploymentNodeMutation) AddPrevNodeIDs(ids ...uuid.UUID) {
+	if m.prev_nodes == nil {
+		m.prev_nodes = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.prev_nodes[ids[i]] = struct{}{}
+	}
+}
+
+// ClearPrevNodes clears the "prev_nodes" edge to the DeploymentNode entity.
+func (m *DeploymentNodeMutation) ClearPrevNodes() {
+	m.clearedprev_nodes = true
+}
+
+// PrevNodesCleared reports if the "prev_nodes" edge to the DeploymentNode entity was cleared.
+func (m *DeploymentNodeMutation) PrevNodesCleared() bool {
+	return m.clearedprev_nodes
+}
+
+// RemovePrevNodeIDs removes the "prev_nodes" edge to the DeploymentNode entity by IDs.
+func (m *DeploymentNodeMutation) RemovePrevNodeIDs(ids ...uuid.UUID) {
+	if m.removedprev_nodes == nil {
+		m.removedprev_nodes = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.prev_nodes, ids[i])
+		m.removedprev_nodes[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedPrevNodes returns the removed IDs of the "prev_nodes" edge to the DeploymentNode entity.
+func (m *DeploymentNodeMutation) RemovedPrevNodesIDs() (ids []uuid.UUID) {
+	for id := range m.removedprev_nodes {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// PrevNodesIDs returns the "prev_nodes" edge IDs in the mutation.
+func (m *DeploymentNodeMutation) PrevNodesIDs() (ids []uuid.UUID) {
+	for id := range m.prev_nodes {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetPrevNodes resets all changes to the "prev_nodes" edge.
+func (m *DeploymentNodeMutation) ResetPrevNodes() {
+	m.prev_nodes = nil
+	m.clearedprev_nodes = false
+	m.removedprev_nodes = nil
+}
+
+// AddNextNodeIDs adds the "next_nodes" edge to the DeploymentNode entity by ids.
+func (m *DeploymentNodeMutation) AddNextNodeIDs(ids ...uuid.UUID) {
+	if m.next_nodes == nil {
+		m.next_nodes = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.next_nodes[ids[i]] = struct{}{}
+	}
+}
+
+// ClearNextNodes clears the "next_nodes" edge to the DeploymentNode entity.
+func (m *DeploymentNodeMutation) ClearNextNodes() {
+	m.clearednext_nodes = true
+}
+
+// NextNodesCleared reports if the "next_nodes" edge to the DeploymentNode entity was cleared.
+func (m *DeploymentNodeMutation) NextNodesCleared() bool {
+	return m.clearednext_nodes
+}
+
+// RemoveNextNodeIDs removes the "next_nodes" edge to the DeploymentNode entity by IDs.
+func (m *DeploymentNodeMutation) RemoveNextNodeIDs(ids ...uuid.UUID) {
+	if m.removednext_nodes == nil {
+		m.removednext_nodes = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.next_nodes, ids[i])
+		m.removednext_nodes[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedNextNodes returns the removed IDs of the "next_nodes" edge to the DeploymentNode entity.
+func (m *DeploymentNodeMutation) RemovedNextNodesIDs() (ids []uuid.UUID) {
+	for id := range m.removednext_nodes {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// NextNodesIDs returns the "next_nodes" edge IDs in the mutation.
+func (m *DeploymentNodeMutation) NextNodesIDs() (ids []uuid.UUID) {
+	for id := range m.next_nodes {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetNextNodes resets all changes to the "next_nodes" edge.
+func (m *DeploymentNodeMutation) ResetNextNodes() {
+	m.next_nodes = nil
+	m.clearednext_nodes = false
+	m.removednext_nodes = nil
+}
+
+// Where appends a list predicates to the DeploymentNodeMutation builder.
+func (m *DeploymentNodeMutation) Where(ps ...predicate.DeploymentNode) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the DeploymentNodeMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *DeploymentNodeMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.DeploymentNode, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *DeploymentNodeMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *DeploymentNodeMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (DeploymentNode).
+func (m *DeploymentNodeMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *DeploymentNodeMutation) Fields() []string {
+	fields := make([]string, 0, 4)
+	if m.created_at != nil {
+		fields = append(fields, deploymentnode.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, deploymentnode.FieldUpdatedAt)
+	}
+	if m.state != nil {
+		fields = append(fields, deploymentnode.FieldState)
+	}
+	if m.vars != nil {
+		fields = append(fields, deploymentnode.FieldVars)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *DeploymentNodeMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case deploymentnode.FieldCreatedAt:
+		return m.CreatedAt()
+	case deploymentnode.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case deploymentnode.FieldState:
+		return m.State()
+	case deploymentnode.FieldVars:
+		return m.Vars()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *DeploymentNodeMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case deploymentnode.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case deploymentnode.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case deploymentnode.FieldState:
+		return m.OldState(ctx)
+	case deploymentnode.FieldVars:
+		return m.OldVars(ctx)
+	}
+	return nil, fmt.Errorf("unknown DeploymentNode field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DeploymentNodeMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case deploymentnode.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case deploymentnode.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case deploymentnode.FieldState:
+		v, ok := value.(deploymentnode.State)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetState(v)
+		return nil
+	case deploymentnode.FieldVars:
+		v, ok := value.(map[string]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVars(v)
+		return nil
+	}
+	return fmt.Errorf("unknown DeploymentNode field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *DeploymentNodeMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *DeploymentNodeMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DeploymentNodeMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown DeploymentNode numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *DeploymentNodeMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *DeploymentNodeMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *DeploymentNodeMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown DeploymentNode nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *DeploymentNodeMutation) ResetField(name string) error {
+	switch name {
+	case deploymentnode.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case deploymentnode.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case deploymentnode.FieldState:
+		m.ResetState()
+		return nil
+	case deploymentnode.FieldVars:
+		m.ResetVars()
+		return nil
+	}
+	return fmt.Errorf("unknown DeploymentNode field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *DeploymentNodeMutation) AddedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.deployment != nil {
+		edges = append(edges, deploymentnode.EdgeDeployment)
+	}
+	if m.resource != nil {
+		edges = append(edges, deploymentnode.EdgeResource)
+	}
+	if m.prev_nodes != nil {
+		edges = append(edges, deploymentnode.EdgePrevNodes)
+	}
+	if m.next_nodes != nil {
+		edges = append(edges, deploymentnode.EdgeNextNodes)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *DeploymentNodeMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case deploymentnode.EdgeDeployment:
+		if id := m.deployment; id != nil {
+			return []ent.Value{*id}
+		}
+	case deploymentnode.EdgeResource:
+		if id := m.resource; id != nil {
+			return []ent.Value{*id}
+		}
+	case deploymentnode.EdgePrevNodes:
+		ids := make([]ent.Value, 0, len(m.prev_nodes))
+		for id := range m.prev_nodes {
+			ids = append(ids, id)
+		}
+		return ids
+	case deploymentnode.EdgeNextNodes:
+		ids := make([]ent.Value, 0, len(m.next_nodes))
+		for id := range m.next_nodes {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *DeploymentNodeMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.removedprev_nodes != nil {
+		edges = append(edges, deploymentnode.EdgePrevNodes)
+	}
+	if m.removednext_nodes != nil {
+		edges = append(edges, deploymentnode.EdgeNextNodes)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *DeploymentNodeMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case deploymentnode.EdgePrevNodes:
+		ids := make([]ent.Value, 0, len(m.removedprev_nodes))
+		for id := range m.removedprev_nodes {
+			ids = append(ids, id)
+		}
+		return ids
+	case deploymentnode.EdgeNextNodes:
+		ids := make([]ent.Value, 0, len(m.removednext_nodes))
+		for id := range m.removednext_nodes {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *DeploymentNodeMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.cleareddeployment {
+		edges = append(edges, deploymentnode.EdgeDeployment)
+	}
+	if m.clearedresource {
+		edges = append(edges, deploymentnode.EdgeResource)
+	}
+	if m.clearedprev_nodes {
+		edges = append(edges, deploymentnode.EdgePrevNodes)
+	}
+	if m.clearednext_nodes {
+		edges = append(edges, deploymentnode.EdgeNextNodes)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *DeploymentNodeMutation) EdgeCleared(name string) bool {
+	switch name {
+	case deploymentnode.EdgeDeployment:
+		return m.cleareddeployment
+	case deploymentnode.EdgeResource:
+		return m.clearedresource
+	case deploymentnode.EdgePrevNodes:
+		return m.clearedprev_nodes
+	case deploymentnode.EdgeNextNodes:
+		return m.clearednext_nodes
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *DeploymentNodeMutation) ClearEdge(name string) error {
+	switch name {
+	case deploymentnode.EdgeDeployment:
+		m.ClearDeployment()
+		return nil
+	case deploymentnode.EdgeResource:
+		m.ClearResource()
+		return nil
+	}
+	return fmt.Errorf("unknown DeploymentNode unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *DeploymentNodeMutation) ResetEdge(name string) error {
+	switch name {
+	case deploymentnode.EdgeDeployment:
+		m.ResetDeployment()
+		return nil
+	case deploymentnode.EdgeResource:
+		m.ResetResource()
+		return nil
+	case deploymentnode.EdgePrevNodes:
+		m.ResetPrevNodes()
+		return nil
+	case deploymentnode.EdgeNextNodes:
+		m.ResetNextNodes()
+		return nil
+	}
+	return fmt.Errorf("unknown DeploymentNode edge %s", name)
 }
 
 // GroupMutation represents an operation that mutates the Group nodes in the graph.
@@ -1680,9 +2530,6 @@ type GroupMutation struct {
 	permission_policies        map[uuid.UUID]struct{}
 	removedpermission_policies map[uuid.UUID]struct{}
 	clearedpermission_policies bool
-	blueprints                 map[uuid.UUID]struct{}
-	removedblueprints          map[uuid.UUID]struct{}
-	clearedblueprints          bool
 	done                       bool
 	oldValue                   func(context.Context) (*Group, error)
 	predicates                 []predicate.Group
@@ -2101,60 +2948,6 @@ func (m *GroupMutation) ResetPermissionPolicies() {
 	m.removedpermission_policies = nil
 }
 
-// AddBlueprintIDs adds the "blueprints" edge to the Blueprint entity by ids.
-func (m *GroupMutation) AddBlueprintIDs(ids ...uuid.UUID) {
-	if m.blueprints == nil {
-		m.blueprints = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		m.blueprints[ids[i]] = struct{}{}
-	}
-}
-
-// ClearBlueprints clears the "blueprints" edge to the Blueprint entity.
-func (m *GroupMutation) ClearBlueprints() {
-	m.clearedblueprints = true
-}
-
-// BlueprintsCleared reports if the "blueprints" edge to the Blueprint entity was cleared.
-func (m *GroupMutation) BlueprintsCleared() bool {
-	return m.clearedblueprints
-}
-
-// RemoveBlueprintIDs removes the "blueprints" edge to the Blueprint entity by IDs.
-func (m *GroupMutation) RemoveBlueprintIDs(ids ...uuid.UUID) {
-	if m.removedblueprints == nil {
-		m.removedblueprints = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		delete(m.blueprints, ids[i])
-		m.removedblueprints[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedBlueprints returns the removed IDs of the "blueprints" edge to the Blueprint entity.
-func (m *GroupMutation) RemovedBlueprintsIDs() (ids []uuid.UUID) {
-	for id := range m.removedblueprints {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// BlueprintsIDs returns the "blueprints" edge IDs in the mutation.
-func (m *GroupMutation) BlueprintsIDs() (ids []uuid.UUID) {
-	for id := range m.blueprints {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetBlueprints resets all changes to the "blueprints" edge.
-func (m *GroupMutation) ResetBlueprints() {
-	m.blueprints = nil
-	m.clearedblueprints = false
-	m.removedblueprints = nil
-}
-
 // Where appends a list predicates to the GroupMutation builder.
 func (m *GroupMutation) Where(ps ...predicate.Group) {
 	m.predicates = append(m.predicates, ps...)
@@ -2322,7 +3115,7 @@ func (m *GroupMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *GroupMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 4)
 	if m.parent != nil {
 		edges = append(edges, group.EdgeParent)
 	}
@@ -2334,9 +3127,6 @@ func (m *GroupMutation) AddedEdges() []string {
 	}
 	if m.permission_policies != nil {
 		edges = append(edges, group.EdgePermissionPolicies)
-	}
-	if m.blueprints != nil {
-		edges = append(edges, group.EdgeBlueprints)
 	}
 	return edges
 }
@@ -2367,19 +3157,13 @@ func (m *GroupMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case group.EdgeBlueprints:
-		ids := make([]ent.Value, 0, len(m.blueprints))
-		for id := range m.blueprints {
-			ids = append(ids, id)
-		}
-		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *GroupMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 4)
 	if m.removedchildren != nil {
 		edges = append(edges, group.EdgeChildren)
 	}
@@ -2388,9 +3172,6 @@ func (m *GroupMutation) RemovedEdges() []string {
 	}
 	if m.removedpermission_policies != nil {
 		edges = append(edges, group.EdgePermissionPolicies)
-	}
-	if m.removedblueprints != nil {
-		edges = append(edges, group.EdgeBlueprints)
 	}
 	return edges
 }
@@ -2417,19 +3198,13 @@ func (m *GroupMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case group.EdgeBlueprints:
-		ids := make([]ent.Value, 0, len(m.removedblueprints))
-		for id := range m.removedblueprints {
-			ids = append(ids, id)
-		}
-		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *GroupMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 4)
 	if m.clearedparent {
 		edges = append(edges, group.EdgeParent)
 	}
@@ -2441,9 +3216,6 @@ func (m *GroupMutation) ClearedEdges() []string {
 	}
 	if m.clearedpermission_policies {
 		edges = append(edges, group.EdgePermissionPolicies)
-	}
-	if m.clearedblueprints {
-		edges = append(edges, group.EdgeBlueprints)
 	}
 	return edges
 }
@@ -2460,8 +3232,6 @@ func (m *GroupMutation) EdgeCleared(name string) bool {
 		return m.clearedusers
 	case group.EdgePermissionPolicies:
 		return m.clearedpermission_policies
-	case group.EdgeBlueprints:
-		return m.clearedblueprints
 	}
 	return false
 }
@@ -2492,9 +3262,6 @@ func (m *GroupMutation) ResetEdge(name string) error {
 		return nil
 	case group.EdgePermissionPolicies:
 		m.ResetPermissionPolicies()
-		return nil
-	case group.EdgeBlueprints:
-		m.ResetBlueprints()
 		return nil
 	}
 	return fmt.Errorf("unknown Group edge %s", name)
@@ -5534,29 +6301,755 @@ func (m *ProviderCommandMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown ProviderCommand edge %s", name)
 }
 
-// UserMutation represents an operation that mutates the User nodes in the graph.
-type UserMutation struct {
+// ResourceMutation represents an operation that mutates the Resource nodes in the graph.
+type ResourceMutation struct {
 	config
 	op                 Op
 	typ                string
 	id                 *uuid.UUID
 	created_at         *time.Time
 	updated_at         *time.Time
-	username           *string
-	email              *string
-	password           *string
-	first_name         *string
-	last_name          *string
+	key                *string
+	object             **models.Object
 	clearedFields      map[string]struct{}
-	groups             map[uuid.UUID]struct{}
-	removedgroups      map[uuid.UUID]struct{}
-	clearedgroups      bool
-	deployments        map[uuid.UUID]struct{}
-	removeddeployments map[uuid.UUID]struct{}
-	cleareddeployments bool
+	blueprint          *uuid.UUID
+	clearedblueprint   bool
+	depends_on         map[uuid.UUID]struct{}
+	removeddepends_on  map[uuid.UUID]struct{}
+	cleareddepends_on  bool
+	required_by        map[uuid.UUID]struct{}
+	removedrequired_by map[uuid.UUID]struct{}
+	clearedrequired_by bool
 	done               bool
-	oldValue           func(context.Context) (*User, error)
-	predicates         []predicate.User
+	oldValue           func(context.Context) (*Resource, error)
+	predicates         []predicate.Resource
+}
+
+var _ ent.Mutation = (*ResourceMutation)(nil)
+
+// resourceOption allows management of the mutation configuration using functional options.
+type resourceOption func(*ResourceMutation)
+
+// newResourceMutation creates new mutation for the Resource entity.
+func newResourceMutation(c config, op Op, opts ...resourceOption) *ResourceMutation {
+	m := &ResourceMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeResource,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withResourceID sets the ID field of the mutation.
+func withResourceID(id uuid.UUID) resourceOption {
+	return func(m *ResourceMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Resource
+		)
+		m.oldValue = func(ctx context.Context) (*Resource, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Resource.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withResource sets the old Resource of the mutation.
+func withResource(node *Resource) resourceOption {
+	return func(m *ResourceMutation) {
+		m.oldValue = func(context.Context) (*Resource, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ResourceMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ResourceMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Resource entities.
+func (m *ResourceMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ResourceMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ResourceMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Resource.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ResourceMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ResourceMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the Resource entity.
+// If the Resource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ResourceMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ResourceMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ResourceMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ResourceMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the Resource entity.
+// If the Resource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ResourceMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ResourceMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetKey sets the "key" field.
+func (m *ResourceMutation) SetKey(s string) {
+	m.key = &s
+}
+
+// Key returns the value of the "key" field in the mutation.
+func (m *ResourceMutation) Key() (r string, exists bool) {
+	v := m.key
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKey returns the old "key" field's value of the Resource entity.
+// If the Resource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ResourceMutation) OldKey(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKey is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKey requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKey: %w", err)
+	}
+	return oldValue.Key, nil
+}
+
+// ResetKey resets all changes to the "key" field.
+func (m *ResourceMutation) ResetKey() {
+	m.key = nil
+}
+
+// SetObject sets the "object" field.
+func (m *ResourceMutation) SetObject(value *models.Object) {
+	m.object = &value
+}
+
+// Object returns the value of the "object" field in the mutation.
+func (m *ResourceMutation) Object() (r *models.Object, exists bool) {
+	v := m.object
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldObject returns the old "object" field's value of the Resource entity.
+// If the Resource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ResourceMutation) OldObject(ctx context.Context) (v *models.Object, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldObject is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldObject requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldObject: %w", err)
+	}
+	return oldValue.Object, nil
+}
+
+// ResetObject resets all changes to the "object" field.
+func (m *ResourceMutation) ResetObject() {
+	m.object = nil
+}
+
+// SetBlueprintID sets the "blueprint" edge to the Blueprint entity by id.
+func (m *ResourceMutation) SetBlueprintID(id uuid.UUID) {
+	m.blueprint = &id
+}
+
+// ClearBlueprint clears the "blueprint" edge to the Blueprint entity.
+func (m *ResourceMutation) ClearBlueprint() {
+	m.clearedblueprint = true
+}
+
+// BlueprintCleared reports if the "blueprint" edge to the Blueprint entity was cleared.
+func (m *ResourceMutation) BlueprintCleared() bool {
+	return m.clearedblueprint
+}
+
+// BlueprintID returns the "blueprint" edge ID in the mutation.
+func (m *ResourceMutation) BlueprintID() (id uuid.UUID, exists bool) {
+	if m.blueprint != nil {
+		return *m.blueprint, true
+	}
+	return
+}
+
+// BlueprintIDs returns the "blueprint" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// BlueprintID instead. It exists only for internal usage by the builders.
+func (m *ResourceMutation) BlueprintIDs() (ids []uuid.UUID) {
+	if id := m.blueprint; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetBlueprint resets all changes to the "blueprint" edge.
+func (m *ResourceMutation) ResetBlueprint() {
+	m.blueprint = nil
+	m.clearedblueprint = false
+}
+
+// AddDependsOnIDs adds the "depends_on" edge to the Resource entity by ids.
+func (m *ResourceMutation) AddDependsOnIDs(ids ...uuid.UUID) {
+	if m.depends_on == nil {
+		m.depends_on = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.depends_on[ids[i]] = struct{}{}
+	}
+}
+
+// ClearDependsOn clears the "depends_on" edge to the Resource entity.
+func (m *ResourceMutation) ClearDependsOn() {
+	m.cleareddepends_on = true
+}
+
+// DependsOnCleared reports if the "depends_on" edge to the Resource entity was cleared.
+func (m *ResourceMutation) DependsOnCleared() bool {
+	return m.cleareddepends_on
+}
+
+// RemoveDependsOnIDs removes the "depends_on" edge to the Resource entity by IDs.
+func (m *ResourceMutation) RemoveDependsOnIDs(ids ...uuid.UUID) {
+	if m.removeddepends_on == nil {
+		m.removeddepends_on = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.depends_on, ids[i])
+		m.removeddepends_on[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedDependsOn returns the removed IDs of the "depends_on" edge to the Resource entity.
+func (m *ResourceMutation) RemovedDependsOnIDs() (ids []uuid.UUID) {
+	for id := range m.removeddepends_on {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// DependsOnIDs returns the "depends_on" edge IDs in the mutation.
+func (m *ResourceMutation) DependsOnIDs() (ids []uuid.UUID) {
+	for id := range m.depends_on {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetDependsOn resets all changes to the "depends_on" edge.
+func (m *ResourceMutation) ResetDependsOn() {
+	m.depends_on = nil
+	m.cleareddepends_on = false
+	m.removeddepends_on = nil
+}
+
+// AddRequiredByIDs adds the "required_by" edge to the Resource entity by ids.
+func (m *ResourceMutation) AddRequiredByIDs(ids ...uuid.UUID) {
+	if m.required_by == nil {
+		m.required_by = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.required_by[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRequiredBy clears the "required_by" edge to the Resource entity.
+func (m *ResourceMutation) ClearRequiredBy() {
+	m.clearedrequired_by = true
+}
+
+// RequiredByCleared reports if the "required_by" edge to the Resource entity was cleared.
+func (m *ResourceMutation) RequiredByCleared() bool {
+	return m.clearedrequired_by
+}
+
+// RemoveRequiredByIDs removes the "required_by" edge to the Resource entity by IDs.
+func (m *ResourceMutation) RemoveRequiredByIDs(ids ...uuid.UUID) {
+	if m.removedrequired_by == nil {
+		m.removedrequired_by = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.required_by, ids[i])
+		m.removedrequired_by[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRequiredBy returns the removed IDs of the "required_by" edge to the Resource entity.
+func (m *ResourceMutation) RemovedRequiredByIDs() (ids []uuid.UUID) {
+	for id := range m.removedrequired_by {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RequiredByIDs returns the "required_by" edge IDs in the mutation.
+func (m *ResourceMutation) RequiredByIDs() (ids []uuid.UUID) {
+	for id := range m.required_by {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRequiredBy resets all changes to the "required_by" edge.
+func (m *ResourceMutation) ResetRequiredBy() {
+	m.required_by = nil
+	m.clearedrequired_by = false
+	m.removedrequired_by = nil
+}
+
+// Where appends a list predicates to the ResourceMutation builder.
+func (m *ResourceMutation) Where(ps ...predicate.Resource) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ResourceMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ResourceMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Resource, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ResourceMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ResourceMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Resource).
+func (m *ResourceMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ResourceMutation) Fields() []string {
+	fields := make([]string, 0, 4)
+	if m.created_at != nil {
+		fields = append(fields, resource.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, resource.FieldUpdatedAt)
+	}
+	if m.key != nil {
+		fields = append(fields, resource.FieldKey)
+	}
+	if m.object != nil {
+		fields = append(fields, resource.FieldObject)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ResourceMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case resource.FieldCreatedAt:
+		return m.CreatedAt()
+	case resource.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case resource.FieldKey:
+		return m.Key()
+	case resource.FieldObject:
+		return m.Object()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ResourceMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case resource.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case resource.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case resource.FieldKey:
+		return m.OldKey(ctx)
+	case resource.FieldObject:
+		return m.OldObject(ctx)
+	}
+	return nil, fmt.Errorf("unknown Resource field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ResourceMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case resource.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case resource.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case resource.FieldKey:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKey(v)
+		return nil
+	case resource.FieldObject:
+		v, ok := value.(*models.Object)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetObject(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Resource field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ResourceMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ResourceMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ResourceMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Resource numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ResourceMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ResourceMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ResourceMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Resource nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ResourceMutation) ResetField(name string) error {
+	switch name {
+	case resource.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case resource.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case resource.FieldKey:
+		m.ResetKey()
+		return nil
+	case resource.FieldObject:
+		m.ResetObject()
+		return nil
+	}
+	return fmt.Errorf("unknown Resource field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ResourceMutation) AddedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.blueprint != nil {
+		edges = append(edges, resource.EdgeBlueprint)
+	}
+	if m.depends_on != nil {
+		edges = append(edges, resource.EdgeDependsOn)
+	}
+	if m.required_by != nil {
+		edges = append(edges, resource.EdgeRequiredBy)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ResourceMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case resource.EdgeBlueprint:
+		if id := m.blueprint; id != nil {
+			return []ent.Value{*id}
+		}
+	case resource.EdgeDependsOn:
+		ids := make([]ent.Value, 0, len(m.depends_on))
+		for id := range m.depends_on {
+			ids = append(ids, id)
+		}
+		return ids
+	case resource.EdgeRequiredBy:
+		ids := make([]ent.Value, 0, len(m.required_by))
+		for id := range m.required_by {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ResourceMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.removeddepends_on != nil {
+		edges = append(edges, resource.EdgeDependsOn)
+	}
+	if m.removedrequired_by != nil {
+		edges = append(edges, resource.EdgeRequiredBy)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ResourceMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case resource.EdgeDependsOn:
+		ids := make([]ent.Value, 0, len(m.removeddepends_on))
+		for id := range m.removeddepends_on {
+			ids = append(ids, id)
+		}
+		return ids
+	case resource.EdgeRequiredBy:
+		ids := make([]ent.Value, 0, len(m.removedrequired_by))
+		for id := range m.removedrequired_by {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ResourceMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.clearedblueprint {
+		edges = append(edges, resource.EdgeBlueprint)
+	}
+	if m.cleareddepends_on {
+		edges = append(edges, resource.EdgeDependsOn)
+	}
+	if m.clearedrequired_by {
+		edges = append(edges, resource.EdgeRequiredBy)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ResourceMutation) EdgeCleared(name string) bool {
+	switch name {
+	case resource.EdgeBlueprint:
+		return m.clearedblueprint
+	case resource.EdgeDependsOn:
+		return m.cleareddepends_on
+	case resource.EdgeRequiredBy:
+		return m.clearedrequired_by
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ResourceMutation) ClearEdge(name string) error {
+	switch name {
+	case resource.EdgeBlueprint:
+		m.ClearBlueprint()
+		return nil
+	}
+	return fmt.Errorf("unknown Resource unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ResourceMutation) ResetEdge(name string) error {
+	switch name {
+	case resource.EdgeBlueprint:
+		m.ResetBlueprint()
+		return nil
+	case resource.EdgeDependsOn:
+		m.ResetDependsOn()
+		return nil
+	case resource.EdgeRequiredBy:
+		m.ResetRequiredBy()
+		return nil
+	}
+	return fmt.Errorf("unknown Resource edge %s", name)
+}
+
+// UserMutation represents an operation that mutates the User nodes in the graph.
+type UserMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *uuid.UUID
+	created_at    *time.Time
+	updated_at    *time.Time
+	username      *string
+	email         *string
+	password      *string
+	first_name    *string
+	last_name     *string
+	clearedFields map[string]struct{}
+	groups        map[uuid.UUID]struct{}
+	removedgroups map[uuid.UUID]struct{}
+	clearedgroups bool
+	done          bool
+	oldValue      func(context.Context) (*User, error)
+	predicates    []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -5969,60 +7462,6 @@ func (m *UserMutation) ResetGroups() {
 	m.removedgroups = nil
 }
 
-// AddDeploymentIDs adds the "deployments" edge to the Deployment entity by ids.
-func (m *UserMutation) AddDeploymentIDs(ids ...uuid.UUID) {
-	if m.deployments == nil {
-		m.deployments = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		m.deployments[ids[i]] = struct{}{}
-	}
-}
-
-// ClearDeployments clears the "deployments" edge to the Deployment entity.
-func (m *UserMutation) ClearDeployments() {
-	m.cleareddeployments = true
-}
-
-// DeploymentsCleared reports if the "deployments" edge to the Deployment entity was cleared.
-func (m *UserMutation) DeploymentsCleared() bool {
-	return m.cleareddeployments
-}
-
-// RemoveDeploymentIDs removes the "deployments" edge to the Deployment entity by IDs.
-func (m *UserMutation) RemoveDeploymentIDs(ids ...uuid.UUID) {
-	if m.removeddeployments == nil {
-		m.removeddeployments = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		delete(m.deployments, ids[i])
-		m.removeddeployments[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedDeployments returns the removed IDs of the "deployments" edge to the Deployment entity.
-func (m *UserMutation) RemovedDeploymentsIDs() (ids []uuid.UUID) {
-	for id := range m.removeddeployments {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// DeploymentsIDs returns the "deployments" edge IDs in the mutation.
-func (m *UserMutation) DeploymentsIDs() (ids []uuid.UUID) {
-	for id := range m.deployments {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetDeployments resets all changes to the "deployments" edge.
-func (m *UserMutation) ResetDeployments() {
-	m.deployments = nil
-	m.cleareddeployments = false
-	m.removeddeployments = nil
-}
-
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -6258,12 +7697,9 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 1)
 	if m.groups != nil {
 		edges = append(edges, user.EdgeGroups)
-	}
-	if m.deployments != nil {
-		edges = append(edges, user.EdgeDeployments)
 	}
 	return edges
 }
@@ -6278,24 +7714,15 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case user.EdgeDeployments:
-		ids := make([]ent.Value, 0, len(m.deployments))
-		for id := range m.deployments {
-			ids = append(ids, id)
-		}
-		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 1)
 	if m.removedgroups != nil {
 		edges = append(edges, user.EdgeGroups)
-	}
-	if m.removeddeployments != nil {
-		edges = append(edges, user.EdgeDeployments)
 	}
 	return edges
 }
@@ -6310,24 +7737,15 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case user.EdgeDeployments:
-		ids := make([]ent.Value, 0, len(m.removeddeployments))
-		for id := range m.removeddeployments {
-			ids = append(ids, id)
-		}
-		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 1)
 	if m.clearedgroups {
 		edges = append(edges, user.EdgeGroups)
-	}
-	if m.cleareddeployments {
-		edges = append(edges, user.EdgeDeployments)
 	}
 	return edges
 }
@@ -6338,8 +7756,6 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 	switch name {
 	case user.EdgeGroups:
 		return m.clearedgroups
-	case user.EdgeDeployments:
-		return m.cleareddeployments
 	}
 	return false
 }
@@ -6358,9 +7774,6 @@ func (m *UserMutation) ResetEdge(name string) error {
 	switch name {
 	case user.EdgeGroups:
 		m.ResetGroups()
-		return nil
-	case user.EdgeDeployments:
-		m.ResetDeployments()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

@@ -1,27 +1,37 @@
 package providers
 
-import (
-	"context"
+// // Runs a synchronous one-off GetConsole command
+// func (ps *CBLEServer) GetConsoleSync(ctx context.Context, entProvider *ent.Provider, deploymentNode *ent.DeploymentNode) (*providerGRPC.GetConsoleReply, error) {
+// 	entDeployment, err := deploymentNode.QueryDeployment().Only(ctx)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	entResource, err := deploymentNode.QueryResource().Only(ctx)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	providerGRPC "github.com/cble-platform/cble-provider-grpc/pkg/provider"
-)
+// 	request := &providerGRPC.GetConsoleRequest{
+// 		DeploymentId: entDeployment.ID.String(),
+// 		HostKey:      entResource.Key,
+// 		// Vars:           &structpb.Struct{},
+// 		// DeploymentVars: &structpb.Struct{},
+// 	}
 
-// Runs a synchronous one-off GetConsole command
-func (ps *CBLEServer) GetConsoleSync(ctx context.Context, providerId string, request *providerGRPC.GetConsoleRequest) (*providerGRPC.GetConsoleReply, error) {
-	client, err := ps.getProviderClient(providerId)
-	if err != nil {
-		return nil, err
-	}
+// 	client, err := ps.getProviderClient(entProvider.ID.String())
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return client.GetConsole(ctx, request)
-}
+// 	return client.GetConsole(ctx, request)
+// }
 
-// Runs a synchronous one-off GetConsole command
-func (ps *CBLEServer) GetResourceListSync(ctx context.Context, providerId string, request *providerGRPC.GetResourceListRequest) (*providerGRPC.GetResourceListReply, error) {
-	client, err := ps.getProviderClient(providerId)
-	if err != nil {
-		return nil, err
-	}
+// // Runs a synchronous one-off GetConsole command
+// func (ps *CBLEServer) GetResourceListSync(ctx context.Context, entProvider *ent.Provider, request *providerGRPC.GetResourceListRequest) (*providerGRPC.GetResourceListReply, error) {
+// 	client, err := ps.getProviderClient(entProvider.ID.String())
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return client.GetResourceList(ctx, request)
-}
+// 	return client.GetResourceList(ctx, request)
+// }

@@ -10,10 +10,11 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/cble-platform/cble-backend/blueprintengine/models"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
-	"github.com/cble-platform/cble-backend/ent/group"
 	"github.com/cble-platform/cble-backend/ent/provider"
+	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/google/uuid"
 )
 
@@ -70,6 +71,12 @@ func (bc *BlueprintCreate) SetBlueprintTemplate(b []byte) *BlueprintCreate {
 	return bc
 }
 
+// SetVariableTypes sets the "variable_types" field.
+func (bc *BlueprintCreate) SetVariableTypes(mvt map[string]models.BlueprintVariableType) *BlueprintCreate {
+	bc.mutation.SetVariableTypes(mvt)
+	return bc
+}
+
 // SetID sets the "id" field.
 func (bc *BlueprintCreate) SetID(u uuid.UUID) *BlueprintCreate {
 	bc.mutation.SetID(u)
@@ -84,17 +91,6 @@ func (bc *BlueprintCreate) SetNillableID(u *uuid.UUID) *BlueprintCreate {
 	return bc
 }
 
-// SetParentGroupID sets the "parent_group" edge to the Group entity by ID.
-func (bc *BlueprintCreate) SetParentGroupID(id uuid.UUID) *BlueprintCreate {
-	bc.mutation.SetParentGroupID(id)
-	return bc
-}
-
-// SetParentGroup sets the "parent_group" edge to the Group entity.
-func (bc *BlueprintCreate) SetParentGroup(g *Group) *BlueprintCreate {
-	return bc.SetParentGroupID(g.ID)
-}
-
 // SetProviderID sets the "provider" edge to the Provider entity by ID.
 func (bc *BlueprintCreate) SetProviderID(id uuid.UUID) *BlueprintCreate {
 	bc.mutation.SetProviderID(id)
@@ -104,6 +100,21 @@ func (bc *BlueprintCreate) SetProviderID(id uuid.UUID) *BlueprintCreate {
 // SetProvider sets the "provider" edge to the Provider entity.
 func (bc *BlueprintCreate) SetProvider(p *Provider) *BlueprintCreate {
 	return bc.SetProviderID(p.ID)
+}
+
+// AddResourceIDs adds the "resources" edge to the Resource entity by IDs.
+func (bc *BlueprintCreate) AddResourceIDs(ids ...uuid.UUID) *BlueprintCreate {
+	bc.mutation.AddResourceIDs(ids...)
+	return bc
+}
+
+// AddResources adds the "resources" edges to the Resource entity.
+func (bc *BlueprintCreate) AddResources(r ...*Resource) *BlueprintCreate {
+	ids := make([]uuid.UUID, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return bc.AddResourceIDs(ids...)
 }
 
 // AddDeploymentIDs adds the "deployments" edge to the Deployment entity by IDs.
@@ -187,8 +198,8 @@ func (bc *BlueprintCreate) check() error {
 	if _, ok := bc.mutation.BlueprintTemplate(); !ok {
 		return &ValidationError{Name: "blueprint_template", err: errors.New(`ent: missing required field "Blueprint.blueprint_template"`)}
 	}
-	if _, ok := bc.mutation.ParentGroupID(); !ok {
-		return &ValidationError{Name: "parent_group", err: errors.New(`ent: missing required edge "Blueprint.parent_group"`)}
+	if _, ok := bc.mutation.VariableTypes(); !ok {
+		return &ValidationError{Name: "variable_types", err: errors.New(`ent: missing required field "Blueprint.variable_types"`)}
 	}
 	if _, ok := bc.mutation.ProviderID(); !ok {
 		return &ValidationError{Name: "provider", err: errors.New(`ent: missing required edge "Blueprint.provider"`)}
@@ -248,22 +259,9 @@ func (bc *BlueprintCreate) createSpec() (*Blueprint, *sqlgraph.CreateSpec) {
 		_spec.SetField(blueprint.FieldBlueprintTemplate, field.TypeBytes, value)
 		_node.BlueprintTemplate = value
 	}
-	if nodes := bc.mutation.ParentGroupIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   blueprint.ParentGroupTable,
-			Columns: []string{blueprint.ParentGroupColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.blueprint_parent_group = &nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
+	if value, ok := bc.mutation.VariableTypes(); ok {
+		_spec.SetField(blueprint.FieldVariableTypes, field.TypeJSON, value)
+		_node.VariableTypes = value
 	}
 	if nodes := bc.mutation.ProviderIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -280,6 +278,22 @@ func (bc *BlueprintCreate) createSpec() (*Blueprint, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.blueprint_provider = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := bc.mutation.ResourcesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   blueprint.ResourcesTable,
+			Columns: []string{blueprint.ResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(resource.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := bc.mutation.DeploymentsIDs(); len(nodes) > 0 {

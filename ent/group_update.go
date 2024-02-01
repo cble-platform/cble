@@ -11,7 +11,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/group"
 	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
 	"github.com/cble-platform/cble-backend/ent/predicate"
@@ -116,21 +115,6 @@ func (gu *GroupUpdate) AddPermissionPolicies(p ...*PermissionPolicy) *GroupUpdat
 	return gu.AddPermissionPolicyIDs(ids...)
 }
 
-// AddBlueprintIDs adds the "blueprints" edge to the Blueprint entity by IDs.
-func (gu *GroupUpdate) AddBlueprintIDs(ids ...uuid.UUID) *GroupUpdate {
-	gu.mutation.AddBlueprintIDs(ids...)
-	return gu
-}
-
-// AddBlueprints adds the "blueprints" edges to the Blueprint entity.
-func (gu *GroupUpdate) AddBlueprints(b ...*Blueprint) *GroupUpdate {
-	ids := make([]uuid.UUID, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return gu.AddBlueprintIDs(ids...)
-}
-
 // Mutation returns the GroupMutation object of the builder.
 func (gu *GroupUpdate) Mutation() *GroupMutation {
 	return gu.mutation
@@ -203,27 +187,6 @@ func (gu *GroupUpdate) RemovePermissionPolicies(p ...*PermissionPolicy) *GroupUp
 		ids[i] = p[i].ID
 	}
 	return gu.RemovePermissionPolicyIDs(ids...)
-}
-
-// ClearBlueprints clears all "blueprints" edges to the Blueprint entity.
-func (gu *GroupUpdate) ClearBlueprints() *GroupUpdate {
-	gu.mutation.ClearBlueprints()
-	return gu
-}
-
-// RemoveBlueprintIDs removes the "blueprints" edge to Blueprint entities by IDs.
-func (gu *GroupUpdate) RemoveBlueprintIDs(ids ...uuid.UUID) *GroupUpdate {
-	gu.mutation.RemoveBlueprintIDs(ids...)
-	return gu
-}
-
-// RemoveBlueprints removes "blueprints" edges to Blueprint entities.
-func (gu *GroupUpdate) RemoveBlueprints(b ...*Blueprint) *GroupUpdate {
-	ids := make([]uuid.UUID, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return gu.RemoveBlueprintIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -441,51 +404,6 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if gu.mutation.BlueprintsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   group.BlueprintsTable,
-			Columns: []string{group.BlueprintsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blueprint.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := gu.mutation.RemovedBlueprintsIDs(); len(nodes) > 0 && !gu.mutation.BlueprintsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   group.BlueprintsTable,
-			Columns: []string{group.BlueprintsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blueprint.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := gu.mutation.BlueprintsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   group.BlueprintsTable,
-			Columns: []string{group.BlueprintsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blueprint.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if n, err = sqlgraph.UpdateNodes(ctx, gu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{group.Label}
@@ -590,21 +508,6 @@ func (guo *GroupUpdateOne) AddPermissionPolicies(p ...*PermissionPolicy) *GroupU
 	return guo.AddPermissionPolicyIDs(ids...)
 }
 
-// AddBlueprintIDs adds the "blueprints" edge to the Blueprint entity by IDs.
-func (guo *GroupUpdateOne) AddBlueprintIDs(ids ...uuid.UUID) *GroupUpdateOne {
-	guo.mutation.AddBlueprintIDs(ids...)
-	return guo
-}
-
-// AddBlueprints adds the "blueprints" edges to the Blueprint entity.
-func (guo *GroupUpdateOne) AddBlueprints(b ...*Blueprint) *GroupUpdateOne {
-	ids := make([]uuid.UUID, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return guo.AddBlueprintIDs(ids...)
-}
-
 // Mutation returns the GroupMutation object of the builder.
 func (guo *GroupUpdateOne) Mutation() *GroupMutation {
 	return guo.mutation
@@ -677,27 +580,6 @@ func (guo *GroupUpdateOne) RemovePermissionPolicies(p ...*PermissionPolicy) *Gro
 		ids[i] = p[i].ID
 	}
 	return guo.RemovePermissionPolicyIDs(ids...)
-}
-
-// ClearBlueprints clears all "blueprints" edges to the Blueprint entity.
-func (guo *GroupUpdateOne) ClearBlueprints() *GroupUpdateOne {
-	guo.mutation.ClearBlueprints()
-	return guo
-}
-
-// RemoveBlueprintIDs removes the "blueprints" edge to Blueprint entities by IDs.
-func (guo *GroupUpdateOne) RemoveBlueprintIDs(ids ...uuid.UUID) *GroupUpdateOne {
-	guo.mutation.RemoveBlueprintIDs(ids...)
-	return guo
-}
-
-// RemoveBlueprints removes "blueprints" edges to Blueprint entities.
-func (guo *GroupUpdateOne) RemoveBlueprints(b ...*Blueprint) *GroupUpdateOne {
-	ids := make([]uuid.UUID, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return guo.RemoveBlueprintIDs(ids...)
 }
 
 // Where appends a list predicates to the GroupUpdate builder.
@@ -938,51 +820,6 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(permissionpolicy.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if guo.mutation.BlueprintsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   group.BlueprintsTable,
-			Columns: []string{group.BlueprintsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blueprint.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := guo.mutation.RemovedBlueprintsIDs(); len(nodes) > 0 && !guo.mutation.BlueprintsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   group.BlueprintsTable,
-			Columns: []string{group.BlueprintsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blueprint.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := guo.mutation.BlueprintsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   group.BlueprintsTable,
-			Columns: []string{group.BlueprintsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blueprint.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

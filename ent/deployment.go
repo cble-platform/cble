@@ -12,7 +12,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
-	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -25,35 +24,32 @@ type Deployment struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
-	// Name holds the value of the "name" field.
+	// Display name of the deployment (defaults to blueprint name)
 	Name string `json:"name,omitempty"`
-	// Description holds the value of the "description" field.
+	// Display description of the deployment (supports markdown; defaults to blueprint description)
 	Description string `json:"description,omitempty"`
-	// TemplateVars holds the value of the "template_vars" field.
-	TemplateVars map[string]interface{} `json:"template_vars,omitempty"`
-	// DeploymentVars holds the value of the "deployment_vars" field.
-	DeploymentVars map[string]interface{} `json:"deployment_vars,omitempty"`
-	// DeploymentState holds the value of the "deployment_state" field.
-	DeploymentState map[string]string `json:"deployment_state,omitempty"`
-	// State holds the value of the "state" field.
+	// The overall state of the deployment (should only by updated by the deploy engine)
 	State deployment.State `json:"state,omitempty"`
+	// Stores the variable values to be injected into the blueprint template
+	TemplateVars map[string]interface{} `json:"template_vars,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DeploymentQuery when eager-loading is set.
 	Edges                DeploymentEdges `json:"edges"`
 	deployment_blueprint *uuid.UUID
-	deployment_requester *uuid.UUID
 	selectValues         sql.SelectValues
 }
 
 // DeploymentEdges holds the relations/edges for other nodes in the graph.
 type DeploymentEdges struct {
-	// Blueprint holds the value of the blueprint edge.
+	// The blueprint for this deployment
 	Blueprint *Blueprint `json:"blueprint,omitempty"`
-	// Requester holds the value of the requester edge.
-	Requester *User `json:"requester,omitempty"`
+	// The deployment nodes with no dependencies to start the deploy with
+	RootNodes []*DeploymentNode `json:"root_nodes,omitempty"`
+	// The deployment nodes belonging to this deployment
+	DeploymentNodes []*DeploymentNode `json:"deployment_nodes,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // BlueprintOrErr returns the Blueprint value or an error if the edge
@@ -69,17 +65,22 @@ func (e DeploymentEdges) BlueprintOrErr() (*Blueprint, error) {
 	return nil, &NotLoadedError{edge: "blueprint"}
 }
 
-// RequesterOrErr returns the Requester value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e DeploymentEdges) RequesterOrErr() (*User, error) {
+// RootNodesOrErr returns the RootNodes value or an error if the edge
+// was not loaded in eager-loading.
+func (e DeploymentEdges) RootNodesOrErr() ([]*DeploymentNode, error) {
 	if e.loadedTypes[1] {
-		if e.Requester == nil {
-			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: user.Label}
-		}
-		return e.Requester, nil
+		return e.RootNodes, nil
 	}
-	return nil, &NotLoadedError{edge: "requester"}
+	return nil, &NotLoadedError{edge: "root_nodes"}
+}
+
+// DeploymentNodesOrErr returns the DeploymentNodes value or an error if the edge
+// was not loaded in eager-loading.
+func (e DeploymentEdges) DeploymentNodesOrErr() ([]*DeploymentNode, error) {
+	if e.loadedTypes[2] {
+		return e.DeploymentNodes, nil
+	}
+	return nil, &NotLoadedError{edge: "deployment_nodes"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -87,7 +88,7 @@ func (*Deployment) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case deployment.FieldTemplateVars, deployment.FieldDeploymentVars, deployment.FieldDeploymentState:
+		case deployment.FieldTemplateVars:
 			values[i] = new([]byte)
 		case deployment.FieldName, deployment.FieldDescription, deployment.FieldState:
 			values[i] = new(sql.NullString)
@@ -96,8 +97,6 @@ func (*Deployment) scanValues(columns []string) ([]any, error) {
 		case deployment.FieldID:
 			values[i] = new(uuid.UUID)
 		case deployment.ForeignKeys[0]: // deployment_blueprint
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case deployment.ForeignKeys[1]: // deployment_requester
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
@@ -144,6 +143,12 @@ func (d *Deployment) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				d.Description = value.String
 			}
+		case deployment.FieldState:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field state", values[i])
+			} else if value.Valid {
+				d.State = deployment.State(value.String)
+			}
 		case deployment.FieldTemplateVars:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field template_vars", values[i])
@@ -152,41 +157,12 @@ func (d *Deployment) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field template_vars: %w", err)
 				}
 			}
-		case deployment.FieldDeploymentVars:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field deployment_vars", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &d.DeploymentVars); err != nil {
-					return fmt.Errorf("unmarshal field deployment_vars: %w", err)
-				}
-			}
-		case deployment.FieldDeploymentState:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field deployment_state", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &d.DeploymentState); err != nil {
-					return fmt.Errorf("unmarshal field deployment_state: %w", err)
-				}
-			}
-		case deployment.FieldState:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field state", values[i])
-			} else if value.Valid {
-				d.State = deployment.State(value.String)
-			}
 		case deployment.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field deployment_blueprint", values[i])
 			} else if value.Valid {
 				d.deployment_blueprint = new(uuid.UUID)
 				*d.deployment_blueprint = *value.S.(*uuid.UUID)
-			}
-		case deployment.ForeignKeys[1]:
-			if value, ok := values[i].(*sql.NullScanner); !ok {
-				return fmt.Errorf("unexpected type %T for field deployment_requester", values[i])
-			} else if value.Valid {
-				d.deployment_requester = new(uuid.UUID)
-				*d.deployment_requester = *value.S.(*uuid.UUID)
 			}
 		default:
 			d.selectValues.Set(columns[i], values[i])
@@ -206,9 +182,14 @@ func (d *Deployment) QueryBlueprint() *BlueprintQuery {
 	return NewDeploymentClient(d.config).QueryBlueprint(d)
 }
 
-// QueryRequester queries the "requester" edge of the Deployment entity.
-func (d *Deployment) QueryRequester() *UserQuery {
-	return NewDeploymentClient(d.config).QueryRequester(d)
+// QueryRootNodes queries the "root_nodes" edge of the Deployment entity.
+func (d *Deployment) QueryRootNodes() *DeploymentNodeQuery {
+	return NewDeploymentClient(d.config).QueryRootNodes(d)
+}
+
+// QueryDeploymentNodes queries the "deployment_nodes" edge of the Deployment entity.
+func (d *Deployment) QueryDeploymentNodes() *DeploymentNodeQuery {
+	return NewDeploymentClient(d.config).QueryDeploymentNodes(d)
 }
 
 // Update returns a builder for updating this Deployment.
@@ -246,17 +227,11 @@ func (d *Deployment) String() string {
 	builder.WriteString("description=")
 	builder.WriteString(d.Description)
 	builder.WriteString(", ")
-	builder.WriteString("template_vars=")
-	builder.WriteString(fmt.Sprintf("%v", d.TemplateVars))
-	builder.WriteString(", ")
-	builder.WriteString("deployment_vars=")
-	builder.WriteString(fmt.Sprintf("%v", d.DeploymentVars))
-	builder.WriteString(", ")
-	builder.WriteString("deployment_state=")
-	builder.WriteString(fmt.Sprintf("%v", d.DeploymentState))
-	builder.WriteString(", ")
 	builder.WriteString("state=")
 	builder.WriteString(fmt.Sprintf("%v", d.State))
+	builder.WriteString(", ")
+	builder.WriteString("template_vars=")
+	builder.WriteString(fmt.Sprintf("%v", d.TemplateVars))
 	builder.WriteByte(')')
 	return builder.String()
 }
