@@ -172,6 +172,10 @@ func (dnc *DeploymentNodeCreate) defaults() {
 		v := deploymentnode.DefaultUpdatedAt()
 		dnc.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := dnc.mutation.Vars(); !ok {
+		v := deploymentnode.DefaultVars
+		dnc.mutation.SetVars(v)
+	}
 	if _, ok := dnc.mutation.ID(); !ok {
 		v := deploymentnode.DefaultID()
 		dnc.mutation.SetID(v)

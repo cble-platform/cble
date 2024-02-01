@@ -70,7 +70,7 @@ type DeploymentNode {
   createdAt: Time!
   updatedAt: Time!
   state: DeploymentNodeState!
-  vars: StrMap!
+  vars: StrMap
 
   deployment: Deployment!
   resource: Resource!
@@ -350,10 +350,10 @@ type Mutation {
   Deploy a blueprint (requires permission `com.cble.blueprints.deploy`)
   """
   deployBlueprint(id: ID!, templateVars: StrMap!): Deployment! @permission(key: "com.cble.blueprints.deploy")
-  # """
-  # Destroy a deployment (requires permission `com.cble.deployments.destroy`)
-  # """
-  # destroyDeployment(id: ID!): Deployment! @permission(key: "com.cble.deployments.destroy")
+  """
+  Destroy a deployment (requires permission `com.cble.deployments.destroy`)
+  """
+  destroyDeployment(id: ID!): Deployment! @permission(key: "com.cble.deployments.destroy")
   # """
   # Get a vm console (requires permission `com.cble.deployments.console`)
   # """

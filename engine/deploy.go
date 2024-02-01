@@ -2,7 +2,6 @@ package engine
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -27,6 +26,20 @@ func StartDeployment(client *ent.Client, cbleServer *providers.CBLEServer, entDe
 		return
 	}
 
+	// Set all of the nodes to TO_DEPLOY state (which aren't already completed)
+	err = client.DeploymentNode.Update().
+		Where(
+			deploymentnode.And(
+				deploymentnode.HasDeploymentWith(deployment.IDEQ(entDeployment.ID)),
+				deploymentnode.StateNEQ(deploymentnode.StateComplete),
+			),
+		).
+		SetState(deploymentnode.StateToDeploy).
+		Exec(ctx)
+	if err != nil {
+		logrus.Errorf("failed to set deployment nodes to TO_DEPLOY: %v", err)
+	}
+
 	// Query all of the deployment nodes
 	entDeploymentNodes, err := entDeployment.QueryDeploymentNodes().All(ctx)
 	if err != nil {
@@ -38,19 +51,33 @@ func StartDeployment(client *ent.Client, cbleServer *providers.CBLEServer, entDe
 
 	// Spawn deployRoutine's for all root nodes
 	for _, deploymentNode := range entDeploymentNodes {
+		wg.Add(1)
 		go deployRoutine(ctx, client, cbleServer, deploymentNode, &wg)
+	}
+
+	// Wait for all routines to finish
+	wg.Wait()
+
+	logrus.Debug("deployment successful!")
+
+	// Set the deployment as COMPLETE
+	err = entDeployment.Update().
+		SetState(deployment.StateComplete).
+		Exec(ctx)
+	if err != nil {
+		logrus.Errorf("failed to update deployment state: %v", err)
+		return
 	}
 }
 
 func deployRoutine(ctx context.Context, client *ent.Client, cbleServer *providers.CBLEServer, deploymentNode *ent.DeploymentNode, wg *sync.WaitGroup) {
-	wg.Add(1)
 	defer wg.Done()
 
 	logrus.WithField("node", deploymentNode.ID).Debug("deploy routine starting")
 
 	// If the node is not awaiting deployment, return
-	if deploymentNode.State != deploymentnode.StateAwaiting {
-		logrus.WithField("node", deploymentNode.ID).Debug("node not in state \"awaiting\"")
+	if deploymentNode.State != deploymentnode.StateToDeploy {
+		logrus.WithField("node", deploymentNode.ID).Debug("node not in state \"to_deploy\"")
 		return
 	}
 
@@ -86,8 +113,8 @@ func deployRoutine(ctx context.Context, client *ent.Client, cbleServer *provider
 		}
 
 		for _, prevNode := range prevNodes {
-			// If the prev node is failed, mark this node as tainted and stop
-			if prevNode.State == deploymentnode.StateFailed {
+			// If the prev node is failed or tainted, mark this node as tainted and stop
+			if prevNode.State == deploymentnode.StateFailed || prevNode.State == deploymentnode.StateTainted {
 				err = setStatus(ctx, deploymentNode, deploymentnode.StateTainted)
 				if err != nil {
 					logrus.WithField("node", deploymentNode.ID).Error(err)
@@ -158,22 +185,4 @@ func deployRoutine(ctx context.Context, client *ent.Client, cbleServer *provider
 		logrus.Errorf("failed to update node vars and state: %v", err)
 		return
 	}
-}
-
-func failNode(ctx context.Context, entDeploymentNode *ent.DeploymentNode) {
-	// Mark node as failed
-	err := setStatus(ctx, entDeploymentNode, deploymentnode.StateFailed)
-	if err != nil {
-		logrus.WithField("node", entDeploymentNode.ID).Error(err)
-	}
-}
-
-func setStatus(ctx context.Context, entDeploymentNode *ent.DeploymentNode, state deploymentnode.State) error {
-	err := entDeploymentNode.Update().
-		SetState(state).
-		Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to update node state to \"%s\": %v", state, err)
-	}
-	return nil
 }
