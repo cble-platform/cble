@@ -56,7 +56,7 @@ func (ps *CBLEServer) GenerateDependencies(ctx context.Context, entProvider *ent
 }
 
 // Runs a synchronous DeployResource command
-func (ps *CBLEServer) DeployResource(ctx context.Context, entProvider *ent.Provider, entDeploymentNode *ent.DeploymentNode) (*providerGRPC.DeployResourceReply, error) {
+func (ps *CBLEServer) DeployResource(ctx context.Context, entProvider *ent.Provider, entDeploymentNode *ent.DeploymentNode, templatedObject []byte) (*providerGRPC.DeployResourceReply, error) {
 	// Get the provider client
 	client, err := ps.getProviderClient(entProvider.ID.String())
 	if err != nil {
@@ -72,12 +72,6 @@ func (ps *CBLEServer) DeployResource(ctx context.Context, entProvider *ent.Provi
 	entResource, err := entDeploymentNode.QueryResource().Only(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query resource from node: %v", err)
-	}
-
-	// Convert the object to YAML
-	objectBytes, err := yaml.Marshal(entResource.Object)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal resource (%s) object into YAML: %v", entResource.ID, err)
 	}
 
 	// Generate dependency var map
@@ -102,7 +96,7 @@ func (ps *CBLEServer) DeployResource(ctx context.Context, entProvider *ent.Provi
 		Resource: &providerGRPC.Resource{
 			Id:     entResource.ID.String(),
 			Key:    entResource.Key,
-			Object: objectBytes,
+			Object: templatedObject,
 		},
 		Vars:           entDeploymentNode.Vars,
 		DependencyVars: dependencyVarsMap,
