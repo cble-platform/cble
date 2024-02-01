@@ -40,7 +40,7 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString},
-		{Name: "state", Type: field.TypeEnum, Enums: []string{"awaiting", "in_progress", "complete", "failed", "deleted"}},
+		{Name: "state", Type: field.TypeEnum, Enums: []string{"awaiting", "in_progress", "complete", "failed", "destroyed"}},
 		{Name: "template_vars", Type: field.TypeJSON},
 		{Name: "deployment_blueprint", Type: field.TypeUUID},
 	}
@@ -63,7 +63,7 @@ var (
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "state", Type: field.TypeEnum, Enums: []string{"awaiting", "parent_awaiting", "in_progress", "complete", "tainted", "failed", "to_delete", "deleted", "to_rebuild"}},
+		{Name: "state", Type: field.TypeEnum, Enums: []string{"to_deploy", "to_destroy", "to_redeploy", "parent_awaiting", "child_awaiting", "in_progress", "complete", "tainted", "failed", "destroyed"}},
 		{Name: "vars", Type: field.TypeJSON},
 		{Name: "deployment_node_deployment", Type: field.TypeUUID},
 		{Name: "deployment_node_resource", Type: field.TypeUUID},

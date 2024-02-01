@@ -270,6 +270,20 @@ func (r *mutationResolver) DeployBlueprint(ctx context.Context, id uuid.UUID, te
 	return entDeployment, nil
 }
 
+// DestroyDeployment is the resolver for the destroyDeployment field.
+func (r *mutationResolver) DestroyDeployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error) {
+	// Get the deployment by ID
+	entDeployment, err := r.ent.Deployment.Get(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query deployment: %v", err)
+	}
+
+	// Spawn destruction routine
+	go engine.StartDestroy(r.ent, r.cbleServer, entDeployment)
+
+	return entDeployment, nil
+}
+
 // ConfigBytes is the resolver for the configBytes field.
 func (r *providerResolver) ConfigBytes(ctx context.Context, obj *ent.Provider) (string, error) {
 	return string(obj.ConfigBytes), nil

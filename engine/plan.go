@@ -52,7 +52,7 @@ func createDeploymentNode(ctx context.Context, client *ent.Client, entDeployment
 	if entDeploymentNode, ok = nodeMap[entResource.Key]; !ok {
 		// Create the node
 		entDeploymentNode, err = client.DeploymentNode.Create().
-			SetState(deploymentnode.StateAwaiting).
+			SetState(deploymentnode.StateToDeploy).
 			SetVars(map[string]string{}).
 			SetDeployment(entDeployment).
 			SetResource(entResource).

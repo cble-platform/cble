@@ -71,6 +71,10 @@ func init() {
 	deploymentnode.DefaultUpdatedAt = deploymentnodeDescUpdatedAt.Default.(func() time.Time)
 	// deploymentnode.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	deploymentnode.UpdateDefaultUpdatedAt = deploymentnodeDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// deploymentnodeDescVars is the schema descriptor for vars field.
+	deploymentnodeDescVars := deploymentnodeFields[4].Descriptor()
+	// deploymentnode.DefaultVars holds the default value on creation for the vars field.
+	deploymentnode.DefaultVars = deploymentnodeDescVars.Default.(map[string]string)
 	// deploymentnodeDescID is the schema descriptor for id field.
 	deploymentnodeDescID := deploymentnodeFields[0].Descriptor()
 	// deploymentnode.DefaultID holds the default value on creation for the id field.

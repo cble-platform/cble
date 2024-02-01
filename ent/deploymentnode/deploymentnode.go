@@ -101,6 +101,8 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
+	// DefaultVars holds the default value on creation for the "vars" field.
+	DefaultVars map[string]string
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -110,15 +112,16 @@ type State string
 
 // State values.
 const (
-	StateAwaiting       State = "awaiting"
+	StateToDeploy       State = "to_deploy"
+	StateToDestroy      State = "to_destroy"
+	StateToRedeploy     State = "to_redeploy"
 	StateParentAwaiting State = "parent_awaiting"
+	StateChildAwaiting  State = "child_awaiting"
 	StateInProgress     State = "in_progress"
 	StateComplete       State = "complete"
 	StateTainted        State = "tainted"
 	StateFailed         State = "failed"
-	StateToDelete       State = "to_delete"
-	StateDeleted        State = "deleted"
-	StateToRebuild      State = "to_rebuild"
+	StateDestroyed      State = "destroyed"
 )
 
 func (s State) String() string {
@@ -128,7 +131,7 @@ func (s State) String() string {
 // StateValidator is a validator for the "state" field enum values. It is called by the builders before save.
 func StateValidator(s State) error {
 	switch s {
-	case StateAwaiting, StateParentAwaiting, StateInProgress, StateComplete, StateTainted, StateFailed, StateToDelete, StateDeleted, StateToRebuild:
+	case StateToDeploy, StateToDestroy, StateToRedeploy, StateParentAwaiting, StateChildAwaiting, StateInProgress, StateComplete, StateTainted, StateFailed, StateDestroyed:
 		return nil
 	default:
 		return fmt.Errorf("deploymentnode: invalid enum value for state field: %q", s)

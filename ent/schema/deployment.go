@@ -31,7 +31,7 @@ func (Deployment) Fields() []ent.Field {
 		field.String("description").
 			Comment("Display description of the deployment (supports markdown; defaults to blueprint description)"),
 		field.Enum("state").
-			Values("awaiting", "in_progress", "complete", "failed", "deleted").
+			Values("awaiting", "in_progress", "complete", "failed", "destroyed").
 			Comment("The overall state of the deployment (should only by updated by the deploy engine)"),
 		field.JSON("template_vars", map[string]string{}).
 			Default(make(map[string]string)).

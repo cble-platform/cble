@@ -27,9 +27,10 @@ func (DeploymentNode) Fields() []ent.Field {
 			Default(time.Now).
 			UpdateDefault(time.Now),
 		field.Enum("state").
-			Values("awaiting", "parent_awaiting", "in_progress", "complete", "tainted", "failed", "to_delete", "deleted", "to_rebuild").
+			Values("to_deploy", "to_destroy", "to_redeploy", "parent_awaiting", "child_awaiting", "in_progress", "complete", "tainted", "failed", "destroyed").
 			Comment("The state of the deployed resource (should only by updated by the deploy engine)"),
 		field.JSON("vars", map[string]string{}).
+			Default(make(map[string]string)).
 			Comment("Stores metadata about the deployed resource for use with the provider"),
 	}
 }
