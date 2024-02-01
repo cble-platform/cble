@@ -127,6 +127,9 @@ initialization:
     - key: com.cble.deployments.destroy
       component: Deployments
       description: Destroy deployments
+    - key: com.cble.deployments.redeploy
+      component: Deployments
+      description: Redeploy deployments
     - key: com.cble.deployments.console
       component: Deployments
       description: Get deployment vm console

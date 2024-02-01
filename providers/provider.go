@@ -11,6 +11,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/internal/git"
 	providerGRPC "github.com/cble-platform/cble-provider-grpc/pkg/provider"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -111,6 +112,26 @@ func (ps *CBLEServer) startProviderConnection(ctx context.Context, shutdown chan
 	}
 	// Store the client reference for synchronous use
 	ps.providerClients.Store(providerId, client)
+
+	// Convert providerId to UUID
+	providerUuid, err := uuid.Parse(providerId)
+	if err != nil {
+		logrus.Errorf("failed to parse providerId as UUID: %v", err)
+		return
+	}
+
+	// Get the provider from ENT
+	entProvider, err := ps.entClient.Provider.Get(ctx, providerUuid)
+	if err != nil {
+		logrus.Errorf("failed to query provider: %v", err)
+	}
+
+	// Configure the provider
+	reply, err := ps.Configure(ctx, entProvider)
+	if err != nil || !reply.Success {
+		logrus.Errorf("failed to configure provider %s: %v", providerId, err)
+		return
+	}
 
 	// // Convert provider ID to UUID for ENT queries
 	// providerUuid, err := uuid.Parse(providerId)

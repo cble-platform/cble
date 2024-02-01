@@ -8,7 +8,6 @@ import (
 
 	"github.com/cble-platform/cble-backend/config"
 	"github.com/cble-platform/cble-backend/ent"
-	"github.com/cble-platform/cble-backend/ent/providercommand"
 	cbleGRPC "github.com/cble-platform/cble-provider-grpc/pkg/cble"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -216,15 +215,6 @@ func (ps *CBLEServer) RegisterProvider(ctx context.Context, request *cbleGRPC.Re
 	err = entProvider.Update().SetIsLoaded(true).Exec(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to set provider is_loaded state: %v", err)
-	}
-	// Add a configure task to load the provider configuration
-	err = ps.entClient.ProviderCommand.Create().
-		SetCommandType(providercommand.CommandTypeCONFIGURE).
-		SetProvider(entProvider).
-		Exec(ctx)
-	if err != nil {
-		// Log failure but still reply to provider
-		logrus.Errorf("failed to create initial provider CONFIGURE command for provider %s: %v", request.Id, err)
 	}
 	logrus.Debugf("requesting provider %s start listening on socket ID %s", request.Id, socketId)
 	// Reply to the provider
