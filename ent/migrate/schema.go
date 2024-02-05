@@ -43,6 +43,7 @@ var (
 		{Name: "state", Type: field.TypeEnum, Enums: []string{"awaiting", "in_progress", "complete", "failed", "destroyed"}},
 		{Name: "template_vars", Type: field.TypeJSON},
 		{Name: "deployment_blueprint", Type: field.TypeUUID},
+		{Name: "deployment_requester", Type: field.TypeUUID},
 	}
 	// DeploymentsTable holds the schema information for the "deployments" table.
 	DeploymentsTable = &schema.Table{
@@ -54,6 +55,12 @@ var (
 				Symbol:     "deployments_blueprints_blueprint",
 				Columns:    []*schema.Column{DeploymentsColumns[7]},
 				RefColumns: []*schema.Column{BlueprintsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "deployments_users_requester",
+				Columns:    []*schema.Column{DeploymentsColumns[8]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 		},
@@ -343,6 +350,7 @@ var (
 func init() {
 	BlueprintsTable.ForeignKeys[0].RefTable = ProvidersTable
 	DeploymentsTable.ForeignKeys[0].RefTable = BlueprintsTable
+	DeploymentsTable.ForeignKeys[1].RefTable = UsersTable
 	DeploymentNodesTable.ForeignKeys[0].RefTable = DeploymentsTable
 	DeploymentNodesTable.ForeignKeys[1].RefTable = ResourcesTable
 	GroupsTable.ForeignKeys[0].RefTable = GroupsTable

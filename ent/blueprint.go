@@ -44,9 +44,9 @@ type Blueprint struct {
 type BlueprintEdges struct {
 	// The provider to use for this blueprint
 	Provider *Provider `json:"provider,omitempty"`
-	// Resources holds the value of the resources edge.
+	// The resources which are part of this blueprint
 	Resources []*Resource `json:"resources,omitempty"`
-	// Deployments holds the value of the deployments edge.
+	// All deployments of this blueprints
 	Deployments []*Deployment `json:"deployments,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.

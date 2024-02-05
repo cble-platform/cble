@@ -32,6 +32,8 @@ const (
 	EdgeBlueprint = "blueprint"
 	// EdgeDeploymentNodes holds the string denoting the deployment_nodes edge name in mutations.
 	EdgeDeploymentNodes = "deployment_nodes"
+	// EdgeRequester holds the string denoting the requester edge name in mutations.
+	EdgeRequester = "requester"
 	// Table holds the table name of the deployment in the database.
 	Table = "deployments"
 	// BlueprintTable is the table that holds the blueprint relation/edge.
@@ -48,6 +50,13 @@ const (
 	DeploymentNodesInverseTable = "deployment_nodes"
 	// DeploymentNodesColumn is the table column denoting the deployment_nodes relation/edge.
 	DeploymentNodesColumn = "deployment_node_deployment"
+	// RequesterTable is the table that holds the requester relation/edge.
+	RequesterTable = "deployments"
+	// RequesterInverseTable is the table name for the User entity.
+	// It exists in this package in order to avoid circular dependency with the "user" package.
+	RequesterInverseTable = "users"
+	// RequesterColumn is the table column denoting the requester relation/edge.
+	RequesterColumn = "deployment_requester"
 )
 
 // Columns holds all SQL columns for deployment fields.
@@ -65,6 +74,7 @@ var Columns = []string{
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"deployment_blueprint",
+	"deployment_requester",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -174,6 +184,13 @@ func ByDeploymentNodes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newDeploymentNodesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByRequesterField orders the results by requester field.
+func ByRequesterField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRequesterStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newBlueprintStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -186,5 +203,12 @@ func newDeploymentNodesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(DeploymentNodesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, true, DeploymentNodesTable, DeploymentNodesColumn),
+	)
+}
+func newRequesterStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RequesterInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, RequesterTable, RequesterColumn),
 	)
 }

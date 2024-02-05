@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
@@ -48,6 +49,13 @@ func (Deployment) Edges() []ent.Edge {
 			Comment("The blueprint for this deployment"),
 		edge.From("deployment_nodes", DeploymentNode.Type).
 			Ref("deployment").
+			Annotations(entsql.Annotation{
+				OnDelete: entsql.Cascade,
+			}).
 			Comment("The deployment nodes belonging to this deployment"),
+		edge.To("requester", User.Type).
+			Unique().
+			Required().
+			Comment("The user who requested this deployment"),
 	}
 }

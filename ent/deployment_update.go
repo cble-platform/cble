@@ -15,6 +15,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/deploymentnode"
 	"github.com/cble-platform/cble-backend/ent/predicate"
+	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -111,6 +112,17 @@ func (du *DeploymentUpdate) AddDeploymentNodes(d ...*DeploymentNode) *Deployment
 	return du.AddDeploymentNodeIDs(ids...)
 }
 
+// SetRequesterID sets the "requester" edge to the User entity by ID.
+func (du *DeploymentUpdate) SetRequesterID(id uuid.UUID) *DeploymentUpdate {
+	du.mutation.SetRequesterID(id)
+	return du
+}
+
+// SetRequester sets the "requester" edge to the User entity.
+func (du *DeploymentUpdate) SetRequester(u *User) *DeploymentUpdate {
+	return du.SetRequesterID(u.ID)
+}
+
 // Mutation returns the DeploymentMutation object of the builder.
 func (du *DeploymentUpdate) Mutation() *DeploymentMutation {
 	return du.mutation
@@ -141,6 +153,12 @@ func (du *DeploymentUpdate) RemoveDeploymentNodes(d ...*DeploymentNode) *Deploym
 		ids[i] = d[i].ID
 	}
 	return du.RemoveDeploymentNodeIDs(ids...)
+}
+
+// ClearRequester clears the "requester" edge to the User entity.
+func (du *DeploymentUpdate) ClearRequester() *DeploymentUpdate {
+	du.mutation.ClearRequester()
+	return du
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -188,6 +206,9 @@ func (du *DeploymentUpdate) check() error {
 	}
 	if _, ok := du.mutation.BlueprintID(); du.mutation.BlueprintCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Deployment.blueprint"`)
+	}
+	if _, ok := du.mutation.RequesterID(); du.mutation.RequesterCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Deployment.requester"`)
 	}
 	return nil
 }
@@ -286,6 +307,35 @@ func (du *DeploymentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(deploymentnode.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if du.mutation.RequesterCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   deployment.RequesterTable,
+			Columns: []string{deployment.RequesterColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.RequesterIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   deployment.RequesterTable,
+			Columns: []string{deployment.RequesterColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -393,6 +443,17 @@ func (duo *DeploymentUpdateOne) AddDeploymentNodes(d ...*DeploymentNode) *Deploy
 	return duo.AddDeploymentNodeIDs(ids...)
 }
 
+// SetRequesterID sets the "requester" edge to the User entity by ID.
+func (duo *DeploymentUpdateOne) SetRequesterID(id uuid.UUID) *DeploymentUpdateOne {
+	duo.mutation.SetRequesterID(id)
+	return duo
+}
+
+// SetRequester sets the "requester" edge to the User entity.
+func (duo *DeploymentUpdateOne) SetRequester(u *User) *DeploymentUpdateOne {
+	return duo.SetRequesterID(u.ID)
+}
+
 // Mutation returns the DeploymentMutation object of the builder.
 func (duo *DeploymentUpdateOne) Mutation() *DeploymentMutation {
 	return duo.mutation
@@ -423,6 +484,12 @@ func (duo *DeploymentUpdateOne) RemoveDeploymentNodes(d ...*DeploymentNode) *Dep
 		ids[i] = d[i].ID
 	}
 	return duo.RemoveDeploymentNodeIDs(ids...)
+}
+
+// ClearRequester clears the "requester" edge to the User entity.
+func (duo *DeploymentUpdateOne) ClearRequester() *DeploymentUpdateOne {
+	duo.mutation.ClearRequester()
+	return duo
 }
 
 // Where appends a list predicates to the DeploymentUpdate builder.
@@ -483,6 +550,9 @@ func (duo *DeploymentUpdateOne) check() error {
 	}
 	if _, ok := duo.mutation.BlueprintID(); duo.mutation.BlueprintCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Deployment.blueprint"`)
+	}
+	if _, ok := duo.mutation.RequesterID(); duo.mutation.RequesterCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Deployment.requester"`)
 	}
 	return nil
 }
@@ -598,6 +668,35 @@ func (duo *DeploymentUpdateOne) sqlSave(ctx context.Context) (_node *Deployment,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(deploymentnode.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if duo.mutation.RequesterCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   deployment.RequesterTable,
+			Columns: []string{deployment.RequesterColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.RequesterIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   deployment.RequesterTable,
+			Columns: []string{deployment.RequesterColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

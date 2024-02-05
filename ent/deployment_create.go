@@ -13,6 +13,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/deploymentnode"
+	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -115,6 +116,17 @@ func (dc *DeploymentCreate) AddDeploymentNodes(d ...*DeploymentNode) *Deployment
 	return dc.AddDeploymentNodeIDs(ids...)
 }
 
+// SetRequesterID sets the "requester" edge to the User entity by ID.
+func (dc *DeploymentCreate) SetRequesterID(id uuid.UUID) *DeploymentCreate {
+	dc.mutation.SetRequesterID(id)
+	return dc
+}
+
+// SetRequester sets the "requester" edge to the User entity.
+func (dc *DeploymentCreate) SetRequester(u *User) *DeploymentCreate {
+	return dc.SetRequesterID(u.ID)
+}
+
 // Mutation returns the DeploymentMutation object of the builder.
 func (dc *DeploymentCreate) Mutation() *DeploymentMutation {
 	return dc.mutation
@@ -195,6 +207,9 @@ func (dc *DeploymentCreate) check() error {
 	}
 	if _, ok := dc.mutation.BlueprintID(); !ok {
 		return &ValidationError{Name: "blueprint", err: errors.New(`ent: missing required edge "Deployment.blueprint"`)}
+	}
+	if _, ok := dc.mutation.RequesterID(); !ok {
+		return &ValidationError{Name: "requester", err: errors.New(`ent: missing required edge "Deployment.requester"`)}
 	}
 	return nil
 }
@@ -286,6 +301,23 @@ func (dc *DeploymentCreate) createSpec() (*Deployment, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := dc.mutation.RequesterIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   deployment.RequesterTable,
+			Columns: []string{deployment.RequesterColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.deployment_requester = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

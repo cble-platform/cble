@@ -902,6 +902,8 @@ type DeploymentMutation struct {
 	deployment_nodes        map[uuid.UUID]struct{}
 	removeddeployment_nodes map[uuid.UUID]struct{}
 	cleareddeployment_nodes bool
+	requester               *uuid.UUID
+	clearedrequester        bool
 	done                    bool
 	oldValue                func(context.Context) (*Deployment, error)
 	predicates              []predicate.Deployment
@@ -1320,6 +1322,45 @@ func (m *DeploymentMutation) ResetDeploymentNodes() {
 	m.removeddeployment_nodes = nil
 }
 
+// SetRequesterID sets the "requester" edge to the User entity by id.
+func (m *DeploymentMutation) SetRequesterID(id uuid.UUID) {
+	m.requester = &id
+}
+
+// ClearRequester clears the "requester" edge to the User entity.
+func (m *DeploymentMutation) ClearRequester() {
+	m.clearedrequester = true
+}
+
+// RequesterCleared reports if the "requester" edge to the User entity was cleared.
+func (m *DeploymentMutation) RequesterCleared() bool {
+	return m.clearedrequester
+}
+
+// RequesterID returns the "requester" edge ID in the mutation.
+func (m *DeploymentMutation) RequesterID() (id uuid.UUID, exists bool) {
+	if m.requester != nil {
+		return *m.requester, true
+	}
+	return
+}
+
+// RequesterIDs returns the "requester" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RequesterID instead. It exists only for internal usage by the builders.
+func (m *DeploymentMutation) RequesterIDs() (ids []uuid.UUID) {
+	if id := m.requester; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRequester resets all changes to the "requester" edge.
+func (m *DeploymentMutation) ResetRequester() {
+	m.requester = nil
+	m.clearedrequester = false
+}
+
 // Where appends a list predicates to the DeploymentMutation builder.
 func (m *DeploymentMutation) Where(ps ...predicate.Deployment) {
 	m.predicates = append(m.predicates, ps...)
@@ -1538,12 +1579,15 @@ func (m *DeploymentMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *DeploymentMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.blueprint != nil {
 		edges = append(edges, deployment.EdgeBlueprint)
 	}
 	if m.deployment_nodes != nil {
 		edges = append(edges, deployment.EdgeDeploymentNodes)
+	}
+	if m.requester != nil {
+		edges = append(edges, deployment.EdgeRequester)
 	}
 	return edges
 }
@@ -1562,13 +1606,17 @@ func (m *DeploymentMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case deployment.EdgeRequester:
+		if id := m.requester; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *DeploymentMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removeddeployment_nodes != nil {
 		edges = append(edges, deployment.EdgeDeploymentNodes)
 	}
@@ -1591,12 +1639,15 @@ func (m *DeploymentMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *DeploymentMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedblueprint {
 		edges = append(edges, deployment.EdgeBlueprint)
 	}
 	if m.cleareddeployment_nodes {
 		edges = append(edges, deployment.EdgeDeploymentNodes)
+	}
+	if m.clearedrequester {
+		edges = append(edges, deployment.EdgeRequester)
 	}
 	return edges
 }
@@ -1609,6 +1660,8 @@ func (m *DeploymentMutation) EdgeCleared(name string) bool {
 		return m.clearedblueprint
 	case deployment.EdgeDeploymentNodes:
 		return m.cleareddeployment_nodes
+	case deployment.EdgeRequester:
+		return m.clearedrequester
 	}
 	return false
 }
@@ -1619,6 +1672,9 @@ func (m *DeploymentMutation) ClearEdge(name string) error {
 	switch name {
 	case deployment.EdgeBlueprint:
 		m.ClearBlueprint()
+		return nil
+	case deployment.EdgeRequester:
+		m.ClearRequester()
 		return nil
 	}
 	return fmt.Errorf("unknown Deployment unique edge %s", name)
@@ -1633,6 +1689,9 @@ func (m *DeploymentMutation) ResetEdge(name string) error {
 		return nil
 	case deployment.EdgeDeploymentNodes:
 		m.ResetDeploymentNodes()
+		return nil
+	case deployment.EdgeRequester:
+		m.ResetRequester()
 		return nil
 	}
 	return fmt.Errorf("unknown Deployment edge %s", name)
@@ -6950,23 +7009,26 @@ func (m *ResourceMutation) ResetEdge(name string) error {
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *uuid.UUID
-	created_at    *time.Time
-	updated_at    *time.Time
-	username      *string
-	email         *string
-	password      *string
-	first_name    *string
-	last_name     *string
-	clearedFields map[string]struct{}
-	groups        map[uuid.UUID]struct{}
-	removedgroups map[uuid.UUID]struct{}
-	clearedgroups bool
-	done          bool
-	oldValue      func(context.Context) (*User, error)
-	predicates    []predicate.User
+	op                 Op
+	typ                string
+	id                 *uuid.UUID
+	created_at         *time.Time
+	updated_at         *time.Time
+	username           *string
+	email              *string
+	password           *string
+	first_name         *string
+	last_name          *string
+	clearedFields      map[string]struct{}
+	groups             map[uuid.UUID]struct{}
+	removedgroups      map[uuid.UUID]struct{}
+	clearedgroups      bool
+	deployments        map[uuid.UUID]struct{}
+	removeddeployments map[uuid.UUID]struct{}
+	cleareddeployments bool
+	done               bool
+	oldValue           func(context.Context) (*User, error)
+	predicates         []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -7379,6 +7441,60 @@ func (m *UserMutation) ResetGroups() {
 	m.removedgroups = nil
 }
 
+// AddDeploymentIDs adds the "deployments" edge to the Deployment entity by ids.
+func (m *UserMutation) AddDeploymentIDs(ids ...uuid.UUID) {
+	if m.deployments == nil {
+		m.deployments = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.deployments[ids[i]] = struct{}{}
+	}
+}
+
+// ClearDeployments clears the "deployments" edge to the Deployment entity.
+func (m *UserMutation) ClearDeployments() {
+	m.cleareddeployments = true
+}
+
+// DeploymentsCleared reports if the "deployments" edge to the Deployment entity was cleared.
+func (m *UserMutation) DeploymentsCleared() bool {
+	return m.cleareddeployments
+}
+
+// RemoveDeploymentIDs removes the "deployments" edge to the Deployment entity by IDs.
+func (m *UserMutation) RemoveDeploymentIDs(ids ...uuid.UUID) {
+	if m.removeddeployments == nil {
+		m.removeddeployments = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.deployments, ids[i])
+		m.removeddeployments[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedDeployments returns the removed IDs of the "deployments" edge to the Deployment entity.
+func (m *UserMutation) RemovedDeploymentsIDs() (ids []uuid.UUID) {
+	for id := range m.removeddeployments {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// DeploymentsIDs returns the "deployments" edge IDs in the mutation.
+func (m *UserMutation) DeploymentsIDs() (ids []uuid.UUID) {
+	for id := range m.deployments {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetDeployments resets all changes to the "deployments" edge.
+func (m *UserMutation) ResetDeployments() {
+	m.deployments = nil
+	m.cleareddeployments = false
+	m.removeddeployments = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -7614,9 +7730,12 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.groups != nil {
 		edges = append(edges, user.EdgeGroups)
+	}
+	if m.deployments != nil {
+		edges = append(edges, user.EdgeDeployments)
 	}
 	return edges
 }
@@ -7631,15 +7750,24 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeDeployments:
+		ids := make([]ent.Value, 0, len(m.deployments))
+		for id := range m.deployments {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.removedgroups != nil {
 		edges = append(edges, user.EdgeGroups)
+	}
+	if m.removeddeployments != nil {
+		edges = append(edges, user.EdgeDeployments)
 	}
 	return edges
 }
@@ -7654,15 +7782,24 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeDeployments:
+		ids := make([]ent.Value, 0, len(m.removeddeployments))
+		for id := range m.removeddeployments {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedgroups {
 		edges = append(edges, user.EdgeGroups)
+	}
+	if m.cleareddeployments {
+		edges = append(edges, user.EdgeDeployments)
 	}
 	return edges
 }
@@ -7673,6 +7810,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 	switch name {
 	case user.EdgeGroups:
 		return m.clearedgroups
+	case user.EdgeDeployments:
+		return m.cleareddeployments
 	}
 	return false
 }
@@ -7691,6 +7830,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 	switch name {
 	case user.EdgeGroups:
 		m.ResetGroups()
+		return nil
+	case user.EdgeDeployments:
+		m.ResetDeployments()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

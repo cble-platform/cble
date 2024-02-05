@@ -10,7 +10,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/resource"
 )
 
-func CreateDeployment(ctx context.Context, client *ent.Client, entBlueprint *ent.Blueprint, templateVars map[string]string) (*ent.Deployment, error) {
+func CreateDeployment(ctx context.Context, client *ent.Client, entBlueprint *ent.Blueprint, templateVars map[string]string, requester *ent.User) (*ent.Deployment, error) {
 	// Create the deployment
 	entDeployment, err := client.Deployment.Create().
 		SetName(entBlueprint.Name).
@@ -18,6 +18,7 @@ func CreateDeployment(ctx context.Context, client *ent.Client, entBlueprint *ent
 		SetState(deployment.StateAwaiting).
 		SetTemplateVars(templateVars).
 		SetBlueprint(entBlueprint).
+		SetRequester(requester).
 		Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create deployment: %v", err)

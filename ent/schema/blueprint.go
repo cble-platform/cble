@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/cble-platform/cble-backend/engine/models"
@@ -45,10 +46,17 @@ func (Blueprint) Edges() []ent.Edge {
 			Unique().
 			Required().
 			Comment("The provider to use for this blueprint"),
-
 		edge.From("resources", Resource.Type).
-			Ref("blueprint"),
+			Ref("blueprint").
+			Annotations(entsql.Annotation{
+				OnDelete: entsql.Cascade,
+			}).
+			Comment("The resources which are part of this blueprint"),
 		edge.From("deployments", Deployment.Type).
-			Ref("blueprint"),
+			Ref("blueprint").
+			Annotations(entsql.Annotation{
+				OnDelete: entsql.Restrict,
+			}).
+			Comment("All deployments of this blueprints"),
 	}
 }
