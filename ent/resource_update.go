@@ -37,6 +37,20 @@ func (ru *ResourceUpdate) SetUpdatedAt(t time.Time) *ResourceUpdate {
 	return ru
 }
 
+// SetType sets the "type" field.
+func (ru *ResourceUpdate) SetType(r resource.Type) *ResourceUpdate {
+	ru.mutation.SetType(r)
+	return ru
+}
+
+// SetNillableType sets the "type" field if the given value is not nil.
+func (ru *ResourceUpdate) SetNillableType(r *resource.Type) *ResourceUpdate {
+	if r != nil {
+		ru.SetType(*r)
+	}
+	return ru
+}
+
 // SetKey sets the "key" field.
 func (ru *ResourceUpdate) SetKey(s string) *ResourceUpdate {
 	ru.mutation.SetKey(s)
@@ -47,6 +61,20 @@ func (ru *ResourceUpdate) SetKey(s string) *ResourceUpdate {
 func (ru *ResourceUpdate) SetNillableKey(s *string) *ResourceUpdate {
 	if s != nil {
 		ru.SetKey(*s)
+	}
+	return ru
+}
+
+// SetResourceType sets the "resource_type" field.
+func (ru *ResourceUpdate) SetResourceType(s string) *ResourceUpdate {
+	ru.mutation.SetResourceType(s)
+	return ru
+}
+
+// SetNillableResourceType sets the "resource_type" field if the given value is not nil.
+func (ru *ResourceUpdate) SetNillableResourceType(s *string) *ResourceUpdate {
+	if s != nil {
+		ru.SetResourceType(*s)
 	}
 	return ru
 }
@@ -189,6 +217,11 @@ func (ru *ResourceUpdate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (ru *ResourceUpdate) check() error {
+	if v, ok := ru.mutation.GetType(); ok {
+		if err := resource.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Resource.type": %w`, err)}
+		}
+	}
 	if _, ok := ru.mutation.BlueprintID(); ru.mutation.BlueprintCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Resource.blueprint"`)
 	}
@@ -210,8 +243,14 @@ func (ru *ResourceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := ru.mutation.UpdatedAt(); ok {
 		_spec.SetField(resource.FieldUpdatedAt, field.TypeTime, value)
 	}
+	if value, ok := ru.mutation.GetType(); ok {
+		_spec.SetField(resource.FieldType, field.TypeEnum, value)
+	}
 	if value, ok := ru.mutation.Key(); ok {
 		_spec.SetField(resource.FieldKey, field.TypeString, value)
+	}
+	if value, ok := ru.mutation.ResourceType(); ok {
+		_spec.SetField(resource.FieldResourceType, field.TypeString, value)
 	}
 	if value, ok := ru.mutation.Object(); ok {
 		_spec.SetField(resource.FieldObject, field.TypeJSON, value)
@@ -361,6 +400,20 @@ func (ruo *ResourceUpdateOne) SetUpdatedAt(t time.Time) *ResourceUpdateOne {
 	return ruo
 }
 
+// SetType sets the "type" field.
+func (ruo *ResourceUpdateOne) SetType(r resource.Type) *ResourceUpdateOne {
+	ruo.mutation.SetType(r)
+	return ruo
+}
+
+// SetNillableType sets the "type" field if the given value is not nil.
+func (ruo *ResourceUpdateOne) SetNillableType(r *resource.Type) *ResourceUpdateOne {
+	if r != nil {
+		ruo.SetType(*r)
+	}
+	return ruo
+}
+
 // SetKey sets the "key" field.
 func (ruo *ResourceUpdateOne) SetKey(s string) *ResourceUpdateOne {
 	ruo.mutation.SetKey(s)
@@ -371,6 +424,20 @@ func (ruo *ResourceUpdateOne) SetKey(s string) *ResourceUpdateOne {
 func (ruo *ResourceUpdateOne) SetNillableKey(s *string) *ResourceUpdateOne {
 	if s != nil {
 		ruo.SetKey(*s)
+	}
+	return ruo
+}
+
+// SetResourceType sets the "resource_type" field.
+func (ruo *ResourceUpdateOne) SetResourceType(s string) *ResourceUpdateOne {
+	ruo.mutation.SetResourceType(s)
+	return ruo
+}
+
+// SetNillableResourceType sets the "resource_type" field if the given value is not nil.
+func (ruo *ResourceUpdateOne) SetNillableResourceType(s *string) *ResourceUpdateOne {
+	if s != nil {
+		ruo.SetResourceType(*s)
 	}
 	return ruo
 }
@@ -526,6 +593,11 @@ func (ruo *ResourceUpdateOne) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (ruo *ResourceUpdateOne) check() error {
+	if v, ok := ruo.mutation.GetType(); ok {
+		if err := resource.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Resource.type": %w`, err)}
+		}
+	}
 	if _, ok := ruo.mutation.BlueprintID(); ruo.mutation.BlueprintCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Resource.blueprint"`)
 	}
@@ -564,8 +636,14 @@ func (ruo *ResourceUpdateOne) sqlSave(ctx context.Context) (_node *Resource, err
 	if value, ok := ruo.mutation.UpdatedAt(); ok {
 		_spec.SetField(resource.FieldUpdatedAt, field.TypeTime, value)
 	}
+	if value, ok := ruo.mutation.GetType(); ok {
+		_spec.SetField(resource.FieldType, field.TypeEnum, value)
+	}
 	if value, ok := ruo.mutation.Key(); ok {
 		_spec.SetField(resource.FieldKey, field.TypeString, value)
+	}
+	if value, ok := ruo.mutation.ResourceType(); ok {
+		_spec.SetField(resource.FieldResourceType, field.TypeString, value)
 	}
 	if value, ok := ruo.mutation.Object(); ok {
 		_spec.SetField(resource.FieldObject, field.TypeJSON, value)

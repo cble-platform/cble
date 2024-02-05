@@ -8,6 +8,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/deploymentnode"
+	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/cble-platform/cble-backend/providers"
 	"github.com/sirupsen/logrus"
 )
@@ -31,7 +32,7 @@ func StartDestroy(client *ent.Client, cbleServer *providers.CBLEServer, entDeplo
 		Where(
 			deploymentnode.And(
 				deploymentnode.HasDeploymentWith(deployment.IDEQ(entDeployment.ID)),
-				deploymentnode.StateNEQ(deploymentnode.StateDestroyed),
+				deploymentnode.StateNEQ(deploymentnode.StateDestroyed), // Only non-destroyed nodes
 			),
 		).
 		SetState(deploymentnode.StateToDestroy).
@@ -75,6 +76,29 @@ func destroyRoutine(ctx context.Context, client *ent.Client, cbleServer *provide
 
 	logrus.WithField("node", entDeploymentNode.ID).Debug("destroy routine starting")
 
+	entResource, err := entDeploymentNode.QueryResource().Only(ctx)
+	if err != nil {
+		// Mark node as failed
+		failNode(ctx, entDeploymentNode)
+		// Log error
+		logrus.Errorf("failed to query resource from deployment node: %v", err)
+		return
+	}
+
+	// Auto-mark data nodes as destroyed
+	if entResource.Type != resource.TypeResource {
+		err = entDeploymentNode.Update().
+			SetState(deploymentnode.StateDestroyed).
+			Exec(ctx)
+		if err != nil {
+			// Mark node as failed
+			failNode(ctx, entDeploymentNode)
+			// Log error
+			logrus.Errorf("failed to update node vars and state: %v", err)
+		}
+		return
+	}
+
 	// If the node is not awaiting destruction, return
 	if entDeploymentNode.State != deploymentnode.StateToDestroy {
 		logrus.WithField("node", entDeploymentNode.ID).Debug("node not in state \"to_destroy\"")
@@ -82,7 +106,7 @@ func destroyRoutine(ctx context.Context, client *ent.Client, cbleServer *provide
 	}
 
 	// Set the node's status to CHILD_AWAITING
-	err := setStatus(ctx, entDeploymentNode, deploymentnode.StateChildAwaiting)
+	err = setStatus(ctx, entDeploymentNode, deploymentnode.StateChildAwaiting)
 	if err != nil {
 		// Mark node as failed
 		failNode(ctx, entDeploymentNode)

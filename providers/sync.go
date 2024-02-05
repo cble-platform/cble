@@ -55,6 +55,56 @@ func (ps *CBLEServer) GenerateDependencies(ctx context.Context, entProvider *ent
 	return client.GenerateDependencies(ctx, request)
 }
 
+// Runs a synchronous RetrieveData command
+func (ps *CBLEServer) RetrieveData(ctx context.Context, entProvider *ent.Provider, entDeploymentNode *ent.DeploymentNode, templatedObject []byte) (*providerGRPC.RetrieveDataReply, error) {
+	// Get the provider client
+	client, err := ps.getProviderClient(entProvider.ID.String())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get provider client: %v", err)
+	}
+
+	// Get the deployment
+	entDeployment, err := entDeploymentNode.QueryDeployment().Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query deployment from node: %v", err)
+	}
+	// Get the resource
+	entResource, err := entDeploymentNode.QueryResource().Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query resource from node: %v", err)
+	}
+
+	// Generate dependency var map
+	dependencyVarsMap := make(map[string]*providerGRPC.DependencyVars)
+	entDependencyNodes, err := entDeploymentNode.QueryPrevNodes().WithResource().All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query dependency nodes: %v", err)
+	}
+	for _, entDependencyNode := range entDependencyNodes {
+		// Add the dependency's vars to dependency var map
+		dependencyVarsMap[entDependencyNode.Edges.Resource.Key] = &providerGRPC.DependencyVars{
+			Vars: entDependencyNode.Vars,
+		}
+	}
+
+	// Create the request
+	request := &providerGRPC.RetrieveDataRequest{
+		Deployment: &providerGRPC.Deployment{
+			Id:           entDeployment.ID.String(),
+			TemplateVars: entDeployment.TemplateVars,
+		},
+		Resource: &providerGRPC.Resource{
+			Id:     entResource.ID.String(),
+			Key:    entResource.Key,
+			Object: templatedObject,
+		},
+		Vars:           entDeploymentNode.Vars,
+		DependencyVars: dependencyVarsMap,
+	}
+
+	return client.RetrieveData(ctx, request)
+}
+
 // Runs a synchronous DeployResource command
 func (ps *CBLEServer) DeployResource(ctx context.Context, entProvider *ent.Provider, entDeploymentNode *ent.DeploymentNode, templatedObject []byte) (*providerGRPC.DeployResourceReply, error) {
 	// Get the provider client

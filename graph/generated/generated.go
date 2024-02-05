@@ -174,14 +174,16 @@ type ComplexityRoot struct {
 	}
 
 	Resource struct {
-		Blueprint  func(childComplexity int) int
-		CreatedAt  func(childComplexity int) int
-		DependsOn  func(childComplexity int) int
-		ID         func(childComplexity int) int
-		Key        func(childComplexity int) int
-		Object     func(childComplexity int) int
-		RequiredBy func(childComplexity int) int
-		UpdatedAt  func(childComplexity int) int
+		Blueprint    func(childComplexity int) int
+		CreatedAt    func(childComplexity int) int
+		DependsOn    func(childComplexity int) int
+		ID           func(childComplexity int) int
+		Key          func(childComplexity int) int
+		Object       func(childComplexity int) int
+		RequiredBy   func(childComplexity int) int
+		ResourceType func(childComplexity int) int
+		Type         func(childComplexity int) int
+		UpdatedAt    func(childComplexity int) int
 	}
 
 	User struct {
@@ -272,6 +274,8 @@ type QueryResolver interface {
 	Deployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error)
 }
 type ResourceResolver interface {
+	Type(ctx context.Context, obj *ent.Resource) (model.ResourceType, error)
+
 	Object(ctx context.Context, obj *ent.Resource) (string, error)
 	Blueprint(ctx context.Context, obj *ent.Resource) (*ent.Blueprint, error)
 	RequiredBy(ctx context.Context, obj *ent.Resource) ([]*ent.Resource, error)
@@ -1067,6 +1071,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Resource.RequiredBy(childComplexity), true
 
+	case "Resource.resourceType":
+		if e.complexity.Resource.ResourceType == nil {
+			break
+		}
+
+		return e.complexity.Resource.ResourceType(childComplexity), true
+
+	case "Resource.type":
+		if e.complexity.Resource.Type == nil {
+			break
+		}
+
+		return e.complexity.Resource.Type(childComplexity), true
+
 	case "Resource.updatedAt":
 		if e.complexity.Resource.UpdatedAt == nil {
 			break
@@ -1266,11 +1284,18 @@ type Blueprint {
   deployments: [Deployment]!
 }
 
+enum ResourceType {
+  RESOURCE
+  DATA
+}
+
 type Resource {
   id: ID!
   createdAt: Time!
   updatedAt: Time!
+  type: ResourceType!
   key: String!
+  resourceType: String!
   object: String!
 
   blueprint: Blueprint!
@@ -2463,8 +2488,12 @@ func (ec *executionContext) fieldContext_Blueprint_resources(ctx context.Context
 				return ec.fieldContext_Resource_createdAt(ctx, field)
 			case "updatedAt":
 				return ec.fieldContext_Resource_updatedAt(ctx, field)
+			case "type":
+				return ec.fieldContext_Resource_type(ctx, field)
 			case "key":
 				return ec.fieldContext_Resource_key(ctx, field)
+			case "resourceType":
+				return ec.fieldContext_Resource_resourceType(ctx, field)
 			case "object":
 				return ec.fieldContext_Resource_object(ctx, field)
 			case "blueprint":
@@ -3376,8 +3405,12 @@ func (ec *executionContext) fieldContext_DeploymentNode_resource(ctx context.Con
 				return ec.fieldContext_Resource_createdAt(ctx, field)
 			case "updatedAt":
 				return ec.fieldContext_Resource_updatedAt(ctx, field)
+			case "type":
+				return ec.fieldContext_Resource_type(ctx, field)
 			case "key":
 				return ec.fieldContext_Resource_key(ctx, field)
+			case "resourceType":
+				return ec.fieldContext_Resource_resourceType(ctx, field)
 			case "object":
 				return ec.fieldContext_Resource_object(ctx, field)
 			case "blueprint":
@@ -7778,6 +7811,50 @@ func (ec *executionContext) fieldContext_Resource_updatedAt(ctx context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _Resource_type(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Resource_type(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Resource().Type(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.ResourceType)
+	fc.Result = res
+	return ec.marshalNResourceType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐResourceType(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Resource_type(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Resource",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ResourceType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Resource_key(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Resource_key(ctx, field)
 	if err != nil {
@@ -7810,6 +7887,50 @@ func (ec *executionContext) _Resource_key(ctx context.Context, field graphql.Col
 }
 
 func (ec *executionContext) fieldContext_Resource_key(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Resource",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Resource_resourceType(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Resource_resourceType(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResourceType, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Resource_resourceType(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Resource",
 		Field:      field,
@@ -7977,8 +8098,12 @@ func (ec *executionContext) fieldContext_Resource_requiredBy(ctx context.Context
 				return ec.fieldContext_Resource_createdAt(ctx, field)
 			case "updatedAt":
 				return ec.fieldContext_Resource_updatedAt(ctx, field)
+			case "type":
+				return ec.fieldContext_Resource_type(ctx, field)
 			case "key":
 				return ec.fieldContext_Resource_key(ctx, field)
+			case "resourceType":
+				return ec.fieldContext_Resource_resourceType(ctx, field)
 			case "object":
 				return ec.fieldContext_Resource_object(ctx, field)
 			case "blueprint":
@@ -8039,8 +8164,12 @@ func (ec *executionContext) fieldContext_Resource_dependsOn(ctx context.Context,
 				return ec.fieldContext_Resource_createdAt(ctx, field)
 			case "updatedAt":
 				return ec.fieldContext_Resource_updatedAt(ctx, field)
+			case "type":
+				return ec.fieldContext_Resource_type(ctx, field)
 			case "key":
 				return ec.fieldContext_Resource_key(ctx, field)
+			case "resourceType":
+				return ec.fieldContext_Resource_resourceType(ctx, field)
 			case "object":
 				return ec.fieldContext_Resource_object(ctx, field)
 			case "blueprint":
@@ -10280,8 +10409,6 @@ func (ec *executionContext) unmarshalInputBlueprintInput(ctx context.Context, ob
 		}
 		switch k {
 		case "name":
-			var err error
-
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
@@ -10289,8 +10416,6 @@ func (ec *executionContext) unmarshalInputBlueprintInput(ctx context.Context, ob
 			}
 			it.Name = data
 		case "description":
-			var err error
-
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
@@ -10298,8 +10423,6 @@ func (ec *executionContext) unmarshalInputBlueprintInput(ctx context.Context, ob
 			}
 			it.Description = data
 		case "blueprintTemplate":
-			var err error
-
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("blueprintTemplate"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
@@ -10307,8 +10430,6 @@ func (ec *executionContext) unmarshalInputBlueprintInput(ctx context.Context, ob
 			}
 			it.BlueprintTemplate = data
 		case "variableTypes":
-			var err error
-
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("variableTypes"))
 			data, err := ec.unmarshalNVarTypeMap2map(ctx, v)
 			if err != nil {
@@ -10316,8 +10437,6 @@ func (ec *executionContext) unmarshalInputBlueprintInput(ctx context.Context, ob
 			}
 			it.VariableTypes = data
 		case "providerId":
-			var err error
-
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerId"))
 			data, err := ec.unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
 			if err != nil {
@@ -10345,8 +10464,6 @@ func (ec *executionContext) unmarshalInputDeploymentInput(ctx context.Context, o
 		}
 		switch k {
 		case "name":
-			var err error
-
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
@@ -10374,8 +10491,6 @@ func (ec *executionContext) unmarshalInputProviderInput(ctx context.Context, obj
 		}
 		switch k {
 		case "displayName":
-			var err error
-
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayName"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
@@ -10383,8 +10498,6 @@ func (ec *executionContext) unmarshalInputProviderInput(ctx context.Context, obj
 			}
 			it.DisplayName = data
 		case "providerGitUrl":
-			var err error
-
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerGitUrl"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
@@ -10392,8 +10505,6 @@ func (ec *executionContext) unmarshalInputProviderInput(ctx context.Context, obj
 			}
 			it.ProviderGitURL = data
 		case "providerVersion":
-			var err error
-
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("providerVersion"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
@@ -10401,8 +10512,6 @@ func (ec *executionContext) unmarshalInputProviderInput(ctx context.Context, obj
 			}
 			it.ProviderVersion = data
 		case "configBytes":
-			var err error
-
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("configBytes"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
@@ -10430,8 +10539,6 @@ func (ec *executionContext) unmarshalInputUserInput(ctx context.Context, obj int
 		}
 		switch k {
 		case "username":
-			var err error
-
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
@@ -10439,8 +10546,6 @@ func (ec *executionContext) unmarshalInputUserInput(ctx context.Context, obj int
 			}
 			it.Username = data
 		case "email":
-			var err error
-
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
@@ -10448,8 +10553,6 @@ func (ec *executionContext) unmarshalInputUserInput(ctx context.Context, obj int
 			}
 			it.Email = data
 		case "firstName":
-			var err error
-
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("firstName"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
@@ -10457,8 +10560,6 @@ func (ec *executionContext) unmarshalInputUserInput(ctx context.Context, obj int
 			}
 			it.FirstName = data
 		case "lastName":
-			var err error
-
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastName"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
@@ -10466,8 +10567,6 @@ func (ec *executionContext) unmarshalInputUserInput(ctx context.Context, obj int
 			}
 			it.LastName = data
 		case "groupIds":
-			var err error
-
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("groupIds"))
 			data, err := ec.unmarshalNID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, v)
 			if err != nil {
@@ -12201,8 +12300,49 @@ func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "type":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Resource_type(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "key":
 			out.Values[i] = ec._Resource_key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "resourceType":
+			out.Values[i] = ec._Resource_resourceType(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -13379,6 +13519,16 @@ func (ec *executionContext) marshalNResource2ᚖgithubᚗcomᚋcbleᚑplatform�
 		return graphql.Null
 	}
 	return ec._Resource(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNResourceType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐResourceType(ctx context.Context, v interface{}) (model.ResourceType, error) {
+	var res model.ResourceType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNResourceType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐResourceType(ctx context.Context, sel ast.SelectionSet, v model.ResourceType) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNStrMap2map(ctx context.Context, v interface{}) (map[string]string, error) {

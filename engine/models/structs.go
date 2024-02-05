@@ -10,7 +10,8 @@ type Blueprint struct {
 }
 
 type Object struct {
-	Resource  string    `yaml:"resource" json:"resource"`
+	Resource  *string   `yaml:"resource,omitempty" json:"resource"`
+	Data      *string   `yaml:"data,omitempty" json:"data"`
 	Config    yaml.Node `yaml:"config" json:"config"`
 	DependsOn []string  `yaml:"depends_on,omitempty" json:"depends_on,omitempty"`
 }

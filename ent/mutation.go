@@ -6285,7 +6285,9 @@ type ResourceMutation struct {
 	id                 *uuid.UUID
 	created_at         *time.Time
 	updated_at         *time.Time
+	_type              *resource.Type
 	key                *string
+	resource_type      *string
 	object             **models.Object
 	clearedFields      map[string]struct{}
 	blueprint          *uuid.UUID
@@ -6477,6 +6479,42 @@ func (m *ResourceMutation) ResetUpdatedAt() {
 	m.updated_at = nil
 }
 
+// SetType sets the "type" field.
+func (m *ResourceMutation) SetType(r resource.Type) {
+	m._type = &r
+}
+
+// GetType returns the value of the "type" field in the mutation.
+func (m *ResourceMutation) GetType() (r resource.Type, exists bool) {
+	v := m._type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldType returns the old "type" field's value of the Resource entity.
+// If the Resource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ResourceMutation) OldType(ctx context.Context) (v resource.Type, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldType: %w", err)
+	}
+	return oldValue.Type, nil
+}
+
+// ResetType resets all changes to the "type" field.
+func (m *ResourceMutation) ResetType() {
+	m._type = nil
+}
+
 // SetKey sets the "key" field.
 func (m *ResourceMutation) SetKey(s string) {
 	m.key = &s
@@ -6511,6 +6549,42 @@ func (m *ResourceMutation) OldKey(ctx context.Context) (v string, err error) {
 // ResetKey resets all changes to the "key" field.
 func (m *ResourceMutation) ResetKey() {
 	m.key = nil
+}
+
+// SetResourceType sets the "resource_type" field.
+func (m *ResourceMutation) SetResourceType(s string) {
+	m.resource_type = &s
+}
+
+// ResourceType returns the value of the "resource_type" field in the mutation.
+func (m *ResourceMutation) ResourceType() (r string, exists bool) {
+	v := m.resource_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldResourceType returns the old "resource_type" field's value of the Resource entity.
+// If the Resource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ResourceMutation) OldResourceType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldResourceType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldResourceType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldResourceType: %w", err)
+	}
+	return oldValue.ResourceType, nil
+}
+
+// ResetResourceType resets all changes to the "resource_type" field.
+func (m *ResourceMutation) ResetResourceType() {
+	m.resource_type = nil
 }
 
 // SetObject sets the "object" field.
@@ -6730,15 +6804,21 @@ func (m *ResourceMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ResourceMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 6)
 	if m.created_at != nil {
 		fields = append(fields, resource.FieldCreatedAt)
 	}
 	if m.updated_at != nil {
 		fields = append(fields, resource.FieldUpdatedAt)
 	}
+	if m._type != nil {
+		fields = append(fields, resource.FieldType)
+	}
 	if m.key != nil {
 		fields = append(fields, resource.FieldKey)
+	}
+	if m.resource_type != nil {
+		fields = append(fields, resource.FieldResourceType)
 	}
 	if m.object != nil {
 		fields = append(fields, resource.FieldObject)
@@ -6755,8 +6835,12 @@ func (m *ResourceMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case resource.FieldUpdatedAt:
 		return m.UpdatedAt()
+	case resource.FieldType:
+		return m.GetType()
 	case resource.FieldKey:
 		return m.Key()
+	case resource.FieldResourceType:
+		return m.ResourceType()
 	case resource.FieldObject:
 		return m.Object()
 	}
@@ -6772,8 +6856,12 @@ func (m *ResourceMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldCreatedAt(ctx)
 	case resource.FieldUpdatedAt:
 		return m.OldUpdatedAt(ctx)
+	case resource.FieldType:
+		return m.OldType(ctx)
 	case resource.FieldKey:
 		return m.OldKey(ctx)
+	case resource.FieldResourceType:
+		return m.OldResourceType(ctx)
 	case resource.FieldObject:
 		return m.OldObject(ctx)
 	}
@@ -6799,12 +6887,26 @@ func (m *ResourceMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetUpdatedAt(v)
 		return nil
+	case resource.FieldType:
+		v, ok := value.(resource.Type)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetType(v)
+		return nil
 	case resource.FieldKey:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetKey(v)
+		return nil
+	case resource.FieldResourceType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetResourceType(v)
 		return nil
 	case resource.FieldObject:
 		v, ok := value.(*models.Object)
@@ -6868,8 +6970,14 @@ func (m *ResourceMutation) ResetField(name string) error {
 	case resource.FieldUpdatedAt:
 		m.ResetUpdatedAt()
 		return nil
+	case resource.FieldType:
+		m.ResetType()
+		return nil
 	case resource.FieldKey:
 		m.ResetKey()
+		return nil
+	case resource.FieldResourceType:
+		m.ResetResourceType()
 		return nil
 	case resource.FieldObject:
 		m.ResetObject()

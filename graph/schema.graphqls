@@ -18,11 +18,18 @@ type Blueprint {
   deployments: [Deployment]!
 }
 
+enum ResourceType {
+  RESOURCE
+  DATA
+}
+
 type Resource {
   id: ID!
   createdAt: Time!
   updatedAt: Time!
+  type: ResourceType!
   key: String!
+  resourceType: String!
   object: String!
 
   blueprint: Blueprint!

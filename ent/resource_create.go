@@ -51,9 +51,29 @@ func (rc *ResourceCreate) SetNillableUpdatedAt(t *time.Time) *ResourceCreate {
 	return rc
 }
 
+// SetType sets the "type" field.
+func (rc *ResourceCreate) SetType(r resource.Type) *ResourceCreate {
+	rc.mutation.SetType(r)
+	return rc
+}
+
+// SetNillableType sets the "type" field if the given value is not nil.
+func (rc *ResourceCreate) SetNillableType(r *resource.Type) *ResourceCreate {
+	if r != nil {
+		rc.SetType(*r)
+	}
+	return rc
+}
+
 // SetKey sets the "key" field.
 func (rc *ResourceCreate) SetKey(s string) *ResourceCreate {
 	rc.mutation.SetKey(s)
+	return rc
+}
+
+// SetResourceType sets the "resource_type" field.
+func (rc *ResourceCreate) SetResourceType(s string) *ResourceCreate {
+	rc.mutation.SetResourceType(s)
 	return rc
 }
 
@@ -161,6 +181,10 @@ func (rc *ResourceCreate) defaults() {
 		v := resource.DefaultUpdatedAt()
 		rc.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := rc.mutation.GetType(); !ok {
+		v := resource.DefaultType
+		rc.mutation.SetType(v)
+	}
 	if _, ok := rc.mutation.ID(); !ok {
 		v := resource.DefaultID()
 		rc.mutation.SetID(v)
@@ -175,8 +199,19 @@ func (rc *ResourceCreate) check() error {
 	if _, ok := rc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Resource.updated_at"`)}
 	}
+	if _, ok := rc.mutation.GetType(); !ok {
+		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "Resource.type"`)}
+	}
+	if v, ok := rc.mutation.GetType(); ok {
+		if err := resource.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Resource.type": %w`, err)}
+		}
+	}
 	if _, ok := rc.mutation.Key(); !ok {
 		return &ValidationError{Name: "key", err: errors.New(`ent: missing required field "Resource.key"`)}
+	}
+	if _, ok := rc.mutation.ResourceType(); !ok {
+		return &ValidationError{Name: "resource_type", err: errors.New(`ent: missing required field "Resource.resource_type"`)}
 	}
 	if _, ok := rc.mutation.Object(); !ok {
 		return &ValidationError{Name: "object", err: errors.New(`ent: missing required field "Resource.object"`)}
@@ -227,9 +262,17 @@ func (rc *ResourceCreate) createSpec() (*Resource, *sqlgraph.CreateSpec) {
 		_spec.SetField(resource.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
+	if value, ok := rc.mutation.GetType(); ok {
+		_spec.SetField(resource.FieldType, field.TypeEnum, value)
+		_node.Type = value
+	}
 	if value, ok := rc.mutation.Key(); ok {
 		_spec.SetField(resource.FieldKey, field.TypeString, value)
 		_node.Key = value
+	}
+	if value, ok := rc.mutation.ResourceType(); ok {
+		_spec.SetField(resource.FieldResourceType, field.TypeString, value)
+		_node.ResourceType = value
 	}
 	if value, ok := rc.mutation.Object(); ok {
 		_spec.SetField(resource.FieldObject, field.TypeJSON, value)

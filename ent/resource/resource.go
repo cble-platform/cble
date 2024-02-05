@@ -3,6 +3,7 @@
 package resource
 
 import (
+	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -19,8 +20,12 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
+	// FieldType holds the string denoting the type field in the database.
+	FieldType = "type"
 	// FieldKey holds the string denoting the key field in the database.
 	FieldKey = "key"
+	// FieldResourceType holds the string denoting the resource_type field in the database.
+	FieldResourceType = "resource_type"
 	// FieldObject holds the string denoting the object field in the database.
 	FieldObject = "object"
 	// EdgeBlueprint holds the string denoting the blueprint edge name in mutations.
@@ -49,7 +54,9 @@ var Columns = []string{
 	FieldID,
 	FieldCreatedAt,
 	FieldUpdatedAt,
+	FieldType,
 	FieldKey,
+	FieldResourceType,
 	FieldObject,
 }
 
@@ -94,6 +101,32 @@ var (
 	DefaultID func() uuid.UUID
 )
 
+// Type defines the type for the "type" enum field.
+type Type string
+
+// TypeResource is the default value of the Type enum.
+const DefaultType = TypeResource
+
+// Type values.
+const (
+	TypeResource Type = "resource"
+	TypeData     Type = "data"
+)
+
+func (_type Type) String() string {
+	return string(_type)
+}
+
+// TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
+func TypeValidator(_type Type) error {
+	switch _type {
+	case TypeResource, TypeData:
+		return nil
+	default:
+		return fmt.Errorf("resource: invalid enum value for type field: %q", _type)
+	}
+}
+
 // OrderOption defines the ordering options for the Resource queries.
 type OrderOption func(*sql.Selector)
 
@@ -112,9 +145,19 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
+// ByType orders the results by the type field.
+func ByType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldType, opts...).ToFunc()
+}
+
 // ByKey orders the results by the key field.
 func ByKey(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldKey, opts...).ToFunc()
+}
+
+// ByResourceType orders the results by the resource_type field.
+func ByResourceType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldResourceType, opts...).ToFunc()
 }
 
 // ByBlueprintField orders the results by blueprint field.

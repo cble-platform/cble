@@ -25,9 +25,13 @@ type Resource struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
-	// Store the resource key from the blueprint
+	// Type holds the value of the "type" field.
+	Type resource.Type `json:"type,omitempty"`
+	// The resource/data key from the blueprint
 	Key string `json:"key,omitempty"`
-	// Store the resource object from the blueprint
+	// The resource/data string from the blueprint
+	ResourceType string `json:"resource_type,omitempty"`
+	// The entire resource/data object from the blueprint
 	Object *models.Object `json:"object,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ResourceQuery when eager-loading is set.
@@ -87,7 +91,7 @@ func (*Resource) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case resource.FieldObject:
 			values[i] = new([]byte)
-		case resource.FieldKey:
+		case resource.FieldType, resource.FieldKey, resource.FieldResourceType:
 			values[i] = new(sql.NullString)
 		case resource.FieldCreatedAt, resource.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -128,11 +132,23 @@ func (r *Resource) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				r.UpdatedAt = value.Time
 			}
+		case resource.FieldType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field type", values[i])
+			} else if value.Valid {
+				r.Type = resource.Type(value.String)
+			}
 		case resource.FieldKey:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field key", values[i])
 			} else if value.Valid {
 				r.Key = value.String
+			}
+		case resource.FieldResourceType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field resource_type", values[i])
+			} else if value.Valid {
+				r.ResourceType = value.String
 			}
 		case resource.FieldObject:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -206,8 +222,14 @@ func (r *Resource) String() string {
 	builder.WriteString("updated_at=")
 	builder.WriteString(r.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
+	builder.WriteString("type=")
+	builder.WriteString(fmt.Sprintf("%v", r.Type))
+	builder.WriteString(", ")
 	builder.WriteString("key=")
 	builder.WriteString(r.Key)
+	builder.WriteString(", ")
+	builder.WriteString("resource_type=")
+	builder.WriteString(r.ResourceType)
 	builder.WriteString(", ")
 	builder.WriteString("object=")
 	builder.WriteString(fmt.Sprintf("%v", r.Object))
