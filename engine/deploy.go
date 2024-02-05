@@ -8,6 +8,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/deploymentnode"
+	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/cble-platform/cble-backend/providers"
 	"github.com/sirupsen/logrus"
 )
@@ -40,16 +41,38 @@ func StartDeployment(client *ent.Client, cbleServer *providers.CBLEServer, entDe
 		logrus.Errorf("failed to set deployment nodes to TO_DEPLOY: %v", err)
 	}
 
-	// Query all of the deployment nodes
-	entDeploymentNodes, err := entDeployment.QueryDeploymentNodes().All(ctx)
+	// Query all of the deployment nodes (data only)
+	entDeploymentNodes, err := entDeployment.QueryDeploymentNodes().Where(
+		deploymentnode.HasResourceWith(resource.TypeEQ(resource.TypeData)),
+	).All(ctx)
 	if err != nil {
-		logrus.Errorf("failed to query deployment nodes: %v", err)
+		logrus.Errorf("failed to query data deployment nodes: %v", err)
 		return
 	}
 
 	var wg sync.WaitGroup
 
-	// Spawn deployRoutine's for all root nodes
+	// Spawn deployRoutine's for all data nodes
+	for _, deploymentNode := range entDeploymentNodes {
+		wg.Add(1)
+		go deployRoutine(ctx, client, cbleServer, deploymentNode, &wg)
+	}
+
+	// Wait for all routines to finish
+	wg.Wait()
+
+	logrus.Debug("deployment data gathered!")
+
+	// Query all of the deployment nodes (resource only)
+	entDeploymentNodes, err = entDeployment.QueryDeploymentNodes().Where(
+		deploymentnode.HasResourceWith(resource.TypeEQ(resource.TypeResource)),
+	).All(ctx)
+	if err != nil {
+		logrus.Errorf("failed to query resource deployment nodes: %v", err)
+		return
+	}
+
+	// Spawn deployRoutine's for all resource nodes
 	for _, deploymentNode := range entDeploymentNodes {
 		wg.Add(1)
 		go deployRoutine(ctx, client, cbleServer, deploymentNode, &wg)
@@ -158,41 +181,86 @@ func deployRoutine(ctx context.Context, client *ent.Client, cbleServer *provider
 		// Mark node as failed
 		failNode(ctx, deploymentNode)
 		// Log error
-		logrus.WithField("node", deploymentNode.ID).Errorf("failed to to template node object definition: %v", err)
+		logrus.WithField("node", deploymentNode.ID).Errorf("failed to template node object definition: %v", err)
 		return
 	}
 
-	logrus.WithField("node", deploymentNode.ID).Debug("deploying resource...")
-
-	// Have the provider deploy the resource
-	reply, err := cbleServer.DeployResource(ctx, entProvider, deploymentNode, templatedObject)
+	entResource, err := deploymentNode.QueryResource().Only(ctx)
 	if err != nil {
 		// Mark node as failed
 		failNode(ctx, deploymentNode)
 		// Log error
-		logrus.Errorf("failed to deploy resource: %v", err)
-		return
-	}
-	if !reply.Success {
-		// Mark node as failed
-		failNode(ctx, deploymentNode)
-		// Log error
-		logrus.Errorf("failed to deploy resource: %s", *reply.Errors)
+		logrus.WithField("node", deploymentNode.ID).Errorf("failed to query resource from node: %v", err)
 		return
 	}
 
-	logrus.WithField("node", deploymentNode.ID).Debug("deployed resource successfully!")
+	if entResource.Type == resource.TypeResource {
+		logrus.WithField("node", deploymentNode.ID).Debug("deploying resource...")
 
-	// Update the vars and state on success
-	err = deploymentNode.Update().
-		SetVars(reply.UpdatedVars).
-		SetState(deploymentnode.StateComplete).
-		Exec(ctx)
-	if err != nil {
-		// Mark node as failed
-		failNode(ctx, deploymentNode)
-		// Log error
-		logrus.Errorf("failed to update node vars and state: %v", err)
-		return
+		// Have the provider deploy the resource
+		reply, err := cbleServer.DeployResource(ctx, entProvider, deploymentNode, templatedObject)
+		if err != nil {
+			// Mark node as failed
+			failNode(ctx, deploymentNode)
+			// Log error
+			logrus.Errorf("failed to deploy resource: %v", err)
+			return
+		}
+		if !reply.Success {
+			// Mark node as failed
+			failNode(ctx, deploymentNode)
+			// Log error
+			logrus.Errorf("failed to deploy resource: %s", *reply.Errors)
+			return
+		}
+
+		logrus.WithField("node", deploymentNode.ID).Debug("deployed resource successfully!")
+
+		// Update the vars and state on success
+		err = deploymentNode.Update().
+			SetVars(reply.UpdatedVars).
+			SetState(deploymentnode.StateComplete).
+			Exec(ctx)
+		if err != nil {
+			// Mark node as failed
+			failNode(ctx, deploymentNode)
+			// Log error
+			logrus.Errorf("failed to update node vars and state: %v", err)
+			return
+		}
+	} else if entResource.Type == resource.TypeData {
+		logrus.WithField("node", deploymentNode.ID).Debug("retrieving data...")
+
+		// Have the provider deploy the resource
+		reply, err := cbleServer.RetrieveData(ctx, entProvider, deploymentNode, templatedObject)
+		if err != nil {
+			// Mark node as failed
+			failNode(ctx, deploymentNode)
+			// Log error
+			logrus.Errorf("failed to retrieve data: %v", err)
+			return
+		}
+		if !reply.Success {
+			// Mark node as failed
+			failNode(ctx, deploymentNode)
+			// Log error
+			logrus.Errorf("failed to retrieve data: %s", *reply.Errors)
+			return
+		}
+
+		logrus.WithField("node", deploymentNode.ID).Debug("retrieved data successfully!")
+
+		// Update the vars and state on success
+		err = deploymentNode.Update().
+			SetVars(reply.UpdatedVars).
+			SetState(deploymentnode.StateComplete).
+			Exec(ctx)
+		if err != nil {
+			// Mark node as failed
+			failNode(ctx, deploymentNode)
+			// Log error
+			logrus.Errorf("failed to update node vars and state: %v", err)
+			return
+		}
 	}
 }

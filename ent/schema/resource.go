@@ -27,10 +27,15 @@ func (Resource) Fields() []ent.Field {
 		field.Time("updated_at").
 			Default(time.Now).
 			UpdateDefault(time.Now),
+		field.Enum("type").
+			Values("resource", "data").
+			Default("resource"),
 		field.String("key").
-			Comment("Store the resource key from the blueprint"),
+			Comment("The resource/data key from the blueprint"),
+		field.String("resource_type").
+			Comment("The resource/data string from the blueprint"),
 		field.JSON("object", &models.Object{}).
-			Comment("Store the resource object from the blueprint"),
+			Comment("The entire resource/data object from the blueprint"),
 	}
 }
 

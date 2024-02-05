@@ -180,3 +180,44 @@ func (e *PermissionPolicyType) UnmarshalGQL(v interface{}) error {
 func (e PermissionPolicyType) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
+
+type ResourceType string
+
+const (
+	ResourceTypeResource ResourceType = "RESOURCE"
+	ResourceTypeData     ResourceType = "DATA"
+)
+
+var AllResourceType = []ResourceType{
+	ResourceTypeResource,
+	ResourceTypeData,
+}
+
+func (e ResourceType) IsValid() bool {
+	switch e {
+	case ResourceTypeResource, ResourceTypeData:
+		return true
+	}
+	return false
+}
+
+func (e ResourceType) String() string {
+	return string(e)
+}
+
+func (e *ResourceType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ResourceType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ResourceType", str)
+	}
+	return nil
+}
+
+func (e ResourceType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}

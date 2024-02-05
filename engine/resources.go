@@ -27,6 +27,10 @@ func LoadResources(ctx context.Context, client *ent.Client, cbleServer *provider
 
 	// Ensure all the objects have resources created
 	for key, object := range parsedBlueprint.Objects {
+		if object.Resource == nil && object.Data == nil {
+			return fmt.Errorf("object %s has no resource or data type", key)
+		}
+
 		logrus.Debugf("Loading resource %s", key)
 
 		// Check if the resource already exists
@@ -42,20 +46,31 @@ func LoadResources(ctx context.Context, client *ent.Client, cbleServer *provider
 
 		// If the resource exists, update it
 		if entResource != nil {
-			entResource, err = entResource.Update().
+			entResourceUpdate := entResource.Update().
 				SetObject(object).
-				ClearDependsOn(). // Clear the dependencies for updating later
-				Save(ctx)
+				ClearDependsOn() // Clear the dependencies for updating later
+			// Set the resource type from "resource" or "data"
+			if object.Resource != nil {
+				entResourceUpdate = entResourceUpdate.SetType(resource.TypeResource).SetResourceType(*object.Resource)
+			} else if object.Data != nil {
+				entResourceUpdate = entResourceUpdate.SetType(resource.TypeData).SetResourceType(*object.Data)
+			}
+			entResource, err = entResourceUpdate.Save(ctx)
 			if err != nil {
 				return err
 			}
 		} else {
 			// Otherwise, create it
-			entResource, err = client.Resource.Create().
+			entResourceCreate := client.Resource.Create().
 				SetKey(key).
 				SetObject(object).
-				SetBlueprint(entBlueprint).
-				Save(ctx)
+				SetBlueprint(entBlueprint)
+			if object.Resource != nil {
+				entResourceCreate = entResourceCreate.SetType(resource.TypeResource).SetResourceType(*object.Resource)
+			} else if object.Data != nil {
+				entResourceCreate = entResourceCreate.SetType(resource.TypeData).SetResourceType(*object.Data)
+			}
+			entResource, err = entResourceCreate.Save(ctx)
 			if err != nil {
 				return err
 			}
