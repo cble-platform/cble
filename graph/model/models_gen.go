@@ -140,44 +140,52 @@ func (e DeploymentState) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
-type PermissionPolicyType string
+type ObjectType string
 
 const (
-	PermissionPolicyTypeAllow PermissionPolicyType = "ALLOW"
-	PermissionPolicyTypeDeny  PermissionPolicyType = "DENY"
+	ObjectTypeBlueprint  ObjectType = "BLUEPRINT"
+	ObjectTypeDeployment ObjectType = "DEPLOYMENT"
+	ObjectTypeGroup      ObjectType = "GROUP"
+	ObjectTypePermission ObjectType = "PERMISSION"
+	ObjectTypeProvider   ObjectType = "PROVIDER"
+	ObjectTypeUser       ObjectType = "USER"
 )
 
-var AllPermissionPolicyType = []PermissionPolicyType{
-	PermissionPolicyTypeAllow,
-	PermissionPolicyTypeDeny,
+var AllObjectType = []ObjectType{
+	ObjectTypeBlueprint,
+	ObjectTypeDeployment,
+	ObjectTypeGroup,
+	ObjectTypePermission,
+	ObjectTypeProvider,
+	ObjectTypeUser,
 }
 
-func (e PermissionPolicyType) IsValid() bool {
+func (e ObjectType) IsValid() bool {
 	switch e {
-	case PermissionPolicyTypeAllow, PermissionPolicyTypeDeny:
+	case ObjectTypeBlueprint, ObjectTypeDeployment, ObjectTypeGroup, ObjectTypePermission, ObjectTypeProvider, ObjectTypeUser:
 		return true
 	}
 	return false
 }
 
-func (e PermissionPolicyType) String() string {
+func (e ObjectType) String() string {
 	return string(e)
 }
 
-func (e *PermissionPolicyType) UnmarshalGQL(v interface{}) error {
+func (e *ObjectType) UnmarshalGQL(v interface{}) error {
 	str, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("enums must be strings")
 	}
 
-	*e = PermissionPolicyType(str)
+	*e = ObjectType(str)
 	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid PermissionPolicyType", str)
+		return fmt.Errorf("%s is not a valid ObjectType", str)
 	}
 	return nil
 }
 
-func (e PermissionPolicyType) MarshalGQL(w io.Writer) {
+func (e ObjectType) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
@@ -219,5 +227,46 @@ func (e *ResourceType) UnmarshalGQL(v interface{}) error {
 }
 
 func (e ResourceType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type SubjectType string
+
+const (
+	SubjectTypeUser  SubjectType = "USER"
+	SubjectTypeGroup SubjectType = "GROUP"
+)
+
+var AllSubjectType = []SubjectType{
+	SubjectTypeUser,
+	SubjectTypeGroup,
+}
+
+func (e SubjectType) IsValid() bool {
+	switch e {
+	case SubjectTypeUser, SubjectTypeGroup:
+		return true
+	}
+	return false
+}
+
+func (e SubjectType) String() string {
+	return string(e)
+}
+
+func (e *SubjectType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SubjectType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SubjectType", str)
+	}
+	return nil
+}
+
+func (e SubjectType) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }

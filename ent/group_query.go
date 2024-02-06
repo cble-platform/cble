@@ -12,7 +12,6 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/cble-platform/cble-backend/ent/group"
-	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
 	"github.com/cble-platform/cble-backend/ent/predicate"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
@@ -21,15 +20,14 @@ import (
 // GroupQuery is the builder for querying Group entities.
 type GroupQuery struct {
 	config
-	ctx                    *QueryContext
-	order                  []group.OrderOption
-	inters                 []Interceptor
-	predicates             []predicate.Group
-	withParent             *GroupQuery
-	withChildren           *GroupQuery
-	withUsers              *UserQuery
-	withPermissionPolicies *PermissionPolicyQuery
-	withFKs                bool
+	ctx          *QueryContext
+	order        []group.OrderOption
+	inters       []Interceptor
+	predicates   []predicate.Group
+	withParent   *GroupQuery
+	withChildren *GroupQuery
+	withUsers    *UserQuery
+	withFKs      bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -125,28 +123,6 @@ func (gq *GroupQuery) QueryUsers() *UserQuery {
 			sqlgraph.From(group.Table, group.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, group.UsersTable, group.UsersPrimaryKey...),
-		)
-		fromU = sqlgraph.SetNeighbors(gq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryPermissionPolicies chains the current query on the "permission_policies" edge.
-func (gq *GroupQuery) QueryPermissionPolicies() *PermissionPolicyQuery {
-	query := (&PermissionPolicyClient{config: gq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := gq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := gq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(group.Table, group.FieldID, selector),
-			sqlgraph.To(permissionpolicy.Table, permissionpolicy.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, group.PermissionPoliciesTable, group.PermissionPoliciesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(gq.driver.Dialect(), step)
 		return fromU, nil
@@ -341,15 +317,14 @@ func (gq *GroupQuery) Clone() *GroupQuery {
 		return nil
 	}
 	return &GroupQuery{
-		config:                 gq.config,
-		ctx:                    gq.ctx.Clone(),
-		order:                  append([]group.OrderOption{}, gq.order...),
-		inters:                 append([]Interceptor{}, gq.inters...),
-		predicates:             append([]predicate.Group{}, gq.predicates...),
-		withParent:             gq.withParent.Clone(),
-		withChildren:           gq.withChildren.Clone(),
-		withUsers:              gq.withUsers.Clone(),
-		withPermissionPolicies: gq.withPermissionPolicies.Clone(),
+		config:       gq.config,
+		ctx:          gq.ctx.Clone(),
+		order:        append([]group.OrderOption{}, gq.order...),
+		inters:       append([]Interceptor{}, gq.inters...),
+		predicates:   append([]predicate.Group{}, gq.predicates...),
+		withParent:   gq.withParent.Clone(),
+		withChildren: gq.withChildren.Clone(),
+		withUsers:    gq.withUsers.Clone(),
 		// clone intermediate query.
 		sql:  gq.sql.Clone(),
 		path: gq.path,
@@ -386,17 +361,6 @@ func (gq *GroupQuery) WithUsers(opts ...func(*UserQuery)) *GroupQuery {
 		opt(query)
 	}
 	gq.withUsers = query
-	return gq
-}
-
-// WithPermissionPolicies tells the query-builder to eager-load the nodes that are connected to
-// the "permission_policies" edge. The optional arguments are used to configure the query builder of the edge.
-func (gq *GroupQuery) WithPermissionPolicies(opts ...func(*PermissionPolicyQuery)) *GroupQuery {
-	query := (&PermissionPolicyClient{config: gq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	gq.withPermissionPolicies = query
 	return gq
 }
 
@@ -479,11 +443,10 @@ func (gq *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 		nodes       = []*Group{}
 		withFKs     = gq.withFKs
 		_spec       = gq.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [3]bool{
 			gq.withParent != nil,
 			gq.withChildren != nil,
 			gq.withUsers != nil,
-			gq.withPermissionPolicies != nil,
 		}
 	)
 	if gq.withParent != nil {
@@ -527,15 +490,6 @@ func (gq *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 		if err := gq.loadUsers(ctx, query, nodes,
 			func(n *Group) { n.Edges.Users = []*User{} },
 			func(n *Group, e *User) { n.Edges.Users = append(n.Edges.Users, e) }); err != nil {
-			return nil, err
-		}
-	}
-	if query := gq.withPermissionPolicies; query != nil {
-		if err := gq.loadPermissionPolicies(ctx, query, nodes,
-			func(n *Group) { n.Edges.PermissionPolicies = []*PermissionPolicy{} },
-			func(n *Group, e *PermissionPolicy) {
-				n.Edges.PermissionPolicies = append(n.Edges.PermissionPolicies, e)
-			}); err != nil {
 			return nil, err
 		}
 	}
@@ -663,37 +617,6 @@ func (gq *GroupQuery) loadUsers(ctx context.Context, query *UserQuery, nodes []*
 		for kn := range nodes {
 			assign(kn, n)
 		}
-	}
-	return nil
-}
-func (gq *GroupQuery) loadPermissionPolicies(ctx context.Context, query *PermissionPolicyQuery, nodes []*Group, init func(*Group), assign func(*Group, *PermissionPolicy)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Group)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	query.withFKs = true
-	query.Where(predicate.PermissionPolicy(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(group.PermissionPoliciesColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.permission_policy_group
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "permission_policy_group" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "permission_policy_group" returned %v for node %v`, *fk, n.ID)
-		}
-		assign(node, n)
 	}
 	return nil
 }

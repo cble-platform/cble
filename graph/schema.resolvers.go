@@ -13,6 +13,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/graph/generated"
 	"github.com/cble-platform/cble-backend/graph/model"
+	"github.com/cble-platform/cble-backend/permission"
 	"github.com/google/uuid"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	yaml "gopkg.in/yaml.v3"
@@ -87,6 +88,36 @@ func (r *deploymentNodeResolver) PrevNodes(ctx context.Context, obj *ent.Deploym
 	return obj.QueryPrevNodes().All(ctx)
 }
 
+// SubjectType is the resolver for the subjectType field.
+func (r *grantedPermissionResolver) SubjectType(ctx context.Context, obj *ent.GrantedPermission) (model.SubjectType, error) {
+	return model.SubjectType(obj.SubjectType), nil
+}
+
+// SubjectID is the resolver for the subjectId field.
+func (r *grantedPermissionResolver) SubjectID(ctx context.Context, obj *ent.GrantedPermission) (string, error) {
+	panic(fmt.Errorf("not implemented: SubjectID - subjectId"))
+}
+
+// ObjectType is the resolver for the objectType field.
+func (r *grantedPermissionResolver) ObjectType(ctx context.Context, obj *ent.GrantedPermission) (model.ObjectType, error) {
+	return model.ObjectType(obj.ObjectType), nil
+}
+
+// ObjectID is the resolver for the objectId field.
+func (r *grantedPermissionResolver) ObjectID(ctx context.Context, obj *ent.GrantedPermission) (string, error) {
+	panic(fmt.Errorf("not implemented: ObjectID - objectId"))
+}
+
+// Action is the resolver for the action field.
+func (r *grantedPermissionResolver) Action(ctx context.Context, obj *ent.GrantedPermission) (string, error) {
+	return string(obj.Action), nil
+}
+
+// DisplayString is the resolver for the displayString field.
+func (r *grantedPermissionResolver) DisplayString(ctx context.Context, obj *ent.GrantedPermission) (string, error) {
+	return permission.DisplayString(obj.SubjectType, obj.SubjectID, obj.ObjectType, obj.ObjectID, obj.Action), nil
+}
+
 // Children is the resolver for the children field.
 func (r *groupResolver) Children(ctx context.Context, obj *ent.Group) ([]*ent.Group, error) {
 	return obj.QueryChildren().All(ctx)
@@ -100,11 +131,6 @@ func (r *groupResolver) Parent(ctx context.Context, obj *ent.Group) (*ent.Group,
 // Users is the resolver for the users field.
 func (r *groupResolver) Users(ctx context.Context, obj *ent.Group) ([]*ent.User, error) {
 	return obj.QueryUsers().All(ctx)
-}
-
-// PermissionPolicies is the resolver for the permissionPolicies field.
-func (r *groupResolver) PermissionPolicies(ctx context.Context, obj *ent.Group) ([]*ent.PermissionPolicy, error) {
-	return obj.QueryPermissionPolicies().All(ctx)
 }
 
 // SelfChangePassword is the resolver for the selfChangePassword field.
@@ -428,26 +454,6 @@ func (r *mutationResolver) RedeployDeployment(ctx context.Context, id uuid.UUID,
 	return entDeployment, nil
 }
 
-// PermissionPolicies is the resolver for the permissionPolicies field.
-func (r *permissionResolver) PermissionPolicies(ctx context.Context, obj *ent.Permission) ([]*ent.PermissionPolicy, error) {
-	return obj.QueryPermissionPolicies().All(ctx)
-}
-
-// Type is the resolver for the type field.
-func (r *permissionPolicyResolver) Type(ctx context.Context, obj *ent.PermissionPolicy) (model.PermissionPolicyType, error) {
-	return model.PermissionPolicyType(obj.Type), nil
-}
-
-// Permission is the resolver for the permission field.
-func (r *permissionPolicyResolver) Permission(ctx context.Context, obj *ent.PermissionPolicy) (*ent.Permission, error) {
-	return obj.QueryPermission().Only(ctx)
-}
-
-// Group is the resolver for the group field.
-func (r *permissionPolicyResolver) Group(ctx context.Context, obj *ent.PermissionPolicy) (*ent.Group, error) {
-	return obj.QueryGroup().Only(ctx)
-}
-
 // ConfigBytes is the resolver for the configBytes field.
 func (r *providerResolver) ConfigBytes(ctx context.Context, obj *ent.Provider) (string, error) {
 	return string(obj.ConfigBytes), nil
@@ -465,15 +471,21 @@ func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
 
 // MeHasPermission is the resolver for the meHasPermission field.
 func (r *queryResolver) MeHasPermission(ctx context.Context, key string) (bool, error) {
-	currentUser, err := auth.ForContext(ctx)
-	if err != nil {
-		return false, gqlerror.Errorf("failed to get user from context: %v", err)
-	}
-	return r.permissionEngine.RequestPermission(ctx, currentUser, key)
+	return true, nil // TODO: Implement proper permission check
+	// currentUser, err := auth.ForContext(ctx)
+	// if err != nil {
+	// 	return false, gqlerror.Errorf("failed to get user from context: %v", err)
+	// }
+	// return r.permissionEngine.RequestPermission(ctx, currentUser, key)
 }
 
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context) ([]*ent.User, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasUserList(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
 	return r.ent.User.Query().All(ctx)
 }
 
@@ -572,19 +584,16 @@ func (r *Resolver) DeploymentNode() generated.DeploymentNodeResolver {
 	return &deploymentNodeResolver{r}
 }
 
+// GrantedPermission returns generated.GrantedPermissionResolver implementation.
+func (r *Resolver) GrantedPermission() generated.GrantedPermissionResolver {
+	return &grantedPermissionResolver{r}
+}
+
 // Group returns generated.GroupResolver implementation.
 func (r *Resolver) Group() generated.GroupResolver { return &groupResolver{r} }
 
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
-
-// Permission returns generated.PermissionResolver implementation.
-func (r *Resolver) Permission() generated.PermissionResolver { return &permissionResolver{r} }
-
-// PermissionPolicy returns generated.PermissionPolicyResolver implementation.
-func (r *Resolver) PermissionPolicy() generated.PermissionPolicyResolver {
-	return &permissionPolicyResolver{r}
-}
 
 // Provider returns generated.ProviderResolver implementation.
 func (r *Resolver) Provider() generated.ProviderResolver { return &providerResolver{r} }
@@ -601,10 +610,9 @@ func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
 type blueprintResolver struct{ *Resolver }
 type deploymentResolver struct{ *Resolver }
 type deploymentNodeResolver struct{ *Resolver }
+type grantedPermissionResolver struct{ *Resolver }
 type groupResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
-type permissionResolver struct{ *Resolver }
-type permissionPolicyResolver struct{ *Resolver }
 type providerResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type resourceResolver struct{ *Resolver }

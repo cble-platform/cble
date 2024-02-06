@@ -15,11 +15,9 @@ import (
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/deploymentnode"
+	"github.com/cble-platform/cble-backend/ent/grantedpermission"
 	"github.com/cble-platform/cble-backend/ent/group"
-	"github.com/cble-platform/cble-backend/ent/permission"
-	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
 	"github.com/cble-platform/cble-backend/ent/provider"
-	"github.com/cble-platform/cble-backend/ent/providercommand"
 	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/cble-platform/cble-backend/ent/user"
 )
@@ -82,16 +80,14 @@ var (
 func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			blueprint.Table:        blueprint.ValidColumn,
-			deployment.Table:       deployment.ValidColumn,
-			deploymentnode.Table:   deploymentnode.ValidColumn,
-			group.Table:            group.ValidColumn,
-			permission.Table:       permission.ValidColumn,
-			permissionpolicy.Table: permissionpolicy.ValidColumn,
-			provider.Table:         provider.ValidColumn,
-			providercommand.Table:  providercommand.ValidColumn,
-			resource.Table:         resource.ValidColumn,
-			user.Table:             user.ValidColumn,
+			blueprint.Table:         blueprint.ValidColumn,
+			deployment.Table:        deployment.ValidColumn,
+			deploymentnode.Table:    deploymentnode.ValidColumn,
+			grantedpermission.Table: grantedpermission.ValidColumn,
+			group.Table:             group.ValidColumn,
+			provider.Table:          provider.ValidColumn,
+			resource.Table:          resource.ValidColumn,
+			user.Table:              user.ValidColumn,
 		})
 	})
 	return columnCheck(table, column)

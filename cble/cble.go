@@ -8,7 +8,6 @@ import (
 	"github.com/cble-platform/cble-backend/config"
 	"github.com/cble-platform/cble-backend/internal/database"
 	"github.com/cble-platform/cble-backend/internal/defaultadmin"
-	"github.com/cble-platform/cble-backend/internal/permissionengine"
 	"github.com/cble-platform/cble-backend/internal/webserver"
 	"github.com/cble-platform/cble-backend/providers"
 	"github.com/sirupsen/logrus"
@@ -38,15 +37,6 @@ func NewServer(ctx context.Context, configFile string) (*CBLEServer, error) {
 		return nil, fmt.Errorf("failed to connect to database: %v", err)
 	}
 
-	//-------------------//
-	// Permission Engine //
-	//-------------------//
-
-	pe, err := permissionengine.New(client)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create permission engine")
-	}
-
 	//------------------//
 	// gRPC CBLE Server //
 	//------------------//
@@ -57,14 +47,13 @@ func NewServer(ctx context.Context, configFile string) (*CBLEServer, error) {
 	// Webserver //
 	//-----------//
 
-	w := webserver.New(cbleConfig, client, grpcServer, pe)
+	w := webserver.New(cbleConfig, client, grpcServer)
 
 	return &CBLEServer{
-		Config:           cbleConfig,
-		Ent:              client,
-		Webserver:        w,
-		PermissionEngine: pe,
-		GRPCServer:       grpcServer,
+		Config:     cbleConfig,
+		Ent:        client,
+		Webserver:  w,
+		GRPCServer: grpcServer,
 	}, nil
 }
 
@@ -74,20 +63,20 @@ func (s *CBLEServer) Initialize(ctx context.Context) error {
 	// Permissions //
 	//-------------//
 
-	for _, perm := range s.Config.Initialization.Permissions {
-		_, err := s.PermissionEngine.RegisterPermission(ctx, perm.Key, perm.Component, perm.Description)
-		if err != nil {
-			logrus.Warnf("failed to register permission %s: %v", perm.Key, err)
-		}
-	}
+	// for _, perm := range s.Config.Initialization.Permissions {
+	// 	_, err := s.PermissionEngine.RegisterPermission(ctx, perm.Key, perm.Component, perm.Description)
+	// 	if err != nil {
+	// 		logrus.Warnf("failed to register permission %s: %v", perm.Key, err)
+	// 	}
+	// }
 
 	//---------------//
 	// Default Admin //
 	//---------------//
 
-	err := defaultadmin.InitializeDefaultAdminUserGroup(ctx, s.Ent, s.PermissionEngine, s.Config)
+	err := defaultadmin.InitializeDefaultAdminUserGroup(ctx, s.Ent, s.Config)
 	if err != nil {
-		return fmt.Errorf("failed to initialize default admin user/group")
+		return fmt.Errorf("failed to initialize default admin user/group: %v", err)
 	}
 
 	return nil

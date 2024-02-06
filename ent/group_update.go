@@ -12,7 +12,6 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/cble-platform/cble-backend/ent/group"
-	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
 	"github.com/cble-platform/cble-backend/ent/predicate"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
@@ -100,21 +99,6 @@ func (gu *GroupUpdate) AddUsers(u ...*User) *GroupUpdate {
 	return gu.AddUserIDs(ids...)
 }
 
-// AddPermissionPolicyIDs adds the "permission_policies" edge to the PermissionPolicy entity by IDs.
-func (gu *GroupUpdate) AddPermissionPolicyIDs(ids ...uuid.UUID) *GroupUpdate {
-	gu.mutation.AddPermissionPolicyIDs(ids...)
-	return gu
-}
-
-// AddPermissionPolicies adds the "permission_policies" edges to the PermissionPolicy entity.
-func (gu *GroupUpdate) AddPermissionPolicies(p ...*PermissionPolicy) *GroupUpdate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return gu.AddPermissionPolicyIDs(ids...)
-}
-
 // Mutation returns the GroupMutation object of the builder.
 func (gu *GroupUpdate) Mutation() *GroupMutation {
 	return gu.mutation
@@ -166,27 +150,6 @@ func (gu *GroupUpdate) RemoveUsers(u ...*User) *GroupUpdate {
 		ids[i] = u[i].ID
 	}
 	return gu.RemoveUserIDs(ids...)
-}
-
-// ClearPermissionPolicies clears all "permission_policies" edges to the PermissionPolicy entity.
-func (gu *GroupUpdate) ClearPermissionPolicies() *GroupUpdate {
-	gu.mutation.ClearPermissionPolicies()
-	return gu
-}
-
-// RemovePermissionPolicyIDs removes the "permission_policies" edge to PermissionPolicy entities by IDs.
-func (gu *GroupUpdate) RemovePermissionPolicyIDs(ids ...uuid.UUID) *GroupUpdate {
-	gu.mutation.RemovePermissionPolicyIDs(ids...)
-	return gu
-}
-
-// RemovePermissionPolicies removes "permission_policies" edges to PermissionPolicy entities.
-func (gu *GroupUpdate) RemovePermissionPolicies(p ...*PermissionPolicy) *GroupUpdate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return gu.RemovePermissionPolicyIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -359,51 +322,6 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if gu.mutation.PermissionPoliciesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   group.PermissionPoliciesTable,
-			Columns: []string{group.PermissionPoliciesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(permissionpolicy.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := gu.mutation.RemovedPermissionPoliciesIDs(); len(nodes) > 0 && !gu.mutation.PermissionPoliciesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   group.PermissionPoliciesTable,
-			Columns: []string{group.PermissionPoliciesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(permissionpolicy.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := gu.mutation.PermissionPoliciesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   group.PermissionPoliciesTable,
-			Columns: []string{group.PermissionPoliciesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(permissionpolicy.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if n, err = sqlgraph.UpdateNodes(ctx, gu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{group.Label}
@@ -493,21 +411,6 @@ func (guo *GroupUpdateOne) AddUsers(u ...*User) *GroupUpdateOne {
 	return guo.AddUserIDs(ids...)
 }
 
-// AddPermissionPolicyIDs adds the "permission_policies" edge to the PermissionPolicy entity by IDs.
-func (guo *GroupUpdateOne) AddPermissionPolicyIDs(ids ...uuid.UUID) *GroupUpdateOne {
-	guo.mutation.AddPermissionPolicyIDs(ids...)
-	return guo
-}
-
-// AddPermissionPolicies adds the "permission_policies" edges to the PermissionPolicy entity.
-func (guo *GroupUpdateOne) AddPermissionPolicies(p ...*PermissionPolicy) *GroupUpdateOne {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return guo.AddPermissionPolicyIDs(ids...)
-}
-
 // Mutation returns the GroupMutation object of the builder.
 func (guo *GroupUpdateOne) Mutation() *GroupMutation {
 	return guo.mutation
@@ -559,27 +462,6 @@ func (guo *GroupUpdateOne) RemoveUsers(u ...*User) *GroupUpdateOne {
 		ids[i] = u[i].ID
 	}
 	return guo.RemoveUserIDs(ids...)
-}
-
-// ClearPermissionPolicies clears all "permission_policies" edges to the PermissionPolicy entity.
-func (guo *GroupUpdateOne) ClearPermissionPolicies() *GroupUpdateOne {
-	guo.mutation.ClearPermissionPolicies()
-	return guo
-}
-
-// RemovePermissionPolicyIDs removes the "permission_policies" edge to PermissionPolicy entities by IDs.
-func (guo *GroupUpdateOne) RemovePermissionPolicyIDs(ids ...uuid.UUID) *GroupUpdateOne {
-	guo.mutation.RemovePermissionPolicyIDs(ids...)
-	return guo
-}
-
-// RemovePermissionPolicies removes "permission_policies" edges to PermissionPolicy entities.
-func (guo *GroupUpdateOne) RemovePermissionPolicies(p ...*PermissionPolicy) *GroupUpdateOne {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return guo.RemovePermissionPolicyIDs(ids...)
 }
 
 // Where appends a list predicates to the GroupUpdate builder.
@@ -775,51 +657,6 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if guo.mutation.PermissionPoliciesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   group.PermissionPoliciesTable,
-			Columns: []string{group.PermissionPoliciesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(permissionpolicy.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := guo.mutation.RemovedPermissionPoliciesIDs(); len(nodes) > 0 && !guo.mutation.PermissionPoliciesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   group.PermissionPoliciesTable,
-			Columns: []string{group.PermissionPoliciesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(permissionpolicy.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := guo.mutation.PermissionPoliciesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   group.PermissionPoliciesTable,
-			Columns: []string{group.PermissionPoliciesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(permissionpolicy.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

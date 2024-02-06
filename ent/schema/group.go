@@ -39,7 +39,5 @@ func (Group) Edges() []ent.Edge {
 
 		edge.From("users", User.Type).
 			Ref("groups"),
-		edge.From("permission_policies", PermissionPolicy.Type).
-			Ref("group"),
 	}
 }

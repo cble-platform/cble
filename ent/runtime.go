@@ -8,11 +8,9 @@ import (
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/deploymentnode"
+	"github.com/cble-platform/cble-backend/ent/grantedpermission"
 	"github.com/cble-platform/cble-backend/ent/group"
-	"github.com/cble-platform/cble-backend/ent/permission"
-	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
 	"github.com/cble-platform/cble-backend/ent/provider"
-	"github.com/cble-platform/cble-backend/ent/providercommand"
 	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/cble-platform/cble-backend/ent/schema"
 	"github.com/cble-platform/cble-backend/ent/user"
@@ -79,6 +77,22 @@ func init() {
 	deploymentnodeDescID := deploymentnodeFields[0].Descriptor()
 	// deploymentnode.DefaultID holds the default value on creation for the id field.
 	deploymentnode.DefaultID = deploymentnodeDescID.Default.(func() uuid.UUID)
+	grantedpermissionFields := schema.GrantedPermission{}.Fields()
+	_ = grantedpermissionFields
+	// grantedpermissionDescCreatedAt is the schema descriptor for created_at field.
+	grantedpermissionDescCreatedAt := grantedpermissionFields[1].Descriptor()
+	// grantedpermission.DefaultCreatedAt holds the default value on creation for the created_at field.
+	grantedpermission.DefaultCreatedAt = grantedpermissionDescCreatedAt.Default.(func() time.Time)
+	// grantedpermissionDescUpdatedAt is the schema descriptor for updated_at field.
+	grantedpermissionDescUpdatedAt := grantedpermissionFields[2].Descriptor()
+	// grantedpermission.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	grantedpermission.DefaultUpdatedAt = grantedpermissionDescUpdatedAt.Default.(func() time.Time)
+	// grantedpermission.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	grantedpermission.UpdateDefaultUpdatedAt = grantedpermissionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// grantedpermissionDescID is the schema descriptor for id field.
+	grantedpermissionDescID := grantedpermissionFields[0].Descriptor()
+	// grantedpermission.DefaultID holds the default value on creation for the id field.
+	grantedpermission.DefaultID = grantedpermissionDescID.Default.(func() uuid.UUID)
 	groupFields := schema.Group{}.Fields()
 	_ = groupFields
 	// groupDescCreatedAt is the schema descriptor for created_at field.
@@ -95,42 +109,6 @@ func init() {
 	groupDescID := groupFields[0].Descriptor()
 	// group.DefaultID holds the default value on creation for the id field.
 	group.DefaultID = groupDescID.Default.(func() uuid.UUID)
-	permissionFields := schema.Permission{}.Fields()
-	_ = permissionFields
-	// permissionDescCreatedAt is the schema descriptor for created_at field.
-	permissionDescCreatedAt := permissionFields[1].Descriptor()
-	// permission.DefaultCreatedAt holds the default value on creation for the created_at field.
-	permission.DefaultCreatedAt = permissionDescCreatedAt.Default.(func() time.Time)
-	// permissionDescUpdatedAt is the schema descriptor for updated_at field.
-	permissionDescUpdatedAt := permissionFields[2].Descriptor()
-	// permission.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	permission.DefaultUpdatedAt = permissionDescUpdatedAt.Default.(func() time.Time)
-	// permission.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	permission.UpdateDefaultUpdatedAt = permissionDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// permissionDescID is the schema descriptor for id field.
-	permissionDescID := permissionFields[0].Descriptor()
-	// permission.DefaultID holds the default value on creation for the id field.
-	permission.DefaultID = permissionDescID.Default.(func() uuid.UUID)
-	permissionpolicyFields := schema.PermissionPolicy{}.Fields()
-	_ = permissionpolicyFields
-	// permissionpolicyDescCreatedAt is the schema descriptor for created_at field.
-	permissionpolicyDescCreatedAt := permissionpolicyFields[1].Descriptor()
-	// permissionpolicy.DefaultCreatedAt holds the default value on creation for the created_at field.
-	permissionpolicy.DefaultCreatedAt = permissionpolicyDescCreatedAt.Default.(func() time.Time)
-	// permissionpolicyDescUpdatedAt is the schema descriptor for updated_at field.
-	permissionpolicyDescUpdatedAt := permissionpolicyFields[2].Descriptor()
-	// permissionpolicy.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	permissionpolicy.DefaultUpdatedAt = permissionpolicyDescUpdatedAt.Default.(func() time.Time)
-	// permissionpolicy.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	permissionpolicy.UpdateDefaultUpdatedAt = permissionpolicyDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// permissionpolicyDescIsInherited is the schema descriptor for is_inherited field.
-	permissionpolicyDescIsInherited := permissionpolicyFields[4].Descriptor()
-	// permissionpolicy.DefaultIsInherited holds the default value on creation for the is_inherited field.
-	permissionpolicy.DefaultIsInherited = permissionpolicyDescIsInherited.Default.(bool)
-	// permissionpolicyDescID is the schema descriptor for id field.
-	permissionpolicyDescID := permissionpolicyFields[0].Descriptor()
-	// permissionpolicy.DefaultID holds the default value on creation for the id field.
-	permissionpolicy.DefaultID = permissionpolicyDescID.Default.(func() uuid.UUID)
 	providerFields := schema.Provider{}.Fields()
 	_ = providerFields
 	// providerDescCreatedAt is the schema descriptor for created_at field.
@@ -151,30 +129,6 @@ func init() {
 	providerDescID := providerFields[0].Descriptor()
 	// provider.DefaultID holds the default value on creation for the id field.
 	provider.DefaultID = providerDescID.Default.(func() uuid.UUID)
-	providercommandFields := schema.ProviderCommand{}.Fields()
-	_ = providercommandFields
-	// providercommandDescCreatedAt is the schema descriptor for created_at field.
-	providercommandDescCreatedAt := providercommandFields[1].Descriptor()
-	// providercommand.DefaultCreatedAt holds the default value on creation for the created_at field.
-	providercommand.DefaultCreatedAt = providercommandDescCreatedAt.Default.(func() time.Time)
-	// providercommandDescUpdatedAt is the schema descriptor for updated_at field.
-	providercommandDescUpdatedAt := providercommandFields[2].Descriptor()
-	// providercommand.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	providercommand.DefaultUpdatedAt = providercommandDescUpdatedAt.Default.(func() time.Time)
-	// providercommand.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	providercommand.UpdateDefaultUpdatedAt = providercommandDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// providercommandDescOutput is the schema descriptor for output field.
-	providercommandDescOutput := providercommandFields[8].Descriptor()
-	// providercommand.DefaultOutput holds the default value on creation for the output field.
-	providercommand.DefaultOutput = providercommandDescOutput.Default.([]byte)
-	// providercommandDescErrors is the schema descriptor for errors field.
-	providercommandDescErrors := providercommandFields[9].Descriptor()
-	// providercommand.DefaultErrors holds the default value on creation for the errors field.
-	providercommand.DefaultErrors = providercommandDescErrors.Default.([]string)
-	// providercommandDescID is the schema descriptor for id field.
-	providercommandDescID := providercommandFields[0].Descriptor()
-	// providercommand.DefaultID holds the default value on creation for the id field.
-	providercommand.DefaultID = providercommandDescID.Default.(func() uuid.UUID)
 	resourceFields := schema.Resource{}.Fields()
 	_ = resourceFields
 	// resourceDescCreatedAt is the schema descriptor for created_at field.

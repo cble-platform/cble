@@ -27,8 +27,6 @@ const (
 	EdgeChildren = "children"
 	// EdgeUsers holds the string denoting the users edge name in mutations.
 	EdgeUsers = "users"
-	// EdgePermissionPolicies holds the string denoting the permission_policies edge name in mutations.
-	EdgePermissionPolicies = "permission_policies"
 	// Table holds the table name of the group in the database.
 	Table = "groups"
 	// ParentTable is the table that holds the parent relation/edge.
@@ -44,13 +42,6 @@ const (
 	// UsersInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
 	UsersInverseTable = "users"
-	// PermissionPoliciesTable is the table that holds the permission_policies relation/edge.
-	PermissionPoliciesTable = "permission_policies"
-	// PermissionPoliciesInverseTable is the table name for the PermissionPolicy entity.
-	// It exists in this package in order to avoid circular dependency with the "permissionpolicy" package.
-	PermissionPoliciesInverseTable = "permission_policies"
-	// PermissionPoliciesColumn is the table column denoting the permission_policies relation/edge.
-	PermissionPoliciesColumn = "permission_policy_group"
 )
 
 // Columns holds all SQL columns for group fields.
@@ -156,20 +147,6 @@ func ByUsers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newUsersStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-
-// ByPermissionPoliciesCount orders the results by permission_policies count.
-func ByPermissionPoliciesCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newPermissionPoliciesStep(), opts...)
-	}
-}
-
-// ByPermissionPolicies orders the results by permission_policies terms.
-func ByPermissionPolicies(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newPermissionPoliciesStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
 func newParentStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -189,12 +166,5 @@ func newUsersStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UsersInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, true, UsersTable, UsersPrimaryKey...),
-	)
-}
-func newPermissionPoliciesStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(PermissionPoliciesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, true, PermissionPoliciesTable, PermissionPoliciesColumn),
 	)
 }

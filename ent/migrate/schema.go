@@ -95,6 +95,46 @@ var (
 			},
 		},
 	}
+	// GrantedPermissionsColumns holds the columns for the "granted_permissions" table.
+	GrantedPermissionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "subject_type", Type: field.TypeEnum, Enums: []string{"user", "group"}},
+		{Name: "subject_id", Type: field.TypeUUID},
+		{Name: "object_type", Type: field.TypeEnum, Enums: []string{"blueprint", "deployment", "group", "permission", "provider", "user"}},
+		{Name: "object_id", Type: field.TypeUUID},
+		{Name: "action", Type: field.TypeEnum, Enums: []string{"blueprint_list", "blueprint_create", "blueprint_get", "blueprint_update", "blueprint_delete", "blueprint_deploy", "deployment_list", "deployment_create", "deployment_get", "deployment_update", "deployment_delete", "deployment_destroy", "deployment_redeploy", "deployment_console", "group_list", "group_create", "group_get", "group_update", "group_delete", "permission_list", "permission_create", "permission_get", "permission_update", "permission_delete", "provider_list", "provider_create", "provider_get", "provider_update", "provider_delete", "provider_load", "provider_unload", "provider_configure", "user_list", "user_create", "user_get", "user_update", "user_delete", "unknown"}},
+		{Name: "granted_permission_user", Type: field.TypeUUID, Nullable: true},
+		{Name: "granted_permission_group", Type: field.TypeUUID, Nullable: true},
+	}
+	// GrantedPermissionsTable holds the schema information for the "granted_permissions" table.
+	GrantedPermissionsTable = &schema.Table{
+		Name:       "granted_permissions",
+		Columns:    GrantedPermissionsColumns,
+		PrimaryKey: []*schema.Column{GrantedPermissionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "granted_permissions_users_user",
+				Columns:    []*schema.Column{GrantedPermissionsColumns[8]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "granted_permissions_groups_group",
+				Columns:    []*schema.Column{GrantedPermissionsColumns[9]},
+				RefColumns: []*schema.Column{GroupsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "grantedpermission_subject_type_subject_id_object_type_object_id_action",
+				Unique:  true,
+				Columns: []*schema.Column{GrantedPermissionsColumns[3], GrantedPermissionsColumns[4], GrantedPermissionsColumns[5], GrantedPermissionsColumns[6], GrantedPermissionsColumns[7]},
+			},
+		},
+	}
 	// GroupsColumns holds the columns for the "groups" table.
 	GroupsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -117,51 +157,6 @@ var (
 			},
 		},
 	}
-	// PermissionsColumns holds the columns for the "permissions" table.
-	PermissionsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "key", Type: field.TypeString, Unique: true},
-		{Name: "component", Type: field.TypeString},
-		{Name: "description", Type: field.TypeString},
-	}
-	// PermissionsTable holds the schema information for the "permissions" table.
-	PermissionsTable = &schema.Table{
-		Name:       "permissions",
-		Columns:    PermissionsColumns,
-		PrimaryKey: []*schema.Column{PermissionsColumns[0]},
-	}
-	// PermissionPoliciesColumns holds the columns for the "permission_policies" table.
-	PermissionPoliciesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "type", Type: field.TypeEnum, Nullable: true, Enums: []string{"ALLOW", "DENY"}, Default: "ALLOW"},
-		{Name: "is_inherited", Type: field.TypeBool, Nullable: true, Default: false},
-		{Name: "permission_policy_permission", Type: field.TypeUUID},
-		{Name: "permission_policy_group", Type: field.TypeUUID},
-	}
-	// PermissionPoliciesTable holds the schema information for the "permission_policies" table.
-	PermissionPoliciesTable = &schema.Table{
-		Name:       "permission_policies",
-		Columns:    PermissionPoliciesColumns,
-		PrimaryKey: []*schema.Column{PermissionPoliciesColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "permission_policies_permissions_permission",
-				Columns:    []*schema.Column{PermissionPoliciesColumns[5]},
-				RefColumns: []*schema.Column{PermissionsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-			{
-				Symbol:     "permission_policies_groups_group",
-				Columns:    []*schema.Column{PermissionPoliciesColumns[6]},
-				RefColumns: []*schema.Column{GroupsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
-	}
 	// ProvidersColumns holds the columns for the "providers" table.
 	ProvidersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -178,41 +173,6 @@ var (
 		Name:       "providers",
 		Columns:    ProvidersColumns,
 		PrimaryKey: []*schema.Column{ProvidersColumns[0]},
-	}
-	// ProviderCommandsColumns holds the columns for the "provider_commands" table.
-	ProviderCommandsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "command_type", Type: field.TypeEnum, Enums: []string{"CONFIGURE", "DEPLOY", "DESTROY", "CONSOLE", "RESOURCES"}},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"QUEUED", "FAILED", "SUCCEEDED", "INPROGRESS"}, Default: "QUEUED"},
-		{Name: "arguments", Type: field.TypeJSON, Nullable: true},
-		{Name: "start_time", Type: field.TypeTime, Nullable: true},
-		{Name: "end_time", Type: field.TypeTime, Nullable: true},
-		{Name: "output", Type: field.TypeBytes},
-		{Name: "errors", Type: field.TypeJSON},
-		{Name: "provider_command_provider", Type: field.TypeUUID},
-		{Name: "provider_command_deployment", Type: field.TypeUUID, Nullable: true},
-	}
-	// ProviderCommandsTable holds the schema information for the "provider_commands" table.
-	ProviderCommandsTable = &schema.Table{
-		Name:       "provider_commands",
-		Columns:    ProviderCommandsColumns,
-		PrimaryKey: []*schema.Column{ProviderCommandsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "provider_commands_providers_provider",
-				Columns:    []*schema.Column{ProviderCommandsColumns[10]},
-				RefColumns: []*schema.Column{ProvidersColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-			{
-				Symbol:     "provider_commands_deployments_deployment",
-				Columns:    []*schema.Column{ProviderCommandsColumns[11]},
-				RefColumns: []*schema.Column{DeploymentsColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-		},
 	}
 	// ResourcesColumns holds the columns for the "resources" table.
 	ResourcesColumns = []*schema.Column{
@@ -336,11 +296,9 @@ var (
 		BlueprintsTable,
 		DeploymentsTable,
 		DeploymentNodesTable,
+		GrantedPermissionsTable,
 		GroupsTable,
-		PermissionsTable,
-		PermissionPoliciesTable,
 		ProvidersTable,
-		ProviderCommandsTable,
 		ResourcesTable,
 		UsersTable,
 		DeploymentNodeNextNodesTable,
@@ -355,11 +313,9 @@ func init() {
 	DeploymentsTable.ForeignKeys[1].RefTable = UsersTable
 	DeploymentNodesTable.ForeignKeys[0].RefTable = DeploymentsTable
 	DeploymentNodesTable.ForeignKeys[1].RefTable = ResourcesTable
+	GrantedPermissionsTable.ForeignKeys[0].RefTable = UsersTable
+	GrantedPermissionsTable.ForeignKeys[1].RefTable = GroupsTable
 	GroupsTable.ForeignKeys[0].RefTable = GroupsTable
-	PermissionPoliciesTable.ForeignKeys[0].RefTable = PermissionsTable
-	PermissionPoliciesTable.ForeignKeys[1].RefTable = GroupsTable
-	ProviderCommandsTable.ForeignKeys[0].RefTable = ProvidersTable
-	ProviderCommandsTable.ForeignKeys[1].RefTable = DeploymentsTable
 	ResourcesTable.ForeignKeys[0].RefTable = BlueprintsTable
 	DeploymentNodeNextNodesTable.ForeignKeys[0].RefTable = DeploymentNodesTable
 	DeploymentNodeNextNodesTable.ForeignKeys[1].RefTable = DeploymentNodesTable

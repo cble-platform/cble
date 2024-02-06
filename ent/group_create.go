@@ -11,7 +11,6 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/cble-platform/cble-backend/ent/group"
-	"github.com/cble-platform/cble-backend/ent/permissionpolicy"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
 )
@@ -118,21 +117,6 @@ func (gc *GroupCreate) AddUsers(u ...*User) *GroupCreate {
 		ids[i] = u[i].ID
 	}
 	return gc.AddUserIDs(ids...)
-}
-
-// AddPermissionPolicyIDs adds the "permission_policies" edge to the PermissionPolicy entity by IDs.
-func (gc *GroupCreate) AddPermissionPolicyIDs(ids ...uuid.UUID) *GroupCreate {
-	gc.mutation.AddPermissionPolicyIDs(ids...)
-	return gc
-}
-
-// AddPermissionPolicies adds the "permission_policies" edges to the PermissionPolicy entity.
-func (gc *GroupCreate) AddPermissionPolicies(p ...*PermissionPolicy) *GroupCreate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return gc.AddPermissionPolicyIDs(ids...)
 }
 
 // Mutation returns the GroupMutation object of the builder.
@@ -284,22 +268,6 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := gc.mutation.PermissionPoliciesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   group.PermissionPoliciesTable,
-			Columns: []string{group.PermissionPoliciesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(permissionpolicy.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
