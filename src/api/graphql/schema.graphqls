@@ -1,6 +1,7 @@
 scalar Time
 scalar Map
 scalar StrMap
+scalar VarTypeMap
 scalar UUID
 
 type Blueprint {
@@ -10,10 +11,31 @@ type Blueprint {
   name: String!
   description: String!
   blueprintTemplate: String!
+  variableTypes: VarTypeMap!
 
-  parentGroup: Group!
   provider: Provider!
+  resources: [Resource!]!
   deployments: [Deployment]!
+}
+
+type Resource {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  key: String!
+  object: String!
+
+  blueprint: Blueprint!
+  requiredBy: [Resource!]!
+  dependsOn: [Resource!]!
+}
+
+enum DeploymentState {
+  AWAITING
+  INPROGRESS
+  COMPLETE
+  FAILED
+  DELETED
 }
 
 type Deployment {
@@ -22,26 +44,37 @@ type Deployment {
   updatedAt: Time!
   name: String!
   description: String!
-  templateVars: Map!
-  deploymentVars: Map!
-  deploymentState: StrMap!
+  state: DeploymentState!
+  templateVars: StrMap!
 
   blueprint: Blueprint!
+  deploymentNodes: [DeploymentNode!]!
   requester: User!
 }
 
-enum DeployResourceType {
-  UNKNOWN
-  HOST
-  NETWORK
-  ROUTER
+enum DeploymentNodeState {
+  AWAITING
+  PARENTAWAITING
+  INPROGRESS
+  COMPLETE
+  TAINTED
+  FAILED
+  TODELETE
+  DELETED
+  TOREBUILD
 }
 
-type DeployResource {
-  key: String!
-  deploymentId: ID!
-  name: String!
-  type: DeployResourceType!
+type DeploymentNode {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  state: DeploymentNodeState!
+  vars: StrMap
+
+  deployment: Deployment!
+  resource: Resource!
+  nextNodes: [DeploymentNode!]!
+  prevNodes: [DeploymentNode!]!
 }
 
 type Group {
@@ -54,7 +87,6 @@ type Group {
   parent: Group
   users: [User]
   permissionPolicies: [PermissionPolicy]
-  blueprints: [Blueprint]
 }
 
 type Permission {
@@ -92,31 +124,6 @@ type Provider {
   isLoaded: Boolean!
 
   blueprints: [Blueprint]
-}
-
-enum CommandType {
-  CONFIGURE
-  DEPLOY
-  DESTROY
-}
-
-enum CommandStatus {
-  QUEUED
-  FAILED
-  SUCCEEDED
-  INPROGRESS
-}
-
-type ProviderCommand {
-  id: ID!
-  createdAt: Time!
-  updatedAt: Time!
-  commandType: CommandType!
-  status: CommandStatus!
-  startTime: Time
-  endTime: Time
-  output: String!
-  errors: [String!]!
 }
 
 type User {
@@ -168,16 +175,6 @@ type Query {
   """
   provider(id: ID!): Provider! @permission(key: "com.cble.providers.read")
   """
-  List provider commands (requires permission `com.cble.providercommands.list`)
-  """
-  providerCommands: [ProviderCommand!]!
-    @permission(key: "com.cble.providercommands.list")
-  """
-  Get a provider command (requires permission `com.cble.providercommands.read`)
-  """
-  providerCommand(id: ID!): ProviderCommand!
-    @permission(key: "com.cble.providercommands.read")
-  """
   List blueprints (requires permission `com.cble.blueprints.list`)
   """
   blueprints: [Blueprint!]! @permission(key: "com.cble.blueprints.list")
@@ -193,19 +190,14 @@ type Query {
   Get a deployment (requires permission `com.cble.deployments.read`)
   """
   deployment(id: ID!): Deployment! @permission(key: "com.cble.deployments.read")
-  """
-  Get a list of resources in a deployment (requires permission `com.cble.deployments.resources`)
-  """
-  deploymentResources(id: ID!): [DeployResource!]!
-    @permission(key: "com.cble.deployments.resources")
 }
 
 input BlueprintInput {
   name: String!
   description: String!
   blueprintTemplate: String!
+  variableTypes: VarTypeMap!
 
-  parentGroupId: ID!
   providerId: ID!
 }
 
@@ -311,14 +303,14 @@ type Mutation {
   configureProvider(id: ID!): Provider!
     @permission(key: "com.cble.providers.configure")
 
-  ##############
-  # DEPLOYMENT #
-  ##############
+  # ##############
+  # # DEPLOYMENT #
+  # ##############
 
   """
   Deploy a blueprint (requires permission `com.cble.blueprints.deploy`)
   """
-  deployBlueprint(id: ID!): Deployment!
+  deployBlueprint(id: ID!, templateVars: StrMap!): Deployment!
     @permission(key: "com.cble.blueprints.deploy")
   """
   Destroy a deployment (requires permission `com.cble.deployments.destroy`)
@@ -326,8 +318,12 @@ type Mutation {
   destroyDeployment(id: ID!): Deployment!
     @permission(key: "com.cble.deployments.destroy")
   """
-  Get a vm console (requires permission `com.cble.deployments.console`)
+  Destroy a deployment (requires permission `com.cble.deployments.redeploy`)
   """
-  getConsole(id: ID!, hostKey: String!): String!
-    @permission(key: "com.cble.deployments.console")
+  redeployDeployment(id: ID!, nodeIds: [ID!]!): Deployment!
+    @permission(key: "com.cble.deployments.redeploy")
+  # """
+  # Get a vm console (requires permission `com.cble.deployments.console`)
+  # """
+  # getConsole(id: ID!, hostKey: String!): String! @permission(key: "com.cble.deployments.console")
 }

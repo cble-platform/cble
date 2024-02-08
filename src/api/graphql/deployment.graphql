@@ -4,34 +4,48 @@ fragment DeploymentFragment on Deployment {
   updatedAt
   name
   templateVars
-  deploymentVars
-  deploymentState
-  blueprint {
-    ...BlueprintFragement
-  }
-  requester {
-    ...UserFragment
-  }
 }
 
 query ListDeployments {
   deployments {
     ...DeploymentFragment
+    blueprint {
+      ...BlueprintFragement
+    }
+    requester {
+      ...UserFragment
+    }
   }
 }
 
 query GetDeployment($id: ID!) {
   deployment(id: $id) {
     ...DeploymentFragment
-  }
-}
+    blueprint {
+      ...BlueprintFragement
+    }
+    requester {
+      ...UserFragment
+    }
+    deploymentNodes {
+      id
+      createdAt
+      updatedAt
+      state
+      vars
 
-query GetResources($id: ID!) {
-  deploymentResources(id: $id) {
-    key
-    deploymentId
-    name
-    type
+      resource {
+        id
+        createdAt
+        updatedAt
+        key
+        object
+      }
+
+      nextNodes {
+        id
+      }
+    }
   }
 }
 
@@ -47,6 +61,6 @@ mutation DestroyDeployment($id: ID!) {
   }
 }
 
-mutation GetConsole($id: ID!, $hostKey: String!) {
-  getConsole(id: $id, hostKey: $hostKey)
-}
+# mutation GetConsole($id: ID!, $hostKey: String!) {
+#   getConsole(id: $id, hostKey: $hostKey)
+# }

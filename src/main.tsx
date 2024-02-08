@@ -27,6 +27,7 @@ import DestroyDeployment from './routes/deployments/destroy'
 import DeploymentDetails from './routes/deployments/details'
 import Providers from './routes/providers'
 import ProviderForm from './routes/providers/form'
+import { ReactFlowProvider } from 'reactflow'
 
 window.MonacoEnvironment = {
   getWorker(_, label) {
@@ -91,7 +92,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <ApolloProvider client={client}>
       <ThemeWrapper>
         <SnackbarProvider maxSnack={5}>
-          <RouterProvider router={router} />
+          <ReactFlowProvider>
+            <RouterProvider router={router} />
+          </ReactFlowProvider>
         </SnackbarProvider>
       </ThemeWrapper>
     </ApolloProvider>

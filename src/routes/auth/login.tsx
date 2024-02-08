@@ -1,69 +1,80 @@
-import { LockOutlined } from "@mui/icons-material";
-import { Avatar, Box, IconButton, Checkbox, Container, FormControlLabel, Grid, Link, TextField, Typography } from "@mui/material";
-import { useContext, useState } from "react";
-import { Login as ApiLogin } from "../../api/auth";
-import { useNavigate } from "react-router-dom";
-import { LoadingButton } from "@mui/lab";
-import { ThemeContext } from "../../theme";
-import { Brightness4, Brightness7, BrightnessAuto } from "@mui/icons-material";
+import { LockOutlined } from '@mui/icons-material'
+import {
+  Avatar,
+  Box,
+  IconButton,
+  Checkbox,
+  Container,
+  FormControlLabel,
+  Grid,
+  Link,
+  TextField,
+  Typography,
+} from '@mui/material'
+import { useContext, useState } from 'react'
+import { Login as ApiLogin } from '../../api/auth'
+import { useNavigate } from 'react-router-dom'
+import { LoadingButton } from '@mui/lab'
+import { ThemeContext } from '../../theme'
+import { Brightness4, Brightness7, BrightnessAuto } from '@mui/icons-material'
 
 export default function Login() {
   const [loginData, setLoginData] = useState<{
-    username: string;
-    password: string;
-  }>({ username: "", password: "" });
-  const [loginLoading, setLoginLoading] = useState<boolean>(false);
-  const navigate = useNavigate();
-  const { themePreference, setThemePreference } = useContext(ThemeContext);
+    username: string
+    password: string
+  }>({ username: '', password: '' })
+  const [loginLoading, setLoginLoading] = useState<boolean>(false)
+  const navigate = useNavigate()
+  const { themePreference, setThemePreference } = useContext(ThemeContext)
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+    e.preventDefault()
 
-    if (loginData.username == null || loginData.password == null) return;
+    if (loginData.username == null || loginData.password == null) return
 
-    setLoginLoading(true);
+    setLoginLoading(true)
     ApiLogin(loginData.username, loginData.password)
       .then((res) => {
         if (res.status !== 200) {
-          console.error(`Auth failed with status ${res.statusText}`);
+          console.error(`Auth failed with status ${res.statusText}`)
         } else {
-          navigate("/");
+          navigate('/')
         }
       })
       .catch(console.error)
-      .finally(() => setLoginLoading(false));
-  };
+      .finally(() => setLoginLoading(false))
+  }
 
   return (
     <Container component="main" maxWidth="xs">
       <IconButton
         color="inherit"
         onClick={() => {
-          if (themePreference === "light") setThemePreference("dark");
-          else if (themePreference === "dark") setThemePreference("auto");
-          else setThemePreference("light");
+          if (themePreference === 'light') setThemePreference('dark')
+          else if (themePreference === 'dark') setThemePreference('auto')
+          else setThemePreference('light')
         }}
         sx={{
-          position: "absolute",
-          top: "1rem",
-          right: "1rem",
+          position: 'absolute',
+          top: '1rem',
+          right: '1rem',
         }}
       >
-        {themePreference === "light" && <Brightness4 />}
-        {themePreference === "dark" && <Brightness7 />}
-        {themePreference === "auto" && <BrightnessAuto />}
+        {themePreference === 'light' && <Brightness4 />}
+        {themePreference === 'dark' && <Brightness7 />}
+        {themePreference === 'auto' && <BrightnessAuto />}
       </IconButton>
       <Box
         sx={{
           // marginTop: 8,
-          minHeight: "100dvh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
+          minHeight: '100dvh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
+        <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
           <LockOutlined />
         </Avatar>
         <Typography component="h1" variant="h5">
@@ -80,7 +91,12 @@ export default function Login() {
             autoComplete="username"
             autoFocus
             value={loginData.username}
-            onChange={(e) => setLoginData((prevVal) => ({ ...prevVal, username: e.target.value }))}
+            onChange={(e) =>
+              setLoginData((prevVal) => ({
+                ...prevVal,
+                username: e.target.value,
+              }))
+            }
           />
           <TextField
             margin="normal"
@@ -92,15 +108,23 @@ export default function Login() {
             id="password"
             autoComplete="current-password"
             value={loginData.password}
-            onChange={(e) => setLoginData((prevVal) => ({ ...prevVal, password: e.target.value }))}
+            onChange={(e) =>
+              setLoginData((prevVal) => ({
+                ...prevVal,
+                password: e.target.value,
+              }))
+            }
           />
-          <FormControlLabel control={<Checkbox value="remember" color="primary" />} label="Remember me" />
+          <FormControlLabel
+            control={<Checkbox value="remember" color="primary" />}
+            label="Remember me"
+          />
           <LoadingButton
             type="submit"
             fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
-            disabled={loginData.username === "" || loginData.password === ""}
+            disabled={loginData.username === '' || loginData.password === ''}
             loading={loginLoading}
             loadingPosition="start"
           >
@@ -121,5 +145,5 @@ export default function Login() {
         </Box>
       </Box>
     </Container>
-  );
+  )
 }
