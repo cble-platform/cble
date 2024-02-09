@@ -70,40 +70,6 @@ func (gc *GroupCreate) SetNillableID(u *uuid.UUID) *GroupCreate {
 	return gc
 }
 
-// SetParentID sets the "parent" edge to the Group entity by ID.
-func (gc *GroupCreate) SetParentID(id uuid.UUID) *GroupCreate {
-	gc.mutation.SetParentID(id)
-	return gc
-}
-
-// SetNillableParentID sets the "parent" edge to the Group entity by ID if the given value is not nil.
-func (gc *GroupCreate) SetNillableParentID(id *uuid.UUID) *GroupCreate {
-	if id != nil {
-		gc = gc.SetParentID(*id)
-	}
-	return gc
-}
-
-// SetParent sets the "parent" edge to the Group entity.
-func (gc *GroupCreate) SetParent(g *Group) *GroupCreate {
-	return gc.SetParentID(g.ID)
-}
-
-// AddChildIDs adds the "children" edge to the Group entity by IDs.
-func (gc *GroupCreate) AddChildIDs(ids ...uuid.UUID) *GroupCreate {
-	gc.mutation.AddChildIDs(ids...)
-	return gc
-}
-
-// AddChildren adds the "children" edges to the Group entity.
-func (gc *GroupCreate) AddChildren(g ...*Group) *GroupCreate {
-	ids := make([]uuid.UUID, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
-	}
-	return gc.AddChildIDs(ids...)
-}
-
 // AddUserIDs adds the "users" edge to the User entity by IDs.
 func (gc *GroupCreate) AddUserIDs(ids ...uuid.UUID) *GroupCreate {
 	gc.mutation.AddUserIDs(ids...)
@@ -225,39 +191,6 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	if value, ok := gc.mutation.Name(); ok {
 		_spec.SetField(group.FieldName, field.TypeString, value)
 		_node.Name = value
-	}
-	if nodes := gc.mutation.ParentIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   group.ParentTable,
-			Columns: []string{group.ParentColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.group_children = &nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := gc.mutation.ChildrenIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   group.ChildrenTable,
-			Columns: []string{group.ChildrenColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := gc.mutation.UsersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

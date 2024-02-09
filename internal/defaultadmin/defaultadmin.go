@@ -35,7 +35,7 @@ func InitializeDefaultAdminUserGroup(ctx context.Context, client *ent.Client, cb
 	// Give this admin group every permission
 	for objectType, objectActions := range permission.AllSubjectActions {
 		for _, action := range objectActions {
-			err = permission.GrantPermission(ctx, client, grantedpermission.SubjectTypeGroup, cbleAdminGroup.ID, objectType, uuid.Nil, action)
+			_, err = permission.GrantPermission(ctx, client, grantedpermission.SubjectTypeGroup, cbleAdminGroup.ID, objectType, uuid.Nil, action)
 			if err != nil {
 				return fmt.Errorf("failed to grant permission %s to default admin group: %v", permission.DisplayString(grantedpermission.SubjectTypeGroup, cbleAdminGroup.ID, objectType, uuid.Nil, action), err)
 			}

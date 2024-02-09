@@ -2,9 +2,58 @@
 
 package actions
 
-import "strings"
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"strings"
+
+	"github.com/99designs/gqlgen/graphql"
+)
 
 type PermissionAction string
+
+// The following is an enum for use in the GraphQL Schema
+/*
+enum Action {
+  blueprint_list
+  blueprint_create
+  blueprint_get
+  blueprint_update
+  blueprint_delete
+  blueprint_deploy
+  deployment_list
+  deployment_create
+  deployment_get
+  deployment_update
+  deployment_delete
+  deployment_destroy
+  deployment_redeploy
+  deployment_console
+  group_list
+  group_create
+  group_get
+  group_update
+  group_delete
+  permission_list
+  permission_get
+  permission_grant
+  permission_revoke
+  provider_list
+  provider_create
+  provider_get
+  provider_update
+  provider_delete
+  provider_load
+  provider_unload
+  provider_configure
+  user_list
+  user_create
+  user_get
+  user_update
+  user_delete
+}
+*/
 
 const (
 	// Blueprint
@@ -31,10 +80,9 @@ const (
 	ActionGroupDelete PermissionAction = "group_delete"
 	// Permission
 	ActionPermissionList   PermissionAction = "permission_list"
-	ActionPermissionCreate PermissionAction = "permission_create"
 	ActionPermissionGet    PermissionAction = "permission_get"
-	ActionPermissionUpdate PermissionAction = "permission_update"
-	ActionPermissionDelete PermissionAction = "permission_delete"
+	ActionPermissionGrant  PermissionAction = "permission_grant"
+	ActionPermissionRevoke PermissionAction = "permission_revoke"
 	// Provider
 	ActionProviderList      PermissionAction = "provider_list"
 	ActionProviderCreate    PermissionAction = "provider_create"
@@ -95,10 +143,9 @@ var actionMap = map[string]map[string]PermissionAction{
 	// Permission
 	"permission": {
 		"list":   ActionPermissionList,
-		"create": ActionPermissionCreate,
 		"get":    ActionPermissionGet,
-		"update": ActionPermissionUpdate,
-		"delete": ActionPermissionDelete,
+		"grant":  ActionPermissionGrant,
+		"revoke": ActionPermissionRevoke,
 	},
 	// Provider
 	"provider": {
@@ -154,10 +201,9 @@ func (PermissionAction) Values() (kinds []string) {
 		ActionGroupUpdate,
 		ActionGroupDelete,
 		ActionPermissionList,
-		ActionPermissionCreate,
 		ActionPermissionGet,
-		ActionPermissionUpdate,
-		ActionPermissionDelete,
+		ActionPermissionGrant,
+		ActionPermissionRevoke,
 		ActionProviderList,
 		ActionProviderCreate,
 		ActionProviderGet,
@@ -176,4 +222,21 @@ func (PermissionAction) Values() (kinds []string) {
 		kinds = append(kinds, string(s))
 	}
 	return
+}
+
+func MarshalUUID(val PermissionAction) graphql.Marshaler {
+	return graphql.WriterFunc(func(w io.Writer) {
+		err := json.NewEncoder(w).Encode(val)
+		if err != nil {
+			panic(err)
+		}
+	})
+}
+
+func UnmarshalUUID(v interface{}) (PermissionAction, error) {
+	if m, ok := v.(string); ok {
+		return PermissionAction(m), nil
+	}
+
+	return ActionUnknown, fmt.Errorf("%T is not a valid action", v)
 }

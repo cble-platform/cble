@@ -39,10 +39,9 @@ var AllSubjectActions = map[grantedpermission.ObjectType][]actions.PermissionAct
 	},
 	grantedpermission.ObjectTypePermission: {
 		actions.ActionPermissionList,
-		actions.ActionPermissionCreate,
 		actions.ActionPermissionGet,
-		actions.ActionPermissionUpdate,
-		actions.ActionPermissionDelete,
+		actions.ActionPermissionGrant,
+		actions.ActionPermissionRevoke,
 	},
 	grantedpermission.ObjectTypeProvider: {
 		actions.ActionProviderList,
@@ -520,18 +519,6 @@ func HasPermissionList(ctx context.Context, client *ent.Client, entUser *ent.Use
 	)
 }
 
-// HasPermissionCreatereports whether a given user has the "permission_create" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func HasPermissionCreate(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
-	return HasPermission(
-		ctx,
-		client,
-		entUser,
-		grantedpermission.ObjectTypePermission,
-		objectID,
-		actions.ActionPermissionCreate,
-	)
-}
-
 // HasPermissionGetreports whether a given user has the "permission_get" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasPermissionGet(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
@@ -544,27 +531,27 @@ func HasPermissionGet(ctx context.Context, client *ent.Client, entUser *ent.User
 	)
 }
 
-// HasPermissionUpdatereports whether a given user has the "permission_update" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func HasPermissionUpdate(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
+// HasPermissionGrantreports whether a given user has the "permission_grant" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+func HasPermissionGrant(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
 		client,
 		entUser,
 		grantedpermission.ObjectTypePermission,
 		objectID,
-		actions.ActionPermissionUpdate,
+		actions.ActionPermissionGrant,
 	)
 }
 
-// HasPermissionDeletereports whether a given user has the "permission_delete" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func HasPermissionDelete(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
+// HasPermissionRevokereports whether a given user has the "permission_revoke" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+func HasPermissionRevoke(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
 		client,
 		entUser,
 		grantedpermission.ObjectTypePermission,
 		objectID,
-		actions.ActionPermissionDelete,
+		actions.ActionPermissionRevoke,
 	)
 }
 
@@ -579,17 +566,6 @@ func CurrentUserHasPermissionList(ctx context.Context, client *ent.Client, objec
 	)
 }
 
-// CurrentUserHasPermissionCreatereports whether the current user (pulled from context) has the "permission_create" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func CurrentUserHasPermissionCreate(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
-	return CurrentUserHasPermission(
-		ctx,
-		client,
-		grantedpermission.ObjectTypePermission,
-		objectID,
-		actions.ActionPermissionCreate,
-	)
-}
-
 // CurrentUserHasPermissionGetreports whether the current user (pulled from context) has the "permission_get" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasPermissionGet(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
@@ -601,25 +577,25 @@ func CurrentUserHasPermissionGet(ctx context.Context, client *ent.Client, object
 	)
 }
 
-// CurrentUserHasPermissionUpdatereports whether the current user (pulled from context) has the "permission_update" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func CurrentUserHasPermissionUpdate(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
+// CurrentUserHasPermissionGrantreports whether the current user (pulled from context) has the "permission_grant" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+func CurrentUserHasPermissionGrant(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
 		client,
 		grantedpermission.ObjectTypePermission,
 		objectID,
-		actions.ActionPermissionUpdate,
+		actions.ActionPermissionGrant,
 	)
 }
 
-// CurrentUserHasPermissionDeletereports whether the current user (pulled from context) has the "permission_delete" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func CurrentUserHasPermissionDelete(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
+// CurrentUserHasPermissionRevokereports whether the current user (pulled from context) has the "permission_revoke" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+func CurrentUserHasPermissionRevoke(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
 		client,
 		grantedpermission.ObjectTypePermission,
 		objectID,
-		actions.ActionPermissionDelete,
+		actions.ActionPermissionRevoke,
 	)
 }
 

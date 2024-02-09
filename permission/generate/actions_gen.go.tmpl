@@ -2,9 +2,27 @@
 
 package actions
 
-import "strings"
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"strings"
+
+	"github.com/99designs/gqlgen/graphql"
+)
 
 type PermissionAction string
+
+// The following is an enum for use in the GraphQL Schema
+/*
+enum Action {
+{{- range $target, $actions := . }}
+{{- range $actions }}
+  {{ $target -}}_{{- . }}
+{{- end }}
+{{- end }}
+}
+*/
 
 const (
   {{- range $target, $actions := . }}
@@ -16,6 +34,7 @@ const (
 	// Returned for any potential errors
 	ActionUnknown PermissionAction = "unknown"
 )
+
 
 // String strips the object-specific prefix from
 func (p PermissionAction) DisplayString() string {
@@ -60,4 +79,21 @@ func (PermissionAction) Values() (kinds []string) {
     kinds = append(kinds, string(s))
   }
   return
+}
+
+func MarshalUUID(val PermissionAction) graphql.Marshaler {
+	return graphql.WriterFunc(func(w io.Writer) {
+		err := json.NewEncoder(w).Encode(val)
+		if err != nil {
+			panic(err)
+		}
+	})
+}
+
+func UnmarshalUUID(v interface{}) (PermissionAction, error) {
+	if m, ok := v.(string); ok {
+		return PermissionAction(m), nil
+	}
+
+	return ActionUnknown, fmt.Errorf("%T is not a valid action", v)
 }

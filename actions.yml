@@ -22,10 +22,9 @@ group:
   - delete
 permission:
   - list
-  - create
   - get
-  - update
-  - delete
+  - grant
+  - revoke
 provider:
   - list
   - create

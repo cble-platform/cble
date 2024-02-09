@@ -23,6 +23,10 @@ type DeploymentInput struct {
 	Name string `json:"name"`
 }
 
+type GroupInput struct {
+	Name string `json:"name"`
+}
+
 type ProviderInput struct {
 	DisplayName     string `json:"displayName"`
 	ProviderGitURL  string `json:"providerGitUrl"`
@@ -31,11 +35,10 @@ type ProviderInput struct {
 }
 
 type UserInput struct {
-	Username  string      `json:"username"`
-	Email     string      `json:"email"`
-	FirstName string      `json:"firstName"`
-	LastName  string      `json:"lastName"`
-	GroupIds  []uuid.UUID `json:"groupIds"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
 }
 
 type DeploymentNodeState string
@@ -140,55 +143,6 @@ func (e DeploymentState) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
-type ObjectType string
-
-const (
-	ObjectTypeBlueprint  ObjectType = "BLUEPRINT"
-	ObjectTypeDeployment ObjectType = "DEPLOYMENT"
-	ObjectTypeGroup      ObjectType = "GROUP"
-	ObjectTypePermission ObjectType = "PERMISSION"
-	ObjectTypeProvider   ObjectType = "PROVIDER"
-	ObjectTypeUser       ObjectType = "USER"
-)
-
-var AllObjectType = []ObjectType{
-	ObjectTypeBlueprint,
-	ObjectTypeDeployment,
-	ObjectTypeGroup,
-	ObjectTypePermission,
-	ObjectTypeProvider,
-	ObjectTypeUser,
-}
-
-func (e ObjectType) IsValid() bool {
-	switch e {
-	case ObjectTypeBlueprint, ObjectTypeDeployment, ObjectTypeGroup, ObjectTypePermission, ObjectTypeProvider, ObjectTypeUser:
-		return true
-	}
-	return false
-}
-
-func (e ObjectType) String() string {
-	return string(e)
-}
-
-func (e *ObjectType) UnmarshalGQL(v interface{}) error {
-	str, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("enums must be strings")
-	}
-
-	*e = ObjectType(str)
-	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid ObjectType", str)
-	}
-	return nil
-}
-
-func (e ObjectType) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
-}
-
 type ResourceType string
 
 const (
@@ -227,46 +181,5 @@ func (e *ResourceType) UnmarshalGQL(v interface{}) error {
 }
 
 func (e ResourceType) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
-}
-
-type SubjectType string
-
-const (
-	SubjectTypeUser  SubjectType = "USER"
-	SubjectTypeGroup SubjectType = "GROUP"
-)
-
-var AllSubjectType = []SubjectType{
-	SubjectTypeUser,
-	SubjectTypeGroup,
-}
-
-func (e SubjectType) IsValid() bool {
-	switch e {
-	case SubjectTypeUser, SubjectTypeGroup:
-		return true
-	}
-	return false
-}
-
-func (e SubjectType) String() string {
-	return string(e)
-}
-
-func (e *SubjectType) UnmarshalGQL(v interface{}) error {
-	str, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("enums must be strings")
-	}
-
-	*e = SubjectType(str)
-	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid SubjectType", str)
-	}
-	return nil
-}
-
-func (e SubjectType) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }

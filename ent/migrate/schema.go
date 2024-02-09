@@ -104,7 +104,7 @@ var (
 		{Name: "subject_id", Type: field.TypeUUID},
 		{Name: "object_type", Type: field.TypeEnum, Enums: []string{"blueprint", "deployment", "group", "permission", "provider", "user"}},
 		{Name: "object_id", Type: field.TypeUUID},
-		{Name: "action", Type: field.TypeEnum, Enums: []string{"blueprint_list", "blueprint_create", "blueprint_get", "blueprint_update", "blueprint_delete", "blueprint_deploy", "deployment_list", "deployment_create", "deployment_get", "deployment_update", "deployment_delete", "deployment_destroy", "deployment_redeploy", "deployment_console", "group_list", "group_create", "group_get", "group_update", "group_delete", "permission_list", "permission_create", "permission_get", "permission_update", "permission_delete", "provider_list", "provider_create", "provider_get", "provider_update", "provider_delete", "provider_load", "provider_unload", "provider_configure", "user_list", "user_create", "user_get", "user_update", "user_delete", "unknown"}},
+		{Name: "action", Type: field.TypeEnum, Enums: []string{"blueprint_list", "blueprint_create", "blueprint_get", "blueprint_update", "blueprint_delete", "blueprint_deploy", "deployment_list", "deployment_create", "deployment_get", "deployment_update", "deployment_delete", "deployment_destroy", "deployment_redeploy", "deployment_console", "group_list", "group_create", "group_get", "group_update", "group_delete", "permission_list", "permission_get", "permission_grant", "permission_revoke", "provider_list", "provider_create", "provider_get", "provider_update", "provider_delete", "provider_load", "provider_unload", "provider_configure", "user_list", "user_create", "user_get", "user_update", "user_delete", "unknown"}},
 		{Name: "granted_permission_user", Type: field.TypeUUID, Nullable: true},
 		{Name: "granted_permission_group", Type: field.TypeUUID, Nullable: true},
 	}
@@ -141,21 +141,12 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString},
-		{Name: "group_children", Type: field.TypeUUID, Nullable: true},
 	}
 	// GroupsTable holds the schema information for the "groups" table.
 	GroupsTable = &schema.Table{
 		Name:       "groups",
 		Columns:    GroupsColumns,
 		PrimaryKey: []*schema.Column{GroupsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "groups_groups_children",
-				Columns:    []*schema.Column{GroupsColumns[4]},
-				RefColumns: []*schema.Column{GroupsColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-		},
 	}
 	// ProvidersColumns holds the columns for the "providers" table.
 	ProvidersColumns = []*schema.Column{
@@ -315,7 +306,6 @@ func init() {
 	DeploymentNodesTable.ForeignKeys[1].RefTable = ResourcesTable
 	GrantedPermissionsTable.ForeignKeys[0].RefTable = UsersTable
 	GrantedPermissionsTable.ForeignKeys[1].RefTable = GroupsTable
-	GroupsTable.ForeignKeys[0].RefTable = GroupsTable
 	ResourcesTable.ForeignKeys[0].RefTable = BlueprintsTable
 	DeploymentNodeNextNodesTable.ForeignKeys[0].RefTable = DeploymentNodesTable
 	DeploymentNodeNextNodesTable.ForeignKeys[1].RefTable = DeploymentNodesTable

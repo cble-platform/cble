@@ -34,7 +34,7 @@ func graphqlHandler(config *config.Config, client *ent.Client, cbleServer *provi
 		cors_urls = config.Server.AllowedOrigins
 	}
 
-	srv := handler.New(graph.NewSchema(client, cbleServer))
+	srv := handler.New(graph.NewSchema(config, client, cbleServer))
 
 	srv.AddTransport(&transport.Websocket{
 		KeepAlivePingInterval: 10 * time.Second,
