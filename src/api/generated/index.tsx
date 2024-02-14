@@ -19,6 +19,7 @@ export type Scalars = {
   StrMap: { input: any; output: any; }
   Time: { input: any; output: any; }
   UUID: { input: any; output: any; }
+  VarTypeMap: { input: any; output: any; }
 };
 
 export type Blueprint = {
@@ -29,58 +30,31 @@ export type Blueprint = {
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
-  parentGroup: Group;
   provider: Provider;
+  resources: Array<Resource>;
   updatedAt: Scalars['Time']['output'];
+  variableTypes: Scalars['VarTypeMap']['output'];
 };
 
 export type BlueprintInput = {
   blueprintTemplate: Scalars['String']['input'];
   description: Scalars['String']['input'];
   name: Scalars['String']['input'];
-  parentGroupId: Scalars['ID']['input'];
   providerId: Scalars['ID']['input'];
+  variableTypes: Scalars['VarTypeMap']['input'];
 };
-
-export enum CommandStatus {
-  Failed = 'FAILED',
-  Inprogress = 'INPROGRESS',
-  Queued = 'QUEUED',
-  Succeeded = 'SUCCEEDED'
-}
-
-export enum CommandType {
-  Configure = 'CONFIGURE',
-  Deploy = 'DEPLOY',
-  Destroy = 'DESTROY'
-}
-
-export type DeployResource = {
-  __typename?: 'DeployResource';
-  deploymentId: Scalars['ID']['output'];
-  key: Scalars['String']['output'];
-  name: Scalars['String']['output'];
-  type: DeployResourceType;
-};
-
-export enum DeployResourceType {
-  Host = 'HOST',
-  Network = 'NETWORK',
-  Router = 'ROUTER',
-  Unknown = 'UNKNOWN'
-}
 
 export type Deployment = {
   __typename?: 'Deployment';
   blueprint: Blueprint;
   createdAt: Scalars['Time']['output'];
-  deploymentState: Scalars['StrMap']['output'];
-  deploymentVars: Scalars['Map']['output'];
+  deploymentNodes: Array<DeploymentNode>;
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   requester: User;
-  templateVars: Scalars['Map']['output'];
+  state: DeploymentState;
+  templateVars: Scalars['StrMap']['output'];
   updatedAt: Scalars['Time']['output'];
 };
 
@@ -88,9 +62,41 @@ export type DeploymentInput = {
   name: Scalars['String']['input'];
 };
 
+export type DeploymentNode = {
+  __typename?: 'DeploymentNode';
+  createdAt: Scalars['Time']['output'];
+  deployment: Deployment;
+  id: Scalars['ID']['output'];
+  nextNodes: Array<DeploymentNode>;
+  prevNodes: Array<DeploymentNode>;
+  resource: Resource;
+  state: DeploymentNodeState;
+  updatedAt: Scalars['Time']['output'];
+  vars?: Maybe<Scalars['StrMap']['output']>;
+};
+
+export enum DeploymentNodeState {
+  Awaiting = 'AWAITING',
+  Complete = 'COMPLETE',
+  Deleted = 'DELETED',
+  Failed = 'FAILED',
+  Inprogress = 'INPROGRESS',
+  Parentawaiting = 'PARENTAWAITING',
+  Tainted = 'TAINTED',
+  Todelete = 'TODELETE',
+  Torebuild = 'TOREBUILD'
+}
+
+export enum DeploymentState {
+  Awaiting = 'AWAITING',
+  Complete = 'COMPLETE',
+  Deleted = 'DELETED',
+  Failed = 'FAILED',
+  Inprogress = 'INPROGRESS'
+}
+
 export type Group = {
   __typename?: 'Group';
-  blueprints?: Maybe<Array<Maybe<Blueprint>>>;
   children?: Maybe<Array<Maybe<Group>>>;
   createdAt: Scalars['Time']['output'];
   id: Scalars['ID']['output'];
@@ -121,10 +127,10 @@ export type Mutation = {
   deployBlueprint: Deployment;
   /** Destroy a deployment (requires permission `com.cble.deployments.destroy`) */
   destroyDeployment: Deployment;
-  /** Get a vm console (requires permission `com.cble.deployments.console`) */
-  getConsole: Scalars['String']['output'];
   /** Load a provider to connect it to CBLE (requires permission `com.cble.providers.load`) */
   loadProvider: Provider;
+  /** Destroy a deployment (requires permission `com.cble.deployments.redeploy`) */
+  redeployDeployment: Deployment;
   /** Change current user's password */
   selfChangePassword: Scalars['Boolean']['output'];
   /** Unload a provider to disconnect it from CBLE (requires permission `com.cble.providers.unload`) */
@@ -177,6 +183,7 @@ export type MutationDeleteUserArgs = {
 
 export type MutationDeployBlueprintArgs = {
   id: Scalars['ID']['input'];
+  templateVars: Scalars['StrMap']['input'];
 };
 
 
@@ -185,14 +192,14 @@ export type MutationDestroyDeploymentArgs = {
 };
 
 
-export type MutationGetConsoleArgs = {
-  hostKey: Scalars['String']['input'];
+export type MutationLoadProviderArgs = {
   id: Scalars['ID']['input'];
 };
 
 
-export type MutationLoadProviderArgs = {
+export type MutationRedeployDeploymentArgs = {
   id: Scalars['ID']['input'];
+  nodeIds: Array<Scalars['ID']['input']>;
 };
 
 
@@ -267,19 +274,6 @@ export type Provider = {
   updatedAt: Scalars['Time']['output'];
 };
 
-export type ProviderCommand = {
-  __typename?: 'ProviderCommand';
-  commandType: CommandType;
-  createdAt: Scalars['Time']['output'];
-  endTime?: Maybe<Scalars['Time']['output']>;
-  errors: Array<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
-  output: Scalars['String']['output'];
-  startTime?: Maybe<Scalars['Time']['output']>;
-  status: CommandStatus;
-  updatedAt: Scalars['Time']['output'];
-};
-
 export type ProviderInput = {
   configBytes: Scalars['String']['input'];
   displayName: Scalars['String']['input'];
@@ -295,8 +289,6 @@ export type Query = {
   blueprints: Array<Blueprint>;
   /** Get a deployment (requires permission `com.cble.deployments.read`) */
   deployment: Deployment;
-  /** Get a list of resources in a deployment (requires permission `com.cble.deployments.resources`) */
-  deploymentResources: Array<DeployResource>;
   /** List deployments (requires permission `com.cble.deployments.list`) */
   deployments: Array<Deployment>;
   /** Get a group (requires permission `com.cble.groups.read`) */
@@ -309,10 +301,6 @@ export type Query = {
   meHasPermission: Scalars['Boolean']['output'];
   /** Get a provider (requires permission `com.cble.providers.read`) */
   provider: Provider;
-  /** Get a provider command (requires permission `com.cble.providercommands.read`) */
-  providerCommand: ProviderCommand;
-  /** List provider commands (requires permission `com.cble.providercommands.list`) */
-  providerCommands: Array<ProviderCommand>;
   /** List providers (requires permission `com.cble.providers.list`) */
   providers: Array<Provider>;
   /** Get a user (requires permission `com.cble.users.read`) */
@@ -332,11 +320,6 @@ export type QueryDeploymentArgs = {
 };
 
 
-export type QueryDeploymentResourcesArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
 export type QueryGroupArgs = {
   id: Scalars['ID']['input'];
 };
@@ -352,13 +335,20 @@ export type QueryProviderArgs = {
 };
 
 
-export type QueryProviderCommandArgs = {
+export type QueryUserArgs = {
   id: Scalars['ID']['input'];
 };
 
-
-export type QueryUserArgs = {
-  id: Scalars['ID']['input'];
+export type Resource = {
+  __typename?: 'Resource';
+  blueprint: Blueprint;
+  createdAt: Scalars['Time']['output'];
+  dependsOn: Array<Resource>;
+  id: Scalars['ID']['output'];
+  key: Scalars['String']['output'];
+  object: Scalars['String']['output'];
+  requiredBy: Array<Resource>;
+  updatedAt: Scalars['Time']['output'];
 };
 
 export type User = {
@@ -382,26 +372,26 @@ export type UserInput = {
   username: Scalars['String']['input'];
 };
 
-export type BlueprintFragementFragment = { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> };
+export type BlueprintFragementFragment = { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> };
 
 export type BlueprintsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type BlueprintsQuery = { __typename?: 'Query', blueprints: Array<{ __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }> };
+export type BlueprintsQuery = { __typename?: 'Query', blueprints: Array<{ __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }> };
 
 export type GetBlueprintQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetBlueprintQuery = { __typename?: 'Query', blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
+export type GetBlueprintQuery = { __typename?: 'Query', blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
 
 export type CreateBlueprintMutationVariables = Exact<{
   input: BlueprintInput;
 }>;
 
 
-export type CreateBlueprintMutation = { __typename?: 'Mutation', createBlueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
+export type CreateBlueprintMutation = { __typename?: 'Mutation', createBlueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
 
 export type UpdateBlueprintMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -409,35 +399,29 @@ export type UpdateBlueprintMutationVariables = Exact<{
 }>;
 
 
-export type UpdateBlueprintMutation = { __typename?: 'Mutation', updateBlueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
+export type UpdateBlueprintMutation = { __typename?: 'Mutation', updateBlueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
 
 export type DeployBlueprintMutationVariables = Exact<{
   id: Scalars['ID']['input'];
+  templateVars: Scalars['StrMap']['input'];
 }>;
 
 
-export type DeployBlueprintMutation = { __typename?: 'Mutation', deployBlueprint: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, deploymentVars: any, deploymentState: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } } };
+export type DeployBlueprintMutation = { __typename?: 'Mutation', deployBlueprint: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any } };
 
-export type DeploymentFragmentFragment = { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, deploymentVars: any, deploymentState: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } };
+export type DeploymentFragmentFragment = { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any };
 
 export type ListDeploymentsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ListDeploymentsQuery = { __typename?: 'Query', deployments: Array<{ __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, deploymentVars: any, deploymentState: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } }> };
+export type ListDeploymentsQuery = { __typename?: 'Query', deployments: Array<{ __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } }> };
 
 export type GetDeploymentQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetDeploymentQuery = { __typename?: 'Query', deployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, deploymentVars: any, deploymentState: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } } };
-
-export type GetResourcesQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type GetResourcesQuery = { __typename?: 'Query', deploymentResources: Array<{ __typename?: 'DeployResource', key: string, deploymentId: string, name: string, type: DeployResourceType }> };
+export type GetDeploymentQuery = { __typename?: 'Query', deployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string }, deploymentNodes: Array<{ __typename?: 'DeploymentNode', id: string, createdAt: any, updatedAt: any, state: DeploymentNodeState, vars?: any | null, resource: { __typename?: 'Resource', id: string, createdAt: any, updatedAt: any, key: string, object: string }, nextNodes: Array<{ __typename?: 'DeploymentNode', id: string }> }> } };
 
 export type UpdateDeploymentMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -445,22 +429,14 @@ export type UpdateDeploymentMutationVariables = Exact<{
 }>;
 
 
-export type UpdateDeploymentMutation = { __typename?: 'Mutation', updateDeployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, deploymentVars: any, deploymentState: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } } };
+export type UpdateDeploymentMutation = { __typename?: 'Mutation', updateDeployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any } };
 
 export type DestroyDeploymentMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type DestroyDeploymentMutation = { __typename?: 'Mutation', destroyDeployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, deploymentVars: any, deploymentState: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, parentGroup: { __typename?: 'Group', id: string, name: string }, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } } };
-
-export type GetConsoleMutationVariables = Exact<{
-  id: Scalars['ID']['input'];
-  hostKey: Scalars['String']['input'];
-}>;
-
-
-export type GetConsoleMutation = { __typename?: 'Mutation', getConsole: string };
+export type DestroyDeploymentMutation = { __typename?: 'Mutation', destroyDeployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any } };
 
 export type GroupFragmentFragment = { __typename?: 'Group', id: string, createdAt: any, updatedAt: any, name: string };
 
@@ -546,10 +522,7 @@ export const BlueprintFragementFragmentDoc = gql`
   name
   description
   blueprintTemplate
-  parentGroup {
-    id
-    name
-  }
+  variableTypes
   provider {
     id
     displayName
@@ -560,17 +533,6 @@ export const BlueprintFragementFragmentDoc = gql`
   }
 }
     `;
-export const UserFragmentFragmentDoc = gql`
-    fragment UserFragment on User {
-  id
-  createdAt
-  updatedAt
-  username
-  email
-  firstName
-  lastName
-}
-    `;
 export const DeploymentFragmentFragmentDoc = gql`
     fragment DeploymentFragment on Deployment {
   id
@@ -578,17 +540,8 @@ export const DeploymentFragmentFragmentDoc = gql`
   updatedAt
   name
   templateVars
-  deploymentVars
-  deploymentState
-  blueprint {
-    ...BlueprintFragement
-  }
-  requester {
-    ...UserFragment
-  }
 }
-    ${BlueprintFragementFragmentDoc}
-${UserFragmentFragmentDoc}`;
+    `;
 export const GroupFragmentFragmentDoc = gql`
     fragment GroupFragment on Group {
   id
@@ -607,6 +560,17 @@ export const ProviderFragmentFragmentDoc = gql`
   providerGitUrl
   providerVersion
   isLoaded
+}
+    `;
+export const UserFragmentFragmentDoc = gql`
+    fragment UserFragment on User {
+  id
+  createdAt
+  updatedAt
+  username
+  email
+  firstName
+  lastName
 }
     `;
 export const BlueprintsDocument = gql`
@@ -756,8 +720,8 @@ export type UpdateBlueprintMutationHookResult = ReturnType<typeof useUpdateBluep
 export type UpdateBlueprintMutationResult = Apollo.MutationResult<UpdateBlueprintMutation>;
 export type UpdateBlueprintMutationOptions = Apollo.BaseMutationOptions<UpdateBlueprintMutation, UpdateBlueprintMutationVariables>;
 export const DeployBlueprintDocument = gql`
-    mutation DeployBlueprint($id: ID!) {
-  deployBlueprint(id: $id) {
+    mutation DeployBlueprint($id: ID!, $templateVars: StrMap!) {
+  deployBlueprint(id: $id, templateVars: $templateVars) {
     ...DeploymentFragment
   }
 }
@@ -778,6 +742,7 @@ export type DeployBlueprintMutationFn = Apollo.MutationFunction<DeployBlueprintM
  * const [deployBlueprintMutation, { data, loading, error }] = useDeployBlueprintMutation({
  *   variables: {
  *      id: // value for 'id'
+ *      templateVars: // value for 'templateVars'
  *   },
  * });
  */
@@ -792,9 +757,17 @@ export const ListDeploymentsDocument = gql`
     query ListDeployments {
   deployments {
     ...DeploymentFragment
+    blueprint {
+      ...BlueprintFragement
+    }
+    requester {
+      ...UserFragment
+    }
   }
 }
-    ${DeploymentFragmentFragmentDoc}`;
+    ${DeploymentFragmentFragmentDoc}
+${BlueprintFragementFragmentDoc}
+${UserFragmentFragmentDoc}`;
 
 /**
  * __useListDeploymentsQuery__
@@ -831,9 +804,34 @@ export const GetDeploymentDocument = gql`
     query GetDeployment($id: ID!) {
   deployment(id: $id) {
     ...DeploymentFragment
+    blueprint {
+      ...BlueprintFragement
+    }
+    requester {
+      ...UserFragment
+    }
+    deploymentNodes {
+      id
+      createdAt
+      updatedAt
+      state
+      vars
+      resource {
+        id
+        createdAt
+        updatedAt
+        key
+        object
+      }
+      nextNodes {
+        id
+      }
+    }
   }
 }
-    ${DeploymentFragmentFragmentDoc}`;
+    ${DeploymentFragmentFragmentDoc}
+${BlueprintFragementFragmentDoc}
+${UserFragmentFragmentDoc}`;
 
 /**
  * __useGetDeploymentQuery__
@@ -867,49 +865,6 @@ export type GetDeploymentQueryHookResult = ReturnType<typeof useGetDeploymentQue
 export type GetDeploymentLazyQueryHookResult = ReturnType<typeof useGetDeploymentLazyQuery>;
 export type GetDeploymentSuspenseQueryHookResult = ReturnType<typeof useGetDeploymentSuspenseQuery>;
 export type GetDeploymentQueryResult = Apollo.QueryResult<GetDeploymentQuery, GetDeploymentQueryVariables>;
-export const GetResourcesDocument = gql`
-    query GetResources($id: ID!) {
-  deploymentResources(id: $id) {
-    key
-    deploymentId
-    name
-    type
-  }
-}
-    `;
-
-/**
- * __useGetResourcesQuery__
- *
- * To run a query within a React component, call `useGetResourcesQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetResourcesQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetResourcesQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useGetResourcesQuery(baseOptions: Apollo.QueryHookOptions<GetResourcesQuery, GetResourcesQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<GetResourcesQuery, GetResourcesQueryVariables>(GetResourcesDocument, options);
-      }
-export function useGetResourcesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetResourcesQuery, GetResourcesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<GetResourcesQuery, GetResourcesQueryVariables>(GetResourcesDocument, options);
-        }
-export function useGetResourcesSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<GetResourcesQuery, GetResourcesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<GetResourcesQuery, GetResourcesQueryVariables>(GetResourcesDocument, options);
-        }
-export type GetResourcesQueryHookResult = ReturnType<typeof useGetResourcesQuery>;
-export type GetResourcesLazyQueryHookResult = ReturnType<typeof useGetResourcesLazyQuery>;
-export type GetResourcesSuspenseQueryHookResult = ReturnType<typeof useGetResourcesSuspenseQuery>;
-export type GetResourcesQueryResult = Apollo.QueryResult<GetResourcesQuery, GetResourcesQueryVariables>;
 export const UpdateDeploymentDocument = gql`
     mutation UpdateDeployment($id: ID!, $input: DeploymentInput!) {
   updateDeployment(id: $id, input: $input) {
@@ -977,38 +932,6 @@ export function useDestroyDeploymentMutation(baseOptions?: Apollo.MutationHookOp
 export type DestroyDeploymentMutationHookResult = ReturnType<typeof useDestroyDeploymentMutation>;
 export type DestroyDeploymentMutationResult = Apollo.MutationResult<DestroyDeploymentMutation>;
 export type DestroyDeploymentMutationOptions = Apollo.BaseMutationOptions<DestroyDeploymentMutation, DestroyDeploymentMutationVariables>;
-export const GetConsoleDocument = gql`
-    mutation GetConsole($id: ID!, $hostKey: String!) {
-  getConsole(id: $id, hostKey: $hostKey)
-}
-    `;
-export type GetConsoleMutationFn = Apollo.MutationFunction<GetConsoleMutation, GetConsoleMutationVariables>;
-
-/**
- * __useGetConsoleMutation__
- *
- * To run a mutation, you first call `useGetConsoleMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useGetConsoleMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [getConsoleMutation, { data, loading, error }] = useGetConsoleMutation({
- *   variables: {
- *      id: // value for 'id'
- *      hostKey: // value for 'hostKey'
- *   },
- * });
- */
-export function useGetConsoleMutation(baseOptions?: Apollo.MutationHookOptions<GetConsoleMutation, GetConsoleMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useMutation<GetConsoleMutation, GetConsoleMutationVariables>(GetConsoleDocument, options);
-      }
-export type GetConsoleMutationHookResult = ReturnType<typeof useGetConsoleMutation>;
-export type GetConsoleMutationResult = Apollo.MutationResult<GetConsoleMutation>;
-export type GetConsoleMutationOptions = Apollo.BaseMutationOptions<GetConsoleMutation, GetConsoleMutationVariables>;
 export const ListGroupsDocument = gql`
     query ListGroups {
   groups {

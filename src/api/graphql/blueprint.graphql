@@ -5,10 +5,7 @@ fragment BlueprintFragement on Blueprint {
   name
   description
   blueprintTemplate
-  parentGroup {
-    id
-    name
-  }
+  variableTypes
   provider {
     id
     displayName
@@ -43,8 +40,8 @@ mutation UpdateBlueprint($id: ID!, $input: BlueprintInput!) {
   }
 }
 
-mutation DeployBlueprint($id: ID!) {
-  deployBlueprint(id: $id) {
+mutation DeployBlueprint($id: ID!, $templateVars: StrMap!) {
+  deployBlueprint(id: $id, templateVars: $templateVars) {
     ...DeploymentFragment
   }
 }

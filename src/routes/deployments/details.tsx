@@ -1,13 +1,7 @@
 import { useSnackbar } from 'notistack'
 import React, { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import {
-  DeployResourceType,
-  GetResourcesQuery,
-  useGetConsoleMutation,
-  useGetDeploymentQuery,
-  useGetResourcesQuery,
-} from '@/api/generated'
+import { GetDeploymentQuery, useGetDeploymentQuery } from '@/api/generated'
 import {
   Container,
   Typography,
@@ -17,73 +11,144 @@ import {
   Menu,
   MenuItem,
   Button,
-  List,
-  ListItem,
-  ListItemText,
-  IconButton,
-  CircularProgress,
-  ListItemButton,
-  ListItemIcon,
+  Card,
+  CardContent,
 } from '@mui/material'
-import MuiMarkdown from 'mui-markdown'
-import {
-  ChevronLeft,
-  Computer,
-  ExpandMore,
-  Help,
-  Lan,
-  Monitor,
-  MoreHoriz,
-  Router,
-} from '@mui/icons-material'
+import { ChevronLeft, ExpandMore } from '@mui/icons-material'
+import ReactFlow, {
+  Background,
+  BackgroundVariant,
+  ConnectionLineType,
+  Controls,
+  Edge,
+  Handle,
+  Node,
+  Position,
+  useEdgesState,
+  useNodesState,
+  useReactFlow,
+} from 'reactflow'
+import Dagre from '@dagrejs/dagre'
 
-function getResourceTypeIcon(
-  resource: GetResourcesQuery['deploymentResources'][number]
-): React.ReactElement {
-  switch (resource.type) {
-    case DeployResourceType.Host:
-      return <Computer />
-    case DeployResourceType.Network:
-      return <Lan />
-    case DeployResourceType.Router:
-      return <Router />
-    case DeployResourceType.Unknown:
-    default:
-      return <Help />
+import 'reactflow/dist/style.css'
+
+const dagreGraph = new Dagre.graphlib.Graph()
+dagreGraph.setDefaultEdgeLabel(() => ({}))
+
+const nodeWidth = 172
+const nodeHeight = 36
+
+const getLayoutedElements = (
+  nodes: Node<GetDeploymentQuery['deployment']['deploymentNodes'][number]>[],
+  edges: Edge[],
+  options: { direction: 'TB' | 'BT' | 'LR' | 'RL' }
+) => {
+  const isHorizontal = options.direction === 'LR' || options.direction === 'RL'
+  dagreGraph.setGraph({
+    rankdir: options.direction,
+    nodesep: nodeWidth / 2,
+    edgesep: 25,
+  })
+
+  nodes.forEach((node) =>
+    dagreGraph.setNode(node.id, {
+      ...node,
+      width: nodeWidth,
+      height: nodeHeight,
+    })
+  )
+  edges.forEach((edge) => dagreGraph.setEdge(edge.source, edge.target))
+
+  Dagre.layout(dagreGraph)
+
+  nodes.forEach((node) => {
+    const nodeWithPosition = dagreGraph.node(node.id)
+    node.targetPosition = isHorizontal ? Position.Left : Position.Top
+    node.sourcePosition = isHorizontal ? Position.Right : Position.Bottom
+
+    // We are shifting the dagre node position (anchor=center center) to the top left
+    // so it matches the React Flow node anchor point (top left).
+    node.position = {
+      x: nodeWithPosition.x - nodeWidth / 2,
+      y: nodeWithPosition.y - nodeHeight / 2,
+    }
+
+    return node
+  })
+
+  return { nodes, edges }
+}
+
+function generateFlowData(
+  deploymentNodes: GetDeploymentQuery['deployment']['deploymentNodes']
+): {
+  nodes: Node<GetDeploymentQuery['deployment']['deploymentNodes'][number]>[]
+  edges: Edge[]
+} {
+  const nodes: Node<
+    GetDeploymentQuery['deployment']['deploymentNodes'][number]
+  >[] = []
+  const edges: Edge[] = []
+
+  for (let i = 0; i < deploymentNodes.length; i++) {
+    const node = deploymentNodes[i]
+    nodes.push({
+      id: node.id,
+      position: { x: 100 * i, y: 0 },
+      type: 'deploymentNode',
+      data: node,
+    })
+    for (const nextNode of node.nextNodes) {
+      edges.push({
+        id: `${node.id}-${nextNode.id}`,
+        source: node.id,
+        target: nextNode.id,
+        // type: 'smoothstep',
+      })
+    }
   }
+
+  return {
+    nodes,
+    edges,
+  }
+}
+
+const nodeTypes = { deploymentNode: DeploymentNodeNode }
+
+function DeploymentNodeNode({
+  data,
+}: {
+  data: GetDeploymentQuery['deployment']['deploymentNodes'][number]
+}) {
+  return (
+    <Card variant="outlined" sx={{ width: nodeWidth, height: nodeHeight }}>
+      <CardContent sx={{ p: '0.25rem !important' }}>
+        <Handle type="target" position={Position.Top} />
+        <Typography component="div" variant="h5" sx={{ fontSize: '0.75rem' }}>
+          {data.resource.key}
+        </Typography>
+        <Handle type="source" position={Position.Bottom} />
+      </CardContent>
+    </Card>
+  )
 }
 
 export default function DeploymentDetails() {
   const { id } = useParams()
   const { enqueueSnackbar } = useSnackbar()
+  const { fitView } = useReactFlow()
   const navigate = useNavigate()
   const {
     data: getDeploymentData,
     error: getDeploymentError,
     loading: getDeploymentLoading,
   } = useGetDeploymentQuery({ variables: { id: id || '' } })
-  const {
-    data: getResourcesData,
-    error: getResourcesError,
-    loading: getResourcesLoading,
-  } = useGetResourcesQuery({ variables: { id: id || '' } })
-  const [
-    getConsole,
-    {
-      data: getConsoleData,
-      error: getConsoleError,
-      loading: getConsoleLoading,
-      reset: resetGetConsole,
-    },
-  ] = useGetConsoleMutation()
   const [moreMenuEl, setMoreMenuEl] = useState<null | HTMLElement>(null)
-  const [resourceMoreMenuEl, setResourceMoreMenuEl] = useState<null | {
-    el: HTMLElement
-    resource: GetResourcesQuery['deploymentResources'][number]
-  }>(null)
-  const [selectedResource, setSelectedResource] = useState<
-    GetResourcesQuery['deploymentResources'][number] | null
-  >()
+  const [nodes, setNodes, onNodesChange] = useNodesState<
+    GetDeploymentQuery['deployment']['deploymentNodes'][number]
+  >([])
+  const [edges, setEdges, onEdgesChange] = useEdgesState([])
 
   useEffect(() => {
     if (getDeploymentError)
@@ -91,22 +156,36 @@ export default function DeploymentDetails() {
         message: `Failed to get deployment: ${getDeploymentError.message}`,
         variant: 'error',
       })
-    if (getResourcesError)
-      enqueueSnackbar({
-        message: `Failed to get resources: ${getResourcesError.message}`,
-        variant: 'error',
-      })
-  }, [getDeploymentError, getResourcesError])
+  }, [getDeploymentError])
 
-  // Auto open new tab to console
   useEffect(() => {
-    if (getConsoleData) {
-      console.log(getConsoleData.getConsole)
-      window.open(getConsoleData.getConsole, '_blank', 'noreferrer')
-      resetGetConsole()
-      setResourceMoreMenuEl(null)
+    if (getDeploymentData) {
+      const { nodes, edges } = generateFlowData(
+        getDeploymentData.deployment.deploymentNodes
+      )
+      const layouted = getLayoutedElements(nodes, edges, { direction: 'TB' })
+      setNodes([...layouted.nodes])
+      setEdges([...layouted.edges])
+
+      window.requestAnimationFrame(() => {
+        fitView()
+      })
     }
-  }, [getConsoleData])
+  }, [getDeploymentData])
+
+  // const onLayout = useCallback(
+  //   (direction: 'TB' | 'BT' | 'LR' | 'RL') => {
+  //     const layouted = getLayoutedElements(nodes, edges, { direction })
+
+  //     setNodes([...layouted.nodes])
+  //     setEdges([...layouted.edges])
+
+  //     window.requestAnimationFrame(() => {
+  //       fitView()
+  //     })
+  //   },
+  //   [nodes, edges]
+  // )
 
   return (
     <Container sx={{ py: 3 }}>
@@ -163,93 +242,25 @@ export default function DeploymentDetails() {
           gap: 2,
         }}
       >
-        <List dense sx={{ borderRight: '1px solid', pr: 1 }}>
-          {getResourcesLoading && (
-            <ListItem>
-              <LinearProgress sx={{ width: '100%', mx: 1 }} />
-            </ListItem>
-          )}
-          {getResourcesData?.deploymentResources.map((resource) => (
-            <ListItem
-              key={resource.key}
-              secondaryAction={
-                <IconButton
-                  size="small"
-                  edge="end"
-                  aria-label="more"
-                  id="resource-more-button"
-                  aria-controls={resourceMoreMenuEl ? 'more-menu' : undefined}
-                  aria-haspopup="true"
-                  aria-expanded={resourceMoreMenuEl ? 'true' : undefined}
-                  onClick={(e) =>
-                    setResourceMoreMenuEl({
-                      resource,
-                      el: e.currentTarget,
-                    })
-                  }
-                  sx={{ m: 0 }}
-                >
-                  <MoreHoriz />
-                </IconButton>
-              }
-              sx={{ px: 1, py: 0 }}
-            >
-              <ListItemButton
-                selected={selectedResource?.key === resource.key}
-                onClick={() =>
-                  setSelectedResource(
-                    selectedResource?.key === resource.key ? null : resource
-                  )
-                }
-              >
-                <ListItemIcon sx={{ minWidth: '2.5rem' }}>
-                  {getResourceTypeIcon(resource)}
-                </ListItemIcon>
-                <ListItemText primary={resource.name} />
-              </ListItemButton>
-            </ListItem>
-          ))}
-          <Menu
-            id="resource-more-menu"
-            anchorEl={resourceMoreMenuEl?.el}
-            open={Boolean(resourceMoreMenuEl?.el)}
-            onClose={() => setResourceMoreMenuEl(null)}
-            MenuListProps={{
-              'aria-labelledby': 'resource-more-button',
-            }}
+        <Box></Box>
+        <Box
+          sx={{ width: '100%', height: '100%', minHeight: 500, px: 3, py: 1 }}
+        >
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            fitView
+            attributionPosition="top-right"
+            nodeTypes={nodeTypes}
+            connectionLineType={ConnectionLineType.SmoothStep}
           >
-            {resourceMoreMenuEl?.resource.type === DeployResourceType.Host && (
-              <MenuItem
-                onClick={() =>
-                  getConsole({
-                    variables: {
-                      id: id ?? '',
-                      hostKey: resourceMoreMenuEl?.resource.key ?? '',
-                    },
-                  })
-                }
-                disabled={getConsoleLoading}
-              >
-                {getConsoleLoading ? (
-                  <CircularProgress sx={{ mr: 1 }} size="1rem" />
-                ) : (
-                  <Monitor sx={{ mr: 1 }} />
-                )}
-                Console
-              </MenuItem>
-            )}
-          </Menu>
-        </List>
-        <Box sx={{ px: 3, py: 1 }}>
-          {selectedResource ? (
-            <Box>
-              <Typography variant="h4">{selectedResource.name}</Typography>
-            </Box>
-          ) : (
-            <MuiMarkdown>
-              {getDeploymentData?.deployment.blueprint.description}
-            </MuiMarkdown>
-          )}
+            <Controls />
+            {/* <MiniMap /> */}
+            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+          </ReactFlow>
+          {/* <MuiMarkdown>
+            {getDeploymentData?.deployment.blueprint.description}
+          </MuiMarkdown> */}
         </Box>
       </Box>
     </Container>
