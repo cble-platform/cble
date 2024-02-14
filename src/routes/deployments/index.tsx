@@ -18,7 +18,7 @@ import {
 import {
   useListDeploymentsQuery,
   useUpdateDeploymentMutation,
-} from '../../api/generated'
+} from '../../lib/api/generated'
 import { useSnackbar } from 'notistack'
 import React, { useEffect, useState } from 'react'
 import { Cancel, Edit, ExpandMore, Save } from '@mui/icons-material'
@@ -114,7 +114,7 @@ export default function Deployments() {
             <LinearProgress />
           </Grid>
         )}
-        {listDeploymentsData?.deployments.map((deployment) => {
+        {listDeploymentsData?.deployments.deployments.map((deployment) => {
           const createdDaysDiff = Math.ceil(
             (Date.now() - new Date(deployment.createdAt as string).getTime()) /
               1000 /

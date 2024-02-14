@@ -13,9 +13,11 @@ import {
   LinearProgress,
 } from '@mui/material'
 import {
+  Action,
+  ObjectType,
   useBlueprintsQuery,
   useMeHasPermissionQuery,
-} from '../../api/generated'
+} from '../../lib/api/generated'
 import { useEffect } from 'react'
 import { MuiMarkdown, getOverrides } from 'mui-markdown'
 import { useSnackbar } from 'notistack'
@@ -68,7 +70,11 @@ export default function Blueprints() {
     loading: blueprintsLoading,
   } = useBlueprintsQuery()
   const { data: createPermData } = useMeHasPermissionQuery({
-    variables: { key: 'com.cble.blueprints.create' },
+    variables: {
+      objectType: ObjectType.Blueprint,
+      objectID: null,
+      action: Action.BlueprintCreate,
+    },
   })
   const { enqueueSnackbar } = useSnackbar()
 
@@ -103,7 +109,7 @@ export default function Blueprints() {
             <LinearProgress />
           </Grid>
         )}
-        {blueprintsData?.blueprints.map((blueprint) => (
+        {blueprintsData?.deployableBlueprints.blueprints.map((blueprint) => (
           <Grid item xs={3} key={blueprint.id}>
             <Card sx={{ height: '100%' }}>
               <CardContent>

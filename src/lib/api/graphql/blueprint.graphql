@@ -17,8 +17,11 @@ fragment BlueprintFragement on Blueprint {
 }
 
 query Blueprints {
-  blueprints {
-    ...BlueprintFragement
+  deployableBlueprints {
+    blueprints {
+      ...BlueprintFragement
+    }
+    total
   }
 }
 

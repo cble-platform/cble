@@ -18,7 +18,7 @@ import {
   useGetBlueprintLazyQuery,
   useListProvidersQuery,
   useUpdateBlueprintMutation,
-} from '../../api/generated'
+} from '../../lib/api/generated'
 import MonacoEditor, { useMonaco } from '@monaco-editor/react'
 import { configureMonacoYaml } from 'monaco-yaml'
 import { ThemeContext } from '../../theme'
@@ -217,16 +217,16 @@ export default function BlueprintForm({
           disablePortal
           autoComplete
           clearOnEscape
-          options={providersData?.providers ?? []}
-          getOptionKey={(option: ListProvidersQuery['providers'][number]) =>
-            `${option.id}`
-          }
-          getOptionLabel={(option: ListProvidersQuery['providers'][number]) =>
-            `${option.displayName} (${option.providerVersion})`
-          }
+          options={providersData?.providers.providers ?? []}
+          getOptionKey={(
+            option: ListProvidersQuery['providers']['providers'][number]
+          ) => `${option.id}`}
+          getOptionLabel={(
+            option: ListProvidersQuery['providers']['providers'][number]
+          ) => `${option.displayName} (${option.providerVersion})`}
           sx={{ width: 300 }}
           value={
-            (providersData?.providers.find(
+            (providersData?.providers.providers.find(
               (p) => p.id === blueprint.providerId
             ) ||
               null) ??

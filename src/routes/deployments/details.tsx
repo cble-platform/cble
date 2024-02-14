@@ -1,7 +1,7 @@
 import { useSnackbar } from 'notistack'
 import React, { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { GetDeploymentQuery, useGetDeploymentQuery } from '@/api/generated'
+import { GetDeploymentQuery, useGetDeploymentQuery } from '@/lib/api/generated'
 import {
   Container,
   Typography,

@@ -22,6 +22,45 @@ export type Scalars = {
   VarTypeMap: { input: any; output: any; }
 };
 
+export enum Action {
+  BlueprintCreate = 'blueprint_create',
+  BlueprintDelete = 'blueprint_delete',
+  BlueprintDeploy = 'blueprint_deploy',
+  BlueprintGet = 'blueprint_get',
+  BlueprintList = 'blueprint_list',
+  BlueprintUpdate = 'blueprint_update',
+  DeploymentConsole = 'deployment_console',
+  DeploymentCreate = 'deployment_create',
+  DeploymentDelete = 'deployment_delete',
+  DeploymentDestroy = 'deployment_destroy',
+  DeploymentGet = 'deployment_get',
+  DeploymentList = 'deployment_list',
+  DeploymentRedeploy = 'deployment_redeploy',
+  DeploymentUpdate = 'deployment_update',
+  GroupCreate = 'group_create',
+  GroupDelete = 'group_delete',
+  GroupGet = 'group_get',
+  GroupList = 'group_list',
+  GroupUpdate = 'group_update',
+  PermissionGet = 'permission_get',
+  PermissionGrant = 'permission_grant',
+  PermissionList = 'permission_list',
+  PermissionRevoke = 'permission_revoke',
+  ProviderConfigure = 'provider_configure',
+  ProviderCreate = 'provider_create',
+  ProviderDelete = 'provider_delete',
+  ProviderGet = 'provider_get',
+  ProviderList = 'provider_list',
+  ProviderLoad = 'provider_load',
+  ProviderUnload = 'provider_unload',
+  ProviderUpdate = 'provider_update',
+  UserCreate = 'user_create',
+  UserDelete = 'user_delete',
+  UserGet = 'user_get',
+  UserList = 'user_list',
+  UserUpdate = 'user_update'
+}
+
 export type Blueprint = {
   __typename?: 'Blueprint';
   blueprintTemplate: Scalars['String']['output'];
@@ -42,6 +81,12 @@ export type BlueprintInput = {
   name: Scalars['String']['input'];
   providerId: Scalars['ID']['input'];
   variableTypes: Scalars['VarTypeMap']['input'];
+};
+
+export type BlueprintPage = {
+  __typename?: 'BlueprintPage';
+  blueprints: Array<Blueprint>;
+  total: Scalars['Int']['output'];
 };
 
 export type Deployment = {
@@ -87,6 +132,12 @@ export enum DeploymentNodeState {
   Torebuild = 'TOREBUILD'
 }
 
+export type DeploymentPage = {
+  __typename?: 'DeploymentPage';
+  deployments: Array<Deployment>;
+  total: Scalars['Int']['output'];
+};
+
 export enum DeploymentState {
   Awaiting = 'AWAITING',
   Complete = 'COMPLETE',
@@ -95,53 +146,89 @@ export enum DeploymentState {
   Inprogress = 'INPROGRESS'
 }
 
+export type GrantedPermission = {
+  __typename?: 'GrantedPermission';
+  action: Action;
+  createdAt: Scalars['Time']['output'];
+  displayString: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  objectId: Scalars['ID']['output'];
+  objectType: ObjectType;
+  subjectId: Scalars['ID']['output'];
+  subjectType: SubjectType;
+  updatedAt: Scalars['Time']['output'];
+};
+
+export type GrantedPermissionPage = {
+  __typename?: 'GrantedPermissionPage';
+  permissions: Array<GrantedPermission>;
+  total: Scalars['Int']['output'];
+};
+
 export type Group = {
   __typename?: 'Group';
-  children?: Maybe<Array<Maybe<Group>>>;
   createdAt: Scalars['Time']['output'];
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
-  parent?: Maybe<Group>;
-  permissionPolicies?: Maybe<Array<Maybe<PermissionPolicy>>>;
   updatedAt: Scalars['Time']['output'];
   users?: Maybe<Array<Maybe<User>>>;
 };
 
+export type GroupInput = {
+  name: Scalars['String']['input'];
+};
+
+export type GroupPage = {
+  __typename?: 'GroupPage';
+  groups: Array<Group>;
+  total: Scalars['Int']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
-  /** Applies the stored configuration to the provider (requires permission `com.cble.providers.configure`) */
+  /** Applies the stored configuration to the provider (requires permission `x.x.providers.x.configure`) */
   configureProvider: Provider;
-  /** Create a blueprint (requires permission `com.cble.blueprints.create`) */
+  /** Create a blueprint (requires permission `x.x.blueprints.*.create`) */
   createBlueprint: Blueprint;
-  /** Create a provider (requires permission `com.cble.providers.create`) */
+  /** Create a group (requires permission `x.x.group.x.create`) */
+  createGroup: Group;
+  /** Create a provider (requires permission `x.x.providers.*.create`) */
   createProvider: Provider;
-  /** Create a user (requires permission `com.cble.users.create`) */
+  /** Create a user (requires permission `x.x.users.*.create`) */
   createUser: User;
-  /** Delete a blueprint (requires permission `com.cble.blueprints.delete`) */
+  /** Delete a blueprint (requires permission `x.x.blueprints.x.delete`) */
   deleteBlueprint: Scalars['Boolean']['output'];
-  /** Delete a provider (requires permission `com.cble.providers.delete`) */
+  /** Delete a group (requires permission `x.x.group.x.delete`) */
+  deleteGroup: Scalars['Boolean']['output'];
+  /** Delete a provider (requires permission `x.x.providers.x.delete`) */
   deleteProvider: Scalars['Boolean']['output'];
-  /** Delete a user (requires permission `com.cble.users.delete`) */
+  /** Delete a user (requires permission `x.x.users.x.delete`) */
   deleteUser: Scalars['Boolean']['output'];
-  /** Deploy a blueprint (requires permission `com.cble.blueprints.deploy`) */
+  /** Deploy a blueprint (requires permission `x.x.blueprints.x.deploy`) */
   deployBlueprint: Deployment;
-  /** Destroy a deployment (requires permission `com.cble.deployments.destroy`) */
+  /** Destroy a deployment (requires permission `x.x.deployments.x.destroy`) */
   destroyDeployment: Deployment;
-  /** Load a provider to connect it to CBLE (requires permission `com.cble.providers.load`) */
+  /** Grant a permission (requires permission `x.x.permission.*.grant`) */
+  grantPermission: GrantedPermission;
+  /** Load a provider to connect it to CBLE (requires permission `x.x.providers.x.load`) */
   loadProvider: Provider;
-  /** Destroy a deployment (requires permission `com.cble.deployments.redeploy`) */
+  /** Redeploy nodes within a deployment (requires permission `x.x.deployments.x.redeploy`) */
   redeployDeployment: Deployment;
+  /** Revoke a permission (requires permission `x.x.permission.*.revoke`) */
+  revokePermission: Scalars['Boolean']['output'];
   /** Change current user's password */
   selfChangePassword: Scalars['Boolean']['output'];
-  /** Unload a provider to disconnect it from CBLE (requires permission `com.cble.providers.unload`) */
+  /** Unload a provider to disconnect it from CBLE (requires permission `x.x.providers.x.unload`) */
   unloadProvider: Provider;
-  /** Update a blueprint (requires permission `com.cble.blueprints.update`) */
+  /** Update a blueprint (requires permission `x.x.blueprints.x.update`) */
   updateBlueprint: Blueprint;
-  /** Update a deployment (requires permission `com.cble.deployments.update`) */
+  /** Update a deployment (requires permission `x.x.deployments.x.update`) */
   updateDeployment: Deployment;
-  /** Update a provider (requires permission `com.cble.providers.update`) */
+  /** Update a group (requires permission `x.x.group.x.update`) */
+  updateGroup: Group;
+  /** Update a provider (requires permission `x.x.providers.x.update`) */
   updateProvider: Provider;
-  /** Update a user (requires permission `com.cble.users.update`) */
+  /** Update a user (requires permission `x.x.users.x.update`) */
   updateUser: User;
 };
 
@@ -156,6 +243,11 @@ export type MutationCreateBlueprintArgs = {
 };
 
 
+export type MutationCreateGroupArgs = {
+  input: GroupInput;
+};
+
+
 export type MutationCreateProviderArgs = {
   input: ProviderInput;
 };
@@ -167,6 +259,11 @@ export type MutationCreateUserArgs = {
 
 
 export type MutationDeleteBlueprintArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteGroupArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -192,6 +289,15 @@ export type MutationDestroyDeploymentArgs = {
 };
 
 
+export type MutationGrantPermissionArgs = {
+  action: Action;
+  objectID?: InputMaybe<Scalars['ID']['input']>;
+  objectType: ObjectType;
+  subjectID: Scalars['ID']['input'];
+  subjectType: SubjectType;
+};
+
+
 export type MutationLoadProviderArgs = {
   id: Scalars['ID']['input'];
 };
@@ -200,6 +306,15 @@ export type MutationLoadProviderArgs = {
 export type MutationRedeployDeploymentArgs = {
   id: Scalars['ID']['input'];
   nodeIds: Array<Scalars['ID']['input']>;
+};
+
+
+export type MutationRevokePermissionArgs = {
+  action: Action;
+  objectID?: InputMaybe<Scalars['ID']['input']>;
+  objectType: ObjectType;
+  subjectID: Scalars['ID']['input'];
+  subjectType: SubjectType;
 };
 
 
@@ -226,6 +341,12 @@ export type MutationUpdateDeploymentArgs = {
 };
 
 
+export type MutationUpdateGroupArgs = {
+  id: Scalars['ID']['input'];
+  input: GroupInput;
+};
+
+
 export type MutationUpdateProviderArgs = {
   id: Scalars['ID']['input'];
   input: ProviderInput;
@@ -237,28 +358,13 @@ export type MutationUpdateUserArgs = {
   input: UserInput;
 };
 
-export type Permission = {
-  __typename?: 'Permission';
-  createdAt: Scalars['Time']['output'];
-  id: Scalars['ID']['output'];
-  key?: Maybe<Scalars['String']['output']>;
-  permissionPolicies?: Maybe<Array<Maybe<PermissionPolicy>>>;
-  updatedAt: Scalars['Time']['output'];
-};
-
-export type PermissionPolicy = {
-  __typename?: 'PermissionPolicy';
-  createdAt: Scalars['Time']['output'];
-  group: Group;
-  id: Scalars['ID']['output'];
-  permission: Permission;
-  type: PermissionPolicyType;
-  updatedAt: Scalars['Time']['output'];
-};
-
-export enum PermissionPolicyType {
-  Allow = 'ALLOW',
-  Deny = 'DENY'
+export enum ObjectType {
+  Blueprint = 'blueprint',
+  Deployment = 'deployment',
+  Group = 'group',
+  Permission = 'permission',
+  Provider = 'provider',
+  User = 'user'
 }
 
 export type Provider = {
@@ -281,32 +387,48 @@ export type ProviderInput = {
   providerVersion: Scalars['String']['input'];
 };
 
+export type ProviderPage = {
+  __typename?: 'ProviderPage';
+  providers: Array<Provider>;
+  total: Scalars['Int']['output'];
+};
+
 export type Query = {
   __typename?: 'Query';
-  /** Get a blueprint (requires permission `com.cble.blueprints.read`) */
+  /** Get a blueprint (requires permission `x.x.blueprints.x.get`) */
   blueprint: Blueprint;
-  /** List blueprints (requires permission `com.cble.blueprints.list`) */
-  blueprints: Array<Blueprint>;
-  /** Get a deployment (requires permission `com.cble.deployments.read`) */
+  /** List blueprints (requires permission `x.x.blueprints.*.list`) */
+  blueprints: BlueprintPage;
+  /** List all blueprints user has `blueprint.x.deploy` permission for */
+  deployableBlueprints: BlueprintPage;
+  /** Get a deployment (requires permission `x.x.deployments.x.get`) */
   deployment: Deployment;
-  /** List deployments (requires permission `com.cble.deployments.list`) */
-  deployments: Array<Deployment>;
-  /** Get a group (requires permission `com.cble.groups.read`) */
+  /** List deployments (requires permission `x.x.deployments.*.list`) */
+  deployments: DeploymentPage;
+  /** Get a group (requires permission `x.x.groups.x.get`) */
   group: Group;
-  /** List groups (requires permission `com.cble.groups.list`) */
-  groups: Array<Group>;
+  /** List groups (requires permission `x.x.groups.*.list`) */
+  groups: GroupPage;
   /** Get current user */
   me: User;
   /** Retrieves if the current user has a given permission */
   meHasPermission: Scalars['Boolean']['output'];
-  /** Get a provider (requires permission `com.cble.providers.read`) */
+  /** Get a permission (requires permission `x.x.permission.x.get`) */
+  permission: GrantedPermission;
+  /** List permissions (requires permission `x.x.permission.*.list`) */
+  permissions: GrantedPermissionPage;
+  /** Get a provider (requires permission `x.x.providers.x.get`) */
   provider: Provider;
-  /** List providers (requires permission `com.cble.providers.list`) */
-  providers: Array<Provider>;
-  /** Get a user (requires permission `com.cble.users.read`) */
+  /** List providers (requires permission `x.x.providers.*.list`) */
+  providers: ProviderPage;
+  /** Search groups */
+  searchGroups: GroupPage;
+  /** Search users */
+  searchUsers: UserPage;
+  /** Get a user (requires permission `x.x.users.x.get`) */
   user: User;
-  /** List users (requires permission `com.cble.users.list`) */
-  users: Array<User>;
+  /** List users (requires permission `x.x.users.*.list`) */
+  users: UserPage;
 };
 
 
@@ -315,8 +437,26 @@ export type QueryBlueprintArgs = {
 };
 
 
+export type QueryBlueprintsArgs = {
+  count?: Scalars['Int']['input'];
+  offset?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryDeployableBlueprintsArgs = {
+  count?: Scalars['Int']['input'];
+  offset?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
 export type QueryDeploymentArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryDeploymentsArgs = {
+  count?: Scalars['Int']['input'];
+  offset?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -325,8 +465,27 @@ export type QueryGroupArgs = {
 };
 
 
+export type QueryGroupsArgs = {
+  count?: Scalars['Int']['input'];
+  offset?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
 export type QueryMeHasPermissionArgs = {
-  key: Scalars['String']['input'];
+  action: Action;
+  objectID?: InputMaybe<Scalars['ID']['input']>;
+  objectType: ObjectType;
+};
+
+
+export type QueryPermissionArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryPermissionsArgs = {
+  count?: Scalars['Int']['input'];
+  offset?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -335,8 +494,34 @@ export type QueryProviderArgs = {
 };
 
 
+export type QueryProvidersArgs = {
+  count?: Scalars['Int']['input'];
+  offset?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QuerySearchGroupsArgs = {
+  count?: Scalars['Int']['input'];
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  search: Scalars['String']['input'];
+};
+
+
+export type QuerySearchUsersArgs = {
+  count?: Scalars['Int']['input'];
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  search: Scalars['String']['input'];
+};
+
+
 export type QueryUserArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryUsersArgs = {
+  count?: Scalars['Int']['input'];
+  offset?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type Resource = {
@@ -348,8 +533,20 @@ export type Resource = {
   key: Scalars['String']['output'];
   object: Scalars['String']['output'];
   requiredBy: Array<Resource>;
+  resourceType: Scalars['String']['output'];
+  type: ResourceType;
   updatedAt: Scalars['Time']['output'];
 };
+
+export enum ResourceType {
+  Data = 'DATA',
+  Resource = 'RESOURCE'
+}
+
+export enum SubjectType {
+  Group = 'group',
+  User = 'user'
+}
 
 export type User = {
   __typename?: 'User';
@@ -367,9 +564,14 @@ export type User = {
 export type UserInput = {
   email: Scalars['String']['input'];
   firstName: Scalars['String']['input'];
-  groupIds: Array<Scalars['ID']['input']>;
   lastName: Scalars['String']['input'];
   username: Scalars['String']['input'];
+};
+
+export type UserPage = {
+  __typename?: 'UserPage';
+  total: Scalars['Int']['output'];
+  users: Array<User>;
 };
 
 export type BlueprintFragementFragment = { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> };
@@ -377,7 +579,7 @@ export type BlueprintFragementFragment = { __typename?: 'Blueprint', id: string,
 export type BlueprintsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type BlueprintsQuery = { __typename?: 'Query', blueprints: Array<{ __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }> };
+export type BlueprintsQuery = { __typename?: 'Query', deployableBlueprints: { __typename?: 'BlueprintPage', total: number, blueprints: Array<{ __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }> } };
 
 export type GetBlueprintQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -414,7 +616,7 @@ export type DeploymentFragmentFragment = { __typename?: 'Deployment', id: string
 export type ListDeploymentsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ListDeploymentsQuery = { __typename?: 'Query', deployments: Array<{ __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } }> };
+export type ListDeploymentsQuery = { __typename?: 'Query', deployments: { __typename?: 'DeploymentPage', total: number, deployments: Array<{ __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } }> } };
 
 export type GetDeploymentQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -443,14 +645,58 @@ export type GroupFragmentFragment = { __typename?: 'Group', id: string, createdA
 export type ListGroupsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ListGroupsQuery = { __typename?: 'Query', groups: Array<{ __typename?: 'Group', id: string, createdAt: any, updatedAt: any, name: string }> };
+export type ListGroupsQuery = { __typename?: 'Query', groups: { __typename?: 'GroupPage', total: number, groups: Array<{ __typename?: 'Group', id: string, createdAt: any, updatedAt: any, name: string }> } };
+
+export type SearchGroupsQueryVariables = Exact<{
+  search: Scalars['String']['input'];
+}>;
+
+
+export type SearchGroupsQuery = { __typename?: 'Query', searchGroups: { __typename?: 'GroupPage', groups: Array<{ __typename?: 'Group', id: string, createdAt: any, updatedAt: any, name: string }> } };
+
+export type PermissionFieldsFragment = { __typename?: 'GrantedPermission', id: string, createdAt: any, updatedAt: any, subjectType: SubjectType, subjectId: string, objectType: ObjectType, objectId: string, action: Action, displayString: string };
+
+export type ListPermissionsQueryVariables = Exact<{
+  count?: Scalars['Int']['input'];
+  offset?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type ListPermissionsQuery = { __typename?: 'Query', permissions: { __typename?: 'GrantedPermissionPage', total: number, permissions: Array<{ __typename?: 'GrantedPermission', id: string, createdAt: any, updatedAt: any, subjectType: SubjectType, subjectId: string, objectType: ObjectType, objectId: string, action: Action, displayString: string }> } };
+
+export type NavPermissionsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type NavPermissionsQuery = { __typename?: 'Query', listBlueprints: boolean, listProviders: boolean, listPermissions: boolean };
+
+export type GrantPermissionMutationVariables = Exact<{
+  subjectType: SubjectType;
+  subjectID: Scalars['ID']['input'];
+  objectType: ObjectType;
+  objectID?: InputMaybe<Scalars['ID']['input']>;
+  action: Action;
+}>;
+
+
+export type GrantPermissionMutation = { __typename?: 'Mutation', grantPermission: { __typename?: 'GrantedPermission', id: string, displayString: string } };
+
+export type RevokePermissionMutationVariables = Exact<{
+  subjectType: SubjectType;
+  subjectID: Scalars['ID']['input'];
+  objectType: ObjectType;
+  objectID?: InputMaybe<Scalars['ID']['input']>;
+  action: Action;
+}>;
+
+
+export type RevokePermissionMutation = { __typename?: 'Mutation', revokePermission: boolean };
 
 export type ProviderFragmentFragment = { __typename?: 'Provider', id: string, createdAt: any, updatedAt: any, displayName: string, configBytes: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean };
 
 export type ListProvidersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ListProvidersQuery = { __typename?: 'Query', providers: Array<{ __typename?: 'Provider', id: string, createdAt: any, updatedAt: any, displayName: string, configBytes: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean }> };
+export type ListProvidersQuery = { __typename?: 'Query', providers: { __typename?: 'ProviderPage', total: number, providers: Array<{ __typename?: 'Provider', id: string, createdAt: any, updatedAt: any, displayName: string, configBytes: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean }> } };
 
 export type GetProviderQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -505,14 +751,23 @@ export type MeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: str
 export type ListUsersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ListUsersQuery = { __typename?: 'Query', users: Array<{ __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string }> };
+export type ListUsersQuery = { __typename?: 'Query', users: { __typename?: 'UserPage', total: number, users: Array<{ __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string }> } };
 
 export type MeHasPermissionQueryVariables = Exact<{
-  key: Scalars['String']['input'];
+  objectType: ObjectType;
+  objectID?: InputMaybe<Scalars['ID']['input']>;
+  action: Action;
 }>;
 
 
 export type MeHasPermissionQuery = { __typename?: 'Query', meHasPermission: boolean };
+
+export type SearchUsersQueryVariables = Exact<{
+  search: Scalars['String']['input'];
+}>;
+
+
+export type SearchUsersQuery = { __typename?: 'Query', searchUsers: { __typename?: 'UserPage', users: Array<{ __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string }> } };
 
 export const BlueprintFragementFragmentDoc = gql`
     fragment BlueprintFragement on Blueprint {
@@ -550,6 +805,19 @@ export const GroupFragmentFragmentDoc = gql`
   name
 }
     `;
+export const PermissionFieldsFragmentDoc = gql`
+    fragment PermissionFields on GrantedPermission {
+  id
+  createdAt
+  updatedAt
+  subjectType
+  subjectId
+  objectType
+  objectId
+  action
+  displayString
+}
+    `;
 export const ProviderFragmentFragmentDoc = gql`
     fragment ProviderFragment on Provider {
   id
@@ -575,8 +843,11 @@ export const UserFragmentFragmentDoc = gql`
     `;
 export const BlueprintsDocument = gql`
     query Blueprints {
-  blueprints {
-    ...BlueprintFragement
+  deployableBlueprints {
+    blueprints {
+      ...BlueprintFragement
+    }
+    total
   }
 }
     ${BlueprintFragementFragmentDoc}`;
@@ -756,13 +1027,16 @@ export type DeployBlueprintMutationOptions = Apollo.BaseMutationOptions<DeployBl
 export const ListDeploymentsDocument = gql`
     query ListDeployments {
   deployments {
-    ...DeploymentFragment
-    blueprint {
-      ...BlueprintFragement
+    deployments {
+      ...DeploymentFragment
+      blueprint {
+        ...BlueprintFragement
+      }
+      requester {
+        ...UserFragment
+      }
     }
-    requester {
-      ...UserFragment
-    }
+    total
   }
 }
     ${DeploymentFragmentFragmentDoc}
@@ -935,7 +1209,10 @@ export type DestroyDeploymentMutationOptions = Apollo.BaseMutationOptions<Destro
 export const ListGroupsDocument = gql`
     query ListGroups {
   groups {
-    ...GroupFragment
+    groups {
+      ...GroupFragment
+    }
+    total
   }
 }
     ${GroupFragmentFragmentDoc}`;
@@ -971,10 +1248,235 @@ export type ListGroupsQueryHookResult = ReturnType<typeof useListGroupsQuery>;
 export type ListGroupsLazyQueryHookResult = ReturnType<typeof useListGroupsLazyQuery>;
 export type ListGroupsSuspenseQueryHookResult = ReturnType<typeof useListGroupsSuspenseQuery>;
 export type ListGroupsQueryResult = Apollo.QueryResult<ListGroupsQuery, ListGroupsQueryVariables>;
+export const SearchGroupsDocument = gql`
+    query SearchGroups($search: String!) {
+  searchGroups(search: $search, count: 5) {
+    groups {
+      ...GroupFragment
+    }
+  }
+}
+    ${GroupFragmentFragmentDoc}`;
+
+/**
+ * __useSearchGroupsQuery__
+ *
+ * To run a query within a React component, call `useSearchGroupsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSearchGroupsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSearchGroupsQuery({
+ *   variables: {
+ *      search: // value for 'search'
+ *   },
+ * });
+ */
+export function useSearchGroupsQuery(baseOptions: Apollo.QueryHookOptions<SearchGroupsQuery, SearchGroupsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<SearchGroupsQuery, SearchGroupsQueryVariables>(SearchGroupsDocument, options);
+      }
+export function useSearchGroupsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<SearchGroupsQuery, SearchGroupsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<SearchGroupsQuery, SearchGroupsQueryVariables>(SearchGroupsDocument, options);
+        }
+export function useSearchGroupsSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<SearchGroupsQuery, SearchGroupsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<SearchGroupsQuery, SearchGroupsQueryVariables>(SearchGroupsDocument, options);
+        }
+export type SearchGroupsQueryHookResult = ReturnType<typeof useSearchGroupsQuery>;
+export type SearchGroupsLazyQueryHookResult = ReturnType<typeof useSearchGroupsLazyQuery>;
+export type SearchGroupsSuspenseQueryHookResult = ReturnType<typeof useSearchGroupsSuspenseQuery>;
+export type SearchGroupsQueryResult = Apollo.QueryResult<SearchGroupsQuery, SearchGroupsQueryVariables>;
+export const ListPermissionsDocument = gql`
+    query ListPermissions($count: Int! = 10, $offset: Int) {
+  permissions(count: $count, offset: $offset) {
+    permissions {
+      ...PermissionFields
+    }
+    total
+  }
+}
+    ${PermissionFieldsFragmentDoc}`;
+
+/**
+ * __useListPermissionsQuery__
+ *
+ * To run a query within a React component, call `useListPermissionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListPermissionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListPermissionsQuery({
+ *   variables: {
+ *      count: // value for 'count'
+ *      offset: // value for 'offset'
+ *   },
+ * });
+ */
+export function useListPermissionsQuery(baseOptions?: Apollo.QueryHookOptions<ListPermissionsQuery, ListPermissionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<ListPermissionsQuery, ListPermissionsQueryVariables>(ListPermissionsDocument, options);
+      }
+export function useListPermissionsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ListPermissionsQuery, ListPermissionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<ListPermissionsQuery, ListPermissionsQueryVariables>(ListPermissionsDocument, options);
+        }
+export function useListPermissionsSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<ListPermissionsQuery, ListPermissionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<ListPermissionsQuery, ListPermissionsQueryVariables>(ListPermissionsDocument, options);
+        }
+export type ListPermissionsQueryHookResult = ReturnType<typeof useListPermissionsQuery>;
+export type ListPermissionsLazyQueryHookResult = ReturnType<typeof useListPermissionsLazyQuery>;
+export type ListPermissionsSuspenseQueryHookResult = ReturnType<typeof useListPermissionsSuspenseQuery>;
+export type ListPermissionsQueryResult = Apollo.QueryResult<ListPermissionsQuery, ListPermissionsQueryVariables>;
+export const NavPermissionsDocument = gql`
+    query NavPermissions {
+  listBlueprints: meHasPermission(
+    objectType: blueprint
+    objectID: null
+    action: blueprint_list
+  )
+  listProviders: meHasPermission(
+    objectType: provider
+    objectID: null
+    action: provider_list
+  )
+  listPermissions: meHasPermission(
+    objectType: permission
+    objectID: null
+    action: permission_list
+  )
+}
+    `;
+
+/**
+ * __useNavPermissionsQuery__
+ *
+ * To run a query within a React component, call `useNavPermissionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useNavPermissionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useNavPermissionsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useNavPermissionsQuery(baseOptions?: Apollo.QueryHookOptions<NavPermissionsQuery, NavPermissionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<NavPermissionsQuery, NavPermissionsQueryVariables>(NavPermissionsDocument, options);
+      }
+export function useNavPermissionsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<NavPermissionsQuery, NavPermissionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<NavPermissionsQuery, NavPermissionsQueryVariables>(NavPermissionsDocument, options);
+        }
+export function useNavPermissionsSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<NavPermissionsQuery, NavPermissionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<NavPermissionsQuery, NavPermissionsQueryVariables>(NavPermissionsDocument, options);
+        }
+export type NavPermissionsQueryHookResult = ReturnType<typeof useNavPermissionsQuery>;
+export type NavPermissionsLazyQueryHookResult = ReturnType<typeof useNavPermissionsLazyQuery>;
+export type NavPermissionsSuspenseQueryHookResult = ReturnType<typeof useNavPermissionsSuspenseQuery>;
+export type NavPermissionsQueryResult = Apollo.QueryResult<NavPermissionsQuery, NavPermissionsQueryVariables>;
+export const GrantPermissionDocument = gql`
+    mutation GrantPermission($subjectType: SubjectType!, $subjectID: ID!, $objectType: ObjectType!, $objectID: ID, $action: Action!) {
+  grantPermission(
+    subjectType: $subjectType
+    subjectID: $subjectID
+    objectType: $objectType
+    objectID: $objectID
+    action: $action
+  ) {
+    id
+    displayString
+  }
+}
+    `;
+export type GrantPermissionMutationFn = Apollo.MutationFunction<GrantPermissionMutation, GrantPermissionMutationVariables>;
+
+/**
+ * __useGrantPermissionMutation__
+ *
+ * To run a mutation, you first call `useGrantPermissionMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useGrantPermissionMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [grantPermissionMutation, { data, loading, error }] = useGrantPermissionMutation({
+ *   variables: {
+ *      subjectType: // value for 'subjectType'
+ *      subjectID: // value for 'subjectID'
+ *      objectType: // value for 'objectType'
+ *      objectID: // value for 'objectID'
+ *      action: // value for 'action'
+ *   },
+ * });
+ */
+export function useGrantPermissionMutation(baseOptions?: Apollo.MutationHookOptions<GrantPermissionMutation, GrantPermissionMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<GrantPermissionMutation, GrantPermissionMutationVariables>(GrantPermissionDocument, options);
+      }
+export type GrantPermissionMutationHookResult = ReturnType<typeof useGrantPermissionMutation>;
+export type GrantPermissionMutationResult = Apollo.MutationResult<GrantPermissionMutation>;
+export type GrantPermissionMutationOptions = Apollo.BaseMutationOptions<GrantPermissionMutation, GrantPermissionMutationVariables>;
+export const RevokePermissionDocument = gql`
+    mutation RevokePermission($subjectType: SubjectType!, $subjectID: ID!, $objectType: ObjectType!, $objectID: ID, $action: Action!) {
+  revokePermission(
+    subjectType: $subjectType
+    subjectID: $subjectID
+    objectType: $objectType
+    objectID: $objectID
+    action: $action
+  )
+}
+    `;
+export type RevokePermissionMutationFn = Apollo.MutationFunction<RevokePermissionMutation, RevokePermissionMutationVariables>;
+
+/**
+ * __useRevokePermissionMutation__
+ *
+ * To run a mutation, you first call `useRevokePermissionMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRevokePermissionMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [revokePermissionMutation, { data, loading, error }] = useRevokePermissionMutation({
+ *   variables: {
+ *      subjectType: // value for 'subjectType'
+ *      subjectID: // value for 'subjectID'
+ *      objectType: // value for 'objectType'
+ *      objectID: // value for 'objectID'
+ *      action: // value for 'action'
+ *   },
+ * });
+ */
+export function useRevokePermissionMutation(baseOptions?: Apollo.MutationHookOptions<RevokePermissionMutation, RevokePermissionMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<RevokePermissionMutation, RevokePermissionMutationVariables>(RevokePermissionDocument, options);
+      }
+export type RevokePermissionMutationHookResult = ReturnType<typeof useRevokePermissionMutation>;
+export type RevokePermissionMutationResult = Apollo.MutationResult<RevokePermissionMutation>;
+export type RevokePermissionMutationOptions = Apollo.BaseMutationOptions<RevokePermissionMutation, RevokePermissionMutationVariables>;
 export const ListProvidersDocument = gql`
     query ListProviders {
   providers {
-    ...ProviderFragment
+    providers {
+      ...ProviderFragment
+    }
+    total
   }
 }
     ${ProviderFragmentFragmentDoc}`;
@@ -1258,7 +1760,10 @@ export type MeQueryResult = Apollo.QueryResult<MeQuery, MeQueryVariables>;
 export const ListUsersDocument = gql`
     query ListUsers {
   users {
-    ...UserFragment
+    users {
+      ...UserFragment
+    }
+    total
   }
 }
     ${UserFragmentFragmentDoc}`;
@@ -1295,8 +1800,8 @@ export type ListUsersLazyQueryHookResult = ReturnType<typeof useListUsersLazyQue
 export type ListUsersSuspenseQueryHookResult = ReturnType<typeof useListUsersSuspenseQuery>;
 export type ListUsersQueryResult = Apollo.QueryResult<ListUsersQuery, ListUsersQueryVariables>;
 export const MeHasPermissionDocument = gql`
-    query MeHasPermission($key: String!) {
-  meHasPermission(key: $key)
+    query MeHasPermission($objectType: ObjectType!, $objectID: ID, $action: Action!) {
+  meHasPermission(objectType: $objectType, objectID: $objectID, action: $action)
 }
     `;
 
@@ -1312,7 +1817,9 @@ export const MeHasPermissionDocument = gql`
  * @example
  * const { data, loading, error } = useMeHasPermissionQuery({
  *   variables: {
- *      key: // value for 'key'
+ *      objectType: // value for 'objectType'
+ *      objectID: // value for 'objectID'
+ *      action: // value for 'action'
  *   },
  * });
  */
@@ -1332,3 +1839,45 @@ export type MeHasPermissionQueryHookResult = ReturnType<typeof useMeHasPermissio
 export type MeHasPermissionLazyQueryHookResult = ReturnType<typeof useMeHasPermissionLazyQuery>;
 export type MeHasPermissionSuspenseQueryHookResult = ReturnType<typeof useMeHasPermissionSuspenseQuery>;
 export type MeHasPermissionQueryResult = Apollo.QueryResult<MeHasPermissionQuery, MeHasPermissionQueryVariables>;
+export const SearchUsersDocument = gql`
+    query SearchUsers($search: String!) {
+  searchUsers(search: $search, count: 5) {
+    users {
+      ...UserFragment
+    }
+  }
+}
+    ${UserFragmentFragmentDoc}`;
+
+/**
+ * __useSearchUsersQuery__
+ *
+ * To run a query within a React component, call `useSearchUsersQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSearchUsersQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSearchUsersQuery({
+ *   variables: {
+ *      search: // value for 'search'
+ *   },
+ * });
+ */
+export function useSearchUsersQuery(baseOptions: Apollo.QueryHookOptions<SearchUsersQuery, SearchUsersQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<SearchUsersQuery, SearchUsersQueryVariables>(SearchUsersDocument, options);
+      }
+export function useSearchUsersLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<SearchUsersQuery, SearchUsersQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<SearchUsersQuery, SearchUsersQueryVariables>(SearchUsersDocument, options);
+        }
+export function useSearchUsersSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<SearchUsersQuery, SearchUsersQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<SearchUsersQuery, SearchUsersQueryVariables>(SearchUsersDocument, options);
+        }
+export type SearchUsersQueryHookResult = ReturnType<typeof useSearchUsersQuery>;
+export type SearchUsersLazyQueryHookResult = ReturnType<typeof useSearchUsersLazyQuery>;
+export type SearchUsersSuspenseQueryHookResult = ReturnType<typeof useSearchUsersSuspenseQuery>;
+export type SearchUsersQueryResult = Apollo.QueryResult<SearchUsersQuery, SearchUsersQueryVariables>;

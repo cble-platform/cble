@@ -8,13 +8,16 @@ fragment DeploymentFragment on Deployment {
 
 query ListDeployments {
   deployments {
-    ...DeploymentFragment
-    blueprint {
-      ...BlueprintFragement
+    deployments {
+      ...DeploymentFragment
+      blueprint {
+        ...BlueprintFragement
+      }
+      requester {
+        ...UserFragment
+      }
     }
-    requester {
-      ...UserFragment
-    }
+    total
   }
 }
 

@@ -1,0 +1,455 @@
+scalar Time
+scalar Map
+scalar StrMap
+scalar VarTypeMap
+scalar UUID
+
+# directive @hasPermission(objectType: ObjectType!, action: Action!) on FIELD_DEFINITION
+
+type Blueprint {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  name: String!
+  description: String!
+  blueprintTemplate: String!
+  variableTypes: VarTypeMap!
+
+  provider: Provider!
+  resources: [Resource!]!
+  deployments: [Deployment]!
+}
+
+type BlueprintPage {
+  blueprints: [Blueprint!]!
+  total: Int!
+}
+
+enum ResourceType {
+  RESOURCE
+  DATA
+}
+
+type Resource {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  type: ResourceType!
+  key: String!
+  resourceType: String!
+  object: String!
+
+  blueprint: Blueprint!
+  requiredBy: [Resource!]!
+  dependsOn: [Resource!]!
+}
+
+enum DeploymentState {
+  AWAITING
+  INPROGRESS
+  COMPLETE
+  FAILED
+  DELETED
+}
+
+type Deployment {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  name: String!
+  description: String!
+  state: DeploymentState!
+  templateVars: StrMap!
+
+  blueprint: Blueprint!
+  deploymentNodes: [DeploymentNode!]!
+  requester: User!
+}
+
+type DeploymentPage {
+  deployments: [Deployment!]!
+  total: Int!
+}
+
+enum DeploymentNodeState {
+  AWAITING
+  PARENTAWAITING
+  INPROGRESS
+  COMPLETE
+  TAINTED
+  FAILED
+  TODELETE
+  DELETED
+  TOREBUILD
+}
+
+type DeploymentNode {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  state: DeploymentNodeState!
+  vars: StrMap
+
+  deployment: Deployment!
+  resource: Resource!
+  nextNodes: [DeploymentNode!]!
+  prevNodes: [DeploymentNode!]!
+}
+
+type Group {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  name: String!
+
+  users: [User]
+}
+
+type GroupPage {
+  groups: [Group!]!
+  total: Int!
+}
+
+enum SubjectType {
+  user
+  group
+}
+
+enum ObjectType {
+  blueprint
+  deployment
+  group
+  permission
+  provider
+  user
+}
+
+enum Action {
+  blueprint_list
+  blueprint_create
+  blueprint_get
+  blueprint_update
+  blueprint_delete
+  blueprint_deploy
+  deployment_list
+  deployment_create
+  deployment_get
+  deployment_update
+  deployment_delete
+  deployment_destroy
+  deployment_redeploy
+  deployment_console
+  group_list
+  group_create
+  group_get
+  group_update
+  group_delete
+  permission_list
+  permission_get
+  permission_grant
+  permission_revoke
+  provider_list
+  provider_create
+  provider_get
+  provider_update
+  provider_delete
+  provider_load
+  provider_unload
+  provider_configure
+  user_list
+  user_create
+  user_get
+  user_update
+  user_delete
+}
+
+type GrantedPermission {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  subjectType: SubjectType!
+  subjectId: ID!
+  objectType: ObjectType!
+  objectId: ID!
+  action: Action!
+
+  displayString: String!
+}
+
+type GrantedPermissionPage {
+  permissions: [GrantedPermission!]!
+  total: Int!
+}
+
+type Provider {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  displayName: String!
+  providerGitUrl: String!
+  providerVersion: String!
+  configBytes: String!
+  isLoaded: Boolean!
+
+  blueprints: [Blueprint]
+}
+
+type ProviderPage {
+  providers: [Provider!]!
+  total: Int!
+}
+
+type User {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  username: String!
+  email: String!
+  firstName: String!
+  lastName: String!
+
+  groups: [Group]!
+  deployments: [Deployment]!
+}
+
+type UserPage {
+  users: [User!]!
+  total: Int!
+}
+
+type Query {
+  """
+  Get current user
+  """
+  me: User!
+  """
+  Retrieves if the current user has a given permission
+  """
+  meHasPermission(
+    objectType: ObjectType!
+    objectID: ID
+    action: Action!
+  ): Boolean!
+  """
+  List users (requires permission `x.x.users.*.list`)
+  """
+  users(count: Int! = 10, offset: Int): UserPage!
+  """
+  Get a user (requires permission `x.x.users.x.get`)
+  """
+  user(id: ID!): User!
+  """
+  List groups (requires permission `x.x.groups.*.list`)
+  """
+  groups(count: Int! = 10, offset: Int): GroupPage!
+  """
+  Get a group (requires permission `x.x.groups.x.get`)
+  """
+  group(id: ID!): Group!
+  """
+  List permissions (requires permission `x.x.permission.*.list`)
+  """
+  permissions(count: Int! = 10, offset: Int): GrantedPermissionPage!
+  """
+  Get a permission (requires permission `x.x.permission.x.get`)
+  """
+  permission(id: ID!): GrantedPermission!
+  """
+  List providers (requires permission `x.x.providers.*.list`)
+  """
+  providers(count: Int! = 10, offset: Int): ProviderPage!
+  """
+  Get a provider (requires permission `x.x.providers.x.get`)
+  """
+  provider(id: ID!): Provider!
+  """
+  List blueprints (requires permission `x.x.blueprints.*.list`)
+  """
+  blueprints(count: Int! = 10, offset: Int): BlueprintPage!
+  """
+  List all blueprints user has `blueprint.x.deploy` permission for
+  """
+  deployableBlueprints(count: Int! = 10, offset: Int): BlueprintPage!
+  """
+  Get a blueprint (requires permission `x.x.blueprints.x.get`)
+  """
+  blueprint(id: ID!): Blueprint!
+  """
+  List deployments (requires permission `x.x.deployments.*.list`)
+  """
+  deployments(count: Int! = 10, offset: Int): DeploymentPage!
+  """
+  Get a deployment (requires permission `x.x.deployments.x.get`)
+  """
+  deployment(id: ID!): Deployment!
+
+  ##########
+  # SEARCH #
+  ##########
+
+  """
+  Search users
+  """
+  searchUsers(search: String!, count: Int! = 10, offset: Int): UserPage!
+  """
+  Search groups
+  """
+  searchGroups(search: String!, count: Int! = 10, offset: Int): GroupPage!
+}
+
+input BlueprintInput {
+  name: String!
+  description: String!
+  blueprintTemplate: String!
+  variableTypes: VarTypeMap!
+
+  providerId: ID!
+}
+
+input DeploymentInput {
+  name: String!
+}
+
+input ProviderInput {
+  displayName: String!
+  providerGitUrl: String!
+  providerVersion: String!
+  configBytes: String!
+}
+
+input UserInput {
+  username: String!
+  email: String!
+  firstName: String!
+  lastName: String!
+}
+
+input GroupInput {
+  name: String!
+}
+
+type Mutation {
+  ##################
+  # AUTHENTICATION #
+  ##################
+
+  """
+  Change current user's password
+  """
+  selfChangePassword(currentPassword: String!, newPassword: String!): Boolean!
+
+  ########
+  # CRUD #
+  ########
+
+  """
+  Create a user (requires permission `x.x.users.*.create`)
+  """
+  createUser(input: UserInput!): User!
+  """
+  Update a user (requires permission `x.x.users.x.update`)
+  """
+  updateUser(id: ID!, input: UserInput!): User!
+  """
+  Delete a user (requires permission `x.x.users.x.delete`)
+  """
+  deleteUser(id: ID!): Boolean!
+  """
+  Create a group (requires permission `x.x.group.x.create`)
+  """
+  createGroup(input: GroupInput!): Group!
+  """
+  Update a group (requires permission `x.x.group.x.update`)
+  """
+  updateGroup(id: ID!, input: GroupInput!): Group!
+  """
+  Delete a group (requires permission `x.x.group.x.delete`)
+  """
+  deleteGroup(id: ID!): Boolean!
+  """
+  Grant a permission (requires permission `x.x.permission.*.grant`)
+  """
+  grantPermission(
+    subjectType: SubjectType!
+    subjectID: ID!
+    objectType: ObjectType!
+    objectID: ID
+    action: Action!
+  ): GrantedPermission!
+  """
+  Revoke a permission (requires permission `x.x.permission.*.revoke`)
+  """
+  revokePermission(
+    subjectType: SubjectType!
+    subjectID: ID!
+    objectType: ObjectType!
+    objectID: ID
+    action: Action!
+  ): Boolean!
+  """
+  Create a provider (requires permission `x.x.providers.*.create`)
+  """
+  createProvider(input: ProviderInput!): Provider!
+  """
+  Update a provider (requires permission `x.x.providers.x.update`)
+  """
+  updateProvider(id: ID!, input: ProviderInput!): Provider!
+  """
+  Delete a provider (requires permission `x.x.providers.x.delete`)
+  """
+  deleteProvider(id: ID!): Boolean!
+  """
+  Create a blueprint (requires permission `x.x.blueprints.*.create`)
+  """
+  createBlueprint(input: BlueprintInput!): Blueprint!
+  """
+  Update a blueprint (requires permission `x.x.blueprints.x.update`)
+  """
+  updateBlueprint(id: ID!, input: BlueprintInput!): Blueprint!
+  """
+  Delete a blueprint (requires permission `x.x.blueprints.x.delete`)
+  """
+  deleteBlueprint(id: ID!): Boolean!
+  """
+  Update a deployment (requires permission `x.x.deployments.x.update`)
+  """
+  updateDeployment(id: ID!, input: DeploymentInput!): Deployment!
+
+  #############
+  # PROVIDERS #
+  #############
+
+  """
+  Load a provider to connect it to CBLE (requires permission `x.x.providers.x.load`)
+  """
+  loadProvider(id: ID!): Provider!
+  """
+  Unload a provider to disconnect it from CBLE (requires permission `x.x.providers.x.unload`)
+  """
+  unloadProvider(id: ID!): Provider!
+  """
+  Applies the stored configuration to the provider (requires permission `x.x.providers.x.configure`)
+  """
+  configureProvider(id: ID!): Provider!
+
+  # ##############
+  # # DEPLOYMENT #
+  # ##############
+
+  """
+  Deploy a blueprint (requires permission `x.x.blueprints.x.deploy`)
+  """
+  deployBlueprint(id: ID!, templateVars: StrMap!): Deployment!
+  """
+  Destroy a deployment (requires permission `x.x.deployments.x.destroy`)
+  """
+  destroyDeployment(id: ID!): Deployment!
+  """
+  Redeploy nodes within a deployment (requires permission `x.x.deployments.x.redeploy`)
+  """
+  redeployDeployment(id: ID!, nodeIds: [ID!]!): Deployment!
+  # """
+  # Get a vm console (requires permission `x.x.deployments.x.console`)
+  # """
+  # getConsole(id: ID!, hostKey: String!): String!
+}

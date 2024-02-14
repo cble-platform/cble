@@ -1,0 +1,40 @@
+fragment UserFragment on User {
+  id
+  createdAt
+  updatedAt
+  username
+  email
+  firstName
+  lastName
+}
+
+query Me {
+  me {
+    ...UserFragment
+  }
+}
+
+query ListUsers {
+  users {
+    users {
+      ...UserFragment
+    }
+    total
+  }
+}
+
+query MeHasPermission(
+  $objectType: ObjectType!
+  $objectID: ID
+  $action: Action!
+) {
+  meHasPermission(objectType: $objectType, objectID: $objectID, action: $action)
+}
+
+query SearchUsers($search: String!) {
+  searchUsers(search: $search, count: 5) {
+    users {
+      ...UserFragment
+    }
+  }
+}

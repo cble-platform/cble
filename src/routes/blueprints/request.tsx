@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
   useDeployBlueprintMutation,
   useGetBlueprintLazyQuery,
-} from '../../api/generated'
+} from '../../lib/api/generated'
 import { MuiMarkdown } from 'mui-markdown'
 import { Send } from '@mui/icons-material'
 import { useSnackbar } from 'notistack'
