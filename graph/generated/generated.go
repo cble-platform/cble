@@ -197,7 +197,7 @@ type ComplexityRoot struct {
 		SearchGroups         func(childComplexity int, search string, count int, offset *int) int
 		SearchUsers          func(childComplexity int, search string, count int, offset *int) int
 		User                 func(childComplexity int, id uuid.UUID) int
-		Users                func(childComplexity int, count *int, offset *int) int
+		Users                func(childComplexity int, count int, offset *int) int
 	}
 
 	Resource struct {
@@ -291,7 +291,7 @@ type ProviderResolver interface {
 type QueryResolver interface {
 	Me(ctx context.Context) (*ent.User, error)
 	MeHasPermission(ctx context.Context, objectType grantedpermission.ObjectType, objectID *uuid.UUID, action actions.PermissionAction) (bool, error)
-	Users(ctx context.Context, count *int, offset *int) (*model.UserPage, error)
+	Users(ctx context.Context, count int, offset *int) (*model.UserPage, error)
 	User(ctx context.Context, id uuid.UUID) (*ent.User, error)
 	Groups(ctx context.Context, count int, offset *int) (*model.GroupPage, error)
 	Group(ctx context.Context, id uuid.UUID) (*ent.Group, error)
@@ -1234,7 +1234,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Users(childComplexity, args["count"].(*int), args["offset"].(*int)), true
+		return e.complexity.Query.Users(childComplexity, args["count"].(int), args["offset"].(*int)), true
 
 	case "Resource.blueprint":
 		if e.complexity.Resource.Blueprint == nil {
@@ -1724,7 +1724,7 @@ type Query {
   """
   List users (requires permission ` + "`" + `x.x.users.*.list` + "`" + `)
   """
-  users(count: Int = 10, offset: Int): UserPage!
+  users(count: Int! = 10, offset: Int): UserPage!
   """
   Get a user (requires permission ` + "`" + `x.x.users.x.get` + "`" + `)
   """
@@ -2765,10 +2765,10 @@ func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs m
 func (ec *executionContext) field_Query_users_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *int
+	var arg0 int
 	if tmp, ok := rawArgs["count"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("count"))
-		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -7550,7 +7550,7 @@ func (ec *executionContext) _Query_users(ctx context.Context, field graphql.Coll
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Users(rctx, fc.Args["count"].(*int), fc.Args["offset"].(*int))
+		return ec.resolvers.Query().Users(rctx, fc.Args["count"].(int), fc.Args["offset"].(*int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)

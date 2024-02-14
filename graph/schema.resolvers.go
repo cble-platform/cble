@@ -636,7 +636,7 @@ func (r *queryResolver) MeHasPermission(ctx context.Context, objectType grantedp
 }
 
 // List users (requires permission `x.x.users.*.list`)
-func (r *queryResolver) Users(ctx context.Context, count *int, offset *int) (*model.UserPage, error) {
+func (r *queryResolver) Users(ctx context.Context, count int, offset *int) (*model.UserPage, error) {
 	// Check if current user has permission
 	if hasPerm, err := permission.CurrentUserHasUserList(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
 		return nil, auth.PERMISSION_DENIED_GQL_ERROR
