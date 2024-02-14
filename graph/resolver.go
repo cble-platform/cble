@@ -34,6 +34,17 @@ func NewSchema(cbleConfig *config.Config, client *ent.Client, cbleServer *provid
 			// rdb:           rdb,
 		},
 	}
+	// c.Directives.HasPermission = func(ctx context.Context, obj interface{}, next graphql.Resolver, objectType grantedpermission.ObjectType, action actions.PermissionAction) (res interface{}, err error) {
+	// 	gCtx := graphql.GetFieldContext(ctx)
+
+	// 	id, ok := gCtx.Args["id"]
+	// 	if !ok {
+	// 		logrus.Warnf("%s doesn't have arg id", gCtx.Field.Name)
+	// 	} else {
+	// 		logrus.Infof("%s has id %s", gCtx.Field.Name, id.(uuid.UUID))
+	// 	}
+	// 	return next(ctx)
+	// }
 	return generated.NewExecutableSchema(c)
 }
 

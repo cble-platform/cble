@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/cble-platform/cble-backend/engine/models"
+	"github.com/cble-platform/cble-backend/ent"
 	"github.com/google/uuid"
 )
 
@@ -19,12 +20,32 @@ type BlueprintInput struct {
 	ProviderID        uuid.UUID                               `json:"providerId"`
 }
 
+type BlueprintPage struct {
+	Blueprints []*ent.Blueprint `json:"blueprints"`
+	Total      int              `json:"total"`
+}
+
 type DeploymentInput struct {
 	Name string `json:"name"`
 }
 
+type DeploymentPage struct {
+	Deployments []*ent.Deployment `json:"deployments"`
+	Total       int               `json:"total"`
+}
+
+type GrantedPermissionPage struct {
+	Permissions []*ent.GrantedPermission `json:"permissions"`
+	Total       int                      `json:"total"`
+}
+
 type GroupInput struct {
 	Name string `json:"name"`
+}
+
+type GroupPage struct {
+	Groups []*ent.Group `json:"groups"`
+	Total  int          `json:"total"`
 }
 
 type ProviderInput struct {
@@ -34,11 +55,21 @@ type ProviderInput struct {
 	ConfigBytes     string `json:"configBytes"`
 }
 
+type ProviderPage struct {
+	Providers []*ent.Provider `json:"providers"`
+	Total     int             `json:"total"`
+}
+
 type UserInput struct {
 	Username  string `json:"username"`
 	Email     string `json:"email"`
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
+}
+
+type UserPage struct {
+	Users []*ent.User `json:"users"`
+	Total int         `json:"total"`
 }
 
 type DeploymentNodeState string

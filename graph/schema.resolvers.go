@@ -13,6 +13,8 @@ import (
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/grantedpermission"
+	"github.com/cble-platform/cble-backend/ent/group"
+	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/cble-platform/cble-backend/graph/generated"
 	"github.com/cble-platform/cble-backend/graph/model"
 	"github.com/cble-platform/cble-backend/permission"
@@ -89,16 +91,6 @@ func (r *deploymentNodeResolver) NextNodes(ctx context.Context, obj *ent.Deploym
 // PrevNodes is the resolver for the prevNodes field.
 func (r *deploymentNodeResolver) PrevNodes(ctx context.Context, obj *ent.DeploymentNode) ([]*ent.DeploymentNode, error) {
 	return obj.QueryPrevNodes().All(ctx)
-}
-
-// SubjectID is the resolver for the subjectId field.
-func (r *grantedPermissionResolver) SubjectID(ctx context.Context, obj *ent.GrantedPermission) (string, error) {
-	panic(fmt.Errorf("not implemented: SubjectID - subjectId"))
-}
-
-// ObjectID is the resolver for the objectId field.
-func (r *grantedPermissionResolver) ObjectID(ctx context.Context, obj *ent.GrantedPermission) (string, error) {
-	panic(fmt.Errorf("not implemented: ObjectID - objectId"))
 }
 
 // DisplayString is the resolver for the displayString field.
@@ -632,24 +624,40 @@ func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
 	return auth.ForContext(ctx)
 }
 
-// Retrieves if the current user has a given permission
-func (r *queryResolver) MeHasPermission(ctx context.Context, key string) (bool, error) {
-	return true, nil // TODO: Implement proper permission check
-	// currentUser, err := auth.ForContext(ctx)
-	// if err != nil {
-	// 	return false, gqlerror.Errorf("failed to get user from context: %v", err)
-	// }
-	// return r.permissionEngine.RequestPermission(ctx, currentUser, key)
+// MeHasPermission is the resolver for the meHasPermission field.
+func (r *queryResolver) MeHasPermission(ctx context.Context, objectType grantedpermission.ObjectType, objectID *uuid.UUID, action actions.PermissionAction) (bool, error) {
+	// Convert nillable ID to uuid.Nil
+	objectId := uuid.Nil
+	if objectID != nil {
+		objectId = *objectID
+	}
+
+	return permission.CurrentUserHasPermission(ctx, r.ent, objectType, objectId, action)
 }
 
 // List users (requires permission `x.x.users.*.list`)
-func (r *queryResolver) Users(ctx context.Context) ([]*ent.User, error) {
+func (r *queryResolver) Users(ctx context.Context, count *int, offset *int) (*model.UserPage, error) {
 	// Check if current user has permission
 	if hasPerm, err := permission.CurrentUserHasUserList(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
 		return nil, auth.PERMISSION_DENIED_GQL_ERROR
 	}
 
-	return r.ent.User.Query().All(ctx)
+	q := r.ent.User.Query().Limit(count)
+	if offset != nil {
+		q = q.Offset(*offset)
+	}
+	entUsers, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entUserCount, err := r.ent.User.Query().Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.UserPage{
+		Users: entUsers,
+		Total: entUserCount,
+	}, nil
 }
 
 // Get a user (requires permission `x.x.users.x.get`)
@@ -663,13 +671,28 @@ func (r *queryResolver) User(ctx context.Context, id uuid.UUID) (*ent.User, erro
 }
 
 // List groups (requires permission `x.x.groups.*.list`)
-func (r *queryResolver) Groups(ctx context.Context) ([]*ent.Group, error) {
+func (r *queryResolver) Groups(ctx context.Context, count int, offset *int) (*model.GroupPage, error) {
 	// Check if current user has permission
 	if hasPerm, err := permission.CurrentUserHasGroupList(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
 		return nil, auth.PERMISSION_DENIED_GQL_ERROR
 	}
 
-	return r.ent.Group.Query().All(ctx)
+	q := r.ent.Group.Query().Limit(count)
+	if offset != nil {
+		q = q.Offset(*offset)
+	}
+	entGroups, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entGroupCount, err := r.ent.Group.Query().Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.GroupPage{
+		Groups: entGroups,
+		Total:  entGroupCount,
+	}, nil
 }
 
 // Get a group (requires permission `x.x.groups.x.get`)
@@ -683,13 +706,35 @@ func (r *queryResolver) Group(ctx context.Context, id uuid.UUID) (*ent.Group, er
 }
 
 // List permissions (requires permission `x.x.permission.*.list`)
-func (r *queryResolver) Permissions(ctx context.Context) ([]*ent.GrantedPermission, error) {
+func (r *queryResolver) Permissions(ctx context.Context, count int, offset *int) (*model.GrantedPermissionPage, error) {
 	// Check if current user has permission
 	if hasPerm, err := permission.CurrentUserHasPermissionList(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
 		return nil, auth.PERMISSION_DENIED_GQL_ERROR
 	}
 
-	return r.ent.GrantedPermission.Query().All(ctx)
+	q := r.ent.GrantedPermission.Query().Order(
+		ent.Asc(
+			grantedpermission.FieldSubjectType,
+			grantedpermission.FieldObjectType,
+			grantedpermission.FieldAction,
+		),
+	).
+		Limit(count)
+	if offset != nil {
+		q = q.Offset(*offset)
+	}
+	entPermissions, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entPermissionCount, err := r.ent.GrantedPermission.Query().Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.GrantedPermissionPage{
+		Permissions: entPermissions,
+		Total:       entPermissionCount,
+	}, nil
 }
 
 // Get a permission (requires permission `x.x.permission.x.get`)
@@ -703,13 +748,28 @@ func (r *queryResolver) Permission(ctx context.Context, id uuid.UUID) (*ent.Gran
 }
 
 // List providers (requires permission `x.x.providers.*.list`)
-func (r *queryResolver) Providers(ctx context.Context) ([]*ent.Provider, error) {
+func (r *queryResolver) Providers(ctx context.Context, count int, offset *int) (*model.ProviderPage, error) {
 	// Check if current user has permission
 	if hasPerm, err := permission.CurrentUserHasProviderList(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
 		return nil, auth.PERMISSION_DENIED_GQL_ERROR
 	}
 
-	return r.ent.Provider.Query().All(ctx)
+	q := r.ent.Provider.Query().Limit(count)
+	if offset != nil {
+		q = q.Offset(*offset)
+	}
+	entProviders, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entProviderCount, err := r.ent.Provider.Query().Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.ProviderPage{
+		Providers: entProviders,
+		Total:     entProviderCount,
+	}, nil
 }
 
 // Get a provider (requires permission `x.x.providers.x.get`)
@@ -723,22 +783,52 @@ func (r *queryResolver) Provider(ctx context.Context, id uuid.UUID) (*ent.Provid
 }
 
 // List blueprints (requires permission `x.x.blueprints.*.list`)
-func (r *queryResolver) Blueprints(ctx context.Context) ([]*ent.Blueprint, error) {
+func (r *queryResolver) Blueprints(ctx context.Context, count int, offset *int) (*model.BlueprintPage, error) {
 	// Check if current user has permission
 	if hasPerm, err := permission.CurrentUserHasBlueprintList(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
 		return nil, auth.PERMISSION_DENIED_GQL_ERROR
 	}
 
-	return r.ent.Blueprint.Query().All(ctx)
+	q := r.ent.Blueprint.Query().Limit(count)
+	if offset != nil {
+		q = q.Offset(*offset)
+	}
+	entBlueprints, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entBlueprintCount, err := r.ent.Blueprint.Query().Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.BlueprintPage{
+		Blueprints: entBlueprints,
+		Total:      entBlueprintCount,
+	}, nil
 }
 
 // List all blueprints user has `blueprint.x.deploy` permission for
-func (r *queryResolver) DeployableBlueprints(ctx context.Context) ([]*ent.Blueprint, error) {
+func (r *queryResolver) DeployableBlueprints(ctx context.Context, count int, offset *int) (*model.BlueprintPage, error) {
 	// Check if user has permission to deploy all blueprints
 	if hasPerm, err := permission.CurrentUserHasBlueprintDeploy(ctx, r.ent, uuid.Nil); err != nil {
 		return nil, auth.PERMISSION_DENIED_GQL_ERROR
 	} else if hasPerm {
-		return r.ent.Blueprint.Query().All(ctx)
+		q := r.ent.Blueprint.Query().Limit(count)
+		if offset != nil {
+			q = q.Offset(*offset)
+		}
+		entBlueprints, err := q.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		entBlueprintCount, err := r.ent.Blueprint.Query().Count(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return &model.BlueprintPage{
+			Blueprints: entBlueprints,
+			Total:      entBlueprintCount,
+		}, nil
 	}
 
 	// Get the current logged in user
@@ -770,7 +860,24 @@ func (r *queryResolver) DeployableBlueprints(ctx context.Context) ([]*ent.Bluepr
 		return nil, gqlerror.Errorf("failed to scan blueprint IDs from permissions: %v", err)
 	}
 
-	return r.ent.Blueprint.Query().Where(blueprint.IDIn(entBlueprintIDs...)).All(ctx)
+	q := r.ent.Blueprint.Query().
+		Where(blueprint.IDIn(entBlueprintIDs...)).
+		Limit(count)
+	if offset != nil {
+		q = q.Offset(*offset)
+	}
+	entBlueprints, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entBlueprintCount, err := r.ent.Blueprint.Query().Where(blueprint.IDIn(entBlueprintIDs...)).Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.BlueprintPage{
+		Blueprints: entBlueprints,
+		Total:      entBlueprintCount,
+	}, nil
 }
 
 // Get a blueprint (requires permission `x.x.blueprints.x.get`)
@@ -784,13 +891,28 @@ func (r *queryResolver) Blueprint(ctx context.Context, id uuid.UUID) (*ent.Bluep
 }
 
 // List deployments (requires permission `x.x.deployments.*.list`)
-func (r *queryResolver) Deployments(ctx context.Context) ([]*ent.Deployment, error) {
+func (r *queryResolver) Deployments(ctx context.Context, count int, offset *int) (*model.DeploymentPage, error) {
 	// Check if current user has permission
 	if hasPerm, err := permission.CurrentUserHasDeploymentList(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
 		return nil, auth.PERMISSION_DENIED_GQL_ERROR
 	}
 
-	return r.ent.Deployment.Query().All(ctx)
+	q := r.ent.Deployment.Query().Limit(count)
+	if offset != nil {
+		q = q.Offset(*offset)
+	}
+	entDeployments, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entDeploymentCount, err := r.ent.Deployment.Query().Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.DeploymentPage{
+		Deployments: entDeployments,
+		Total:       entDeploymentCount,
+	}, nil
 }
 
 // Get a deployment (requires permission `x.x.deployments.x.get`)
@@ -801,6 +923,59 @@ func (r *queryResolver) Deployment(ctx context.Context, id uuid.UUID) (*ent.Depl
 	}
 
 	return r.ent.Deployment.Get(ctx, id)
+}
+
+// SearchUsers is the resolver for the searchUsers field.
+func (r *queryResolver) SearchUsers(ctx context.Context, search string, count int, offset *int) (*model.UserPage, error) {
+	q := r.ent.User.Query().Where(
+		user.Or(
+			IDFuzzySearch(search),
+			user.UsernameContainsFold(search),
+			user.EmailContainsFold(search),
+			user.FirstNameContainsFold(search),
+			user.LastNameContainsFold(search),
+		),
+	).Limit(count)
+	if offset != nil {
+		q = q.Offset(*offset)
+	}
+	entUsers, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entUserCount, err := q.Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.UserPage{
+		Users: entUsers,
+		Total: entUserCount,
+	}, nil
+}
+
+// SearchGroups is the resolver for the searchGroups field.
+func (r *queryResolver) SearchGroups(ctx context.Context, search string, count int, offset *int) (*model.GroupPage, error) {
+	q := r.ent.Group.Query().Where(
+		group.Or(
+			IDFuzzySearch(search),
+			group.NameContainsFold(search),
+		),
+	).Limit(count)
+	if offset != nil {
+		q = q.Offset(*offset)
+	}
+	entGroups, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entGroupCount, err := q.Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.GroupPage{
+		Groups: entGroups,
+		Total:  entGroupCount,
+	}, nil
 }
 
 // Type is the resolver for the type field.

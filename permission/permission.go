@@ -132,5 +132,5 @@ func DisplayString(subjectType grantedpermission.SubjectType, subjectID uuid.UUI
 	if objectID == uuid.Nil {
 		objectIdString = "*"
 	}
-	return fmt.Sprintf("%s.%s.%s.%s.%s", subjectType, subjectID, objectType, objectIdString, action.DisplayString())
+	return fmt.Sprintf("/%s/%s/%s/%s/%s", subjectType, subjectID, objectType, objectIdString, action.DisplayString())
 }

@@ -3,7 +3,8 @@ scalar Map
 scalar StrMap
 scalar VarTypeMap
 scalar UUID
-scalar Action
+
+# directive @hasPermission(objectType: ObjectType!, action: Action!) on FIELD_DEFINITION
 
 type Blueprint {
   id: ID!
@@ -17,6 +18,11 @@ type Blueprint {
   provider: Provider!
   resources: [Resource!]!
   deployments: [Deployment]!
+}
+
+type BlueprintPage {
+  blueprints: [Blueprint!]!
+  total: Int!
 }
 
 enum ResourceType {
@@ -60,6 +66,11 @@ type Deployment {
   requester: User!
 }
 
+type DeploymentPage {
+  deployments: [Deployment!]!
+  total: Int!
+}
+
 enum DeploymentNodeState {
   AWAITING
   PARENTAWAITING
@@ -94,18 +105,62 @@ type Group {
   users: [User]
 }
 
+type GroupPage {
+  groups: [Group!]!
+  total: Int!
+}
+
 enum SubjectType {
-  USER
-  GROUP
+  user
+  group
 }
 
 enum ObjectType {
-  BLUEPRINT
-  DEPLOYMENT
-  GROUP
-  PERMISSION
-  PROVIDER
-  USER
+  blueprint
+  deployment
+  group
+  permission
+  provider
+  user
+}
+
+enum Action {
+  blueprint_list
+  blueprint_create
+  blueprint_get
+  blueprint_update
+  blueprint_delete
+  blueprint_deploy
+  deployment_list
+  deployment_create
+  deployment_get
+  deployment_update
+  deployment_delete
+  deployment_destroy
+  deployment_redeploy
+  deployment_console
+  group_list
+  group_create
+  group_get
+  group_update
+  group_delete
+  permission_list
+  permission_get
+  permission_grant
+  permission_revoke
+  provider_list
+  provider_create
+  provider_get
+  provider_update
+  provider_delete
+  provider_load
+  provider_unload
+  provider_configure
+  user_list
+  user_create
+  user_get
+  user_update
+  user_delete
 }
 
 type GrantedPermission {
@@ -113,12 +168,17 @@ type GrantedPermission {
   createdAt: Time!
   updatedAt: Time!
   subjectType: SubjectType!
-  subjectId: String!
+  subjectId: ID!
   objectType: ObjectType!
-  objectId: String!
+  objectId: ID!
   action: Action!
 
   displayString: String!
+}
+
+type GrantedPermissionPage {
+  permissions: [GrantedPermission!]!
+  total: Int!
 }
 
 type Provider {
@@ -134,6 +194,11 @@ type Provider {
   blueprints: [Blueprint]
 }
 
+type ProviderPage {
+  providers: [Provider!]!
+  total: Int!
+}
+
 type User {
   id: ID!
   createdAt: Time!
@@ -147,6 +212,11 @@ type User {
   deployments: [Deployment]!
 }
 
+type UserPage {
+  users: [User!]!
+  total: Int!
+}
+
 type Query {
   """
   Get current user
@@ -155,11 +225,11 @@ type Query {
   """
   Retrieves if the current user has a given permission
   """
-  meHasPermission(key: String!): Boolean!
+  meHasPermission(objectType: ObjectType!, objectID: ID, action: Action!): Boolean!
   """
   List users (requires permission `x.x.users.*.list`)
   """
-  users: [User!]!
+  users(count: Int! = 10, offset: Int): UserPage!
   """
   Get a user (requires permission `x.x.users.x.get`)
   """
@@ -167,7 +237,7 @@ type Query {
   """
   List groups (requires permission `x.x.groups.*.list`)
   """
-  groups: [Group!]!
+  groups(count: Int! = 10, offset: Int): GroupPage!
   """
   Get a group (requires permission `x.x.groups.x.get`)
   """
@@ -175,7 +245,7 @@ type Query {
   """
   List permissions (requires permission `x.x.permission.*.list`)
   """
-  permissions: [GrantedPermission!]!
+  permissions(count: Int! = 10, offset: Int): GrantedPermissionPage!
   """
   Get a permission (requires permission `x.x.permission.x.get`)
   """
@@ -183,7 +253,7 @@ type Query {
   """
   List providers (requires permission `x.x.providers.*.list`)
   """
-  providers: [Provider!]!
+  providers(count: Int! = 10, offset: Int): ProviderPage!
   """
   Get a provider (requires permission `x.x.providers.x.get`)
   """
@@ -191,11 +261,11 @@ type Query {
   """
   List blueprints (requires permission `x.x.blueprints.*.list`)
   """
-  blueprints: [Blueprint!]!
+  blueprints(count: Int! = 10, offset: Int): BlueprintPage!
   """
   List all blueprints user has `blueprint.x.deploy` permission for
   """
-  deployableBlueprints: [Blueprint!]!
+  deployableBlueprints(count: Int! = 10, offset: Int): BlueprintPage!
   """
   Get a blueprint (requires permission `x.x.blueprints.x.get`)
   """
@@ -203,11 +273,24 @@ type Query {
   """
   List deployments (requires permission `x.x.deployments.*.list`)
   """
-  deployments: [Deployment!]!
+  deployments(count: Int! = 10, offset: Int): DeploymentPage!
   """
   Get a deployment (requires permission `x.x.deployments.x.get`)
   """
   deployment(id: ID!): Deployment!
+
+  ##########
+  # SEARCH #
+  ##########
+
+  """
+  Search users
+  """
+  searchUsers(search: String!, count: Int! = 10, offset: Int): UserPage!
+  """
+  Search groups
+  """
+  searchGroups(search: String!, count: Int! = 10, offset: Int): GroupPage!
 }
 
 input BlueprintInput {
