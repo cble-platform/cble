@@ -6,28 +6,29 @@ import '@fontsource/roboto/400.css'
 import '@fontsource/roboto/500.css'
 import '@fontsource/roboto/700.css'
 
-// Pages
-import Root from './routes/root'
-import ErrorPage from './error-page'
-import Login from './routes/auth/login'
-
-import React from 'react'
+import React, { lazy, Suspense } from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
 import { ThemeWrapper } from './theme'
-import { client } from './api/apollo'
+import { client } from './lib/api/apollo'
 import { ApolloProvider } from '@apollo/client'
-import Blueprints from './routes/blueprints'
 import YamlWorker from './yaml.worker.js?worker'
 import { SnackbarProvider } from 'notistack'
-import RequestBlueprint from './routes/blueprints/request'
-import BlueprintForm from './routes/blueprints/form'
-import Deployments from './routes/deployments'
-import DestroyDeployment from './routes/deployments/destroy'
-import DeploymentDetails from './routes/deployments/details'
-import Providers from './routes/providers'
-import ProviderForm from './routes/providers/form'
 import { ReactFlowProvider } from 'reactflow'
+
+// Pages
+const Root = lazy(() => import('./routes/root'))
+const ErrorPage = lazy(() => import('./error-page'))
+const Login = lazy(() => import('./routes/auth/login'))
+const Blueprints = lazy(() => import('./routes/blueprints'))
+const RequestBlueprint = lazy(() => import('./routes/blueprints/request'))
+const BlueprintForm = lazy(() => import('./routes/blueprints/form'))
+const Deployments = lazy(() => import('./routes/deployments'))
+const DestroyDeployment = lazy(() => import('./routes/deployments/destroy'))
+const DeploymentDetails = lazy(() => import('./routes/deployments/details'))
+const Providers = lazy(() => import('./routes/providers'))
+const ProviderForm = lazy(() => import('./routes/providers/form'))
+const Permissions = lazy(() => import('./routes/permissions'))
 
 window.MonacoEnvironment = {
   getWorker(_, label) {
@@ -41,49 +42,100 @@ window.MonacoEnvironment = {
   },
 }
 
+const LazyComponent = ({
+  element,
+}: {
+  element: React.ReactNode
+}): React.ReactElement => {
+  return <Suspense fallback={<>Loading...</>}>{element}</Suspense>
+}
+
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <Root />,
+    element: <LazyComponent element={<Root />} />,
     children: [
       { index: true, element: <Navigate to="/blueprints" replace /> },
       {
         path: 'blueprints',
         children: [
-          { index: true, element: <Blueprints /> },
-          { path: 'create', element: <BlueprintForm action="create" /> },
-          { path: 'edit/:id', element: <BlueprintForm action="edit" /> },
-          { path: 'request/:id', element: <RequestBlueprint /> },
+          { index: true, element: <LazyComponent element={<Blueprints />} /> },
+          {
+            path: 'create',
+            element: (
+              <LazyComponent element={<BlueprintForm action="create" />} />
+            ),
+          },
+          {
+            path: 'edit/:id',
+            element: (
+              <LazyComponent element={<BlueprintForm action="edit" />} />
+            ),
+          },
+          {
+            path: 'request/:id',
+            element: <LazyComponent element={<RequestBlueprint />} />,
+          },
         ],
       },
       {
         path: 'deployments',
         children: [
-          { index: true, element: <Deployments /> },
-          { path: ':id', element: <DeploymentDetails /> },
-          { path: 'destroy/:id', element: <DestroyDeployment /> },
+          { index: true, element: <LazyComponent element={<Deployments />} /> },
+          {
+            path: ':id',
+            element: <LazyComponent element={<DeploymentDetails />} />,
+          },
+          {
+            path: 'destroy/:id',
+            element: <LazyComponent element={<DestroyDeployment />} />,
+          },
         ],
       },
       {
         path: 'providers',
         children: [
-          { index: true, element: <Providers /> },
-          { path: 'create', element: <ProviderForm action="create" /> },
-          { path: 'edit/:id', element: <ProviderForm action="edit" /> },
+          { index: true, element: <LazyComponent element={<Providers />} /> },
+          {
+            path: 'create',
+            element: (
+              <LazyComponent element={<ProviderForm action="create" />} />
+            ),
+          },
+          {
+            path: 'edit/:id',
+            element: <LazyComponent element={<ProviderForm action="edit" />} />,
+          },
+        ],
+      },
+      {
+        path: 'permissions',
+        children: [
+          { index: true, element: <LazyComponent element={<Permissions />} /> },
+          {
+            path: 'create',
+            element: (
+              <LazyComponent element={<ProviderForm action="create" />} />
+            ),
+          },
+          {
+            path: 'edit/:id',
+            element: <LazyComponent element={<ProviderForm action="edit" />} />,
+          },
         ],
       },
     ],
-    errorElement: <ErrorPage />,
+    errorElement: <LazyComponent element={<ErrorPage />} />,
   },
   {
     path: '/auth',
     children: [
       {
         path: 'login',
-        element: <Login />,
+        element: <LazyComponent element={<Login />} />,
       },
     ],
-    errorElement: <ErrorPage />,
+    errorElement: <LazyComponent element={<ErrorPage />} />,
   },
 ])
 

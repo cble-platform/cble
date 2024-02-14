@@ -12,7 +12,7 @@ import {
   Typography,
 } from '@mui/material'
 import { useContext, useState } from 'react'
-import { Login as ApiLogin } from '../../api/auth'
+import { Login as ApiLogin } from '../../lib/api/auth'
 import { useNavigate } from 'react-router-dom'
 import { LoadingButton } from '@mui/lab'
 import { ThemeContext } from '../../theme'

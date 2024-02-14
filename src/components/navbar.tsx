@@ -9,6 +9,7 @@ import {
 } from '@mui/material'
 import Logo from './logo'
 import { Brightness4, Brightness7, BrightnessAuto } from '@mui/icons-material'
+import { useNavPermissionsQuery } from '@/lib/api/generated'
 
 export default function Navbar({
   themePreference,
@@ -17,6 +18,8 @@ export default function Navbar({
   themePreference: 'light' | 'dark' | 'auto'
   setTheme: (theme: 'auto' | 'dark' | 'light') => void
 }) {
+  const { data: navPermissions } = useNavPermissionsQuery()
+
   return (
     <AppBar position="fixed" color="primary">
       <Container maxWidth="xl">
@@ -70,17 +73,19 @@ export default function Navbar({
           </Box>
           <AdbIcon sx={{ display: { xs: 'flex', md: 'none' }, mr: 1 }} /> */}
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
-            <Button
-              href="/blueprints"
-              sx={{
-                my: 2,
-                color: 'white',
-                display: 'block',
-                textAlign: 'center',
-              }}
-            >
-              Blueprints
-            </Button>
+            {navPermissions?.listBlueprints && (
+              <Button
+                href="/blueprints"
+                sx={{
+                  my: 2,
+                  color: 'white',
+                  display: 'block',
+                  textAlign: 'center',
+                }}
+              >
+                Blueprints
+              </Button>
+            )}
             <Button
               href="/deployments"
               sx={{
@@ -92,17 +97,32 @@ export default function Navbar({
             >
               Deployments
             </Button>
-            <Button
-              href="/providers"
-              sx={{
-                my: 2,
-                color: 'white',
-                display: 'block',
-                textAlign: 'center',
-              }}
-            >
-              Providers
-            </Button>
+            {navPermissions?.listProviders && (
+              <Button
+                href="/providers"
+                sx={{
+                  my: 2,
+                  color: 'white',
+                  display: 'block',
+                  textAlign: 'center',
+                }}
+              >
+                Providers
+              </Button>
+            )}
+            {navPermissions?.listPermissions && (
+              <Button
+                href="/permissions"
+                sx={{
+                  my: 2,
+                  color: 'white',
+                  display: 'block',
+                  textAlign: 'center',
+                }}
+              >
+                Permissions
+              </Button>
+            )}
           </Box>
           <IconButton
             color="inherit"

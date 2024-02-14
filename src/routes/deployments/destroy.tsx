@@ -10,7 +10,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
   useDestroyDeploymentMutation,
   useGetDeploymentLazyQuery,
-} from '../../api/generated'
+} from '../../lib/api/generated'
 import { useEffect } from 'react'
 import { useSnackbar } from 'notistack'
 import { ChevronLeft, Delete } from '@mui/icons-material'

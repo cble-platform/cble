@@ -30,7 +30,7 @@ import {
   useLoadProviderMutation,
   useUnloadProviderMutation,
   useUpdateProviderMutation,
-} from '../../api/generated'
+} from '../../lib/api/generated'
 import { useContext, useEffect, useState } from 'react'
 import { ThemeContext } from '../../theme'
 import MonacoEditor, { useMonaco } from '@monaco-editor/react'

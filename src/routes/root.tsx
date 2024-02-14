@@ -3,7 +3,7 @@ import { useContext, useEffect } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import Navbar from '../components/navbar'
 import { ThemeContext } from '../theme'
-import { useMeQuery } from '../api/generated'
+import { useMeQuery } from '../lib/api/generated'
 
 export default function Root() {
   const { themePreference, setThemePreference } = useContext(ThemeContext)

@@ -14,12 +14,14 @@ import {
 } from '@mui/material'
 import { useSnackbar } from 'notistack'
 import {
+  Action,
   ListProvidersQuery,
+  ObjectType,
   useListProvidersQuery,
   useLoadProviderMutation,
   useMeHasPermissionQuery,
   useUnloadProviderMutation,
-} from '../../api/generated'
+} from '../../lib/api/generated'
 import { useEffect, useState } from 'react'
 import { TypographyCode } from '../../components/custom-typography'
 import { Add, Circle, ExpandMore } from '@mui/icons-material'
@@ -29,7 +31,11 @@ export default function Providers() {
   const { enqueueSnackbar } = useSnackbar()
   const navigate = useNavigate()
   const { data: createPermData } = useMeHasPermissionQuery({
-    variables: { key: 'com.cble.providers.create' },
+    variables: {
+      objectID: null,
+      objectType: ObjectType.Provider,
+      action: Action.ProviderList,
+    },
   })
   const {
     data: listProvidersData,
@@ -39,7 +45,7 @@ export default function Providers() {
   } = useListProvidersQuery()
   const [moreMenuEl, setMoreMenuEl] = useState<null | HTMLElement>(null)
   const [moreMenuProvider, setMoreMenuProvider] =
-    useState<ListProvidersQuery['providers'][number]>()
+    useState<ListProvidersQuery['providers']['providers'][number]>()
   const [
     loadProvider,
     {
@@ -106,7 +112,7 @@ export default function Providers() {
   ])
 
   const handleMoreMenuClick = (
-    provider: ListProvidersQuery['providers'][number],
+    provider: ListProvidersQuery['providers']['providers'][number],
     event: React.MouseEvent<HTMLElement>
   ) => {
     setMoreMenuEl(event.currentTarget)
@@ -145,7 +151,7 @@ export default function Providers() {
             <LinearProgress />
           </Grid>
         )}
-        {listProvidersData?.providers.map((provider) => (
+        {listProvidersData?.providers.providers.map((provider) => (
           <Grid item xs={12} key={provider.id}>
             <Card sx={{ width: '100%' }}>
               <CardContent>
