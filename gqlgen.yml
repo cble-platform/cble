@@ -70,3 +70,12 @@ models:
   UUID:
     model:
       - github.com/cble-platform/cble-backend/graph/model.UUID
+  Action:
+    model:
+      - github.com/cble-platform/cble-backend/permission/actions.PermissionAction
+  SubjectType:
+    model:
+      - github.com/cble-platform/cble-backend/ent/grantedpermission.SubjectType
+  ObjectType:
+    model:
+      - github.com/cble-platform/cble-backend/ent/grantedpermission.ObjectType

@@ -1,0 +1,42 @@
+blueprint:
+  - list
+  - create
+  - get
+  - update
+  - delete
+  - deploy
+deployment:
+  - list
+  - create
+  - get
+  - update
+  - delete
+  - destroy
+  - redeploy
+  - console
+group:
+  - list
+  - create
+  - get
+  - update
+  - delete
+permission:
+  - list
+  - get
+  - grant
+  - revoke
+provider:
+  - list
+  - create
+  - get
+  - update
+  - delete
+  - load
+  - unload
+  - configure
+user:
+  - list
+  - create
+  - get
+  - update
+  - delete

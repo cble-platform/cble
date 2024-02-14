@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/cble-platform/cble-backend/engine/models"
+	"github.com/cble-platform/cble-backend/ent"
 	"github.com/google/uuid"
 )
 
@@ -19,8 +20,32 @@ type BlueprintInput struct {
 	ProviderID        uuid.UUID                               `json:"providerId"`
 }
 
+type BlueprintPage struct {
+	Blueprints []*ent.Blueprint `json:"blueprints"`
+	Total      int              `json:"total"`
+}
+
 type DeploymentInput struct {
 	Name string `json:"name"`
+}
+
+type DeploymentPage struct {
+	Deployments []*ent.Deployment `json:"deployments"`
+	Total       int               `json:"total"`
+}
+
+type GrantedPermissionPage struct {
+	Permissions []*ent.GrantedPermission `json:"permissions"`
+	Total       int                      `json:"total"`
+}
+
+type GroupInput struct {
+	Name string `json:"name"`
+}
+
+type GroupPage struct {
+	Groups []*ent.Group `json:"groups"`
+	Total  int          `json:"total"`
 }
 
 type ProviderInput struct {
@@ -30,12 +55,21 @@ type ProviderInput struct {
 	ConfigBytes     string `json:"configBytes"`
 }
 
+type ProviderPage struct {
+	Providers []*ent.Provider `json:"providers"`
+	Total     int             `json:"total"`
+}
+
 type UserInput struct {
-	Username  string      `json:"username"`
-	Email     string      `json:"email"`
-	FirstName string      `json:"firstName"`
-	LastName  string      `json:"lastName"`
-	GroupIds  []uuid.UUID `json:"groupIds"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+}
+
+type UserPage struct {
+	Users []*ent.User `json:"users"`
+	Total int         `json:"total"`
 }
 
 type DeploymentNodeState string
@@ -137,47 +171,6 @@ func (e *DeploymentState) UnmarshalGQL(v interface{}) error {
 }
 
 func (e DeploymentState) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
-}
-
-type PermissionPolicyType string
-
-const (
-	PermissionPolicyTypeAllow PermissionPolicyType = "ALLOW"
-	PermissionPolicyTypeDeny  PermissionPolicyType = "DENY"
-)
-
-var AllPermissionPolicyType = []PermissionPolicyType{
-	PermissionPolicyTypeAllow,
-	PermissionPolicyTypeDeny,
-}
-
-func (e PermissionPolicyType) IsValid() bool {
-	switch e {
-	case PermissionPolicyTypeAllow, PermissionPolicyTypeDeny:
-		return true
-	}
-	return false
-}
-
-func (e PermissionPolicyType) String() string {
-	return string(e)
-}
-
-func (e *PermissionPolicyType) UnmarshalGQL(v interface{}) error {
-	str, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("enums must be strings")
-	}
-
-	*e = PermissionPolicyType(str)
-	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid PermissionPolicyType", str)
-	}
-	return nil
-}
-
-func (e PermissionPolicyType) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 

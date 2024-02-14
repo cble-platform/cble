@@ -21,36 +21,15 @@ const (
 	FieldUpdatedAt = "updated_at"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-	// EdgeParent holds the string denoting the parent edge name in mutations.
-	EdgeParent = "parent"
-	// EdgeChildren holds the string denoting the children edge name in mutations.
-	EdgeChildren = "children"
 	// EdgeUsers holds the string denoting the users edge name in mutations.
 	EdgeUsers = "users"
-	// EdgePermissionPolicies holds the string denoting the permission_policies edge name in mutations.
-	EdgePermissionPolicies = "permission_policies"
 	// Table holds the table name of the group in the database.
 	Table = "groups"
-	// ParentTable is the table that holds the parent relation/edge.
-	ParentTable = "groups"
-	// ParentColumn is the table column denoting the parent relation/edge.
-	ParentColumn = "group_children"
-	// ChildrenTable is the table that holds the children relation/edge.
-	ChildrenTable = "groups"
-	// ChildrenColumn is the table column denoting the children relation/edge.
-	ChildrenColumn = "group_children"
 	// UsersTable is the table that holds the users relation/edge. The primary key declared below.
 	UsersTable = "user_groups"
 	// UsersInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
 	UsersInverseTable = "users"
-	// PermissionPoliciesTable is the table that holds the permission_policies relation/edge.
-	PermissionPoliciesTable = "permission_policies"
-	// PermissionPoliciesInverseTable is the table name for the PermissionPolicy entity.
-	// It exists in this package in order to avoid circular dependency with the "permissionpolicy" package.
-	PermissionPoliciesInverseTable = "permission_policies"
-	// PermissionPoliciesColumn is the table column denoting the permission_policies relation/edge.
-	PermissionPoliciesColumn = "permission_policy_group"
 )
 
 // Columns holds all SQL columns for group fields.
@@ -59,12 +38,6 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldUpdatedAt,
 	FieldName,
-}
-
-// ForeignKeys holds the SQL foreign-keys that are owned by the "groups"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"group_children",
 }
 
 var (
@@ -77,11 +50,6 @@ var (
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -122,27 +90,6 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
 }
 
-// ByParentField orders the results by parent field.
-func ByParentField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newParentStep(), sql.OrderByField(field, opts...))
-	}
-}
-
-// ByChildrenCount orders the results by children count.
-func ByChildrenCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newChildrenStep(), opts...)
-	}
-}
-
-// ByChildren orders the results by children terms.
-func ByChildren(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newChildrenStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
 // ByUsersCount orders the results by users count.
 func ByUsersCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -156,45 +103,10 @@ func ByUsers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newUsersStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-
-// ByPermissionPoliciesCount orders the results by permission_policies count.
-func ByPermissionPoliciesCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newPermissionPoliciesStep(), opts...)
-	}
-}
-
-// ByPermissionPolicies orders the results by permission_policies terms.
-func ByPermissionPolicies(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newPermissionPoliciesStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-func newParentStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(Table, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, ParentTable, ParentColumn),
-	)
-}
-func newChildrenStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(Table, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, ChildrenTable, ChildrenColumn),
-	)
-}
 func newUsersStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UsersInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, true, UsersTable, UsersPrimaryKey...),
-	)
-}
-func newPermissionPoliciesStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(PermissionPoliciesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, true, PermissionPoliciesTable, PermissionPoliciesColumn),
 	)
 }

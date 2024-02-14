@@ -45,6 +45,18 @@ func (f DeploymentNodeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Val
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DeploymentNodeMutation", m)
 }
 
+// The GrantedPermissionFunc type is an adapter to allow the use of ordinary
+// function as GrantedPermission mutator.
+type GrantedPermissionFunc func(context.Context, *ent.GrantedPermissionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GrantedPermissionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GrantedPermissionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GrantedPermissionMutation", m)
+}
+
 // The GroupFunc type is an adapter to allow the use of ordinary
 // function as Group mutator.
 type GroupFunc func(context.Context, *ent.GroupMutation) (ent.Value, error)
@@ -57,30 +69,6 @@ func (f GroupFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupMutation", m)
 }
 
-// The PermissionFunc type is an adapter to allow the use of ordinary
-// function as Permission mutator.
-type PermissionFunc func(context.Context, *ent.PermissionMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f PermissionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.PermissionMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PermissionMutation", m)
-}
-
-// The PermissionPolicyFunc type is an adapter to allow the use of ordinary
-// function as PermissionPolicy mutator.
-type PermissionPolicyFunc func(context.Context, *ent.PermissionPolicyMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f PermissionPolicyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.PermissionPolicyMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PermissionPolicyMutation", m)
-}
-
 // The ProviderFunc type is an adapter to allow the use of ordinary
 // function as Provider mutator.
 type ProviderFunc func(context.Context, *ent.ProviderMutation) (ent.Value, error)
@@ -91,18 +79,6 @@ func (f ProviderFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ProviderMutation", m)
-}
-
-// The ProviderCommandFunc type is an adapter to allow the use of ordinary
-// function as ProviderCommand mutator.
-type ProviderCommandFunc func(context.Context, *ent.ProviderCommandMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f ProviderCommandFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.ProviderCommandMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ProviderCommandMutation", m)
 }
 
 // The ResourceFunc type is an adapter to allow the use of ordinary

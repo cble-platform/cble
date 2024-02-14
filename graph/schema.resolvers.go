@@ -11,8 +11,14 @@ import (
 	"github.com/cble-platform/cble-backend/auth"
 	"github.com/cble-platform/cble-backend/engine"
 	"github.com/cble-platform/cble-backend/ent"
+	"github.com/cble-platform/cble-backend/ent/blueprint"
+	"github.com/cble-platform/cble-backend/ent/grantedpermission"
+	"github.com/cble-platform/cble-backend/ent/group"
+	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/cble-platform/cble-backend/graph/generated"
 	"github.com/cble-platform/cble-backend/graph/model"
+	"github.com/cble-platform/cble-backend/permission"
+	"github.com/cble-platform/cble-backend/permission/actions"
 	"github.com/google/uuid"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	yaml "gopkg.in/yaml.v3"
@@ -87,14 +93,9 @@ func (r *deploymentNodeResolver) PrevNodes(ctx context.Context, obj *ent.Deploym
 	return obj.QueryPrevNodes().All(ctx)
 }
 
-// Children is the resolver for the children field.
-func (r *groupResolver) Children(ctx context.Context, obj *ent.Group) ([]*ent.Group, error) {
-	return obj.QueryChildren().All(ctx)
-}
-
-// Parent is the resolver for the parent field.
-func (r *groupResolver) Parent(ctx context.Context, obj *ent.Group) (*ent.Group, error) {
-	return obj.QueryParent().Only(ctx)
+// DisplayString is the resolver for the displayString field.
+func (r *grantedPermissionResolver) DisplayString(ctx context.Context, obj *ent.GrantedPermission) (string, error) {
+	return permission.DisplayString(obj.SubjectType, obj.SubjectID, obj.ObjectType, obj.ObjectID, obj.Action), nil
 }
 
 // Users is the resolver for the users field.
@@ -102,25 +103,24 @@ func (r *groupResolver) Users(ctx context.Context, obj *ent.Group) ([]*ent.User,
 	return obj.QueryUsers().All(ctx)
 }
 
-// PermissionPolicies is the resolver for the permissionPolicies field.
-func (r *groupResolver) PermissionPolicies(ctx context.Context, obj *ent.Group) ([]*ent.PermissionPolicy, error) {
-	return obj.QueryPermissionPolicies().All(ctx)
-}
-
-// SelfChangePassword is the resolver for the selfChangePassword field.
+// Change current user's password
 func (r *mutationResolver) SelfChangePassword(ctx context.Context, currentPassword string, newPassword string) (bool, error) {
 	panic(fmt.Errorf("not implemented: SelfChangePassword - selfChangePassword"))
 }
 
-// CreateUser is the resolver for the createUser field.
+// Create a user (requires permission `x.x.users.*.create`)
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.UserInput) (*ent.User, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasUserCreate(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
 	// Create the user
 	entUser, err := r.ent.User.Create().
 		SetEmail(input.Email).
 		SetFirstName(input.FirstName).
 		SetLastName(input.LastName).
 		SetUsername(input.Username).
-		AddGroupIDs(input.GroupIds...).
 		Save(ctx)
 	if err != nil {
 		return nil, gqlerror.Errorf("failed to create user: %v", err)
@@ -129,18 +129,144 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.UserInput
 	return entUser, nil
 }
 
-// UpdateUser is the resolver for the updateUser field.
+// Update a user (requires permission `x.x.users.x.update`)
 func (r *mutationResolver) UpdateUser(ctx context.Context, id uuid.UUID, input model.UserInput) (*ent.User, error) {
-	panic(fmt.Errorf("not implemented: UpdateUser - updateUser"))
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasUserUpdate(ctx, r.ent, id); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	// Update the user
+	entUser, err := r.ent.User.UpdateOneID(id).
+		SetEmail(input.Email).
+		SetFirstName(input.FirstName).
+		SetLastName(input.LastName).
+		SetUsername(input.Username).
+		Save(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to update user: %v", err)
+	}
+
+	return entUser, nil
 }
 
-// DeleteUser is the resolver for the deleteUser field.
+// Delete a user (requires permission `x.x.users.x.delete`)
 func (r *mutationResolver) DeleteUser(ctx context.Context, id uuid.UUID) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteUser - deleteUser"))
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasUserDelete(ctx, r.ent, id); err != nil || !hasPerm {
+		return false, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	// Delete the user
+	err := r.ent.User.DeleteOneID(id).Exec(ctx)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to delete user: %v", err)
+	}
+	return true, nil
 }
 
-// CreateProvider is the resolver for the createProvider field.
+// Create a group (requires permission `x.x.group.*.create`)
+func (r *mutationResolver) CreateGroup(ctx context.Context, input model.GroupInput) (*ent.Group, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasGroupCreate(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	// Create the group
+	entGroup, err := r.ent.Group.Create().
+		SetName(input.Name).
+		Save(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to create group: %v", err)
+	}
+
+	return entGroup, nil
+}
+
+// Update a group (requires permission `x.x.group.x.update`)
+func (r *mutationResolver) UpdateGroup(ctx context.Context, id uuid.UUID, input model.GroupInput) (*ent.Group, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasGroupUpdate(ctx, r.ent, id); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	// Update the group
+	entGroup, err := r.ent.Group.UpdateOneID(id).
+		SetName(input.Name).
+		Save(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to update group: %v", err)
+	}
+
+	return entGroup, nil
+}
+
+// Delete a group (requires permission `x.x.group.x.delete`)
+func (r *mutationResolver) DeleteGroup(ctx context.Context, id uuid.UUID) (bool, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasGroupDelete(ctx, r.ent, id); err != nil || !hasPerm {
+		return false, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	// Delete the group
+	err := r.ent.Group.DeleteOneID(id).Exec(ctx)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to delete group: %v", err)
+	}
+	return true, nil
+}
+
+// Grant a permission (requires permission `x.x.permission.*.grant`)
+func (r *mutationResolver) GrantPermission(ctx context.Context, subjectType grantedpermission.SubjectType, subjectID uuid.UUID, objectType grantedpermission.ObjectType, objectID *uuid.UUID, action actions.PermissionAction) (*ent.GrantedPermission, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasPermissionGrant(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	// Apply wildcard if objectID is nil
+	objectId := uuid.Nil
+	if objectID != nil {
+		objectId = *objectID
+	}
+
+	// Grant the permission
+	entGrantedPermission, err := permission.GrantPermission(ctx, r.ent, subjectType, subjectID, objectType, objectId, action)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to grant permission: %v", err)
+	}
+
+	return entGrantedPermission, nil
+}
+
+// Revoke a permission (requires permission `x.x.permission.*.revoke`)
+func (r *mutationResolver) RevokePermission(ctx context.Context, subjectType grantedpermission.SubjectType, subjectID uuid.UUID, objectType grantedpermission.ObjectType, objectID *uuid.UUID, action actions.PermissionAction) (bool, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasPermissionRevoke(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
+		return false, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	// Apply wildcard if objectID is nil
+	objectId := uuid.Nil
+	if objectID != nil {
+		objectId = *objectID
+	}
+
+	// Revoke the permission
+	err := permission.RevokePermission(ctx, r.ent, subjectType, subjectID, objectType, objectId, action)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to grant permission: %v", err)
+	}
+
+	return true, nil
+}
+
+// Create a provider (requires permission `x.x.providers.*.create`)
 func (r *mutationResolver) CreateProvider(ctx context.Context, input model.ProviderInput) (*ent.Provider, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasProviderCreate(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
 	entProvider, err := r.ent.Provider.Create().
 		SetDisplayName(input.DisplayName).
 		SetProviderGitURL(input.ProviderGitURL).
@@ -154,8 +280,13 @@ func (r *mutationResolver) CreateProvider(ctx context.Context, input model.Provi
 	return entProvider, nil
 }
 
-// UpdateProvider is the resolver for the updateProvider field.
+// Update a provider (requires permission `x.x.providers.x.update`)
 func (r *mutationResolver) UpdateProvider(ctx context.Context, id uuid.UUID, input model.ProviderInput) (*ent.Provider, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasProviderUpdate(ctx, r.ent, id); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
 	// Update the provider
 	entProvider, err := r.ent.Provider.UpdateOneID(id).
 		SetDisplayName(input.DisplayName).
@@ -169,8 +300,13 @@ func (r *mutationResolver) UpdateProvider(ctx context.Context, id uuid.UUID, inp
 	return entProvider, nil
 }
 
-// DeleteProvider is the resolver for the deleteProvider field.
+// Delete a provider (requires permission `x.x.providers.x.delete`)
 func (r *mutationResolver) DeleteProvider(ctx context.Context, id uuid.UUID) (bool, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasProviderDelete(ctx, r.ent, id); err != nil || !hasPerm {
+		return false, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
 	// Check if the provider is loaded
 	entProvider, err := r.ent.Provider.Get(ctx, id)
 	if err != nil {
@@ -189,8 +325,13 @@ func (r *mutationResolver) DeleteProvider(ctx context.Context, id uuid.UUID) (bo
 	return true, nil
 }
 
-// CreateBlueprint is the resolver for the createBlueprint field.
+// Create a blueprint (requires permission `x.x.blueprints.*.create`)
 func (r *mutationResolver) CreateBlueprint(ctx context.Context, input model.BlueprintInput) (*ent.Blueprint, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasBlueprintCreate(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
 	// Get the edge objects
 	entProvider, err := r.ent.Provider.Get(ctx, input.ProviderID)
 	if err != nil {
@@ -234,8 +375,13 @@ func (r *mutationResolver) CreateBlueprint(ctx context.Context, input model.Blue
 	return entBlueprint.Unwrap(), nil
 }
 
-// UpdateBlueprint is the resolver for the updateBlueprint field.
+// Update a blueprint (requires permission `x.x.blueprints.x.update`)
 func (r *mutationResolver) UpdateBlueprint(ctx context.Context, id uuid.UUID, input model.BlueprintInput) (*ent.Blueprint, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasBlueprintUpdate(ctx, r.ent, id); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
 	// Create a transactional client
 	tx, err := r.ent.Tx(ctx)
 	if err != nil {
@@ -254,22 +400,11 @@ func (r *mutationResolver) UpdateBlueprint(ctx context.Context, id uuid.UUID, in
 		return nil, gqlerror.Errorf("failed to query provider by ID: %v", err)
 	}
 
-	// // Convert variable types from string to model.BlueprintVariableType
-	// varTypes := make(map[string]models.BlueprintVariableType)
-	// ok := true
-	// for k, v := range input.VariableTypes {
-	// 	varTypes[k], ok = models.ParseBlueprintVariableType(v)
-	// 	if !ok {
-	// 		return nil, gqlerror.Errorf("variable %s has invalid type", k)
-	// 	}
-	// }
-
 	// Update the blueprint
 	entBlueprint, err = entBlueprint.Update().
 		SetName(input.Name).
 		SetDescription(input.Description).
 		SetBlueprintTemplate([]byte(input.BlueprintTemplate)).
-		// SetVariableTypes(varTypes).
 		SetVariableTypes(input.VariableTypes).
 		SetProvider(entProvider).
 		Save(ctx)
@@ -294,18 +429,39 @@ func (r *mutationResolver) UpdateBlueprint(ctx context.Context, id uuid.UUID, in
 	return entBlueprint.Unwrap(), nil
 }
 
-// DeleteBlueprint is the resolver for the deleteBlueprint field.
+// Delete a blueprint (requires permission `x.x.blueprints.x.delete`)
 func (r *mutationResolver) DeleteBlueprint(ctx context.Context, id uuid.UUID) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteBlueprint - deleteBlueprint"))
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasBlueprintDelete(ctx, r.ent, id); err != nil || !hasPerm {
+		return false, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	// Delete the blueprint
+	err := r.ent.Blueprint.DeleteOneID(id).Exec(ctx)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to delete blueprint: %v", err)
+	}
+
+	return true, nil
 }
 
-// UpdateDeployment is the resolver for the updateDeployment field.
+// Update a deployment (requires permission `x.x.deployments.x.update`)
 func (r *mutationResolver) UpdateDeployment(ctx context.Context, id uuid.UUID, input model.DeploymentInput) (*ent.Deployment, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasDeploymentUpdate(ctx, r.ent, id); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
 	return r.ent.Deployment.UpdateOneID(id).SetName(input.Name).Save(ctx)
 }
 
-// LoadProvider is the resolver for the loadProvider field.
+// Load a provider to connect it to CBLE (requires permission `x.x.providers.x.load`)
 func (r *mutationResolver) LoadProvider(ctx context.Context, id uuid.UUID) (*ent.Provider, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasProviderLoad(ctx, r.ent, id); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
 	// Check the provider exists
 	entProvider, err := r.ent.Provider.Get(ctx, id)
 	if err != nil {
@@ -318,8 +474,13 @@ func (r *mutationResolver) LoadProvider(ctx context.Context, id uuid.UUID) (*ent
 	return entProvider, nil
 }
 
-// UnloadProvider is the resolver for the unloadProvider field.
+// Unload a provider to disconnect it from CBLE (requires permission `x.x.providers.x.unload`)
 func (r *mutationResolver) UnloadProvider(ctx context.Context, id uuid.UUID) (*ent.Provider, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasProviderUnload(ctx, r.ent, id); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
 	// Check the provider exists
 	entProvider, err := r.ent.Provider.Get(ctx, id)
 	if err != nil {
@@ -335,8 +496,13 @@ func (r *mutationResolver) UnloadProvider(ctx context.Context, id uuid.UUID) (*e
 	return entProvider, nil
 }
 
-// ConfigureProvider is the resolver for the configureProvider field.
+// Applies the stored configuration to the provider (requires permission `x.x.providers.x.configure`)
 func (r *mutationResolver) ConfigureProvider(ctx context.Context, id uuid.UUID) (*ent.Provider, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasProviderConfigure(ctx, r.ent, id); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
 	// Get the provider
 	entProvider, err := r.ent.Provider.Get(ctx, id)
 	if err != nil {
@@ -354,8 +520,13 @@ func (r *mutationResolver) ConfigureProvider(ctx context.Context, id uuid.UUID) 
 	return entProvider, nil
 }
 
-// DeployBlueprint is the resolver for the deployBlueprint field.
+// Deploy a blueprint (requires permission `x.x.blueprints.x.deploy`)
 func (r *mutationResolver) DeployBlueprint(ctx context.Context, id uuid.UUID, templateVars map[string]string) (*ent.Deployment, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasBlueprintDeploy(ctx, r.ent, id); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
 	// Get the current authenticated user
 	currentUser, err := auth.ForContext(ctx)
 	if err != nil {
@@ -400,8 +571,13 @@ func (r *mutationResolver) DeployBlueprint(ctx context.Context, id uuid.UUID, te
 	return entDeployment, nil
 }
 
-// DestroyDeployment is the resolver for the destroyDeployment field.
+// Destroy a deployment (requires permission `x.x.deployments.x.destroy`)
 func (r *mutationResolver) DestroyDeployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasDeploymentDestroy(ctx, r.ent, id); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
 	// Get the deployment by ID
 	entDeployment, err := r.ent.Deployment.Get(ctx, id)
 	if err != nil {
@@ -414,8 +590,13 @@ func (r *mutationResolver) DestroyDeployment(ctx context.Context, id uuid.UUID) 
 	return entDeployment, nil
 }
 
-// RedeployDeployment is the resolver for the redeployDeployment field.
+// Redeploy nodes within a deployment (requires permission `x.x.deployments.x.redeploy`)
 func (r *mutationResolver) RedeployDeployment(ctx context.Context, id uuid.UUID, nodeIds []uuid.UUID) (*ent.Deployment, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasDeploymentRedeploy(ctx, r.ent, id); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
 	// Get the deployment by ID
 	entDeployment, err := r.ent.Deployment.Get(ctx, id)
 	if err != nil {
@@ -428,26 +609,6 @@ func (r *mutationResolver) RedeployDeployment(ctx context.Context, id uuid.UUID,
 	return entDeployment, nil
 }
 
-// PermissionPolicies is the resolver for the permissionPolicies field.
-func (r *permissionResolver) PermissionPolicies(ctx context.Context, obj *ent.Permission) ([]*ent.PermissionPolicy, error) {
-	return obj.QueryPermissionPolicies().All(ctx)
-}
-
-// Type is the resolver for the type field.
-func (r *permissionPolicyResolver) Type(ctx context.Context, obj *ent.PermissionPolicy) (model.PermissionPolicyType, error) {
-	return model.PermissionPolicyType(obj.Type), nil
-}
-
-// Permission is the resolver for the permission field.
-func (r *permissionPolicyResolver) Permission(ctx context.Context, obj *ent.PermissionPolicy) (*ent.Permission, error) {
-	return obj.QueryPermission().Only(ctx)
-}
-
-// Group is the resolver for the group field.
-func (r *permissionPolicyResolver) Group(ctx context.Context, obj *ent.PermissionPolicy) (*ent.Group, error) {
-	return obj.QueryGroup().Only(ctx)
-}
-
 // ConfigBytes is the resolver for the configBytes field.
 func (r *providerResolver) ConfigBytes(ctx context.Context, obj *ent.Provider) (string, error) {
 	return string(obj.ConfigBytes), nil
@@ -458,68 +619,363 @@ func (r *providerResolver) Blueprints(ctx context.Context, obj *ent.Provider) ([
 	return obj.QueryBlueprints().All(ctx)
 }
 
-// Me is the resolver for the me field.
+// Get current user
 func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
 	return auth.ForContext(ctx)
 }
 
 // MeHasPermission is the resolver for the meHasPermission field.
-func (r *queryResolver) MeHasPermission(ctx context.Context, key string) (bool, error) {
-	currentUser, err := auth.ForContext(ctx)
-	if err != nil {
-		return false, gqlerror.Errorf("failed to get user from context: %v", err)
+func (r *queryResolver) MeHasPermission(ctx context.Context, objectType grantedpermission.ObjectType, objectID *uuid.UUID, action actions.PermissionAction) (bool, error) {
+	// Convert nillable ID to uuid.Nil
+	objectId := uuid.Nil
+	if objectID != nil {
+		objectId = *objectID
 	}
-	return r.permissionEngine.RequestPermission(ctx, currentUser, key)
+
+	return permission.CurrentUserHasPermission(ctx, r.ent, objectType, objectId, action)
 }
 
-// Users is the resolver for the users field.
-func (r *queryResolver) Users(ctx context.Context) ([]*ent.User, error) {
-	return r.ent.User.Query().All(ctx)
+// List users (requires permission `x.x.users.*.list`)
+func (r *queryResolver) Users(ctx context.Context, count *int, offset *int) (*model.UserPage, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasUserList(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	q := r.ent.User.Query().Limit(count)
+	if offset != nil {
+		q = q.Offset(*offset)
+	}
+	entUsers, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entUserCount, err := r.ent.User.Query().Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.UserPage{
+		Users: entUsers,
+		Total: entUserCount,
+	}, nil
 }
 
-// User is the resolver for the user field.
+// Get a user (requires permission `x.x.users.x.get`)
 func (r *queryResolver) User(ctx context.Context, id uuid.UUID) (*ent.User, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasUserGet(ctx, r.ent, id); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
 	return r.ent.User.Get(ctx, id)
 }
 
-// Groups is the resolver for the groups field.
-func (r *queryResolver) Groups(ctx context.Context) ([]*ent.Group, error) {
-	return r.ent.Group.Query().All(ctx)
+// List groups (requires permission `x.x.groups.*.list`)
+func (r *queryResolver) Groups(ctx context.Context, count int, offset *int) (*model.GroupPage, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasGroupList(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	q := r.ent.Group.Query().Limit(count)
+	if offset != nil {
+		q = q.Offset(*offset)
+	}
+	entGroups, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entGroupCount, err := r.ent.Group.Query().Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.GroupPage{
+		Groups: entGroups,
+		Total:  entGroupCount,
+	}, nil
 }
 
-// Group is the resolver for the group field.
+// Get a group (requires permission `x.x.groups.x.get`)
 func (r *queryResolver) Group(ctx context.Context, id uuid.UUID) (*ent.Group, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasGroupGet(ctx, r.ent, id); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
 	return r.ent.Group.Get(ctx, id)
 }
 
-// Providers is the resolver for the Providers field.
-func (r *queryResolver) Providers(ctx context.Context) ([]*ent.Provider, error) {
-	return r.ent.Provider.Query().All(ctx)
+// List permissions (requires permission `x.x.permission.*.list`)
+func (r *queryResolver) Permissions(ctx context.Context, count int, offset *int) (*model.GrantedPermissionPage, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasPermissionList(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	q := r.ent.GrantedPermission.Query().Order(
+		ent.Asc(
+			grantedpermission.FieldSubjectType,
+			grantedpermission.FieldObjectType,
+			grantedpermission.FieldAction,
+		),
+	).
+		Limit(count)
+	if offset != nil {
+		q = q.Offset(*offset)
+	}
+	entPermissions, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entPermissionCount, err := r.ent.GrantedPermission.Query().Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.GrantedPermissionPage{
+		Permissions: entPermissions,
+		Total:       entPermissionCount,
+	}, nil
 }
 
-// Provider is the resolver for the provider field.
+// Get a permission (requires permission `x.x.permission.x.get`)
+func (r *queryResolver) Permission(ctx context.Context, id uuid.UUID) (*ent.GrantedPermission, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasPermissionGet(ctx, r.ent, id); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	return r.ent.GrantedPermission.Get(ctx, id)
+}
+
+// List providers (requires permission `x.x.providers.*.list`)
+func (r *queryResolver) Providers(ctx context.Context, count int, offset *int) (*model.ProviderPage, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasProviderList(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	q := r.ent.Provider.Query().Limit(count)
+	if offset != nil {
+		q = q.Offset(*offset)
+	}
+	entProviders, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entProviderCount, err := r.ent.Provider.Query().Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.ProviderPage{
+		Providers: entProviders,
+		Total:     entProviderCount,
+	}, nil
+}
+
+// Get a provider (requires permission `x.x.providers.x.get`)
 func (r *queryResolver) Provider(ctx context.Context, id uuid.UUID) (*ent.Provider, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasProviderGet(ctx, r.ent, id); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
 	return r.ent.Provider.Get(ctx, id)
 }
 
-// Blueprints is the resolver for the blueprints field.
-func (r *queryResolver) Blueprints(ctx context.Context) ([]*ent.Blueprint, error) {
-	return r.ent.Blueprint.Query().All(ctx)
+// List blueprints (requires permission `x.x.blueprints.*.list`)
+func (r *queryResolver) Blueprints(ctx context.Context, count int, offset *int) (*model.BlueprintPage, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasBlueprintList(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	q := r.ent.Blueprint.Query().Limit(count)
+	if offset != nil {
+		q = q.Offset(*offset)
+	}
+	entBlueprints, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entBlueprintCount, err := r.ent.Blueprint.Query().Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.BlueprintPage{
+		Blueprints: entBlueprints,
+		Total:      entBlueprintCount,
+	}, nil
 }
 
-// Blueprint is the resolver for the blueprint field.
+// List all blueprints user has `blueprint.x.deploy` permission for
+func (r *queryResolver) DeployableBlueprints(ctx context.Context, count int, offset *int) (*model.BlueprintPage, error) {
+	// Check if user has permission to deploy all blueprints
+	if hasPerm, err := permission.CurrentUserHasBlueprintDeploy(ctx, r.ent, uuid.Nil); err != nil {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	} else if hasPerm {
+		q := r.ent.Blueprint.Query().Limit(count)
+		if offset != nil {
+			q = q.Offset(*offset)
+		}
+		entBlueprints, err := q.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		entBlueprintCount, err := r.ent.Blueprint.Query().Count(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return &model.BlueprintPage{
+			Blueprints: entBlueprints,
+			Total:      entBlueprintCount,
+		}, nil
+	}
+
+	// Get the current logged in user
+	currentUser, err := auth.ForContext(ctx)
+	if err != nil {
+		return nil, auth.AUTH_REQUIRED_GQL_ERROR
+	}
+	entGroupIDs, err := currentUser.QueryGroups().IDs(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to get user group IDs: %v", err)
+	}
+
+	var entBlueprintIDs []uuid.UUID
+
+	err = r.ent.GrantedPermission.Query().Where(
+		grantedpermission.Or(
+			grantedpermission.And(
+				grantedpermission.SubjectTypeEQ(grantedpermission.SubjectTypeUser),
+				grantedpermission.SubjectIDEQ(currentUser.ID),
+			),
+			grantedpermission.And(
+				grantedpermission.SubjectTypeEQ(grantedpermission.SubjectTypeGroup),
+				grantedpermission.SubjectIDIn(entGroupIDs...),
+			),
+		),
+		grantedpermission.ObjectTypeEQ(grantedpermission.ObjectTypeBlueprint),
+	).Select(grantedpermission.FieldObjectID).Scan(ctx, &entBlueprintIDs)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to scan blueprint IDs from permissions: %v", err)
+	}
+
+	q := r.ent.Blueprint.Query().
+		Where(blueprint.IDIn(entBlueprintIDs...)).
+		Limit(count)
+	if offset != nil {
+		q = q.Offset(*offset)
+	}
+	entBlueprints, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entBlueprintCount, err := r.ent.Blueprint.Query().Where(blueprint.IDIn(entBlueprintIDs...)).Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.BlueprintPage{
+		Blueprints: entBlueprints,
+		Total:      entBlueprintCount,
+	}, nil
+}
+
+// Get a blueprint (requires permission `x.x.blueprints.x.get`)
 func (r *queryResolver) Blueprint(ctx context.Context, id uuid.UUID) (*ent.Blueprint, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasBlueprintGet(ctx, r.ent, id); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
 	return r.ent.Blueprint.Get(ctx, id)
 }
 
-// Deployments is the resolver for the deployments field.
-func (r *queryResolver) Deployments(ctx context.Context) ([]*ent.Deployment, error) {
-	return r.ent.Deployment.Query().All(ctx)
+// List deployments (requires permission `x.x.deployments.*.list`)
+func (r *queryResolver) Deployments(ctx context.Context, count int, offset *int) (*model.DeploymentPage, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasDeploymentList(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	q := r.ent.Deployment.Query().Limit(count)
+	if offset != nil {
+		q = q.Offset(*offset)
+	}
+	entDeployments, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entDeploymentCount, err := r.ent.Deployment.Query().Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.DeploymentPage{
+		Deployments: entDeployments,
+		Total:       entDeploymentCount,
+	}, nil
 }
 
-// Deployment is the resolver for the deployment field.
+// Get a deployment (requires permission `x.x.deployments.x.get`)
 func (r *queryResolver) Deployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasDeploymentGet(ctx, r.ent, id); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
 	return r.ent.Deployment.Get(ctx, id)
+}
+
+// SearchUsers is the resolver for the searchUsers field.
+func (r *queryResolver) SearchUsers(ctx context.Context, search string, count int, offset *int) (*model.UserPage, error) {
+	q := r.ent.User.Query().Where(
+		user.Or(
+			IDFuzzySearch(search),
+			user.UsernameContainsFold(search),
+			user.EmailContainsFold(search),
+			user.FirstNameContainsFold(search),
+			user.LastNameContainsFold(search),
+		),
+	).Limit(count)
+	if offset != nil {
+		q = q.Offset(*offset)
+	}
+	entUsers, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entUserCount, err := q.Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.UserPage{
+		Users: entUsers,
+		Total: entUserCount,
+	}, nil
+}
+
+// SearchGroups is the resolver for the searchGroups field.
+func (r *queryResolver) SearchGroups(ctx context.Context, search string, count int, offset *int) (*model.GroupPage, error) {
+	q := r.ent.Group.Query().Where(
+		group.Or(
+			IDFuzzySearch(search),
+			group.NameContainsFold(search),
+		),
+	).Limit(count)
+	if offset != nil {
+		q = q.Offset(*offset)
+	}
+	entGroups, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entGroupCount, err := q.Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.GroupPage{
+		Groups: entGroups,
+		Total:  entGroupCount,
+	}, nil
 }
 
 // Type is the resolver for the type field.
@@ -572,19 +1028,16 @@ func (r *Resolver) DeploymentNode() generated.DeploymentNodeResolver {
 	return &deploymentNodeResolver{r}
 }
 
+// GrantedPermission returns generated.GrantedPermissionResolver implementation.
+func (r *Resolver) GrantedPermission() generated.GrantedPermissionResolver {
+	return &grantedPermissionResolver{r}
+}
+
 // Group returns generated.GroupResolver implementation.
 func (r *Resolver) Group() generated.GroupResolver { return &groupResolver{r} }
 
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
-
-// Permission returns generated.PermissionResolver implementation.
-func (r *Resolver) Permission() generated.PermissionResolver { return &permissionResolver{r} }
-
-// PermissionPolicy returns generated.PermissionPolicyResolver implementation.
-func (r *Resolver) PermissionPolicy() generated.PermissionPolicyResolver {
-	return &permissionPolicyResolver{r}
-}
 
 // Provider returns generated.ProviderResolver implementation.
 func (r *Resolver) Provider() generated.ProviderResolver { return &providerResolver{r} }
@@ -601,10 +1054,9 @@ func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
 type blueprintResolver struct{ *Resolver }
 type deploymentResolver struct{ *Resolver }
 type deploymentNodeResolver struct{ *Resolver }
+type grantedPermissionResolver struct{ *Resolver }
 type groupResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
-type permissionResolver struct{ *Resolver }
-type permissionPolicyResolver struct{ *Resolver }
 type providerResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type resourceResolver struct{ *Resolver }

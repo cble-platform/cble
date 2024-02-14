@@ -16,7 +16,9 @@ import (
 	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/cble-platform/cble-backend/engine/models"
 	"github.com/cble-platform/cble-backend/ent"
+	"github.com/cble-platform/cble-backend/ent/grantedpermission"
 	"github.com/cble-platform/cble-backend/graph/model"
+	"github.com/cble-platform/cble-backend/permission/actions"
 	"github.com/google/uuid"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -45,10 +47,9 @@ type ResolverRoot interface {
 	Blueprint() BlueprintResolver
 	Deployment() DeploymentResolver
 	DeploymentNode() DeploymentNodeResolver
+	GrantedPermission() GrantedPermissionResolver
 	Group() GroupResolver
 	Mutation() MutationResolver
-	Permission() PermissionResolver
-	PermissionPolicy() PermissionPolicyResolver
 	Provider() ProviderResolver
 	Query() QueryResolver
 	Resource() ResourceResolver
@@ -56,7 +57,6 @@ type ResolverRoot interface {
 }
 
 type DirectiveRoot struct {
-	Permission func(ctx context.Context, obj interface{}, next graphql.Resolver, key string) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
@@ -71,6 +71,11 @@ type ComplexityRoot struct {
 		Resources         func(childComplexity int) int
 		UpdatedAt         func(childComplexity int) int
 		VariableTypes     func(childComplexity int) int
+	}
+
+	BlueprintPage struct {
+		Blueprints func(childComplexity int) int
+		Total      func(childComplexity int) int
 	}
 
 	Deployment struct {
@@ -98,52 +103,64 @@ type ComplexityRoot struct {
 		Vars       func(childComplexity int) int
 	}
 
+	DeploymentPage struct {
+		Deployments func(childComplexity int) int
+		Total       func(childComplexity int) int
+	}
+
+	GrantedPermission struct {
+		Action        func(childComplexity int) int
+		CreatedAt     func(childComplexity int) int
+		DisplayString func(childComplexity int) int
+		ID            func(childComplexity int) int
+		ObjectID      func(childComplexity int) int
+		ObjectType    func(childComplexity int) int
+		SubjectID     func(childComplexity int) int
+		SubjectType   func(childComplexity int) int
+		UpdatedAt     func(childComplexity int) int
+	}
+
+	GrantedPermissionPage struct {
+		Permissions func(childComplexity int) int
+		Total       func(childComplexity int) int
+	}
+
 	Group struct {
-		Children           func(childComplexity int) int
-		CreatedAt          func(childComplexity int) int
-		ID                 func(childComplexity int) int
-		Name               func(childComplexity int) int
-		Parent             func(childComplexity int) int
-		PermissionPolicies func(childComplexity int) int
-		UpdatedAt          func(childComplexity int) int
-		Users              func(childComplexity int) int
+		CreatedAt func(childComplexity int) int
+		ID        func(childComplexity int) int
+		Name      func(childComplexity int) int
+		UpdatedAt func(childComplexity int) int
+		Users     func(childComplexity int) int
+	}
+
+	GroupPage struct {
+		Groups func(childComplexity int) int
+		Total  func(childComplexity int) int
 	}
 
 	Mutation struct {
 		ConfigureProvider  func(childComplexity int, id uuid.UUID) int
 		CreateBlueprint    func(childComplexity int, input model.BlueprintInput) int
+		CreateGroup        func(childComplexity int, input model.GroupInput) int
 		CreateProvider     func(childComplexity int, input model.ProviderInput) int
 		CreateUser         func(childComplexity int, input model.UserInput) int
 		DeleteBlueprint    func(childComplexity int, id uuid.UUID) int
+		DeleteGroup        func(childComplexity int, id uuid.UUID) int
 		DeleteProvider     func(childComplexity int, id uuid.UUID) int
 		DeleteUser         func(childComplexity int, id uuid.UUID) int
 		DeployBlueprint    func(childComplexity int, id uuid.UUID, templateVars map[string]string) int
 		DestroyDeployment  func(childComplexity int, id uuid.UUID) int
+		GrantPermission    func(childComplexity int, subjectType grantedpermission.SubjectType, subjectID uuid.UUID, objectType grantedpermission.ObjectType, objectID *uuid.UUID, action actions.PermissionAction) int
 		LoadProvider       func(childComplexity int, id uuid.UUID) int
 		RedeployDeployment func(childComplexity int, id uuid.UUID, nodeIds []uuid.UUID) int
+		RevokePermission   func(childComplexity int, subjectType grantedpermission.SubjectType, subjectID uuid.UUID, objectType grantedpermission.ObjectType, objectID *uuid.UUID, action actions.PermissionAction) int
 		SelfChangePassword func(childComplexity int, currentPassword string, newPassword string) int
 		UnloadProvider     func(childComplexity int, id uuid.UUID) int
 		UpdateBlueprint    func(childComplexity int, id uuid.UUID, input model.BlueprintInput) int
 		UpdateDeployment   func(childComplexity int, id uuid.UUID, input model.DeploymentInput) int
+		UpdateGroup        func(childComplexity int, id uuid.UUID, input model.GroupInput) int
 		UpdateProvider     func(childComplexity int, id uuid.UUID, input model.ProviderInput) int
 		UpdateUser         func(childComplexity int, id uuid.UUID, input model.UserInput) int
-	}
-
-	Permission struct {
-		CreatedAt          func(childComplexity int) int
-		ID                 func(childComplexity int) int
-		Key                func(childComplexity int) int
-		PermissionPolicies func(childComplexity int) int
-		UpdatedAt          func(childComplexity int) int
-	}
-
-	PermissionPolicy struct {
-		CreatedAt  func(childComplexity int) int
-		Group      func(childComplexity int) int
-		ID         func(childComplexity int) int
-		Permission func(childComplexity int) int
-		Type       func(childComplexity int) int
-		UpdatedAt  func(childComplexity int) int
 	}
 
 	Provider struct {
@@ -158,19 +175,29 @@ type ComplexityRoot struct {
 		UpdatedAt       func(childComplexity int) int
 	}
 
+	ProviderPage struct {
+		Providers func(childComplexity int) int
+		Total     func(childComplexity int) int
+	}
+
 	Query struct {
-		Blueprint       func(childComplexity int, id uuid.UUID) int
-		Blueprints      func(childComplexity int) int
-		Deployment      func(childComplexity int, id uuid.UUID) int
-		Deployments     func(childComplexity int) int
-		Group           func(childComplexity int, id uuid.UUID) int
-		Groups          func(childComplexity int) int
-		Me              func(childComplexity int) int
-		MeHasPermission func(childComplexity int, key string) int
-		Provider        func(childComplexity int, id uuid.UUID) int
-		Providers       func(childComplexity int) int
-		User            func(childComplexity int, id uuid.UUID) int
-		Users           func(childComplexity int) int
+		Blueprint            func(childComplexity int, id uuid.UUID) int
+		Blueprints           func(childComplexity int, count int, offset *int) int
+		DeployableBlueprints func(childComplexity int, count int, offset *int) int
+		Deployment           func(childComplexity int, id uuid.UUID) int
+		Deployments          func(childComplexity int, count int, offset *int) int
+		Group                func(childComplexity int, id uuid.UUID) int
+		Groups               func(childComplexity int, count int, offset *int) int
+		Me                   func(childComplexity int) int
+		MeHasPermission      func(childComplexity int, objectType grantedpermission.ObjectType, objectID *uuid.UUID, action actions.PermissionAction) int
+		Permission           func(childComplexity int, id uuid.UUID) int
+		Permissions          func(childComplexity int, count int, offset *int) int
+		Provider             func(childComplexity int, id uuid.UUID) int
+		Providers            func(childComplexity int, count int, offset *int) int
+		SearchGroups         func(childComplexity int, search string, count int, offset *int) int
+		SearchUsers          func(childComplexity int, search string, count int, offset *int) int
+		User                 func(childComplexity int, id uuid.UUID) int
+		Users                func(childComplexity int, count *int, offset *int) int
 	}
 
 	Resource struct {
@@ -197,6 +224,11 @@ type ComplexityRoot struct {
 		UpdatedAt   func(childComplexity int) int
 		Username    func(childComplexity int) int
 	}
+
+	UserPage struct {
+		Total func(childComplexity int) int
+		Users func(childComplexity int) int
+	}
 }
 
 type BlueprintResolver interface {
@@ -221,17 +253,22 @@ type DeploymentNodeResolver interface {
 	NextNodes(ctx context.Context, obj *ent.DeploymentNode) ([]*ent.DeploymentNode, error)
 	PrevNodes(ctx context.Context, obj *ent.DeploymentNode) ([]*ent.DeploymentNode, error)
 }
+type GrantedPermissionResolver interface {
+	DisplayString(ctx context.Context, obj *ent.GrantedPermission) (string, error)
+}
 type GroupResolver interface {
-	Children(ctx context.Context, obj *ent.Group) ([]*ent.Group, error)
-	Parent(ctx context.Context, obj *ent.Group) (*ent.Group, error)
 	Users(ctx context.Context, obj *ent.Group) ([]*ent.User, error)
-	PermissionPolicies(ctx context.Context, obj *ent.Group) ([]*ent.PermissionPolicy, error)
 }
 type MutationResolver interface {
 	SelfChangePassword(ctx context.Context, currentPassword string, newPassword string) (bool, error)
 	CreateUser(ctx context.Context, input model.UserInput) (*ent.User, error)
 	UpdateUser(ctx context.Context, id uuid.UUID, input model.UserInput) (*ent.User, error)
 	DeleteUser(ctx context.Context, id uuid.UUID) (bool, error)
+	CreateGroup(ctx context.Context, input model.GroupInput) (*ent.Group, error)
+	UpdateGroup(ctx context.Context, id uuid.UUID, input model.GroupInput) (*ent.Group, error)
+	DeleteGroup(ctx context.Context, id uuid.UUID) (bool, error)
+	GrantPermission(ctx context.Context, subjectType grantedpermission.SubjectType, subjectID uuid.UUID, objectType grantedpermission.ObjectType, objectID *uuid.UUID, action actions.PermissionAction) (*ent.GrantedPermission, error)
+	RevokePermission(ctx context.Context, subjectType grantedpermission.SubjectType, subjectID uuid.UUID, objectType grantedpermission.ObjectType, objectID *uuid.UUID, action actions.PermissionAction) (bool, error)
 	CreateProvider(ctx context.Context, input model.ProviderInput) (*ent.Provider, error)
 	UpdateProvider(ctx context.Context, id uuid.UUID, input model.ProviderInput) (*ent.Provider, error)
 	DeleteProvider(ctx context.Context, id uuid.UUID) (bool, error)
@@ -246,14 +283,6 @@ type MutationResolver interface {
 	DestroyDeployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error)
 	RedeployDeployment(ctx context.Context, id uuid.UUID, nodeIds []uuid.UUID) (*ent.Deployment, error)
 }
-type PermissionResolver interface {
-	PermissionPolicies(ctx context.Context, obj *ent.Permission) ([]*ent.PermissionPolicy, error)
-}
-type PermissionPolicyResolver interface {
-	Type(ctx context.Context, obj *ent.PermissionPolicy) (model.PermissionPolicyType, error)
-	Permission(ctx context.Context, obj *ent.PermissionPolicy) (*ent.Permission, error)
-	Group(ctx context.Context, obj *ent.PermissionPolicy) (*ent.Group, error)
-}
 type ProviderResolver interface {
 	ConfigBytes(ctx context.Context, obj *ent.Provider) (string, error)
 
@@ -261,17 +290,22 @@ type ProviderResolver interface {
 }
 type QueryResolver interface {
 	Me(ctx context.Context) (*ent.User, error)
-	MeHasPermission(ctx context.Context, key string) (bool, error)
-	Users(ctx context.Context) ([]*ent.User, error)
+	MeHasPermission(ctx context.Context, objectType grantedpermission.ObjectType, objectID *uuid.UUID, action actions.PermissionAction) (bool, error)
+	Users(ctx context.Context, count *int, offset *int) (*model.UserPage, error)
 	User(ctx context.Context, id uuid.UUID) (*ent.User, error)
-	Groups(ctx context.Context) ([]*ent.Group, error)
+	Groups(ctx context.Context, count int, offset *int) (*model.GroupPage, error)
 	Group(ctx context.Context, id uuid.UUID) (*ent.Group, error)
-	Providers(ctx context.Context) ([]*ent.Provider, error)
+	Permissions(ctx context.Context, count int, offset *int) (*model.GrantedPermissionPage, error)
+	Permission(ctx context.Context, id uuid.UUID) (*ent.GrantedPermission, error)
+	Providers(ctx context.Context, count int, offset *int) (*model.ProviderPage, error)
 	Provider(ctx context.Context, id uuid.UUID) (*ent.Provider, error)
-	Blueprints(ctx context.Context) ([]*ent.Blueprint, error)
+	Blueprints(ctx context.Context, count int, offset *int) (*model.BlueprintPage, error)
+	DeployableBlueprints(ctx context.Context, count int, offset *int) (*model.BlueprintPage, error)
 	Blueprint(ctx context.Context, id uuid.UUID) (*ent.Blueprint, error)
-	Deployments(ctx context.Context) ([]*ent.Deployment, error)
+	Deployments(ctx context.Context, count int, offset *int) (*model.DeploymentPage, error)
 	Deployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error)
+	SearchUsers(ctx context.Context, search string, count int, offset *int) (*model.UserPage, error)
+	SearchGroups(ctx context.Context, search string, count int, offset *int) (*model.GroupPage, error)
 }
 type ResourceResolver interface {
 	Type(ctx context.Context, obj *ent.Resource) (model.ResourceType, error)
@@ -374,6 +408,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Blueprint.VariableTypes(childComplexity), true
+
+	case "BlueprintPage.blueprints":
+		if e.complexity.BlueprintPage.Blueprints == nil {
+			break
+		}
+
+		return e.complexity.BlueprintPage.Blueprints(childComplexity), true
+
+	case "BlueprintPage.total":
+		if e.complexity.BlueprintPage.Total == nil {
+			break
+		}
+
+		return e.complexity.BlueprintPage.Total(childComplexity), true
 
 	case "Deployment.blueprint":
 		if e.complexity.Deployment.Blueprint == nil {
@@ -508,12 +556,96 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.DeploymentNode.Vars(childComplexity), true
 
-	case "Group.children":
-		if e.complexity.Group.Children == nil {
+	case "DeploymentPage.deployments":
+		if e.complexity.DeploymentPage.Deployments == nil {
 			break
 		}
 
-		return e.complexity.Group.Children(childComplexity), true
+		return e.complexity.DeploymentPage.Deployments(childComplexity), true
+
+	case "DeploymentPage.total":
+		if e.complexity.DeploymentPage.Total == nil {
+			break
+		}
+
+		return e.complexity.DeploymentPage.Total(childComplexity), true
+
+	case "GrantedPermission.action":
+		if e.complexity.GrantedPermission.Action == nil {
+			break
+		}
+
+		return e.complexity.GrantedPermission.Action(childComplexity), true
+
+	case "GrantedPermission.createdAt":
+		if e.complexity.GrantedPermission.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.GrantedPermission.CreatedAt(childComplexity), true
+
+	case "GrantedPermission.displayString":
+		if e.complexity.GrantedPermission.DisplayString == nil {
+			break
+		}
+
+		return e.complexity.GrantedPermission.DisplayString(childComplexity), true
+
+	case "GrantedPermission.id":
+		if e.complexity.GrantedPermission.ID == nil {
+			break
+		}
+
+		return e.complexity.GrantedPermission.ID(childComplexity), true
+
+	case "GrantedPermission.objectId":
+		if e.complexity.GrantedPermission.ObjectID == nil {
+			break
+		}
+
+		return e.complexity.GrantedPermission.ObjectID(childComplexity), true
+
+	case "GrantedPermission.objectType":
+		if e.complexity.GrantedPermission.ObjectType == nil {
+			break
+		}
+
+		return e.complexity.GrantedPermission.ObjectType(childComplexity), true
+
+	case "GrantedPermission.subjectId":
+		if e.complexity.GrantedPermission.SubjectID == nil {
+			break
+		}
+
+		return e.complexity.GrantedPermission.SubjectID(childComplexity), true
+
+	case "GrantedPermission.subjectType":
+		if e.complexity.GrantedPermission.SubjectType == nil {
+			break
+		}
+
+		return e.complexity.GrantedPermission.SubjectType(childComplexity), true
+
+	case "GrantedPermission.updatedAt":
+		if e.complexity.GrantedPermission.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.GrantedPermission.UpdatedAt(childComplexity), true
+
+	case "GrantedPermissionPage.permissions":
+		if e.complexity.GrantedPermissionPage.Permissions == nil {
+			break
+		}
+
+		return e.complexity.GrantedPermissionPage.Permissions(childComplexity), true
+
+	case "GrantedPermissionPage.total":
+		if e.complexity.GrantedPermissionPage.Total == nil {
+			break
+		}
+
+		return e.complexity.GrantedPermissionPage.Total(childComplexity), true
 
 	case "Group.createdAt":
 		if e.complexity.Group.CreatedAt == nil {
@@ -536,20 +668,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Group.Name(childComplexity), true
 
-	case "Group.parent":
-		if e.complexity.Group.Parent == nil {
-			break
-		}
-
-		return e.complexity.Group.Parent(childComplexity), true
-
-	case "Group.permissionPolicies":
-		if e.complexity.Group.PermissionPolicies == nil {
-			break
-		}
-
-		return e.complexity.Group.PermissionPolicies(childComplexity), true
-
 	case "Group.updatedAt":
 		if e.complexity.Group.UpdatedAt == nil {
 			break
@@ -563,6 +681,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Group.Users(childComplexity), true
+
+	case "GroupPage.groups":
+		if e.complexity.GroupPage.Groups == nil {
+			break
+		}
+
+		return e.complexity.GroupPage.Groups(childComplexity), true
+
+	case "GroupPage.total":
+		if e.complexity.GroupPage.Total == nil {
+			break
+		}
+
+		return e.complexity.GroupPage.Total(childComplexity), true
 
 	case "Mutation.configureProvider":
 		if e.complexity.Mutation.ConfigureProvider == nil {
@@ -587,6 +719,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateBlueprint(childComplexity, args["input"].(model.BlueprintInput)), true
+
+	case "Mutation.createGroup":
+		if e.complexity.Mutation.CreateGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createGroup_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateGroup(childComplexity, args["input"].(model.GroupInput)), true
 
 	case "Mutation.createProvider":
 		if e.complexity.Mutation.CreateProvider == nil {
@@ -623,6 +767,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.DeleteBlueprint(childComplexity, args["id"].(uuid.UUID)), true
+
+	case "Mutation.deleteGroup":
+		if e.complexity.Mutation.DeleteGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteGroup_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteGroup(childComplexity, args["id"].(uuid.UUID)), true
 
 	case "Mutation.deleteProvider":
 		if e.complexity.Mutation.DeleteProvider == nil {
@@ -672,6 +828,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DestroyDeployment(childComplexity, args["id"].(uuid.UUID)), true
 
+	case "Mutation.grantPermission":
+		if e.complexity.Mutation.GrantPermission == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_grantPermission_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.GrantPermission(childComplexity, args["subjectType"].(grantedpermission.SubjectType), args["subjectID"].(uuid.UUID), args["objectType"].(grantedpermission.ObjectType), args["objectID"].(*uuid.UUID), args["action"].(actions.PermissionAction)), true
+
 	case "Mutation.loadProvider":
 		if e.complexity.Mutation.LoadProvider == nil {
 			break
@@ -695,6 +863,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.RedeployDeployment(childComplexity, args["id"].(uuid.UUID), args["nodeIds"].([]uuid.UUID)), true
+
+	case "Mutation.revokePermission":
+		if e.complexity.Mutation.RevokePermission == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_revokePermission_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RevokePermission(childComplexity, args["subjectType"].(grantedpermission.SubjectType), args["subjectID"].(uuid.UUID), args["objectType"].(grantedpermission.ObjectType), args["objectID"].(*uuid.UUID), args["action"].(actions.PermissionAction)), true
 
 	case "Mutation.selfChangePassword":
 		if e.complexity.Mutation.SelfChangePassword == nil {
@@ -744,6 +924,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateDeployment(childComplexity, args["id"].(uuid.UUID), args["input"].(model.DeploymentInput)), true
 
+	case "Mutation.updateGroup":
+		if e.complexity.Mutation.UpdateGroup == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateGroup_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateGroup(childComplexity, args["id"].(uuid.UUID), args["input"].(model.GroupInput)), true
+
 	case "Mutation.updateProvider":
 		if e.complexity.Mutation.UpdateProvider == nil {
 			break
@@ -767,83 +959,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UpdateUser(childComplexity, args["id"].(uuid.UUID), args["input"].(model.UserInput)), true
-
-	case "Permission.createdAt":
-		if e.complexity.Permission.CreatedAt == nil {
-			break
-		}
-
-		return e.complexity.Permission.CreatedAt(childComplexity), true
-
-	case "Permission.id":
-		if e.complexity.Permission.ID == nil {
-			break
-		}
-
-		return e.complexity.Permission.ID(childComplexity), true
-
-	case "Permission.key":
-		if e.complexity.Permission.Key == nil {
-			break
-		}
-
-		return e.complexity.Permission.Key(childComplexity), true
-
-	case "Permission.permissionPolicies":
-		if e.complexity.Permission.PermissionPolicies == nil {
-			break
-		}
-
-		return e.complexity.Permission.PermissionPolicies(childComplexity), true
-
-	case "Permission.updatedAt":
-		if e.complexity.Permission.UpdatedAt == nil {
-			break
-		}
-
-		return e.complexity.Permission.UpdatedAt(childComplexity), true
-
-	case "PermissionPolicy.createdAt":
-		if e.complexity.PermissionPolicy.CreatedAt == nil {
-			break
-		}
-
-		return e.complexity.PermissionPolicy.CreatedAt(childComplexity), true
-
-	case "PermissionPolicy.group":
-		if e.complexity.PermissionPolicy.Group == nil {
-			break
-		}
-
-		return e.complexity.PermissionPolicy.Group(childComplexity), true
-
-	case "PermissionPolicy.id":
-		if e.complexity.PermissionPolicy.ID == nil {
-			break
-		}
-
-		return e.complexity.PermissionPolicy.ID(childComplexity), true
-
-	case "PermissionPolicy.permission":
-		if e.complexity.PermissionPolicy.Permission == nil {
-			break
-		}
-
-		return e.complexity.PermissionPolicy.Permission(childComplexity), true
-
-	case "PermissionPolicy.type":
-		if e.complexity.PermissionPolicy.Type == nil {
-			break
-		}
-
-		return e.complexity.PermissionPolicy.Type(childComplexity), true
-
-	case "PermissionPolicy.updatedAt":
-		if e.complexity.PermissionPolicy.UpdatedAt == nil {
-			break
-		}
-
-		return e.complexity.PermissionPolicy.UpdatedAt(childComplexity), true
 
 	case "Provider.blueprints":
 		if e.complexity.Provider.Blueprints == nil {
@@ -908,6 +1023,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Provider.UpdatedAt(childComplexity), true
 
+	case "ProviderPage.providers":
+		if e.complexity.ProviderPage.Providers == nil {
+			break
+		}
+
+		return e.complexity.ProviderPage.Providers(childComplexity), true
+
+	case "ProviderPage.total":
+		if e.complexity.ProviderPage.Total == nil {
+			break
+		}
+
+		return e.complexity.ProviderPage.Total(childComplexity), true
+
 	case "Query.blueprint":
 		if e.complexity.Query.Blueprint == nil {
 			break
@@ -925,7 +1054,24 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.Blueprints(childComplexity), true
+		args, err := ec.field_Query_blueprints_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Blueprints(childComplexity, args["count"].(int), args["offset"].(*int)), true
+
+	case "Query.deployableBlueprints":
+		if e.complexity.Query.DeployableBlueprints == nil {
+			break
+		}
+
+		args, err := ec.field_Query_deployableBlueprints_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.DeployableBlueprints(childComplexity, args["count"].(int), args["offset"].(*int)), true
 
 	case "Query.deployment":
 		if e.complexity.Query.Deployment == nil {
@@ -944,7 +1090,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.Deployments(childComplexity), true
+		args, err := ec.field_Query_deployments_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Deployments(childComplexity, args["count"].(int), args["offset"].(*int)), true
 
 	case "Query.group":
 		if e.complexity.Query.Group == nil {
@@ -963,7 +1114,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.Groups(childComplexity), true
+		args, err := ec.field_Query_groups_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Groups(childComplexity, args["count"].(int), args["offset"].(*int)), true
 
 	case "Query.me":
 		if e.complexity.Query.Me == nil {
@@ -982,7 +1138,31 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.MeHasPermission(childComplexity, args["key"].(string)), true
+		return e.complexity.Query.MeHasPermission(childComplexity, args["objectType"].(grantedpermission.ObjectType), args["objectID"].(*uuid.UUID), args["action"].(actions.PermissionAction)), true
+
+	case "Query.permission":
+		if e.complexity.Query.Permission == nil {
+			break
+		}
+
+		args, err := ec.field_Query_permission_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Permission(childComplexity, args["id"].(uuid.UUID)), true
+
+	case "Query.permissions":
+		if e.complexity.Query.Permissions == nil {
+			break
+		}
+
+		args, err := ec.field_Query_permissions_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Permissions(childComplexity, args["count"].(int), args["offset"].(*int)), true
 
 	case "Query.provider":
 		if e.complexity.Query.Provider == nil {
@@ -1001,7 +1181,36 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.Providers(childComplexity), true
+		args, err := ec.field_Query_providers_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Providers(childComplexity, args["count"].(int), args["offset"].(*int)), true
+
+	case "Query.searchGroups":
+		if e.complexity.Query.SearchGroups == nil {
+			break
+		}
+
+		args, err := ec.field_Query_searchGroups_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.SearchGroups(childComplexity, args["search"].(string), args["count"].(int), args["offset"].(*int)), true
+
+	case "Query.searchUsers":
+		if e.complexity.Query.SearchUsers == nil {
+			break
+		}
+
+		args, err := ec.field_Query_searchUsers_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.SearchUsers(childComplexity, args["search"].(string), args["count"].(int), args["offset"].(*int)), true
 
 	case "Query.user":
 		if e.complexity.Query.User == nil {
@@ -1020,7 +1229,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.Users(childComplexity), true
+		args, err := ec.field_Query_users_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Users(childComplexity, args["count"].(*int), args["offset"].(*int)), true
 
 	case "Resource.blueprint":
 		if e.complexity.Resource.Blueprint == nil {
@@ -1155,6 +1369,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Username(childComplexity), true
 
+	case "UserPage.total":
+		if e.complexity.UserPage.Total == nil {
+			break
+		}
+
+		return e.complexity.UserPage.Total(childComplexity), true
+
+	case "UserPage.users":
+		if e.complexity.UserPage.Users == nil {
+			break
+		}
+
+		return e.complexity.UserPage.Users(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -1165,6 +1393,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputBlueprintInput,
 		ec.unmarshalInputDeploymentInput,
+		ec.unmarshalInputGroupInput,
 		ec.unmarshalInputProviderInput,
 		ec.unmarshalInputUserInput,
 	)
@@ -1270,6 +1499,8 @@ scalar StrMap
 scalar VarTypeMap
 scalar UUID
 
+# directive @hasPermission(objectType: ObjectType!, action: Action!) on FIELD_DEFINITION
+
 type Blueprint {
   id: ID!
   createdAt: Time!
@@ -1282,6 +1513,11 @@ type Blueprint {
   provider: Provider!
   resources: [Resource!]!
   deployments: [Deployment]!
+}
+
+type BlueprintPage {
+  blueprints: [Blueprint!]!
+  total: Int!
 }
 
 enum ResourceType {
@@ -1325,6 +1561,11 @@ type Deployment {
   requester: User!
 }
 
+type DeploymentPage {
+  deployments: [Deployment!]!
+  total: Int!
+}
+
 enum DeploymentNodeState {
   AWAITING
   PARENTAWAITING
@@ -1356,34 +1597,83 @@ type Group {
   updatedAt: Time!
   name: String!
 
-  children: [Group]
-  parent: Group
   users: [User]
-  permissionPolicies: [PermissionPolicy]
 }
 
-type Permission {
+type GroupPage {
+  groups: [Group!]!
+  total: Int!
+}
+
+enum SubjectType {
+  user
+  group
+}
+
+enum ObjectType {
+  blueprint
+  deployment
+  group
+  permission
+  provider
+  user
+}
+
+enum Action {
+  blueprint_list
+  blueprint_create
+  blueprint_get
+  blueprint_update
+  blueprint_delete
+  blueprint_deploy
+  deployment_list
+  deployment_create
+  deployment_get
+  deployment_update
+  deployment_delete
+  deployment_destroy
+  deployment_redeploy
+  deployment_console
+  group_list
+  group_create
+  group_get
+  group_update
+  group_delete
+  permission_list
+  permission_get
+  permission_grant
+  permission_revoke
+  provider_list
+  provider_create
+  provider_get
+  provider_update
+  provider_delete
+  provider_load
+  provider_unload
+  provider_configure
+  user_list
+  user_create
+  user_get
+  user_update
+  user_delete
+}
+
+type GrantedPermission {
   id: ID!
   createdAt: Time!
   updatedAt: Time!
-  key: String
+  subjectType: SubjectType!
+  subjectId: ID!
+  objectType: ObjectType!
+  objectId: ID!
+  action: Action!
 
-  permissionPolicies: [PermissionPolicy]
+  displayString: String!
 }
 
-enum PermissionPolicyType {
-  ALLOW
-  DENY
-}
-
-type PermissionPolicy {
-  id: ID!
-  createdAt: Time!
-  updatedAt: Time!
-  type: PermissionPolicyType!
-
-  permission: Permission!
-  group: Group!
+type GrantedPermissionPage {
+  permissions: [GrantedPermission!]!
+  total: Int!
 }
 
 type Provider {
@@ -1399,6 +1689,11 @@ type Provider {
   blueprints: [Blueprint]
 }
 
+type ProviderPage {
+  providers: [Provider!]!
+  total: Int!
+}
+
 type User {
   id: ID!
   createdAt: Time!
@@ -1412,7 +1707,10 @@ type User {
   deployments: [Deployment]!
 }
 
-directive @permission(key: String!) on FIELD_DEFINITION
+type UserPage {
+  users: [User!]!
+  total: Int!
+}
 
 type Query {
   """
@@ -1422,47 +1720,72 @@ type Query {
   """
   Retrieves if the current user has a given permission
   """
-  meHasPermission(key: String!): Boolean!
+  meHasPermission(objectType: ObjectType!, objectID: ID, action: Action!): Boolean!
   """
-  List users (requires permission ` + "`" + `com.cble.users.list` + "`" + `)
+  List users (requires permission ` + "`" + `x.x.users.*.list` + "`" + `)
   """
-  users: [User!]! @permission(key: "com.cble.users.list")
+  users(count: Int = 10, offset: Int): UserPage!
   """
-  Get a user (requires permission ` + "`" + `com.cble.users.read` + "`" + `)
+  Get a user (requires permission ` + "`" + `x.x.users.x.get` + "`" + `)
   """
-  user(id: ID!): User! @permission(key: "com.cble.users.read")
+  user(id: ID!): User!
   """
-  List groups (requires permission ` + "`" + `com.cble.groups.list` + "`" + `)
+  List groups (requires permission ` + "`" + `x.x.groups.*.list` + "`" + `)
   """
-  groups: [Group!]! @permission(key: "com.cble.groups.list")
+  groups(count: Int! = 10, offset: Int): GroupPage!
   """
-  Get a group (requires permission ` + "`" + `com.cble.groups.read` + "`" + `)
+  Get a group (requires permission ` + "`" + `x.x.groups.x.get` + "`" + `)
   """
-  group(id: ID!): Group! @permission(key: "com.cble.groups.read")
+  group(id: ID!): Group!
   """
-  List providers (requires permission ` + "`" + `com.cble.providers.list` + "`" + `)
+  List permissions (requires permission ` + "`" + `x.x.permission.*.list` + "`" + `)
   """
-  providers: [Provider!]! @permission(key: "com.cble.providers.list")
+  permissions(count: Int! = 10, offset: Int): GrantedPermissionPage!
   """
-  Get a provider (requires permission ` + "`" + `com.cble.providers.read` + "`" + `)
+  Get a permission (requires permission ` + "`" + `x.x.permission.x.get` + "`" + `)
   """
-  provider(id: ID!): Provider! @permission(key: "com.cble.providers.read")
+  permission(id: ID!): GrantedPermission!
   """
-  List blueprints (requires permission ` + "`" + `com.cble.blueprints.list` + "`" + `)
+  List providers (requires permission ` + "`" + `x.x.providers.*.list` + "`" + `)
   """
-  blueprints: [Blueprint!]! @permission(key: "com.cble.blueprints.list")
+  providers(count: Int! = 10, offset: Int): ProviderPage!
   """
-  Get a blueprint (requires permission ` + "`" + `com.cble.blueprints.read` + "`" + `)
+  Get a provider (requires permission ` + "`" + `x.x.providers.x.get` + "`" + `)
   """
-  blueprint(id: ID!): Blueprint! @permission(key: "com.cble.blueprints.read")
+  provider(id: ID!): Provider!
   """
-  List deployments (requires permission ` + "`" + `com.cble.deployments.list` + "`" + `)
+  List blueprints (requires permission ` + "`" + `x.x.blueprints.*.list` + "`" + `)
   """
-  deployments: [Deployment!]! @permission(key: "com.cble.deployments.list")
+  blueprints(count: Int! = 10, offset: Int): BlueprintPage!
   """
-  Get a deployment (requires permission ` + "`" + `com.cble.deployments.read` + "`" + `)
+  List all blueprints user has ` + "`" + `blueprint.x.deploy` + "`" + ` permission for
   """
-  deployment(id: ID!): Deployment! @permission(key: "com.cble.deployments.read")
+  deployableBlueprints(count: Int! = 10, offset: Int): BlueprintPage!
+  """
+  Get a blueprint (requires permission ` + "`" + `x.x.blueprints.x.get` + "`" + `)
+  """
+  blueprint(id: ID!): Blueprint!
+  """
+  List deployments (requires permission ` + "`" + `x.x.deployments.*.list` + "`" + `)
+  """
+  deployments(count: Int! = 10, offset: Int): DeploymentPage!
+  """
+  Get a deployment (requires permission ` + "`" + `x.x.deployments.x.get` + "`" + `)
+  """
+  deployment(id: ID!): Deployment!
+
+  ##########
+  # SEARCH #
+  ##########
+
+  """
+  Search users
+  """
+  searchUsers(search: String!, count: Int! = 10, offset: Int): UserPage!
+  """
+  Search groups
+  """
+  searchGroups(search: String!, count: Int! = 10, offset: Int): GroupPage!
 }
 
 input BlueprintInput {
@@ -1490,8 +1813,10 @@ input UserInput {
   email: String!
   firstName: String!
   lastName: String!
+}
 
-  groupIds: [ID!]!
+input GroupInput {
+  name: String!
 }
 
 type Mutation {
@@ -1509,83 +1834,103 @@ type Mutation {
   ########
 
   """
-  Create a user (requires permission ` + "`" + `com.cble.users.create` + "`" + `)
+  Create a user (requires permission ` + "`" + `x.x.users.*.create` + "`" + `)
   """
-  createUser(input: UserInput!): User! @permission(key: "com.cble.users.create")
+  createUser(input: UserInput!): User!
   """
-  Update a user (requires permission ` + "`" + `com.cble.users.update` + "`" + `)
+  Update a user (requires permission ` + "`" + `x.x.users.x.update` + "`" + `)
   """
-  updateUser(id: ID!, input: UserInput!): User! @permission(key: "com.cble.users.update")
+  updateUser(id: ID!, input: UserInput!): User!
   """
-  Delete a user (requires permission ` + "`" + `com.cble.users.delete` + "`" + `)
+  Delete a user (requires permission ` + "`" + `x.x.users.x.delete` + "`" + `)
   """
-  deleteUser(id: ID!): Boolean! @permission(key: "com.cble.users.delete")
+  deleteUser(id: ID!): Boolean!
   """
-  Create a provider (requires permission ` + "`" + `com.cble.providers.create` + "`" + `)
+  Create a group (requires permission ` + "`" + `x.x.group.x.create` + "`" + `)
   """
-  createProvider(input: ProviderInput!): Provider! @permission(key: "com.cble.providers.create")
+  createGroup(input: GroupInput!): Group!
   """
-  Update a provider (requires permission ` + "`" + `com.cble.providers.update` + "`" + `)
+  Update a group (requires permission ` + "`" + `x.x.group.x.update` + "`" + `)
   """
-  updateProvider(id: ID!, input: ProviderInput!): Provider! @permission(key: "com.cble.providers.update")
+  updateGroup(id: ID!, input: GroupInput!): Group!
   """
-  Delete a provider (requires permission ` + "`" + `com.cble.providers.delete` + "`" + `)
+  Delete a group (requires permission ` + "`" + `x.x.group.x.delete` + "`" + `)
   """
-  deleteProvider(id: ID!): Boolean! @permission(key: "com.cble.providers.delete")
+  deleteGroup(id: ID!): Boolean!
   """
-  Create a blueprint (requires permission ` + "`" + `com.cble.blueprints.create` + "`" + `)
+  Grant a permission (requires permission ` + "`" + `x.x.permission.*.grant` + "`" + `)
   """
-  createBlueprint(input: BlueprintInput!): Blueprint! @permission(key: "com.cble.blueprints.create")
+  grantPermission(subjectType: SubjectType!, subjectID: ID!, objectType: ObjectType!, objectID: ID, action: Action!): GrantedPermission!
   """
-  Update a blueprint (requires permission ` + "`" + `com.cble.blueprints.update` + "`" + `)
+  Revoke a permission (requires permission ` + "`" + `x.x.permission.*.revoke` + "`" + `)
   """
-  updateBlueprint(id: ID!, input: BlueprintInput!): Blueprint! @permission(key: "com.cble.blueprints.update")
+  revokePermission(subjectType: SubjectType!, subjectID: ID!, objectType: ObjectType!, objectID: ID, action: Action!): Boolean!
   """
-  Delete a blueprint (requires permission ` + "`" + `com.cble.blueprints.delete` + "`" + `)
+  Create a provider (requires permission ` + "`" + `x.x.providers.*.create` + "`" + `)
   """
-  deleteBlueprint(id: ID!): Boolean! @permission(key: "com.cble.blueprints.delete")
+  createProvider(input: ProviderInput!): Provider!
   """
-  Update a deployment (requires permission ` + "`" + `com.cble.deployments.update` + "`" + `)
+  Update a provider (requires permission ` + "`" + `x.x.providers.x.update` + "`" + `)
   """
-  updateDeployment(id: ID!, input: DeploymentInput!): Deployment! @permission(key: "com.cble.deployments.update")
+  updateProvider(id: ID!, input: ProviderInput!): Provider!
+  """
+  Delete a provider (requires permission ` + "`" + `x.x.providers.x.delete` + "`" + `)
+  """
+  deleteProvider(id: ID!): Boolean!
+  """
+  Create a blueprint (requires permission ` + "`" + `x.x.blueprints.*.create` + "`" + `)
+  """
+  createBlueprint(input: BlueprintInput!): Blueprint!
+  """
+  Update a blueprint (requires permission ` + "`" + `x.x.blueprints.x.update` + "`" + `)
+  """
+  updateBlueprint(id: ID!, input: BlueprintInput!): Blueprint!
+  """
+  Delete a blueprint (requires permission ` + "`" + `x.x.blueprints.x.delete` + "`" + `)
+  """
+  deleteBlueprint(id: ID!): Boolean!
+  """
+  Update a deployment (requires permission ` + "`" + `x.x.deployments.x.update` + "`" + `)
+  """
+  updateDeployment(id: ID!, input: DeploymentInput!): Deployment!
 
   #############
   # PROVIDERS #
   #############
 
   """
-  Load a provider to connect it to CBLE (requires permission ` + "`" + `com.cble.providers.load` + "`" + `)
+  Load a provider to connect it to CBLE (requires permission ` + "`" + `x.x.providers.x.load` + "`" + `)
   """
-  loadProvider(id: ID!): Provider! @permission(key: "com.cble.providers.load")
+  loadProvider(id: ID!): Provider!
   """
-  Unload a provider to disconnect it from CBLE (requires permission ` + "`" + `com.cble.providers.unload` + "`" + `)
+  Unload a provider to disconnect it from CBLE (requires permission ` + "`" + `x.x.providers.x.unload` + "`" + `)
   """
-  unloadProvider(id: ID!): Provider! @permission(key: "com.cble.providers.unload")
+  unloadProvider(id: ID!): Provider!
   """
-  Applies the stored configuration to the provider (requires permission ` + "`" + `com.cble.providers.configure` + "`" + `)
+  Applies the stored configuration to the provider (requires permission ` + "`" + `x.x.providers.x.configure` + "`" + `)
   """
-  configureProvider(id: ID!): Provider! @permission(key: "com.cble.providers.configure")
+  configureProvider(id: ID!): Provider!
 
   # ##############
   # # DEPLOYMENT #
   # ##############
 
   """
-  Deploy a blueprint (requires permission ` + "`" + `com.cble.blueprints.deploy` + "`" + `)
+  Deploy a blueprint (requires permission ` + "`" + `x.x.blueprints.x.deploy` + "`" + `)
   """
-  deployBlueprint(id: ID!, templateVars: StrMap!): Deployment! @permission(key: "com.cble.blueprints.deploy")
+  deployBlueprint(id: ID!, templateVars: StrMap!): Deployment!
   """
-  Destroy a deployment (requires permission ` + "`" + `com.cble.deployments.destroy` + "`" + `)
+  Destroy a deployment (requires permission ` + "`" + `x.x.deployments.x.destroy` + "`" + `)
   """
-  destroyDeployment(id: ID!): Deployment! @permission(key: "com.cble.deployments.destroy")
+  destroyDeployment(id: ID!): Deployment!
   """
-  Destroy a deployment (requires permission ` + "`" + `com.cble.deployments.redeploy` + "`" + `)
+  Redeploy nodes within a deployment (requires permission ` + "`" + `x.x.deployments.x.redeploy` + "`" + `)
   """
-  redeployDeployment(id: ID!, nodeIds: [ID!]!): Deployment! @permission(key: "com.cble.deployments.redeploy")
+  redeployDeployment(id: ID!, nodeIds: [ID!]!): Deployment!
   # """
-  # Get a vm console (requires permission ` + "`" + `com.cble.deployments.console` + "`" + `)
+  # Get a vm console (requires permission ` + "`" + `x.x.deployments.x.console` + "`" + `)
   # """
-  # getConsole(id: ID!, hostKey: String!): String! @permission(key: "com.cble.deployments.console")
+  # getConsole(id: ID!, hostKey: String!): String!
 }
 `, BuiltIn: false},
 }
@@ -1594,21 +1939,6 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
-
-func (ec *executionContext) dir_permission_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["key"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["key"] = arg0
-	return args, nil
-}
 
 func (ec *executionContext) field_Mutation_configureProvider_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -1632,6 +1962,21 @@ func (ec *executionContext) field_Mutation_createBlueprint_args(ctx context.Cont
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNBlueprintInput2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐBlueprintInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createGroup_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.GroupInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNGroupInput2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐGroupInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1671,6 +2016,21 @@ func (ec *executionContext) field_Mutation_createUser_args(ctx context.Context, 
 }
 
 func (ec *executionContext) field_Mutation_deleteBlueprint_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uuid.UUID
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteGroup_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 uuid.UUID
@@ -1754,6 +2114,57 @@ func (ec *executionContext) field_Mutation_destroyDeployment_args(ctx context.Co
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_grantPermission_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 grantedpermission.SubjectType
+	if tmp, ok := rawArgs["subjectType"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subjectType"))
+		arg0, err = ec.unmarshalNSubjectType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚋgrantedpermissionᚐSubjectType(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["subjectType"] = arg0
+	var arg1 uuid.UUID
+	if tmp, ok := rawArgs["subjectID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subjectID"))
+		arg1, err = ec.unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["subjectID"] = arg1
+	var arg2 grantedpermission.ObjectType
+	if tmp, ok := rawArgs["objectType"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("objectType"))
+		arg2, err = ec.unmarshalNObjectType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚋgrantedpermissionᚐObjectType(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["objectType"] = arg2
+	var arg3 *uuid.UUID
+	if tmp, ok := rawArgs["objectID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("objectID"))
+		arg3, err = ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["objectID"] = arg3
+	var arg4 actions.PermissionAction
+	if tmp, ok := rawArgs["action"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("action"))
+		arg4, err = ec.unmarshalNAction2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋpermissionᚋactionsᚐPermissionAction(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["action"] = arg4
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_loadProvider_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1790,6 +2201,57 @@ func (ec *executionContext) field_Mutation_redeployDeployment_args(ctx context.C
 		}
 	}
 	args["nodeIds"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_revokePermission_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 grantedpermission.SubjectType
+	if tmp, ok := rawArgs["subjectType"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subjectType"))
+		arg0, err = ec.unmarshalNSubjectType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚋgrantedpermissionᚐSubjectType(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["subjectType"] = arg0
+	var arg1 uuid.UUID
+	if tmp, ok := rawArgs["subjectID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subjectID"))
+		arg1, err = ec.unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["subjectID"] = arg1
+	var arg2 grantedpermission.ObjectType
+	if tmp, ok := rawArgs["objectType"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("objectType"))
+		arg2, err = ec.unmarshalNObjectType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚋgrantedpermissionᚐObjectType(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["objectType"] = arg2
+	var arg3 *uuid.UUID
+	if tmp, ok := rawArgs["objectID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("objectID"))
+		arg3, err = ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["objectID"] = arg3
+	var arg4 actions.PermissionAction
+	if tmp, ok := rawArgs["action"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("action"))
+		arg4, err = ec.unmarshalNAction2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋpermissionᚋactionsᚐPermissionAction(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["action"] = arg4
 	return args, nil
 }
 
@@ -1880,6 +2342,30 @@ func (ec *executionContext) field_Mutation_updateDeployment_args(ctx context.Con
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_updateGroup_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uuid.UUID
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 model.GroupInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg1, err = ec.unmarshalNGroupInput2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐGroupInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_updateProvider_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1958,6 +2444,54 @@ func (ec *executionContext) field_Query_blueprint_args(ctx context.Context, rawA
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_blueprints_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["count"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("count"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["count"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_deployableBlueprints_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["count"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("count"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["count"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_deployment_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1970,6 +2504,30 @@ func (ec *executionContext) field_Query_deployment_args(ctx context.Context, raw
 		}
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_deployments_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["count"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("count"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["count"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg1
 	return args, nil
 }
 
@@ -1988,18 +2546,99 @@ func (ec *executionContext) field_Query_group_args(ctx context.Context, rawArgs 
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_meHasPermission_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_groups_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["key"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+	var arg0 int
+	if tmp, ok := rawArgs["count"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("count"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["key"] = arg0
+	args["count"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_meHasPermission_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 grantedpermission.ObjectType
+	if tmp, ok := rawArgs["objectType"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("objectType"))
+		arg0, err = ec.unmarshalNObjectType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚋgrantedpermissionᚐObjectType(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["objectType"] = arg0
+	var arg1 *uuid.UUID
+	if tmp, ok := rawArgs["objectID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("objectID"))
+		arg1, err = ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["objectID"] = arg1
+	var arg2 actions.PermissionAction
+	if tmp, ok := rawArgs["action"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("action"))
+		arg2, err = ec.unmarshalNAction2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋpermissionᚋactionsᚐPermissionAction(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["action"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_permission_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uuid.UUID
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_permissions_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["count"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("count"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["count"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg1
 	return args, nil
 }
 
@@ -2018,6 +2657,96 @@ func (ec *executionContext) field_Query_provider_args(ctx context.Context, rawAr
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_providers_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["count"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("count"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["count"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_searchGroups_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["search"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("search"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["search"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["count"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("count"))
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["count"] = arg1
+	var arg2 *int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg2, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_searchUsers_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["search"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("search"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["search"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["count"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("count"))
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["count"] = arg1
+	var arg2 *int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg2, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg2
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2030,6 +2759,30 @@ func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs m
 		}
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_users_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["count"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("count"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["count"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg1
 	return args, nil
 }
 
@@ -2570,6 +3323,116 @@ func (ec *executionContext) fieldContext_Blueprint_deployments(ctx context.Conte
 				return ec.fieldContext_Deployment_requester(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Deployment", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BlueprintPage_blueprints(ctx context.Context, field graphql.CollectedField, obj *model.BlueprintPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_BlueprintPage_blueprints(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Blueprints, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.Blueprint)
+	fc.Result = res
+	return ec.marshalNBlueprint2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐBlueprintᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_BlueprintPage_blueprints(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BlueprintPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Blueprint_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Blueprint_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Blueprint_updatedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_Blueprint_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Blueprint_description(ctx, field)
+			case "blueprintTemplate":
+				return ec.fieldContext_Blueprint_blueprintTemplate(ctx, field)
+			case "variableTypes":
+				return ec.fieldContext_Blueprint_variableTypes(ctx, field)
+			case "provider":
+				return ec.fieldContext_Blueprint_provider(ctx, field)
+			case "resources":
+				return ec.fieldContext_Blueprint_resources(ctx, field)
+			case "deployments":
+				return ec.fieldContext_Blueprint_deployments(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Blueprint", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _BlueprintPage_total(ctx context.Context, field graphql.CollectedField, obj *model.BlueprintPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_BlueprintPage_total(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Total, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_BlueprintPage_total(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BlueprintPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3554,6 +4417,620 @@ func (ec *executionContext) fieldContext_DeploymentNode_prevNodes(ctx context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _DeploymentPage_deployments(ctx context.Context, field graphql.CollectedField, obj *model.DeploymentPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeploymentPage_deployments(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Deployments, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.Deployment)
+	fc.Result = res
+	return ec.marshalNDeployment2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeploymentᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeploymentPage_deployments(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeploymentPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Deployment_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Deployment_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Deployment_updatedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_Deployment_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Deployment_description(ctx, field)
+			case "state":
+				return ec.fieldContext_Deployment_state(ctx, field)
+			case "templateVars":
+				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "blueprint":
+				return ec.fieldContext_Deployment_blueprint(ctx, field)
+			case "deploymentNodes":
+				return ec.fieldContext_Deployment_deploymentNodes(ctx, field)
+			case "requester":
+				return ec.fieldContext_Deployment_requester(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Deployment", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeploymentPage_total(ctx context.Context, field graphql.CollectedField, obj *model.DeploymentPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeploymentPage_total(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Total, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeploymentPage_total(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeploymentPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GrantedPermission_id(ctx context.Context, field graphql.CollectedField, obj *ent.GrantedPermission) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GrantedPermission_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uuid.UUID)
+	fc.Result = res
+	return ec.marshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GrantedPermission_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GrantedPermission",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GrantedPermission_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.GrantedPermission) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GrantedPermission_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GrantedPermission_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GrantedPermission",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GrantedPermission_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.GrantedPermission) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GrantedPermission_updatedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GrantedPermission_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GrantedPermission",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GrantedPermission_subjectType(ctx context.Context, field graphql.CollectedField, obj *ent.GrantedPermission) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GrantedPermission_subjectType(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SubjectType, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(grantedpermission.SubjectType)
+	fc.Result = res
+	return ec.marshalNSubjectType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚋgrantedpermissionᚐSubjectType(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GrantedPermission_subjectType(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GrantedPermission",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SubjectType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GrantedPermission_subjectId(ctx context.Context, field graphql.CollectedField, obj *ent.GrantedPermission) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GrantedPermission_subjectId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SubjectID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uuid.UUID)
+	fc.Result = res
+	return ec.marshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GrantedPermission_subjectId(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GrantedPermission",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GrantedPermission_objectType(ctx context.Context, field graphql.CollectedField, obj *ent.GrantedPermission) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GrantedPermission_objectType(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ObjectType, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(grantedpermission.ObjectType)
+	fc.Result = res
+	return ec.marshalNObjectType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚋgrantedpermissionᚐObjectType(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GrantedPermission_objectType(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GrantedPermission",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ObjectType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GrantedPermission_objectId(ctx context.Context, field graphql.CollectedField, obj *ent.GrantedPermission) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GrantedPermission_objectId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ObjectID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uuid.UUID)
+	fc.Result = res
+	return ec.marshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GrantedPermission_objectId(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GrantedPermission",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GrantedPermission_action(ctx context.Context, field graphql.CollectedField, obj *ent.GrantedPermission) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GrantedPermission_action(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Action, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(actions.PermissionAction)
+	fc.Result = res
+	return ec.marshalNAction2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋpermissionᚋactionsᚐPermissionAction(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GrantedPermission_action(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GrantedPermission",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Action does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GrantedPermission_displayString(ctx context.Context, field graphql.CollectedField, obj *ent.GrantedPermission) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GrantedPermission_displayString(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.GrantedPermission().DisplayString(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GrantedPermission_displayString(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GrantedPermission",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GrantedPermissionPage_permissions(ctx context.Context, field graphql.CollectedField, obj *model.GrantedPermissionPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GrantedPermissionPage_permissions(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Permissions, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.GrantedPermission)
+	fc.Result = res
+	return ec.marshalNGrantedPermission2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGrantedPermissionᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GrantedPermissionPage_permissions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GrantedPermissionPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_GrantedPermission_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_GrantedPermission_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_GrantedPermission_updatedAt(ctx, field)
+			case "subjectType":
+				return ec.fieldContext_GrantedPermission_subjectType(ctx, field)
+			case "subjectId":
+				return ec.fieldContext_GrantedPermission_subjectId(ctx, field)
+			case "objectType":
+				return ec.fieldContext_GrantedPermission_objectType(ctx, field)
+			case "objectId":
+				return ec.fieldContext_GrantedPermission_objectId(ctx, field)
+			case "action":
+				return ec.fieldContext_GrantedPermission_action(ctx, field)
+			case "displayString":
+				return ec.fieldContext_GrantedPermission_displayString(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type GrantedPermission", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GrantedPermissionPage_total(ctx context.Context, field graphql.CollectedField, obj *model.GrantedPermissionPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GrantedPermissionPage_total(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Total, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GrantedPermissionPage_total(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GrantedPermissionPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Group_id(ctx context.Context, field graphql.CollectedField, obj *ent.Group) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Group_id(ctx, field)
 	if err != nil {
@@ -3730,124 +5207,6 @@ func (ec *executionContext) fieldContext_Group_name(ctx context.Context, field g
 	return fc, nil
 }
 
-func (ec *executionContext) _Group_children(ctx context.Context, field graphql.CollectedField, obj *ent.Group) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Group_children(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Group().Children(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.([]*ent.Group)
-	fc.Result = res
-	return ec.marshalOGroup2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Group_children(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Group",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Group_id(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Group_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_Group_updatedAt(ctx, field)
-			case "name":
-				return ec.fieldContext_Group_name(ctx, field)
-			case "children":
-				return ec.fieldContext_Group_children(ctx, field)
-			case "parent":
-				return ec.fieldContext_Group_parent(ctx, field)
-			case "users":
-				return ec.fieldContext_Group_users(ctx, field)
-			case "permissionPolicies":
-				return ec.fieldContext_Group_permissionPolicies(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Group_parent(ctx context.Context, field graphql.CollectedField, obj *ent.Group) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Group_parent(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Group().Parent(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*ent.Group)
-	fc.Result = res
-	return ec.marshalOGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Group_parent(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Group",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Group_id(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Group_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_Group_updatedAt(ctx, field)
-			case "name":
-				return ec.fieldContext_Group_name(ctx, field)
-			case "children":
-				return ec.fieldContext_Group_children(ctx, field)
-			case "parent":
-				return ec.fieldContext_Group_parent(ctx, field)
-			case "users":
-				return ec.fieldContext_Group_users(ctx, field)
-			case "permissionPolicies":
-				return ec.fieldContext_Group_permissionPolicies(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Group_users(ctx context.Context, field graphql.CollectedField, obj *ent.Group) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Group_users(ctx, field)
 	if err != nil {
@@ -3909,8 +5268,8 @@ func (ec *executionContext) fieldContext_Group_users(ctx context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _Group_permissionPolicies(ctx context.Context, field graphql.CollectedField, obj *ent.Group) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Group_permissionPolicies(ctx, field)
+func (ec *executionContext) _GroupPage_groups(ctx context.Context, field graphql.CollectedField, obj *model.GroupPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GroupPage_groups(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -3923,42 +5282,87 @@ func (ec *executionContext) _Group_permissionPolicies(ctx context.Context, field
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Group().PermissionPolicies(rctx, obj)
+		return obj.Groups, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.([]*ent.PermissionPolicy)
+	res := resTmp.([]*ent.Group)
 	fc.Result = res
-	return ec.marshalOPermissionPolicy2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐPermissionPolicy(ctx, field.Selections, res)
+	return ec.marshalNGroup2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroupᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Group_permissionPolicies(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_GroupPage_groups(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "Group",
+		Object:     "GroupPage",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_PermissionPolicy_id(ctx, field)
+				return ec.fieldContext_Group_id(ctx, field)
 			case "createdAt":
-				return ec.fieldContext_PermissionPolicy_createdAt(ctx, field)
+				return ec.fieldContext_Group_createdAt(ctx, field)
 			case "updatedAt":
-				return ec.fieldContext_PermissionPolicy_updatedAt(ctx, field)
-			case "type":
-				return ec.fieldContext_PermissionPolicy_type(ctx, field)
-			case "permission":
-				return ec.fieldContext_PermissionPolicy_permission(ctx, field)
-			case "group":
-				return ec.fieldContext_PermissionPolicy_group(ctx, field)
+				return ec.fieldContext_Group_updatedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_Group_name(ctx, field)
+			case "users":
+				return ec.fieldContext_Group_users(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type PermissionPolicy", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GroupPage_total(ctx context.Context, field graphql.CollectedField, obj *model.GroupPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GroupPage_total(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Total, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GroupPage_total(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GroupPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4032,32 +5436,8 @@ func (ec *executionContext) _Mutation_createUser(ctx context.Context, field grap
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().CreateUser(rctx, fc.Args["input"].(model.UserInput))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.users.create")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*ent.User); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/cble-platform/cble-backend/ent.User`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateUser(rctx, fc.Args["input"].(model.UserInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4131,32 +5511,8 @@ func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field grap
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().UpdateUser(rctx, fc.Args["id"].(uuid.UUID), fc.Args["input"].(model.UserInput))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.users.update")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*ent.User); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/cble-platform/cble-backend/ent.User`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateUser(rctx, fc.Args["id"].(uuid.UUID), fc.Args["input"].(model.UserInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4230,32 +5586,8 @@ func (ec *executionContext) _Mutation_deleteUser(ctx context.Context, field grap
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().DeleteUser(rctx, fc.Args["id"].(uuid.UUID))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.users.delete")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(bool); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteUser(rctx, fc.Args["id"].(uuid.UUID))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4296,6 +5628,325 @@ func (ec *executionContext) fieldContext_Mutation_deleteUser(ctx context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_createGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createGroup(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateGroup(rctx, fc.Args["input"].(model.GroupInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Group)
+	fc.Result = res
+	return ec.marshalNGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createGroup(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Group_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Group_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Group_updatedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_Group_name(ctx, field)
+			case "users":
+				return ec.fieldContext_Group_users(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createGroup_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateGroup(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateGroup(rctx, fc.Args["id"].(uuid.UUID), fc.Args["input"].(model.GroupInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Group)
+	fc.Result = res
+	return ec.marshalNGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateGroup(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Group_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Group_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Group_updatedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_Group_name(ctx, field)
+			case "users":
+				return ec.fieldContext_Group_users(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateGroup_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteGroup(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deleteGroup(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteGroup(rctx, fc.Args["id"].(uuid.UUID))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteGroup(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteGroup_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_grantPermission(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_grantPermission(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().GrantPermission(rctx, fc.Args["subjectType"].(grantedpermission.SubjectType), fc.Args["subjectID"].(uuid.UUID), fc.Args["objectType"].(grantedpermission.ObjectType), fc.Args["objectID"].(*uuid.UUID), fc.Args["action"].(actions.PermissionAction))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.GrantedPermission)
+	fc.Result = res
+	return ec.marshalNGrantedPermission2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGrantedPermission(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_grantPermission(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_GrantedPermission_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_GrantedPermission_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_GrantedPermission_updatedAt(ctx, field)
+			case "subjectType":
+				return ec.fieldContext_GrantedPermission_subjectType(ctx, field)
+			case "subjectId":
+				return ec.fieldContext_GrantedPermission_subjectId(ctx, field)
+			case "objectType":
+				return ec.fieldContext_GrantedPermission_objectType(ctx, field)
+			case "objectId":
+				return ec.fieldContext_GrantedPermission_objectId(ctx, field)
+			case "action":
+				return ec.fieldContext_GrantedPermission_action(ctx, field)
+			case "displayString":
+				return ec.fieldContext_GrantedPermission_displayString(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type GrantedPermission", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_grantPermission_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_revokePermission(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_revokePermission(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RevokePermission(rctx, fc.Args["subjectType"].(grantedpermission.SubjectType), fc.Args["subjectID"].(uuid.UUID), fc.Args["objectType"].(grantedpermission.ObjectType), fc.Args["objectID"].(*uuid.UUID), fc.Args["action"].(actions.PermissionAction))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_revokePermission(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_revokePermission_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_createProvider(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_createProvider(ctx, field)
 	if err != nil {
@@ -4309,32 +5960,8 @@ func (ec *executionContext) _Mutation_createProvider(ctx context.Context, field 
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().CreateProvider(rctx, fc.Args["input"].(model.ProviderInput))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.providers.create")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*ent.Provider); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/cble-platform/cble-backend/ent.Provider`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateProvider(rctx, fc.Args["input"].(model.ProviderInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4408,32 +6035,8 @@ func (ec *executionContext) _Mutation_updateProvider(ctx context.Context, field 
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().UpdateProvider(rctx, fc.Args["id"].(uuid.UUID), fc.Args["input"].(model.ProviderInput))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.providers.update")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*ent.Provider); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/cble-platform/cble-backend/ent.Provider`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateProvider(rctx, fc.Args["id"].(uuid.UUID), fc.Args["input"].(model.ProviderInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4507,32 +6110,8 @@ func (ec *executionContext) _Mutation_deleteProvider(ctx context.Context, field 
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().DeleteProvider(rctx, fc.Args["id"].(uuid.UUID))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.providers.delete")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(bool); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteProvider(rctx, fc.Args["id"].(uuid.UUID))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4586,32 +6165,8 @@ func (ec *executionContext) _Mutation_createBlueprint(ctx context.Context, field
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().CreateBlueprint(rctx, fc.Args["input"].(model.BlueprintInput))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.blueprints.create")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*ent.Blueprint); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/cble-platform/cble-backend/ent.Blueprint`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateBlueprint(rctx, fc.Args["input"].(model.BlueprintInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4687,32 +6242,8 @@ func (ec *executionContext) _Mutation_updateBlueprint(ctx context.Context, field
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().UpdateBlueprint(rctx, fc.Args["id"].(uuid.UUID), fc.Args["input"].(model.BlueprintInput))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.blueprints.update")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*ent.Blueprint); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/cble-platform/cble-backend/ent.Blueprint`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateBlueprint(rctx, fc.Args["id"].(uuid.UUID), fc.Args["input"].(model.BlueprintInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4788,32 +6319,8 @@ func (ec *executionContext) _Mutation_deleteBlueprint(ctx context.Context, field
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().DeleteBlueprint(rctx, fc.Args["id"].(uuid.UUID))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.blueprints.delete")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(bool); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteBlueprint(rctx, fc.Args["id"].(uuid.UUID))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4867,32 +6374,8 @@ func (ec *executionContext) _Mutation_updateDeployment(ctx context.Context, fiel
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().UpdateDeployment(rctx, fc.Args["id"].(uuid.UUID), fc.Args["input"].(model.DeploymentInput))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.deployments.update")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*ent.Deployment); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/cble-platform/cble-backend/ent.Deployment`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateDeployment(rctx, fc.Args["id"].(uuid.UUID), fc.Args["input"].(model.DeploymentInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4968,32 +6451,8 @@ func (ec *executionContext) _Mutation_loadProvider(ctx context.Context, field gr
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().LoadProvider(rctx, fc.Args["id"].(uuid.UUID))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.providers.load")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*ent.Provider); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/cble-platform/cble-backend/ent.Provider`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().LoadProvider(rctx, fc.Args["id"].(uuid.UUID))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5067,32 +6526,8 @@ func (ec *executionContext) _Mutation_unloadProvider(ctx context.Context, field 
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().UnloadProvider(rctx, fc.Args["id"].(uuid.UUID))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.providers.unload")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*ent.Provider); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/cble-platform/cble-backend/ent.Provider`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UnloadProvider(rctx, fc.Args["id"].(uuid.UUID))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5166,32 +6601,8 @@ func (ec *executionContext) _Mutation_configureProvider(ctx context.Context, fie
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().ConfigureProvider(rctx, fc.Args["id"].(uuid.UUID))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.providers.configure")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*ent.Provider); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/cble-platform/cble-backend/ent.Provider`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ConfigureProvider(rctx, fc.Args["id"].(uuid.UUID))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5265,32 +6676,8 @@ func (ec *executionContext) _Mutation_deployBlueprint(ctx context.Context, field
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().DeployBlueprint(rctx, fc.Args["id"].(uuid.UUID), fc.Args["templateVars"].(map[string]string))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.blueprints.deploy")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*ent.Deployment); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/cble-platform/cble-backend/ent.Deployment`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeployBlueprint(rctx, fc.Args["id"].(uuid.UUID), fc.Args["templateVars"].(map[string]string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5366,32 +6753,8 @@ func (ec *executionContext) _Mutation_destroyDeployment(ctx context.Context, fie
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().DestroyDeployment(rctx, fc.Args["id"].(uuid.UUID))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.deployments.destroy")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*ent.Deployment); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/cble-platform/cble-backend/ent.Deployment`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DestroyDeployment(rctx, fc.Args["id"].(uuid.UUID))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5467,32 +6830,8 @@ func (ec *executionContext) _Mutation_redeployDeployment(ctx context.Context, fi
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().RedeployDeployment(rctx, fc.Args["id"].(uuid.UUID), fc.Args["nodeIds"].([]uuid.UUID))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.deployments.redeploy")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*ent.Deployment); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/cble-platform/cble-backend/ent.Deployment`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RedeployDeployment(rctx, fc.Args["id"].(uuid.UUID), fc.Args["nodeIds"].([]uuid.UUID))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5551,528 +6890,6 @@ func (ec *executionContext) fieldContext_Mutation_redeployDeployment(ctx context
 	if fc.Args, err = ec.field_Mutation_redeployDeployment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Permission_id(ctx context.Context, field graphql.CollectedField, obj *ent.Permission) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Permission_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(uuid.UUID)
-	fc.Result = res
-	return ec.marshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Permission_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Permission",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Permission_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.Permission) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Permission_createdAt(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CreatedAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(time.Time)
-	fc.Result = res
-	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Permission_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Permission",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Time does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Permission_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.Permission) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Permission_updatedAt(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.UpdatedAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(time.Time)
-	fc.Result = res
-	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Permission_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Permission",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Time does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Permission_key(ctx context.Context, field graphql.CollectedField, obj *ent.Permission) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Permission_key(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Key, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalOString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Permission_key(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Permission",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Permission_permissionPolicies(ctx context.Context, field graphql.CollectedField, obj *ent.Permission) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Permission_permissionPolicies(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Permission().PermissionPolicies(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.([]*ent.PermissionPolicy)
-	fc.Result = res
-	return ec.marshalOPermissionPolicy2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐPermissionPolicy(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Permission_permissionPolicies(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Permission",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_PermissionPolicy_id(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_PermissionPolicy_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_PermissionPolicy_updatedAt(ctx, field)
-			case "type":
-				return ec.fieldContext_PermissionPolicy_type(ctx, field)
-			case "permission":
-				return ec.fieldContext_PermissionPolicy_permission(ctx, field)
-			case "group":
-				return ec.fieldContext_PermissionPolicy_group(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type PermissionPolicy", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _PermissionPolicy_id(ctx context.Context, field graphql.CollectedField, obj *ent.PermissionPolicy) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PermissionPolicy_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(uuid.UUID)
-	fc.Result = res
-	return ec.marshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_PermissionPolicy_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "PermissionPolicy",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _PermissionPolicy_createdAt(ctx context.Context, field graphql.CollectedField, obj *ent.PermissionPolicy) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PermissionPolicy_createdAt(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CreatedAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(time.Time)
-	fc.Result = res
-	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_PermissionPolicy_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "PermissionPolicy",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Time does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _PermissionPolicy_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.PermissionPolicy) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PermissionPolicy_updatedAt(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.UpdatedAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(time.Time)
-	fc.Result = res
-	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_PermissionPolicy_updatedAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "PermissionPolicy",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Time does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _PermissionPolicy_type(ctx context.Context, field graphql.CollectedField, obj *ent.PermissionPolicy) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PermissionPolicy_type(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.PermissionPolicy().Type(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(model.PermissionPolicyType)
-	fc.Result = res
-	return ec.marshalNPermissionPolicyType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐPermissionPolicyType(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_PermissionPolicy_type(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "PermissionPolicy",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type PermissionPolicyType does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _PermissionPolicy_permission(ctx context.Context, field graphql.CollectedField, obj *ent.PermissionPolicy) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PermissionPolicy_permission(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.PermissionPolicy().Permission(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*ent.Permission)
-	fc.Result = res
-	return ec.marshalNPermission2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐPermission(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_PermissionPolicy_permission(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "PermissionPolicy",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Permission_id(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Permission_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_Permission_updatedAt(ctx, field)
-			case "key":
-				return ec.fieldContext_Permission_key(ctx, field)
-			case "permissionPolicies":
-				return ec.fieldContext_Permission_permissionPolicies(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Permission", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _PermissionPolicy_group(ctx context.Context, field graphql.CollectedField, obj *ent.PermissionPolicy) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PermissionPolicy_group(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.PermissionPolicy().Group(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*ent.Group)
-	fc.Result = res
-	return ec.marshalNGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_PermissionPolicy_group(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "PermissionPolicy",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Group_id(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Group_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_Group_updatedAt(ctx, field)
-			case "name":
-				return ec.fieldContext_Group_name(ctx, field)
-			case "children":
-				return ec.fieldContext_Group_children(ctx, field)
-			case "parent":
-				return ec.fieldContext_Group_parent(ctx, field)
-			case "users":
-				return ec.fieldContext_Group_users(ctx, field)
-			case "permissionPolicies":
-				return ec.fieldContext_Group_permissionPolicies(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
-		},
 	}
 	return fc, nil
 }
@@ -6492,6 +7309,114 @@ func (ec *executionContext) fieldContext_Provider_blueprints(ctx context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _ProviderPage_providers(ctx context.Context, field graphql.CollectedField, obj *model.ProviderPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ProviderPage_providers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Providers, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.Provider)
+	fc.Result = res
+	return ec.marshalNProvider2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐProviderᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ProviderPage_providers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProviderPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Provider_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Provider_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Provider_updatedAt(ctx, field)
+			case "displayName":
+				return ec.fieldContext_Provider_displayName(ctx, field)
+			case "providerGitUrl":
+				return ec.fieldContext_Provider_providerGitUrl(ctx, field)
+			case "providerVersion":
+				return ec.fieldContext_Provider_providerVersion(ctx, field)
+			case "configBytes":
+				return ec.fieldContext_Provider_configBytes(ctx, field)
+			case "isLoaded":
+				return ec.fieldContext_Provider_isLoaded(ctx, field)
+			case "blueprints":
+				return ec.fieldContext_Provider_blueprints(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Provider", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProviderPage_total(ctx context.Context, field graphql.CollectedField, obj *model.ProviderPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ProviderPage_total(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Total, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ProviderPage_total(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProviderPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_me(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_me(ctx, field)
 	if err != nil {
@@ -6570,7 +7495,7 @@ func (ec *executionContext) _Query_meHasPermission(ctx context.Context, field gr
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().MeHasPermission(rctx, fc.Args["key"].(string))
+		return ec.resolvers.Query().MeHasPermission(rctx, fc.Args["objectType"].(grantedpermission.ObjectType), fc.Args["objectID"].(*uuid.UUID), fc.Args["action"].(actions.PermissionAction))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6624,32 +7549,8 @@ func (ec *executionContext) _Query_users(ctx context.Context, field graphql.Coll
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().Users(rctx)
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.users.list")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.([]*ent.User); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/cble-platform/cble-backend/ent.User`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Users(rctx, fc.Args["count"].(*int), fc.Args["offset"].(*int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6661,9 +7562,9 @@ func (ec *executionContext) _Query_users(ctx context.Context, field graphql.Coll
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*ent.User)
+	res := resTmp.(*model.UserPage)
 	fc.Result = res
-	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐUserᚄ(ctx, field.Selections, res)
+	return ec.marshalNUserPage2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐUserPage(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_users(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6674,27 +7575,24 @@ func (ec *executionContext) fieldContext_Query_users(ctx context.Context, field 
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_User_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_User_updatedAt(ctx, field)
-			case "username":
-				return ec.fieldContext_User_username(ctx, field)
-			case "email":
-				return ec.fieldContext_User_email(ctx, field)
-			case "firstName":
-				return ec.fieldContext_User_firstName(ctx, field)
-			case "lastName":
-				return ec.fieldContext_User_lastName(ctx, field)
-			case "groups":
-				return ec.fieldContext_User_groups(ctx, field)
-			case "deployments":
-				return ec.fieldContext_User_deployments(ctx, field)
+			case "users":
+				return ec.fieldContext_UserPage_users(ctx, field)
+			case "total":
+				return ec.fieldContext_UserPage_total(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type UserPage", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_users_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -6712,32 +7610,8 @@ func (ec *executionContext) _Query_user(ctx context.Context, field graphql.Colle
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().User(rctx, fc.Args["id"].(uuid.UUID))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.users.read")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*ent.User); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/cble-platform/cble-backend/ent.User`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().User(rctx, fc.Args["id"].(uuid.UUID))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6811,32 +7685,8 @@ func (ec *executionContext) _Query_groups(ctx context.Context, field graphql.Col
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().Groups(rctx)
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.groups.list")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.([]*ent.Group); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/cble-platform/cble-backend/ent.Group`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Groups(rctx, fc.Args["count"].(int), fc.Args["offset"].(*int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6848,9 +7698,9 @@ func (ec *executionContext) _Query_groups(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*ent.Group)
+	res := resTmp.(*model.GroupPage)
 	fc.Result = res
-	return ec.marshalNGroup2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroupᚄ(ctx, field.Selections, res)
+	return ec.marshalNGroupPage2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐGroupPage(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_groups(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6861,25 +7711,24 @@ func (ec *executionContext) fieldContext_Query_groups(ctx context.Context, field
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Group_id(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Group_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_Group_updatedAt(ctx, field)
-			case "name":
-				return ec.fieldContext_Group_name(ctx, field)
-			case "children":
-				return ec.fieldContext_Group_children(ctx, field)
-			case "parent":
-				return ec.fieldContext_Group_parent(ctx, field)
-			case "users":
-				return ec.fieldContext_Group_users(ctx, field)
-			case "permissionPolicies":
-				return ec.fieldContext_Group_permissionPolicies(ctx, field)
+			case "groups":
+				return ec.fieldContext_GroupPage_groups(ctx, field)
+			case "total":
+				return ec.fieldContext_GroupPage_total(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type GroupPage", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_groups_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -6897,32 +7746,8 @@ func (ec *executionContext) _Query_group(ctx context.Context, field graphql.Coll
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().Group(rctx, fc.Args["id"].(uuid.UUID))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.groups.read")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*ent.Group); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/cble-platform/cble-backend/ent.Group`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Group(rctx, fc.Args["id"].(uuid.UUID))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6955,14 +7780,8 @@ func (ec *executionContext) fieldContext_Query_group(ctx context.Context, field 
 				return ec.fieldContext_Group_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Group_name(ctx, field)
-			case "children":
-				return ec.fieldContext_Group_children(ctx, field)
-			case "parent":
-				return ec.fieldContext_Group_parent(ctx, field)
 			case "users":
 				return ec.fieldContext_Group_users(ctx, field)
-			case "permissionPolicies":
-				return ec.fieldContext_Group_permissionPolicies(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
 		},
@@ -6975,6 +7794,142 @@ func (ec *executionContext) fieldContext_Query_group(ctx context.Context, field 
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_group_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_permissions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_permissions(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Permissions(rctx, fc.Args["count"].(int), fc.Args["offset"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.GrantedPermissionPage)
+	fc.Result = res
+	return ec.marshalNGrantedPermissionPage2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐGrantedPermissionPage(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_permissions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "permissions":
+				return ec.fieldContext_GrantedPermissionPage_permissions(ctx, field)
+			case "total":
+				return ec.fieldContext_GrantedPermissionPage_total(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type GrantedPermissionPage", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_permissions_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_permission(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_permission(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Permission(rctx, fc.Args["id"].(uuid.UUID))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.GrantedPermission)
+	fc.Result = res
+	return ec.marshalNGrantedPermission2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGrantedPermission(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_permission(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_GrantedPermission_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_GrantedPermission_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_GrantedPermission_updatedAt(ctx, field)
+			case "subjectType":
+				return ec.fieldContext_GrantedPermission_subjectType(ctx, field)
+			case "subjectId":
+				return ec.fieldContext_GrantedPermission_subjectId(ctx, field)
+			case "objectType":
+				return ec.fieldContext_GrantedPermission_objectType(ctx, field)
+			case "objectId":
+				return ec.fieldContext_GrantedPermission_objectId(ctx, field)
+			case "action":
+				return ec.fieldContext_GrantedPermission_action(ctx, field)
+			case "displayString":
+				return ec.fieldContext_GrantedPermission_displayString(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type GrantedPermission", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_permission_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -6994,32 +7949,8 @@ func (ec *executionContext) _Query_providers(ctx context.Context, field graphql.
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().Providers(rctx)
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.providers.list")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.([]*ent.Provider); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/cble-platform/cble-backend/ent.Provider`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Providers(rctx, fc.Args["count"].(int), fc.Args["offset"].(*int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7031,9 +7962,9 @@ func (ec *executionContext) _Query_providers(ctx context.Context, field graphql.
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*ent.Provider)
+	res := resTmp.(*model.ProviderPage)
 	fc.Result = res
-	return ec.marshalNProvider2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐProviderᚄ(ctx, field.Selections, res)
+	return ec.marshalNProviderPage2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐProviderPage(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_providers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7044,27 +7975,24 @@ func (ec *executionContext) fieldContext_Query_providers(ctx context.Context, fi
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Provider_id(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Provider_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_Provider_updatedAt(ctx, field)
-			case "displayName":
-				return ec.fieldContext_Provider_displayName(ctx, field)
-			case "providerGitUrl":
-				return ec.fieldContext_Provider_providerGitUrl(ctx, field)
-			case "providerVersion":
-				return ec.fieldContext_Provider_providerVersion(ctx, field)
-			case "configBytes":
-				return ec.fieldContext_Provider_configBytes(ctx, field)
-			case "isLoaded":
-				return ec.fieldContext_Provider_isLoaded(ctx, field)
-			case "blueprints":
-				return ec.fieldContext_Provider_blueprints(ctx, field)
+			case "providers":
+				return ec.fieldContext_ProviderPage_providers(ctx, field)
+			case "total":
+				return ec.fieldContext_ProviderPage_total(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Provider", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ProviderPage", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_providers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -7082,32 +8010,8 @@ func (ec *executionContext) _Query_provider(ctx context.Context, field graphql.C
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().Provider(rctx, fc.Args["id"].(uuid.UUID))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.providers.read")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*ent.Provider); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/cble-platform/cble-backend/ent.Provider`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Provider(rctx, fc.Args["id"].(uuid.UUID))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7181,32 +8085,8 @@ func (ec *executionContext) _Query_blueprints(ctx context.Context, field graphql
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().Blueprints(rctx)
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.blueprints.list")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.([]*ent.Blueprint); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/cble-platform/cble-backend/ent.Blueprint`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Blueprints(rctx, fc.Args["count"].(int), fc.Args["offset"].(*int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7218,9 +8098,9 @@ func (ec *executionContext) _Query_blueprints(ctx context.Context, field graphql
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*ent.Blueprint)
+	res := resTmp.(*model.BlueprintPage)
 	fc.Result = res
-	return ec.marshalNBlueprint2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐBlueprintᚄ(ctx, field.Selections, res)
+	return ec.marshalNBlueprintPage2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐBlueprintPage(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_blueprints(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7231,29 +8111,85 @@ func (ec *executionContext) fieldContext_Query_blueprints(ctx context.Context, f
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Blueprint_id(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Blueprint_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_Blueprint_updatedAt(ctx, field)
-			case "name":
-				return ec.fieldContext_Blueprint_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Blueprint_description(ctx, field)
-			case "blueprintTemplate":
-				return ec.fieldContext_Blueprint_blueprintTemplate(ctx, field)
-			case "variableTypes":
-				return ec.fieldContext_Blueprint_variableTypes(ctx, field)
-			case "provider":
-				return ec.fieldContext_Blueprint_provider(ctx, field)
-			case "resources":
-				return ec.fieldContext_Blueprint_resources(ctx, field)
-			case "deployments":
-				return ec.fieldContext_Blueprint_deployments(ctx, field)
+			case "blueprints":
+				return ec.fieldContext_BlueprintPage_blueprints(ctx, field)
+			case "total":
+				return ec.fieldContext_BlueprintPage_total(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Blueprint", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type BlueprintPage", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_blueprints_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_deployableBlueprints(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_deployableBlueprints(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().DeployableBlueprints(rctx, fc.Args["count"].(int), fc.Args["offset"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.BlueprintPage)
+	fc.Result = res
+	return ec.marshalNBlueprintPage2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐBlueprintPage(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_deployableBlueprints(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "blueprints":
+				return ec.fieldContext_BlueprintPage_blueprints(ctx, field)
+			case "total":
+				return ec.fieldContext_BlueprintPage_total(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type BlueprintPage", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_deployableBlueprints_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -7271,32 +8207,8 @@ func (ec *executionContext) _Query_blueprint(ctx context.Context, field graphql.
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().Blueprint(rctx, fc.Args["id"].(uuid.UUID))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.blueprints.read")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*ent.Blueprint); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/cble-platform/cble-backend/ent.Blueprint`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Blueprint(rctx, fc.Args["id"].(uuid.UUID))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7372,32 +8284,8 @@ func (ec *executionContext) _Query_deployments(ctx context.Context, field graphq
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().Deployments(rctx)
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.deployments.list")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.([]*ent.Deployment); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/cble-platform/cble-backend/ent.Deployment`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Deployments(rctx, fc.Args["count"].(int), fc.Args["offset"].(*int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7409,9 +8297,9 @@ func (ec *executionContext) _Query_deployments(ctx context.Context, field graphq
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*ent.Deployment)
+	res := resTmp.(*model.DeploymentPage)
 	fc.Result = res
-	return ec.marshalNDeployment2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeploymentᚄ(ctx, field.Selections, res)
+	return ec.marshalNDeploymentPage2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐDeploymentPage(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_deployments(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7422,29 +8310,24 @@ func (ec *executionContext) fieldContext_Query_deployments(ctx context.Context, 
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Deployment_id(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Deployment_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_Deployment_updatedAt(ctx, field)
-			case "name":
-				return ec.fieldContext_Deployment_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Deployment_description(ctx, field)
-			case "state":
-				return ec.fieldContext_Deployment_state(ctx, field)
-			case "templateVars":
-				return ec.fieldContext_Deployment_templateVars(ctx, field)
-			case "blueprint":
-				return ec.fieldContext_Deployment_blueprint(ctx, field)
-			case "deploymentNodes":
-				return ec.fieldContext_Deployment_deploymentNodes(ctx, field)
-			case "requester":
-				return ec.fieldContext_Deployment_requester(ctx, field)
+			case "deployments":
+				return ec.fieldContext_DeploymentPage_deployments(ctx, field)
+			case "total":
+				return ec.fieldContext_DeploymentPage_total(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Deployment", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type DeploymentPage", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_deployments_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -7462,32 +8345,8 @@ func (ec *executionContext) _Query_deployment(ctx context.Context, field graphql
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().Deployment(rctx, fc.Args["id"].(uuid.UUID))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			key, err := ec.unmarshalNString2string(ctx, "com.cble.deployments.read")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.Permission == nil {
-				return nil, errors.New("directive permission is not implemented")
-			}
-			return ec.directives.Permission(ctx, nil, directive0, key)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*ent.Deployment); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/cble-platform/cble-backend/ent.Deployment`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Deployment(rctx, fc.Args["id"].(uuid.UUID))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7544,6 +8403,128 @@ func (ec *executionContext) fieldContext_Query_deployment(ctx context.Context, f
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_deployment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_searchUsers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_searchUsers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().SearchUsers(rctx, fc.Args["search"].(string), fc.Args["count"].(int), fc.Args["offset"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.UserPage)
+	fc.Result = res
+	return ec.marshalNUserPage2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐUserPage(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_searchUsers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "users":
+				return ec.fieldContext_UserPage_users(ctx, field)
+			case "total":
+				return ec.fieldContext_UserPage_total(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserPage", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_searchUsers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_searchGroups(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_searchGroups(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().SearchGroups(rctx, fc.Args["search"].(string), fc.Args["count"].(int), fc.Args["offset"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.GroupPage)
+	fc.Result = res
+	return ec.marshalNGroupPage2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐGroupPage(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_searchGroups(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "groups":
+				return ec.fieldContext_GroupPage_groups(ctx, field)
+			case "total":
+				return ec.fieldContext_GroupPage_total(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type GroupPage", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_searchGroups_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -8540,14 +9521,8 @@ func (ec *executionContext) fieldContext_User_groups(ctx context.Context, field 
 				return ec.fieldContext_Group_updatedAt(ctx, field)
 			case "name":
 				return ec.fieldContext_Group_name(ctx, field)
-			case "children":
-				return ec.fieldContext_Group_children(ctx, field)
-			case "parent":
-				return ec.fieldContext_Group_parent(ctx, field)
 			case "users":
 				return ec.fieldContext_Group_users(ctx, field)
-			case "permissionPolicies":
-				return ec.fieldContext_Group_permissionPolicies(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
 		},
@@ -8616,6 +9591,114 @@ func (ec *executionContext) fieldContext_User_deployments(ctx context.Context, f
 				return ec.fieldContext_Deployment_requester(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Deployment", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserPage_users(ctx context.Context, field graphql.CollectedField, obj *model.UserPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserPage_users(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Users, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserPage_users(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_User_updatedAt(ctx, field)
+			case "username":
+				return ec.fieldContext_User_username(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "firstName":
+				return ec.fieldContext_User_firstName(ctx, field)
+			case "lastName":
+				return ec.fieldContext_User_lastName(ctx, field)
+			case "groups":
+				return ec.fieldContext_User_groups(ctx, field)
+			case "deployments":
+				return ec.fieldContext_User_deployments(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserPage_total(ctx context.Context, field graphql.CollectedField, obj *model.UserPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserPage_total(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Total, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserPage_total(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -10476,6 +11559,33 @@ func (ec *executionContext) unmarshalInputDeploymentInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputGroupInput(ctx context.Context, obj interface{}) (model.GroupInput, error) {
+	var it model.GroupInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputProviderInput(ctx context.Context, obj interface{}) (model.ProviderInput, error) {
 	var it model.ProviderInput
 	asMap := map[string]interface{}{}
@@ -10531,7 +11641,7 @@ func (ec *executionContext) unmarshalInputUserInput(ctx context.Context, obj int
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"username", "email", "firstName", "lastName", "groupIds"}
+	fieldsInOrder := [...]string{"username", "email", "firstName", "lastName"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -10566,13 +11676,6 @@ func (ec *executionContext) unmarshalInputUserInput(ctx context.Context, obj int
 				return it, err
 			}
 			it.LastName = data
-		case "groupIds":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("groupIds"))
-			data, err := ec.unmarshalNID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.GroupIds = data
 		}
 	}
 
@@ -10772,6 +11875,50 @@ func (ec *executionContext) _Blueprint(ctx context.Context, sel ast.SelectionSet
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var blueprintPageImplementors = []string{"BlueprintPage"}
+
+func (ec *executionContext) _BlueprintPage(ctx context.Context, sel ast.SelectionSet, obj *model.BlueprintPage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, blueprintPageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("BlueprintPage")
+		case "blueprints":
+			out.Values[i] = ec._BlueprintPage_blueprints(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "total":
+			out.Values[i] = ec._BlueprintPage_total(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -11234,6 +12381,204 @@ func (ec *executionContext) _DeploymentNode(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var deploymentPageImplementors = []string{"DeploymentPage"}
+
+func (ec *executionContext) _DeploymentPage(ctx context.Context, sel ast.SelectionSet, obj *model.DeploymentPage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deploymentPageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeploymentPage")
+		case "deployments":
+			out.Values[i] = ec._DeploymentPage_deployments(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "total":
+			out.Values[i] = ec._DeploymentPage_total(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var grantedPermissionImplementors = []string{"GrantedPermission"}
+
+func (ec *executionContext) _GrantedPermission(ctx context.Context, sel ast.SelectionSet, obj *ent.GrantedPermission) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, grantedPermissionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GrantedPermission")
+		case "id":
+			out.Values[i] = ec._GrantedPermission_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._GrantedPermission_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "updatedAt":
+			out.Values[i] = ec._GrantedPermission_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "subjectType":
+			out.Values[i] = ec._GrantedPermission_subjectType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "subjectId":
+			out.Values[i] = ec._GrantedPermission_subjectId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "objectType":
+			out.Values[i] = ec._GrantedPermission_objectType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "objectId":
+			out.Values[i] = ec._GrantedPermission_objectId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "action":
+			out.Values[i] = ec._GrantedPermission_action(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "displayString":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._GrantedPermission_displayString(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var grantedPermissionPageImplementors = []string{"GrantedPermissionPage"}
+
+func (ec *executionContext) _GrantedPermissionPage(ctx context.Context, sel ast.SelectionSet, obj *model.GrantedPermissionPage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, grantedPermissionPageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GrantedPermissionPage")
+		case "permissions":
+			out.Values[i] = ec._GrantedPermissionPage_permissions(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "total":
+			out.Values[i] = ec._GrantedPermissionPage_total(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var groupImplementors = []string{"Group"}
 
 func (ec *executionContext) _Group(ctx context.Context, sel ast.SelectionSet, obj *ent.Group) graphql.Marshaler {
@@ -11265,72 +12610,6 @@ func (ec *executionContext) _Group(ctx context.Context, sel ast.SelectionSet, ob
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "children":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Group_children(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "parent":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Group_parent(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "users":
 			field := field
 
@@ -11364,39 +12643,50 @@ func (ec *executionContext) _Group(ctx context.Context, sel ast.SelectionSet, ob
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "permissionPolicies":
-			field := field
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Group_permissionPolicies(ctx, field, obj)
-				return res
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var groupPageImplementors = []string{"GroupPage"}
+
+func (ec *executionContext) _GroupPage(ctx context.Context, sel ast.SelectionSet, obj *model.GroupPage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, groupPageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GroupPage")
+		case "groups":
+			out.Values[i] = ec._GroupPage_groups(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
+		case "total":
+			out.Values[i] = ec._GroupPage_total(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
 			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -11463,6 +12753,41 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "deleteUser":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteUser(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createGroup":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createGroup(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateGroup":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateGroup(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteGroup":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteGroup(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "grantPermission":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_grantPermission(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "revokePermission":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_revokePermission(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -11558,247 +12883,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var permissionImplementors = []string{"Permission"}
-
-func (ec *executionContext) _Permission(ctx context.Context, sel ast.SelectionSet, obj *ent.Permission) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, permissionImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("Permission")
-		case "id":
-			out.Values[i] = ec._Permission_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "createdAt":
-			out.Values[i] = ec._Permission_createdAt(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "updatedAt":
-			out.Values[i] = ec._Permission_updatedAt(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "key":
-			out.Values[i] = ec._Permission_key(ctx, field, obj)
-		case "permissionPolicies":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Permission_permissionPolicies(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var permissionPolicyImplementors = []string{"PermissionPolicy"}
-
-func (ec *executionContext) _PermissionPolicy(ctx context.Context, sel ast.SelectionSet, obj *ent.PermissionPolicy) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, permissionPolicyImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("PermissionPolicy")
-		case "id":
-			out.Values[i] = ec._PermissionPolicy_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "createdAt":
-			out.Values[i] = ec._PermissionPolicy_createdAt(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "updatedAt":
-			out.Values[i] = ec._PermissionPolicy_updatedAt(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "type":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._PermissionPolicy_type(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "permission":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._PermissionPolicy_permission(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "group":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._PermissionPolicy_group(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -11937,6 +13021,50 @@ func (ec *executionContext) _Provider(ctx context.Context, sel ast.SelectionSet,
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var providerPageImplementors = []string{"ProviderPage"}
+
+func (ec *executionContext) _ProviderPage(ctx context.Context, sel ast.SelectionSet, obj *model.ProviderPage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, providerPageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ProviderPage")
+		case "providers":
+			out.Values[i] = ec._ProviderPage_providers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "total":
+			out.Values[i] = ec._ProviderPage_total(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -12111,6 +13239,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "permissions":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_permissions(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "permission":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_permission(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "providers":
 			field := field
 
@@ -12177,6 +13349,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "deployableBlueprints":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_deployableBlueprints(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "blueprint":
 			field := field
 
@@ -12231,6 +13425,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_deployment(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "searchUsers":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_searchUsers(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "searchGroups":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_searchGroups(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -12654,6 +13892,50 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 	return out
 }
 
+var userPageImplementors = []string{"UserPage"}
+
+func (ec *executionContext) _UserPage(ctx context.Context, sel ast.SelectionSet, obj *model.UserPage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, userPageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UserPage")
+		case "users":
+			out.Values[i] = ec._UserPage_users(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "total":
+			out.Values[i] = ec._UserPage_total(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var __DirectiveImplementors = []string{"__Directive"}
 
 func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionSet, obj *introspection.Directive) graphql.Marshaler {
@@ -12980,6 +14262,22 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) unmarshalNAction2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋpermissionᚋactionsᚐPermissionAction(ctx context.Context, v interface{}) (actions.PermissionAction, error) {
+	tmp, err := graphql.UnmarshalString(v)
+	res := actions.PermissionAction(tmp)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAction2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋpermissionᚋactionsᚐPermissionAction(ctx context.Context, sel ast.SelectionSet, v actions.PermissionAction) graphql.Marshaler {
+	res := graphql.MarshalString(string(v))
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) marshalNBlueprint2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐBlueprint(ctx context.Context, sel ast.SelectionSet, v ent.Blueprint) graphql.Marshaler {
 	return ec._Blueprint(ctx, sel, &v)
 }
@@ -13041,6 +14339,20 @@ func (ec *executionContext) marshalNBlueprint2ᚖgithubᚗcomᚋcbleᚑplatform�
 func (ec *executionContext) unmarshalNBlueprintInput2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐBlueprintInput(ctx context.Context, v interface{}) (model.BlueprintInput, error) {
 	res, err := ec.unmarshalInputBlueprintInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNBlueprintPage2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐBlueprintPage(ctx context.Context, sel ast.SelectionSet, v model.BlueprintPage) graphql.Marshaler {
+	return ec._BlueprintPage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNBlueprintPage2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐBlueprintPage(ctx context.Context, sel ast.SelectionSet, v *model.BlueprintPage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._BlueprintPage(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
@@ -13223,6 +14535,20 @@ func (ec *executionContext) marshalNDeploymentNodeState2githubᚗcomᚋcbleᚑpl
 	return v
 }
 
+func (ec *executionContext) marshalNDeploymentPage2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐDeploymentPage(ctx context.Context, sel ast.SelectionSet, v model.DeploymentPage) graphql.Marshaler {
+	return ec._DeploymentPage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDeploymentPage2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐDeploymentPage(ctx context.Context, sel ast.SelectionSet, v *model.DeploymentPage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeploymentPage(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNDeploymentState2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐDeploymentState(ctx context.Context, v interface{}) (model.DeploymentState, error) {
 	var res model.DeploymentState
 	err := res.UnmarshalGQL(v)
@@ -13231,6 +14557,78 @@ func (ec *executionContext) unmarshalNDeploymentState2githubᚗcomᚋcbleᚑplat
 
 func (ec *executionContext) marshalNDeploymentState2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐDeploymentState(ctx context.Context, sel ast.SelectionSet, v model.DeploymentState) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) marshalNGrantedPermission2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGrantedPermission(ctx context.Context, sel ast.SelectionSet, v ent.GrantedPermission) graphql.Marshaler {
+	return ec._GrantedPermission(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNGrantedPermission2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGrantedPermissionᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.GrantedPermission) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNGrantedPermission2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGrantedPermission(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNGrantedPermission2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGrantedPermission(ctx context.Context, sel ast.SelectionSet, v *ent.GrantedPermission) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GrantedPermission(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNGrantedPermissionPage2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐGrantedPermissionPage(ctx context.Context, sel ast.SelectionSet, v model.GrantedPermissionPage) graphql.Marshaler {
+	return ec._GrantedPermissionPage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNGrantedPermissionPage2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐGrantedPermissionPage(ctx context.Context, sel ast.SelectionSet, v *model.GrantedPermissionPage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GrantedPermissionPage(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNGroup2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx context.Context, sel ast.SelectionSet, v ent.Group) graphql.Marshaler {
@@ -13329,6 +14727,25 @@ func (ec *executionContext) marshalNGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋcb
 	return ec._Group(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNGroupInput2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐGroupInput(ctx context.Context, v interface{}) (model.GroupInput, error) {
+	res, err := ec.unmarshalInputGroupInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNGroupPage2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐGroupPage(ctx context.Context, sel ast.SelectionSet, v model.GroupPage) graphql.Marshaler {
+	return ec._GroupPage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNGroupPage2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐGroupPage(ctx context.Context, sel ast.SelectionSet, v *model.GroupPage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GroupPage(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx context.Context, v interface{}) (uuid.UUID, error) {
 	res, err := model.UnmarshalUUID(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -13376,28 +14793,35 @@ func (ec *executionContext) marshalNID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ
 	return ret
 }
 
-func (ec *executionContext) marshalNPermission2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐPermission(ctx context.Context, sel ast.SelectionSet, v ent.Permission) graphql.Marshaler {
-	return ec._Permission(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNPermission2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐPermission(ctx context.Context, sel ast.SelectionSet, v *ent.Permission) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._Permission(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNPermissionPolicyType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐPermissionPolicyType(ctx context.Context, v interface{}) (model.PermissionPolicyType, error) {
-	var res model.PermissionPolicyType
-	err := res.UnmarshalGQL(v)
+func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
+	res, err := graphql.UnmarshalInt(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNPermissionPolicyType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐPermissionPolicyType(ctx context.Context, sel ast.SelectionSet, v model.PermissionPolicyType) graphql.Marshaler {
-	return v
+func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	res := graphql.MarshalInt(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNObjectType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚋgrantedpermissionᚐObjectType(ctx context.Context, v interface{}) (grantedpermission.ObjectType, error) {
+	tmp, err := graphql.UnmarshalString(v)
+	res := grantedpermission.ObjectType(tmp)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNObjectType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚋgrantedpermissionᚐObjectType(ctx context.Context, sel ast.SelectionSet, v grantedpermission.ObjectType) graphql.Marshaler {
+	res := graphql.MarshalString(string(v))
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) marshalNProvider2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐProvider(ctx context.Context, sel ast.SelectionSet, v ent.Provider) graphql.Marshaler {
@@ -13461,6 +14885,20 @@ func (ec *executionContext) marshalNProvider2ᚖgithubᚗcomᚋcbleᚑplatform�
 func (ec *executionContext) unmarshalNProviderInput2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐProviderInput(ctx context.Context, v interface{}) (model.ProviderInput, error) {
 	res, err := ec.unmarshalInputProviderInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNProviderPage2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐProviderPage(ctx context.Context, sel ast.SelectionSet, v model.ProviderPage) graphql.Marshaler {
+	return ec._ProviderPage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNProviderPage2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐProviderPage(ctx context.Context, sel ast.SelectionSet, v *model.ProviderPage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ProviderPage(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNResource2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐResource(ctx context.Context, sel ast.SelectionSet, v ent.Resource) graphql.Marshaler {
@@ -13567,6 +15005,22 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
+func (ec *executionContext) unmarshalNSubjectType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚋgrantedpermissionᚐSubjectType(ctx context.Context, v interface{}) (grantedpermission.SubjectType, error) {
+	tmp, err := graphql.UnmarshalString(v)
+	res := grantedpermission.SubjectType(tmp)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSubjectType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚋgrantedpermissionᚐSubjectType(ctx context.Context, sel ast.SelectionSet, v grantedpermission.SubjectType) graphql.Marshaler {
+	res := graphql.MarshalString(string(v))
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v interface{}) (time.Time, error) {
 	res, err := graphql.UnmarshalTime(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -13643,6 +15097,20 @@ func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbl
 func (ec *executionContext) unmarshalNUserInput2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐUserInput(ctx context.Context, v interface{}) (model.UserInput, error) {
 	res, err := ec.unmarshalInputUserInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUserPage2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐUserPage(ctx context.Context, sel ast.SelectionSet, v model.UserPage) graphql.Marshaler {
+	return ec._UserPage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUserPage2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐUserPage(ctx context.Context, sel ast.SelectionSet, v *model.UserPage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UserPage(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNVarTypeMap2map(ctx context.Context, v interface{}) (map[string]models.BlueprintVariableType, error) {
@@ -14000,47 +15468,6 @@ func (ec *executionContext) marshalODeployment2ᚖgithubᚗcomᚋcbleᚑplatform
 	return ec._Deployment(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOGroup2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx context.Context, sel ast.SelectionSet, v []*ent.Group) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	return ret
-}
-
 func (ec *executionContext) marshalOGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐGroup(ctx context.Context, sel ast.SelectionSet, v *ent.Group) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -14048,52 +15475,36 @@ func (ec *executionContext) marshalOGroup2ᚖgithubᚗcomᚋcbleᚑplatformᚋcb
 	return ec._Group(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOPermissionPolicy2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐPermissionPolicy(ctx context.Context, sel ast.SelectionSet, v []*ent.PermissionPolicy) graphql.Marshaler {
+func (ec *executionContext) unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx context.Context, v interface{}) (*uuid.UUID, error) {
 	if v == nil {
-		return graphql.Null
+		return nil, nil
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOPermissionPolicy2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐPermissionPolicy(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	return ret
+	res, err := model.UnmarshalUUID(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalOPermissionPolicy2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐPermissionPolicy(ctx context.Context, sel ast.SelectionSet, v *ent.PermissionPolicy) graphql.Marshaler {
+func (ec *executionContext) marshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx context.Context, sel ast.SelectionSet, v *uuid.UUID) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
-	return ec._PermissionPolicy(ctx, sel, v)
+	res := model.MarshalUUID(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalInt(*v)
+	return res
 }
 
 func (ec *executionContext) unmarshalOStrMap2map(ctx context.Context, v interface{}) (map[string]string, error) {
@@ -14109,16 +15520,6 @@ func (ec *executionContext) marshalOStrMap2map(ctx context.Context, sel ast.Sele
 		return graphql.Null
 	}
 	res := model.MarshalStrMap(v)
-	return res
-}
-
-func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {
-	res, err := graphql.UnmarshalString(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	res := graphql.MarshalString(v)
 	return res
 }
 

@@ -33,13 +33,7 @@ func (Group) Fields() []ent.Field {
 // Edges of the Group.
 func (Group) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("children", Group.Type).
-			From("parent").
-			Unique(),
-
 		edge.From("users", User.Type).
 			Ref("groups"),
-		edge.From("permission_policies", PermissionPolicy.Type).
-			Ref("group"),
 	}
 }
