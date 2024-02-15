@@ -197,38 +197,69 @@ func (ps *CBLEServer) DestroyResource(ctx context.Context, entProvider *ent.Prov
 	return client.DestroyResource(ctx, request)
 }
 
-// // Runs a synchronous one-off GetConsole command
-// func (ps *CBLEServer) GetConsoleSync(ctx context.Context, entProvider *ent.Provider, deploymentNode *ent.DeploymentNode) (*providerGRPC.GetConsoleReply, error) {
-// 	entDeployment, err := deploymentNode.QueryDeployment().Only(ctx)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	entResource, err := deploymentNode.QueryResource().Only(ctx)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+// Runs a synchronous GetConsole command
+func (ps *CBLEServer) GetConsole(ctx context.Context, entProvider *ent.Provider, entDeploymentNode *ent.DeploymentNode) (*providerGRPC.GetConsoleReply, error) {
+	// Get the provider client
+	client, err := ps.getProviderClient(entProvider.ID.String())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get provider client: %v", err)
+	}
 
-// 	request := &providerGRPC.GetConsoleRequest{
-// 		DeploymentId: entDeployment.ID.String(),
-// 		HostKey:      entResource.Key,
-// 		// Vars:           &structpb.Struct{},
-// 		// DeploymentVars: &structpb.Struct{},
-// 	}
+	// Get the resource
+	entResource, err := entDeploymentNode.QueryResource().Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query resource from node: %v", err)
+	}
 
-// 	client, err := ps.getProviderClient(entProvider.ID.String())
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	// Convert the object to YAML
+	objectBytes, err := yaml.Marshal(entResource.Object)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal resource (%s) object into YAML: %v", entResource.ID, err)
+	}
 
-// 	return client.GetConsole(ctx, request)
-// }
+	// Create the request
+	request := &providerGRPC.GetConsoleRequest{
+		Resource: &providerGRPC.Resource{
+			Id:     entResource.ID.String(),
+			Key:    entResource.Key,
+			Object: objectBytes,
+		},
+		Vars: entDeploymentNode.Vars,
+	}
 
-// // Runs a synchronous one-off GetConsole command
-// func (ps *CBLEServer) GetResourceListSync(ctx context.Context, entProvider *ent.Provider, request *providerGRPC.GetResourceListRequest) (*providerGRPC.GetResourceListReply, error) {
-// 	client, err := ps.getProviderClient(entProvider.ID.String())
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	return client.GetConsole(ctx, request)
+}
 
-// 	return client.GetResourceList(ctx, request)
-// }
+// Runs a synchronous ResourcePower command
+func (ps *CBLEServer) ResourcePower(ctx context.Context, entProvider *ent.Provider, entDeploymentNode *ent.DeploymentNode, state providerGRPC.PowerState) (*providerGRPC.ResourcePowerReply, error) {
+	// Get the provider client
+	client, err := ps.getProviderClient(entProvider.ID.String())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get provider client: %v", err)
+	}
+
+	// Get the resource
+	entResource, err := entDeploymentNode.QueryResource().Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query resource from node: %v", err)
+	}
+
+	// Convert the object to YAML
+	objectBytes, err := yaml.Marshal(entResource.Object)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal resource (%s) object into YAML: %v", entResource.ID, err)
+	}
+
+	// Create the request
+	request := &providerGRPC.ResourcePowerRequest{
+		Resource: &providerGRPC.Resource{
+			Id:     entResource.ID.String(),
+			Key:    entResource.Key,
+			Object: objectBytes,
+		},
+		Vars:  entDeploymentNode.Vars,
+		State: state,
+	}
+
+	return client.ResourcePower(ctx, request)
+}

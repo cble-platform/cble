@@ -19,6 +19,7 @@ import (
 	"github.com/cble-platform/cble-backend/graph/model"
 	"github.com/cble-platform/cble-backend/permission"
 	"github.com/cble-platform/cble-backend/permission/actions"
+	providerGRPC "github.com/cble-platform/cble-provider-grpc/pkg/provider"
 	"github.com/google/uuid"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	yaml "gopkg.in/yaml.v3"
@@ -607,6 +608,36 @@ func (r *mutationResolver) RedeployDeployment(ctx context.Context, id uuid.UUID,
 	go engine.StartRedeploy(r.ent, r.cbleServer, entDeployment, nodeIds)
 
 	return entDeployment, nil
+}
+
+// DeploymentNodePower is the resolver for the deploymentNodePower field.
+func (r *mutationResolver) DeploymentNodePower(ctx context.Context, id uuid.UUID, state providerGRPC.PowerState) (bool, error) {
+	// // Check if current user has permission
+	// if hasPerm, err := permission.CurrentUserHasDeploymentRedeploy(ctx, r.ent, id); err != nil || !hasPerm {
+	// 	return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	// }
+
+	// Get the deployment by ID
+	entDeploymentNode, err := r.ent.DeploymentNode.Get(ctx, id)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to query deployment node: %v", err)
+	}
+	// Get the provider
+	entProvider, err := entDeploymentNode.QueryDeployment().QueryBlueprint().QueryProvider().Only(ctx)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to query provider: %v", err)
+	}
+
+	// Update the resource power state
+	reply, err := r.cbleServer.ResourcePower(ctx, entProvider, entDeploymentNode, state)
+	if err != nil {
+		return false, gqlerror.Errorf("transport error: %v", err)
+	}
+	if !reply.Success {
+		return false, gqlerror.Errorf("failed to update power state: %v", err)
+	}
+
+	return true, nil
 }
 
 // ConfigBytes is the resolver for the configBytes field.

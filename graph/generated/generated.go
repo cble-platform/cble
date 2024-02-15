@@ -19,6 +19,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/grantedpermission"
 	"github.com/cble-platform/cble-backend/graph/model"
 	"github.com/cble-platform/cble-backend/permission/actions"
+	"github.com/cble-platform/cble-provider-grpc/pkg/provider"
 	"github.com/google/uuid"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -139,28 +140,29 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		ConfigureProvider  func(childComplexity int, id uuid.UUID) int
-		CreateBlueprint    func(childComplexity int, input model.BlueprintInput) int
-		CreateGroup        func(childComplexity int, input model.GroupInput) int
-		CreateProvider     func(childComplexity int, input model.ProviderInput) int
-		CreateUser         func(childComplexity int, input model.UserInput) int
-		DeleteBlueprint    func(childComplexity int, id uuid.UUID) int
-		DeleteGroup        func(childComplexity int, id uuid.UUID) int
-		DeleteProvider     func(childComplexity int, id uuid.UUID) int
-		DeleteUser         func(childComplexity int, id uuid.UUID) int
-		DeployBlueprint    func(childComplexity int, id uuid.UUID, templateVars map[string]string) int
-		DestroyDeployment  func(childComplexity int, id uuid.UUID) int
-		GrantPermission    func(childComplexity int, subjectType grantedpermission.SubjectType, subjectID uuid.UUID, objectType grantedpermission.ObjectType, objectID *uuid.UUID, action actions.PermissionAction) int
-		LoadProvider       func(childComplexity int, id uuid.UUID) int
-		RedeployDeployment func(childComplexity int, id uuid.UUID, nodeIds []uuid.UUID) int
-		RevokePermission   func(childComplexity int, subjectType grantedpermission.SubjectType, subjectID uuid.UUID, objectType grantedpermission.ObjectType, objectID *uuid.UUID, action actions.PermissionAction) int
-		SelfChangePassword func(childComplexity int, currentPassword string, newPassword string) int
-		UnloadProvider     func(childComplexity int, id uuid.UUID) int
-		UpdateBlueprint    func(childComplexity int, id uuid.UUID, input model.BlueprintInput) int
-		UpdateDeployment   func(childComplexity int, id uuid.UUID, input model.DeploymentInput) int
-		UpdateGroup        func(childComplexity int, id uuid.UUID, input model.GroupInput) int
-		UpdateProvider     func(childComplexity int, id uuid.UUID, input model.ProviderInput) int
-		UpdateUser         func(childComplexity int, id uuid.UUID, input model.UserInput) int
+		ConfigureProvider   func(childComplexity int, id uuid.UUID) int
+		CreateBlueprint     func(childComplexity int, input model.BlueprintInput) int
+		CreateGroup         func(childComplexity int, input model.GroupInput) int
+		CreateProvider      func(childComplexity int, input model.ProviderInput) int
+		CreateUser          func(childComplexity int, input model.UserInput) int
+		DeleteBlueprint     func(childComplexity int, id uuid.UUID) int
+		DeleteGroup         func(childComplexity int, id uuid.UUID) int
+		DeleteProvider      func(childComplexity int, id uuid.UUID) int
+		DeleteUser          func(childComplexity int, id uuid.UUID) int
+		DeployBlueprint     func(childComplexity int, id uuid.UUID, templateVars map[string]string) int
+		DeploymentNodePower func(childComplexity int, id uuid.UUID, state provider.PowerState) int
+		DestroyDeployment   func(childComplexity int, id uuid.UUID) int
+		GrantPermission     func(childComplexity int, subjectType grantedpermission.SubjectType, subjectID uuid.UUID, objectType grantedpermission.ObjectType, objectID *uuid.UUID, action actions.PermissionAction) int
+		LoadProvider        func(childComplexity int, id uuid.UUID) int
+		RedeployDeployment  func(childComplexity int, id uuid.UUID, nodeIds []uuid.UUID) int
+		RevokePermission    func(childComplexity int, subjectType grantedpermission.SubjectType, subjectID uuid.UUID, objectType grantedpermission.ObjectType, objectID *uuid.UUID, action actions.PermissionAction) int
+		SelfChangePassword  func(childComplexity int, currentPassword string, newPassword string) int
+		UnloadProvider      func(childComplexity int, id uuid.UUID) int
+		UpdateBlueprint     func(childComplexity int, id uuid.UUID, input model.BlueprintInput) int
+		UpdateDeployment    func(childComplexity int, id uuid.UUID, input model.DeploymentInput) int
+		UpdateGroup         func(childComplexity int, id uuid.UUID, input model.GroupInput) int
+		UpdateProvider      func(childComplexity int, id uuid.UUID, input model.ProviderInput) int
+		UpdateUser          func(childComplexity int, id uuid.UUID, input model.UserInput) int
 	}
 
 	Provider struct {
@@ -282,6 +284,7 @@ type MutationResolver interface {
 	DeployBlueprint(ctx context.Context, id uuid.UUID, templateVars map[string]string) (*ent.Deployment, error)
 	DestroyDeployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error)
 	RedeployDeployment(ctx context.Context, id uuid.UUID, nodeIds []uuid.UUID) (*ent.Deployment, error)
+	DeploymentNodePower(ctx context.Context, id uuid.UUID, state provider.PowerState) (bool, error)
 }
 type ProviderResolver interface {
 	ConfigBytes(ctx context.Context, obj *ent.Provider) (string, error)
@@ -815,6 +818,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.DeployBlueprint(childComplexity, args["id"].(uuid.UUID), args["templateVars"].(map[string]string)), true
+
+	case "Mutation.deploymentNodePower":
+		if e.complexity.Mutation.DeploymentNodePower == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deploymentNodePower_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeploymentNodePower(childComplexity, args["id"].(uuid.UUID), args["state"].(provider.PowerState)), true
 
 	case "Mutation.destroyDeployment":
 		if e.complexity.Mutation.DestroyDeployment == nil {
@@ -1819,6 +1834,12 @@ input GroupInput {
   name: String!
 }
 
+enum PowerState {
+  on
+  off
+  reset
+}
+
 type Mutation {
   ##################
   # AUTHENTICATION #
@@ -1927,6 +1948,10 @@ type Mutation {
   Redeploy nodes within a deployment (requires permission ` + "`" + `x.x.deployments.x.redeploy` + "`" + `)
   """
   redeployDeployment(id: ID!, nodeIds: [ID!]!): Deployment!
+  """
+  Control the power state of a deployment node
+  """
+  deploymentNodePower(id: ID!, state: PowerState!): Boolean!
   # """
   # Get a vm console (requires permission ` + "`" + `x.x.deployments.x.console` + "`" + `)
   # """
@@ -2096,6 +2121,30 @@ func (ec *executionContext) field_Mutation_deployBlueprint_args(ctx context.Cont
 		}
 	}
 	args["templateVars"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deploymentNodePower_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uuid.UUID
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 provider.PowerState
+	if tmp, ok := rawArgs["state"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("state"))
+		arg1, err = ec.unmarshalNPowerState2githubᚗcomᚋcbleᚑplatformᚋcbleᚑproviderᚑgrpcᚋpkgᚋproviderᚐPowerState(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["state"] = arg1
 	return args, nil
 }
 
@@ -6888,6 +6937,61 @@ func (ec *executionContext) fieldContext_Mutation_redeployDeployment(ctx context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_redeployDeployment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deploymentNodePower(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deploymentNodePower(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeploymentNodePower(rctx, fc.Args["id"].(uuid.UUID), fc.Args["state"].(provider.PowerState))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deploymentNodePower(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deploymentNodePower_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -12883,6 +12987,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "deploymentNodePower":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deploymentNodePower(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -14816,6 +14927,21 @@ func (ec *executionContext) unmarshalNObjectType2githubᚗcomᚋcbleᚑplatform�
 
 func (ec *executionContext) marshalNObjectType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚋgrantedpermissionᚐObjectType(ctx context.Context, sel ast.SelectionSet, v grantedpermission.ObjectType) graphql.Marshaler {
 	res := graphql.MarshalString(string(v))
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNPowerState2githubᚗcomᚋcbleᚑplatformᚋcbleᚑproviderᚑgrpcᚋpkgᚋproviderᚐPowerState(ctx context.Context, v interface{}) (provider.PowerState, error) {
+	res, err := model.UnmarshalPowerState(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNPowerState2githubᚗcomᚋcbleᚑplatformᚋcbleᚑproviderᚑgrpcᚋpkgᚋproviderᚐPowerState(ctx context.Context, sel ast.SelectionSet, v provider.PowerState) graphql.Marshaler {
+	res := model.MarshalPowerState(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
