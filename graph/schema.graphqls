@@ -324,6 +324,12 @@ input GroupInput {
   name: String!
 }
 
+enum PowerState {
+  on
+  off
+  reset
+}
+
 type Mutation {
   ##################
   # AUTHENTICATION #
@@ -432,6 +438,10 @@ type Mutation {
   Redeploy nodes within a deployment (requires permission `x.x.deployments.x.redeploy`)
   """
   redeployDeployment(id: ID!, nodeIds: [ID!]!): Deployment!
+  """
+  Control the power state of a deployment node
+  """
+  deploymentNodePower(id: ID!, state: PowerState!): Boolean!
   # """
   # Get a vm console (requires permission `x.x.deployments.x.console`)
   # """

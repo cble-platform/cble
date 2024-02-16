@@ -79,3 +79,8 @@ models:
   ObjectType:
     model:
       - github.com/cble-platform/cble-backend/ent/grantedpermission.ObjectType
+      - github.com/cble-platform/cble-backend/ent/grantedpermission.SubjectType
+  PowerState:
+    model:
+      - github.com/cble-platform/cble-backend/graph/model.PowerState
+      # - github.com/cble-platform/cble-provider-grpc/pkg/provider.PowerState
