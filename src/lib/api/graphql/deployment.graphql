@@ -64,6 +64,10 @@ mutation DestroyDeployment($id: ID!) {
   }
 }
 
+mutation DeploymentNodePower($id: ID!, $state: PowerState!) {
+  deploymentNodePower(id: $id, state: $state)
+}
+
 # mutation GetConsole($id: ID!, $hostKey: String!) {
 #   getConsole(id: $id, hostKey: $hostKey)
 # }

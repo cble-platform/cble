@@ -206,6 +206,8 @@ export type Mutation = {
   deleteUser: Scalars['Boolean']['output'];
   /** Deploy a blueprint (requires permission `x.x.blueprints.x.deploy`) */
   deployBlueprint: Deployment;
+  /** Control the power state of a deployment node */
+  deploymentNodePower: Scalars['Boolean']['output'];
   /** Destroy a deployment (requires permission `x.x.deployments.x.destroy`) */
   destroyDeployment: Deployment;
   /** Grant a permission (requires permission `x.x.permission.*.grant`) */
@@ -281,6 +283,12 @@ export type MutationDeleteUserArgs = {
 export type MutationDeployBlueprintArgs = {
   id: Scalars['ID']['input'];
   templateVars: Scalars['StrMap']['input'];
+};
+
+
+export type MutationDeploymentNodePowerArgs = {
+  id: Scalars['ID']['input'];
+  state: PowerState;
 };
 
 
@@ -365,6 +373,12 @@ export enum ObjectType {
   Permission = 'permission',
   Provider = 'provider',
   User = 'user'
+}
+
+export enum PowerState {
+  Off = 'off',
+  On = 'on',
+  Reset = 'reset'
 }
 
 export type Provider = {
@@ -639,6 +653,14 @@ export type DestroyDeploymentMutationVariables = Exact<{
 
 
 export type DestroyDeploymentMutation = { __typename?: 'Mutation', destroyDeployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any } };
+
+export type DeploymentNodePowerMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  state: PowerState;
+}>;
+
+
+export type DeploymentNodePowerMutation = { __typename?: 'Mutation', deploymentNodePower: boolean };
 
 export type GroupFragmentFragment = { __typename?: 'Group', id: string, createdAt: any, updatedAt: any, name: string };
 
@@ -1206,6 +1228,38 @@ export function useDestroyDeploymentMutation(baseOptions?: Apollo.MutationHookOp
 export type DestroyDeploymentMutationHookResult = ReturnType<typeof useDestroyDeploymentMutation>;
 export type DestroyDeploymentMutationResult = Apollo.MutationResult<DestroyDeploymentMutation>;
 export type DestroyDeploymentMutationOptions = Apollo.BaseMutationOptions<DestroyDeploymentMutation, DestroyDeploymentMutationVariables>;
+export const DeploymentNodePowerDocument = gql`
+    mutation DeploymentNodePower($id: ID!, $state: PowerState!) {
+  deploymentNodePower(id: $id, state: $state)
+}
+    `;
+export type DeploymentNodePowerMutationFn = Apollo.MutationFunction<DeploymentNodePowerMutation, DeploymentNodePowerMutationVariables>;
+
+/**
+ * __useDeploymentNodePowerMutation__
+ *
+ * To run a mutation, you first call `useDeploymentNodePowerMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeploymentNodePowerMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deploymentNodePowerMutation, { data, loading, error }] = useDeploymentNodePowerMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      state: // value for 'state'
+ *   },
+ * });
+ */
+export function useDeploymentNodePowerMutation(baseOptions?: Apollo.MutationHookOptions<DeploymentNodePowerMutation, DeploymentNodePowerMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeploymentNodePowerMutation, DeploymentNodePowerMutationVariables>(DeploymentNodePowerDocument, options);
+      }
+export type DeploymentNodePowerMutationHookResult = ReturnType<typeof useDeploymentNodePowerMutation>;
+export type DeploymentNodePowerMutationResult = Apollo.MutationResult<DeploymentNodePowerMutation>;
+export type DeploymentNodePowerMutationOptions = Apollo.BaseMutationOptions<DeploymentNodePowerMutation, DeploymentNodePowerMutationVariables>;
 export const ListGroupsDocument = gql`
     query ListGroups {
   groups {
