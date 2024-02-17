@@ -1,7 +1,12 @@
 import { useSnackbar } from 'notistack'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { GetDeploymentQuery, useGetDeploymentQuery } from '@/lib/api/generated'
+import {
+  GetDeploymentQuery,
+  PowerState,
+  useDeploymentNodePowerMutation,
+  useGetDeploymentQuery,
+} from '@/lib/api/generated'
 import {
   Container,
   Typography,
@@ -13,8 +18,22 @@ import {
   Button,
   Card,
   CardContent,
+  List,
+  ListItem,
+  ListItemText,
+  IconButton,
+  Grid,
+  ListItemIcon,
+  CircularProgress,
 } from '@mui/material'
-import { ChevronLeft, ExpandMore } from '@mui/icons-material'
+import {
+  ChevronLeft,
+  ExpandMore,
+  MoreHoriz,
+  Power,
+  PowerOff,
+  RestartAlt,
+} from '@mui/icons-material'
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -114,8 +133,6 @@ function generateFlowData(
   }
 }
 
-const nodeTypes = { deploymentNode: DeploymentNodeNode }
-
 function DeploymentNodeNode({
   data,
 }: {
@@ -149,6 +166,26 @@ export default function DeploymentDetails() {
     GetDeploymentQuery['deployment']['deploymentNodes'][number]
   >([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
+  const nodeTypes = useMemo(() => ({ deploymentNode: DeploymentNodeNode }), [])
+  // Resource context menu
+  const [resourceMenuAnchorEl, setResourceMenuAnchorEl] =
+    useState<null | HTMLElement>(null)
+  const [selectedResourceIndex, setSelectedResourceIndex] = useState<number>(0)
+  const resourceMenuOpen = useMemo(
+    () => Boolean(resourceMenuAnchorEl),
+    [resourceMenuAnchorEl]
+  )
+  const [selectedResourceMenuItem, setSelectedResourceMenuItem] =
+    useState<number>(0)
+  const [
+    deploymentNodePower,
+    {
+      data: deploymentNodePowerData,
+      error: deploymentNodePowerError,
+      loading: deploymentNodePowerLoading,
+      reset: resetDeploymentNodePower,
+    },
+  ] = useDeploymentNodePowerMutation()
 
   useEffect(() => {
     if (getDeploymentError)
@@ -173,19 +210,61 @@ export default function DeploymentDetails() {
     }
   }, [getDeploymentData])
 
-  // const onLayout = useCallback(
-  //   (direction: 'TB' | 'BT' | 'LR' | 'RL') => {
-  //     const layouted = getLayoutedElements(nodes, edges, { direction })
+  // DeploymentNodePower
+  useEffect(() => {
+    if (deploymentNodePowerLoading) return
+    if (deploymentNodePowerData) {
+      enqueueSnackbar({
+        message: deploymentNodePowerData.deploymentNodePower
+          ? 'Resource power state updated'
+          : 'Failed to update resource power state',
+        variant: 'success',
+      })
+    } else if (deploymentNodePowerError) {
+      console.error(deploymentNodePowerError.message)
+      enqueueSnackbar({
+        message: 'Error ocurred: see console for details',
+        variant: 'error',
+      })
+    }
+    setResourceMenuAnchorEl(null)
+    resetDeploymentNodePower()
+  }, [
+    deploymentNodePowerData,
+    deploymentNodePowerError,
+    deploymentNodePowerLoading,
+  ])
 
-  //     setNodes([...layouted.nodes])
-  //     setEdges([...layouted.edges])
+  const handleResourceSelect = (
+    e: React.MouseEvent<HTMLElement>,
+    index: number
+  ) => {
+    setSelectedResourceIndex(index)
+    setResourceMenuAnchorEl(e.currentTarget)
+  }
 
-  //     window.requestAnimationFrame(() => {
-  //       fitView()
-  //     })
-  //   },
-  //   [nodes, edges]
-  // )
+  const handleResourceMenuClose = () => {
+    if (getDeploymentLoading) return
+    setResourceMenuAnchorEl(null)
+  }
+
+  const handleDeploymentPower = (state: PowerState) => {
+    if (
+      !getDeploymentData ||
+      !getDeploymentData.deployment.deploymentNodes[selectedResourceIndex]
+    ) {
+      enqueueSnackbar({ message: 'Unknown error. Refresh page' })
+      return
+    } else
+      deploymentNodePower({
+        variables: {
+          id: getDeploymentData.deployment.deploymentNodes[
+            selectedResourceIndex
+          ].id,
+          state,
+        },
+      })
+  }
 
   return (
     <Container sx={{ py: 3 }}>
@@ -234,35 +313,124 @@ export default function DeploymentDetails() {
       </Box>
       <Divider sx={{ my: 2 }} />
       {getDeploymentLoading && <LinearProgress sx={{ my: 2 }} />}
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 3fr',
-          gridTemplateRows: '1fr',
-          gap: 2,
-        }}
-      >
-        <Box></Box>
-        <Box
-          sx={{ width: '100%', height: '100%', minHeight: 500, px: 3, py: 1 }}
-        >
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            fitView
-            attributionPosition="top-right"
-            nodeTypes={nodeTypes}
-            connectionLineType={ConnectionLineType.SmoothStep}
+      <Grid container spacing={2}>
+        <Grid item md={3} sx={{ display: 'flex' }}>
+          <List sx={{ width: '100%' }}>
+            {getDeploymentData?.deployment.deploymentNodes.map((dn, i) => (
+              <ListItem
+                key={dn.id}
+                secondaryAction={
+                  <IconButton onClick={(e) => handleResourceSelect(e, i)}>
+                    <MoreHoriz />
+                  </IconButton>
+                }
+              >
+                {/* <ListItemButton> */}
+                {/* <ListItemIcon>
+                  <InboxIcon />
+                </ListItemIcon> */}
+                <ListItemText primary={dn.resource.key} />
+                {/* </ListItemButton> */}
+              </ListItem>
+            ))}
+          </List>
+          <Divider sx={{ my: 2 }} orientation="vertical" />
+          <Menu
+            id="lock-menu"
+            anchorEl={resourceMenuAnchorEl}
+            open={resourceMenuOpen}
+            onClose={handleResourceMenuClose}
+            MenuListProps={{
+              role: 'listbox',
+            }}
           >
-            <Controls />
-            {/* <MiniMap /> */}
-            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
-          </ReactFlow>
-          {/* <MuiMarkdown>
+            <MenuItem
+              onClick={() => {
+                setSelectedResourceMenuItem(0)
+                handleDeploymentPower(PowerState.On)
+              }}
+              disabled={deploymentNodePowerLoading}
+            >
+              <ListItemIcon>
+                {deploymentNodePowerLoading &&
+                selectedResourceMenuItem === 0 ? (
+                  <CircularProgress
+                    size="small"
+                    color="secondary"
+                    sx={{ width: '1rem' }}
+                  />
+                ) : (
+                  <Power fontSize="small" />
+                )}
+              </ListItemIcon>
+              <ListItemText>Power On</ListItemText>
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                setSelectedResourceMenuItem(1)
+                handleDeploymentPower(PowerState.Off)
+              }}
+              disabled={deploymentNodePowerLoading}
+            >
+              <ListItemIcon>
+                {deploymentNodePowerLoading &&
+                selectedResourceMenuItem === 1 ? (
+                  <CircularProgress
+                    size="small"
+                    color="secondary"
+                    sx={{ width: '1rem' }}
+                  />
+                ) : (
+                  <PowerOff fontSize="small" />
+                )}
+              </ListItemIcon>
+              <ListItemText>Power Off</ListItemText>
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                setSelectedResourceMenuItem(2)
+                handleDeploymentPower(PowerState.Reset)
+              }}
+              disabled={deploymentNodePowerLoading}
+            >
+              <ListItemIcon>
+                {deploymentNodePowerLoading &&
+                selectedResourceMenuItem === 2 ? (
+                  <CircularProgress
+                    size="small"
+                    color="secondary"
+                    sx={{ width: '1rem' }}
+                  />
+                ) : (
+                  <RestartAlt fontSize="small" />
+                )}
+              </ListItemIcon>
+              <ListItemText>Reset</ListItemText>
+            </MenuItem>
+          </Menu>
+        </Grid>
+        <Grid item md={9}>
+          <Box
+            sx={{ width: '100%', height: '100%', minHeight: 500, px: 3, py: 1 }}
+          >
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              fitView
+              attributionPosition="top-right"
+              nodeTypes={nodeTypes}
+              connectionLineType={ConnectionLineType.SmoothStep}
+            >
+              <Controls />
+              {/* <MiniMap /> */}
+              <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+            </ReactFlow>
+            {/* <MuiMarkdown>
             {getDeploymentData?.deployment.blueprint.description}
           </MuiMarkdown> */}
-        </Box>
-      </Box>
+          </Box>
+        </Grid>
+      </Grid>
     </Container>
   )
 }
