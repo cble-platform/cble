@@ -85,7 +85,7 @@ func (ps *CBLEServer) runProvider(ctx context.Context, entProvider *ent.Provider
 	}
 }
 
-func (ps *CBLEServer) startProviderConnection(ctx context.Context, shutdown chan bool, providerId string) {
+func (ps *CBLEServer) startProviderConnection(ctx context.Context, providerId string) {
 	registeredProvider, exists := ps.registeredProviders.Load(providerId)
 	if !exists {
 		logrus.Errorf("attempted to start provider on non-registered provider (%s)", providerId)

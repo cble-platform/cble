@@ -634,7 +634,10 @@ func (r *mutationResolver) DeploymentNodePower(ctx context.Context, id uuid.UUID
 		return false, gqlerror.Errorf("transport error: %v", err)
 	}
 	if !reply.Success {
-		return false, gqlerror.Errorf("failed to update power state: %v", err)
+		if reply.Errors != nil {
+			return false, gqlerror.Errorf("failed to update power state: %v", *reply.Errors)
+		}
+		return false, gqlerror.Errorf("failed to update power state: unknown error")
 	}
 
 	return true, nil

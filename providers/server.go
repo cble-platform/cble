@@ -26,9 +26,6 @@ type CBLEServer struct {
 	// Shutdown channels for each provider
 	serverShutdown *sync.Map
 
-	// Send clientShutdown signal to individual routines
-	clientShutdown *sync.Map
-
 	// Register individual provider registrations
 	registeredProviders *sync.Map
 	// Individual provider client references
@@ -49,7 +46,6 @@ func NewServer(entClient *ent.Client, providersConfig *config.ProvidersConfig) *
 		providersConfig:     providersConfig,
 		providerServerQueue: make(chan string),
 		serverShutdown:      new(sync.Map),
-		clientShutdown:      new(sync.Map),
 		registeredProviders: new(sync.Map),
 		providerClients:     new(sync.Map),
 		connectionQueue:     make(chan string, 10),
@@ -143,12 +139,7 @@ func (ps *CBLEServer) RunProviderClients(ctx context.Context, wg *sync.WaitGroup
 		select {
 		case providerId := <-ps.connectionQueue:
 			logrus.Debugf("Running provider client for %s", providerId)
-			shutdownChan, ok := ps.clientShutdown.Load(providerId)
-			if !ok {
-				logrus.Errorf("attempted to start provider connection without a shutdown channel (%s)", providerId)
-				continue
-			}
-			go ps.startProviderConnection(ctx, shutdownChan.(chan bool), providerId)
+			go ps.startProviderConnection(ctx, providerId)
 		case <-ctx.Done():
 			logrus.Warn("Gracefully shutting down provider client runtime...")
 			return
@@ -163,19 +154,11 @@ func (ps *CBLEServer) QueueLoadProvider(id string) {
 
 func (ps *CBLEServer) QueueUnloadProvider(id string) error {
 	logrus.Debugf("Unloading provider %s", id)
-	// Check that the client shutdown channel exists
-	clientShutdown, ok := ps.clientShutdown.Load(id)
-	if !ok {
-		return fmt.Errorf("provider client has no shutdown channel")
-	}
 	// Check that the server shutdown channel exists
 	serverShutdown, ok := ps.serverShutdown.Load(id)
 	if !ok {
 		return fmt.Errorf("provider server has no shutdown channel")
 	}
-	// Send the shutdown signal to the provider client
-	clientShutdown.(chan bool) <- true
-	time.Sleep(500 * time.Millisecond) // Wait 0.5sec for client to shutdown to prevent race conditions
 	// Send the shutdown signal to the provider server
 	serverShutdown.(chan bool) <- true
 	return nil
@@ -207,8 +190,6 @@ func (ps *CBLEServer) RegisterProvider(ctx context.Context, request *cbleGRPC.Re
 		SocketID: socketId,
 		Features: request.Features,
 	})
-	// Create shutdown queue for provider
-	ps.clientShutdown.Store(request.Id, make(chan bool))
 	// Add provider to the queue to be connected to
 	ps.connectionQueue <- request.Id
 	// Set the provider as loaded in ENT
