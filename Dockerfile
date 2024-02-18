@@ -1,8 +1,11 @@
 FROM golang:1.21-alpine
 
+# Dependencies
+RUN apk add git
+
 RUN mkdir /app
 ADD . /app/
-WORKDIR /app 
+WORKDIR /app
 
 ENV PATH="${PATH}:/app"
 
