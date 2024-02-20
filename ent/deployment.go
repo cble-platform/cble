@@ -25,6 +25,8 @@ type Deployment struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	// The last time this deployment was accessed (used for auto-suspending deployments)
+	LastAccessed time.Time `json:"last_accessed,omitempty"`
 	// Display name of the deployment (defaults to blueprint name)
 	Name string `json:"name,omitempty"`
 	// Display description of the deployment (supports markdown; defaults to blueprint description)
@@ -98,7 +100,7 @@ func (*Deployment) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case deployment.FieldName, deployment.FieldDescription, deployment.FieldState:
 			values[i] = new(sql.NullString)
-		case deployment.FieldCreatedAt, deployment.FieldUpdatedAt:
+		case deployment.FieldCreatedAt, deployment.FieldUpdatedAt, deployment.FieldLastAccessed:
 			values[i] = new(sql.NullTime)
 		case deployment.FieldID:
 			values[i] = new(uuid.UUID)
@@ -138,6 +140,12 @@ func (d *Deployment) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
 				d.UpdatedAt = value.Time
+			}
+		case deployment.FieldLastAccessed:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field last_accessed", values[i])
+			} else if value.Valid {
+				d.LastAccessed = value.Time
 			}
 		case deployment.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -235,6 +243,9 @@ func (d *Deployment) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
 	builder.WriteString(d.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("last_accessed=")
+	builder.WriteString(d.LastAccessed.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(d.Name)

@@ -27,12 +27,16 @@ func (Deployment) Fields() []ent.Field {
 		field.Time("updated_at").
 			Default(time.Now).
 			UpdateDefault(time.Now),
+		field.Time("last_accessed").
+			Optional().
+			Default(time.Now).
+			Comment("The last time this deployment was accessed (used for auto-suspending deployments)"),
 		field.String("name").
 			Comment("Display name of the deployment (defaults to blueprint name)"),
 		field.String("description").
 			Comment("Display description of the deployment (supports markdown; defaults to blueprint description)"),
 		field.Enum("state").
-			Values("awaiting", "in_progress", "complete", "failed", "destroyed").
+			Values("awaiting", "in_progress", "complete", "failed", "destroyed", "suspended").
 			Comment("The overall state of the deployment (should only by updated by the deploy engine)"),
 		field.JSON("template_vars", map[string]string{}).
 			Default(make(map[string]string)).

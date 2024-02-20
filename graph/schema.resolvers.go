@@ -7,13 +7,21 @@ package graph
 import (
 	"context"
 	"fmt"
+	"sync"
+	"time"
 
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqljson"
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/cble-platform/cble-backend/auth"
 	"github.com/cble-platform/cble-backend/engine"
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
+	"github.com/cble-platform/cble-backend/ent/deployment"
+	"github.com/cble-platform/cble-backend/ent/deploymentnode"
 	"github.com/cble-platform/cble-backend/ent/grantedpermission"
 	"github.com/cble-platform/cble-backend/ent/group"
+	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/cble-platform/cble-backend/graph/generated"
 	"github.com/cble-platform/cble-backend/graph/model"
@@ -612,16 +620,23 @@ func (r *mutationResolver) RedeployDeployment(ctx context.Context, id uuid.UUID,
 
 // DeploymentNodePower is the resolver for the deploymentNodePower field.
 func (r *mutationResolver) DeploymentNodePower(ctx context.Context, id uuid.UUID, state pgrpc.PowerState) (bool, error) {
-	// // Check if current user has permission
-	// if hasPerm, err := permission.CurrentUserHasDeploymentRedeploy(ctx, r.ent, id); err != nil || !hasPerm {
-	// 	return nil, auth.PERMISSION_DENIED_GQL_ERROR
-	// }
-
-	// Get the deployment by ID
+	// Get the deployment node by ID
 	entDeploymentNode, err := r.ent.DeploymentNode.Get(ctx, id)
 	if err != nil {
 		return false, gqlerror.Errorf("failed to query deployment node: %v", err)
 	}
+
+	// Get the deployment to check permission
+	entDeployment, err := entDeploymentNode.QueryDeployment().Only(ctx)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to query deployment: %v", err)
+	}
+
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasDeploymentPower(ctx, r.ent, entDeployment.ID); err != nil || !hasPerm {
+		return false, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
 	// Get the provider
 	entProvider, err := entDeploymentNode.QueryDeployment().QueryBlueprint().QueryProvider().Only(ctx)
 	if err != nil {
@@ -638,6 +653,76 @@ func (r *mutationResolver) DeploymentNodePower(ctx context.Context, id uuid.UUID
 			return false, gqlerror.Errorf("failed to update power state: %v", *reply.Error)
 		}
 		return false, gqlerror.Errorf("failed to update power state: unknown error")
+	}
+
+	return true, nil
+}
+
+// DeploymentPower is the resolver for the deploymentPower field.
+func (r *mutationResolver) DeploymentPower(ctx context.Context, id uuid.UUID, state pgrpc.PowerState) (bool, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasDeploymentPower(ctx, r.ent, id); err != nil || !hasPerm {
+		return false, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	// Get the deployment by ID
+	entDeployment, err := r.ent.Deployment.Get(ctx, id)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to query deployment: %v", err)
+	}
+	// Get the provider
+	entProvider, err := entDeployment.QueryBlueprint().QueryProvider().Only(ctx)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to query provider: %v", err)
+	}
+	// Get all of the deployment nodes which support power feature
+	entDeploymentNodes, err := entDeployment.QueryDeploymentNodes().Where(
+		deploymentnode.HasResourceWith(func(s *sql.Selector) {
+			s.Where(sqljson.ValueEQ(resource.FieldFeatures, true, sqljson.Path("power"))) // Find where has { "power": true, ... }
+		}),
+	).All(ctx)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to query deployment nodes with power support: %v", err)
+	}
+
+	var wg sync.WaitGroup
+
+	for _, entDeploymentNode := range entDeploymentNodes {
+		wg.Add(1)
+		go func(wg *sync.WaitGroup, entDeploymentNode *ent.DeploymentNode) {
+			defer wg.Done()
+			// Update the resource power state
+			reply, err := r.cbleServer.ResourcePower(ctx, entProvider, entDeploymentNode, state)
+			if err != nil {
+				graphql.AddErrorf(ctx, "transport error: %v", err)
+			}
+			if !reply.Success {
+				if reply.Error != nil {
+					graphql.AddErrorf(ctx, "failed to update power state: %v", *reply.Error)
+				}
+				graphql.AddErrorf(ctx, "failed to update power state: unknown error")
+			}
+		}(&wg, entDeploymentNode)
+	}
+
+	// Wait for all of the resources to power down
+	wg.Wait()
+
+	// If we successfully applied all power states
+	if len(graphql.GetErrors(ctx).Unwrap()) == 0 {
+		// Default set to COMPLETE
+		deploymentState := deployment.StateComplete
+		// If we're powering off, set to SUSPENDED
+		if state == pgrpc.PowerState_OFF {
+			deploymentState = deployment.StateSuspended
+		}
+		// Update the deployment state
+		err = entDeployment.Update().SetState(deploymentState).Exec(ctx)
+		if err != nil {
+			return false, gqlerror.Errorf("failed to update deployment state: %v", err)
+		}
+	} else {
+		return false, gqlerror.Errorf("failed to apply deployment power state")
 	}
 
 	return true, nil
@@ -954,6 +1039,11 @@ func (r *queryResolver) Deployment(ctx context.Context, id uuid.UUID) (*ent.Depl
 	// Check if current user has permission
 	if hasPerm, err := permission.CurrentUserHasDeploymentGet(ctx, r.ent, id); err != nil || !hasPerm {
 		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	// Set the last access time
+	if err := r.ent.Deployment.UpdateOneID(id).SetLastAccessed(time.Now()).Exec(ctx); err != nil {
+		return nil, gqlerror.Errorf("failed to update last access time: %v", err)
 	}
 
 	return r.ent.Deployment.Get(ctx, id)

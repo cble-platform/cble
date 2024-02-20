@@ -52,6 +52,20 @@ func (dc *DeploymentCreate) SetNillableUpdatedAt(t *time.Time) *DeploymentCreate
 	return dc
 }
 
+// SetLastAccessed sets the "last_accessed" field.
+func (dc *DeploymentCreate) SetLastAccessed(t time.Time) *DeploymentCreate {
+	dc.mutation.SetLastAccessed(t)
+	return dc
+}
+
+// SetNillableLastAccessed sets the "last_accessed" field if the given value is not nil.
+func (dc *DeploymentCreate) SetNillableLastAccessed(t *time.Time) *DeploymentCreate {
+	if t != nil {
+		dc.SetLastAccessed(*t)
+	}
+	return dc
+}
+
 // SetName sets the "name" field.
 func (dc *DeploymentCreate) SetName(s string) *DeploymentCreate {
 	dc.mutation.SetName(s)
@@ -170,6 +184,10 @@ func (dc *DeploymentCreate) defaults() {
 		v := deployment.DefaultUpdatedAt()
 		dc.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := dc.mutation.LastAccessed(); !ok {
+		v := deployment.DefaultLastAccessed()
+		dc.mutation.SetLastAccessed(v)
+	}
 	if _, ok := dc.mutation.TemplateVars(); !ok {
 		v := deployment.DefaultTemplateVars
 		dc.mutation.SetTemplateVars(v)
@@ -253,6 +271,10 @@ func (dc *DeploymentCreate) createSpec() (*Deployment, *sqlgraph.CreateSpec) {
 	if value, ok := dc.mutation.UpdatedAt(); ok {
 		_spec.SetField(deployment.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
+	}
+	if value, ok := dc.mutation.LastAccessed(); ok {
+		_spec.SetField(deployment.FieldLastAccessed, field.TypeTime, value)
+		_node.LastAccessed = value
 	}
 	if value, ok := dc.mutation.Name(); ok {
 		_spec.SetField(deployment.FieldName, field.TypeString, value)

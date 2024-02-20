@@ -84,3 +84,6 @@ models:
     model:
       - github.com/cble-platform/cble-backend/graph/model.PowerState
       # - github.com/cble-platform/cble-provider-grpc/pkg/provider.PowerState
+  ResourceFeatures:
+    model:
+      - github.com/cble-platform/cble-provider-grpc/pkg/provider.Features

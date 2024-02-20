@@ -29,6 +29,7 @@ enum Action {
   deployment_delete
   deployment_destroy
   deployment_redeploy
+  deployment_power
   deployment_console
   group_list
   group_create
@@ -71,6 +72,7 @@ const (
 	ActionDeploymentDelete   PermissionAction = "deployment_delete"
 	ActionDeploymentDestroy  PermissionAction = "deployment_destroy"
 	ActionDeploymentRedeploy PermissionAction = "deployment_redeploy"
+	ActionDeploymentPower    PermissionAction = "deployment_power"
 	ActionDeploymentConsole  PermissionAction = "deployment_console"
 	// Group
 	ActionGroupList   PermissionAction = "group_list"
@@ -130,6 +132,7 @@ var actionMap = map[string]map[string]PermissionAction{
 		"delete":   ActionDeploymentDelete,
 		"destroy":  ActionDeploymentDestroy,
 		"redeploy": ActionDeploymentRedeploy,
+		"power":    ActionDeploymentPower,
 		"console":  ActionDeploymentConsole,
 	},
 	// Group
@@ -194,6 +197,7 @@ func (PermissionAction) Values() (kinds []string) {
 		ActionDeploymentDelete,
 		ActionDeploymentDestroy,
 		ActionDeploymentRedeploy,
+		ActionDeploymentPower,
 		ActionDeploymentConsole,
 		ActionGroupList,
 		ActionGroupCreate,

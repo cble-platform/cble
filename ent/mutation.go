@@ -890,6 +890,7 @@ type DeploymentMutation struct {
 	id                      *uuid.UUID
 	created_at              *time.Time
 	updated_at              *time.Time
+	last_accessed           *time.Time
 	name                    *string
 	description             *string
 	state                   *deployment.State
@@ -1081,6 +1082,55 @@ func (m *DeploymentMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *DeploymentMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+}
+
+// SetLastAccessed sets the "last_accessed" field.
+func (m *DeploymentMutation) SetLastAccessed(t time.Time) {
+	m.last_accessed = &t
+}
+
+// LastAccessed returns the value of the "last_accessed" field in the mutation.
+func (m *DeploymentMutation) LastAccessed() (r time.Time, exists bool) {
+	v := m.last_accessed
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastAccessed returns the old "last_accessed" field's value of the Deployment entity.
+// If the Deployment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DeploymentMutation) OldLastAccessed(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastAccessed is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastAccessed requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastAccessed: %w", err)
+	}
+	return oldValue.LastAccessed, nil
+}
+
+// ClearLastAccessed clears the value of the "last_accessed" field.
+func (m *DeploymentMutation) ClearLastAccessed() {
+	m.last_accessed = nil
+	m.clearedFields[deployment.FieldLastAccessed] = struct{}{}
+}
+
+// LastAccessedCleared returns if the "last_accessed" field was cleared in this mutation.
+func (m *DeploymentMutation) LastAccessedCleared() bool {
+	_, ok := m.clearedFields[deployment.FieldLastAccessed]
+	return ok
+}
+
+// ResetLastAccessed resets all changes to the "last_accessed" field.
+func (m *DeploymentMutation) ResetLastAccessed() {
+	m.last_accessed = nil
+	delete(m.clearedFields, deployment.FieldLastAccessed)
 }
 
 // SetName sets the "name" field.
@@ -1393,12 +1443,15 @@ func (m *DeploymentMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *DeploymentMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.created_at != nil {
 		fields = append(fields, deployment.FieldCreatedAt)
 	}
 	if m.updated_at != nil {
 		fields = append(fields, deployment.FieldUpdatedAt)
+	}
+	if m.last_accessed != nil {
+		fields = append(fields, deployment.FieldLastAccessed)
 	}
 	if m.name != nil {
 		fields = append(fields, deployment.FieldName)
@@ -1424,6 +1477,8 @@ func (m *DeploymentMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case deployment.FieldUpdatedAt:
 		return m.UpdatedAt()
+	case deployment.FieldLastAccessed:
+		return m.LastAccessed()
 	case deployment.FieldName:
 		return m.Name()
 	case deployment.FieldDescription:
@@ -1445,6 +1500,8 @@ func (m *DeploymentMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldCreatedAt(ctx)
 	case deployment.FieldUpdatedAt:
 		return m.OldUpdatedAt(ctx)
+	case deployment.FieldLastAccessed:
+		return m.OldLastAccessed(ctx)
 	case deployment.FieldName:
 		return m.OldName(ctx)
 	case deployment.FieldDescription:
@@ -1475,6 +1532,13 @@ func (m *DeploymentMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUpdatedAt(v)
+		return nil
+	case deployment.FieldLastAccessed:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastAccessed(v)
 		return nil
 	case deployment.FieldName:
 		v, ok := value.(string)
@@ -1533,7 +1597,11 @@ func (m *DeploymentMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *DeploymentMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(deployment.FieldLastAccessed) {
+		fields = append(fields, deployment.FieldLastAccessed)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -1546,6 +1614,11 @@ func (m *DeploymentMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *DeploymentMutation) ClearField(name string) error {
+	switch name {
+	case deployment.FieldLastAccessed:
+		m.ClearLastAccessed()
+		return nil
+	}
 	return fmt.Errorf("unknown Deployment nullable field %s", name)
 }
 
@@ -1558,6 +1631,9 @@ func (m *DeploymentMutation) ResetField(name string) error {
 		return nil
 	case deployment.FieldUpdatedAt:
 		m.ResetUpdatedAt()
+		return nil
+	case deployment.FieldLastAccessed:
+		m.ResetLastAccessed()
 		return nil
 	case deployment.FieldName:
 		m.ResetName()
