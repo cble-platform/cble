@@ -9,7 +9,8 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/cble-platform/cble-backend/ent/predicate"
-	"github.com/cble-platform/cble-backend/ent/provider"
+
+	entprovider "github.com/cble-platform/cble-backend/ent/provider"
 )
 
 // ProviderDelete is the builder for deleting a Provider entity.
@@ -40,7 +41,7 @@ func (pd *ProviderDelete) ExecX(ctx context.Context) int {
 }
 
 func (pd *ProviderDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(provider.Table, sqlgraph.NewFieldSpec(provider.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(entprovider.Table, sqlgraph.NewFieldSpec(entprovider.FieldID, field.TypeUUID))
 	if ps := pd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -74,7 +75,7 @@ func (pdo *ProviderDeleteOne) Exec(ctx context.Context) error {
 	case err != nil:
 		return err
 	case n == 0:
-		return &NotFoundError{provider.Label}
+		return &NotFoundError{entprovider.Label}
 	default:
 		return nil
 	}

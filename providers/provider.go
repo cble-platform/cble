@@ -10,7 +10,7 @@ import (
 
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/internal/git"
-	providerGRPC "github.com/cble-platform/cble-provider-grpc/pkg/provider"
+	pgrpc "github.com/cble-platform/cble-provider-grpc/pkg/provider"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -94,18 +94,18 @@ func (ps *CBLEServer) startProviderConnection(ctx context.Context, providerId st
 
 	logrus.Debugf("starting provider connection to provider %s with socket ID %s", providerId, registeredProvider.(RegisteredProvider).SocketID)
 
-	providerOpts := &providerGRPC.ProviderClientOptions{
+	providerOpts := &pgrpc.ProviderClientOptions{
 		// TODO: implement TLS for provider connections
 		TLS:      false,
 		CAFile:   "",
 		SocketID: registeredProvider.(RegisteredProvider).SocketID,
 	}
-	providerConn, err := providerGRPC.Connect(providerOpts)
+	providerConn, err := pgrpc.Connect(providerOpts)
 	if err != nil {
 		logrus.Errorf("failed to connect to provider gRPC server (%s): %v", providerId, err)
 		return
 	}
-	client, err := providerGRPC.NewClient(ctx, providerConn)
+	client, err := pgrpc.NewClient(ctx, providerConn)
 	if err != nil {
 		logrus.Errorf("failed to create client for provider (%s): %v", providerId, err)
 		return

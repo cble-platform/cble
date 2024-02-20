@@ -15,6 +15,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/predicate"
 	"github.com/cble-platform/cble-backend/ent/resource"
+	"github.com/cble-platform/cble-provider-grpc/pkg/provider"
 	"github.com/google/uuid"
 )
 
@@ -76,6 +77,26 @@ func (ru *ResourceUpdate) SetNillableResourceType(s *string) *ResourceUpdate {
 	if s != nil {
 		ru.SetResourceType(*s)
 	}
+	return ru
+}
+
+// SetFeatures sets the "features" field.
+func (ru *ResourceUpdate) SetFeatures(pr provider.Features) *ResourceUpdate {
+	ru.mutation.SetFeatures(pr)
+	return ru
+}
+
+// SetNillableFeatures sets the "features" field if the given value is not nil.
+func (ru *ResourceUpdate) SetNillableFeatures(pr *provider.Features) *ResourceUpdate {
+	if pr != nil {
+		ru.SetFeatures(*pr)
+	}
+	return ru
+}
+
+// ClearFeatures clears the value of the "features" field.
+func (ru *ResourceUpdate) ClearFeatures() *ResourceUpdate {
+	ru.mutation.ClearFeatures()
 	return ru
 }
 
@@ -251,6 +272,12 @@ func (ru *ResourceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := ru.mutation.ResourceType(); ok {
 		_spec.SetField(resource.FieldResourceType, field.TypeString, value)
+	}
+	if value, ok := ru.mutation.Features(); ok {
+		_spec.SetField(resource.FieldFeatures, field.TypeJSON, value)
+	}
+	if ru.mutation.FeaturesCleared() {
+		_spec.ClearField(resource.FieldFeatures, field.TypeJSON)
 	}
 	if value, ok := ru.mutation.Object(); ok {
 		_spec.SetField(resource.FieldObject, field.TypeJSON, value)
@@ -439,6 +466,26 @@ func (ruo *ResourceUpdateOne) SetNillableResourceType(s *string) *ResourceUpdate
 	if s != nil {
 		ruo.SetResourceType(*s)
 	}
+	return ruo
+}
+
+// SetFeatures sets the "features" field.
+func (ruo *ResourceUpdateOne) SetFeatures(pr provider.Features) *ResourceUpdateOne {
+	ruo.mutation.SetFeatures(pr)
+	return ruo
+}
+
+// SetNillableFeatures sets the "features" field if the given value is not nil.
+func (ruo *ResourceUpdateOne) SetNillableFeatures(pr *provider.Features) *ResourceUpdateOne {
+	if pr != nil {
+		ruo.SetFeatures(*pr)
+	}
+	return ruo
+}
+
+// ClearFeatures clears the value of the "features" field.
+func (ruo *ResourceUpdateOne) ClearFeatures() *ResourceUpdateOne {
+	ruo.mutation.ClearFeatures()
 	return ruo
 }
 
@@ -644,6 +691,12 @@ func (ruo *ResourceUpdateOne) sqlSave(ctx context.Context) (_node *Resource, err
 	}
 	if value, ok := ruo.mutation.ResourceType(); ok {
 		_spec.SetField(resource.FieldResourceType, field.TypeString, value)
+	}
+	if value, ok := ruo.mutation.Features(); ok {
+		_spec.SetField(resource.FieldFeatures, field.TypeJSON, value)
+	}
+	if ruo.mutation.FeaturesCleared() {
+		_spec.ClearField(resource.FieldFeatures, field.TypeJSON)
 	}
 	if value, ok := ruo.mutation.Object(); ok {
 		_spec.SetField(resource.FieldObject, field.TypeJSON, value)

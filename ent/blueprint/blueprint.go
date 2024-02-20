@@ -38,7 +38,7 @@ const (
 	// ProviderTable is the table that holds the provider relation/edge.
 	ProviderTable = "blueprints"
 	// ProviderInverseTable is the table name for the Provider entity.
-	// It exists in this package in order to avoid circular dependency with the "provider" package.
+	// It exists in this package in order to avoid circular dependency with the "entprovider" package.
 	ProviderInverseTable = "providers"
 	// ProviderColumn is the table column denoting the provider relation/edge.
 	ProviderColumn = "blueprint_provider"

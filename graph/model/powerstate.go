@@ -5,34 +5,34 @@ import (
 	"io"
 
 	"github.com/99designs/gqlgen/graphql"
-	providerGRPC "github.com/cble-platform/cble-provider-grpc/pkg/provider"
+	pgrpc "github.com/cble-platform/cble-provider-grpc/pkg/provider"
 )
 
-var powerStateMap = map[string]providerGRPC.PowerState{
-	"on":    providerGRPC.PowerState_ON,
-	"off":   providerGRPC.PowerState_OFF,
-	"reset": providerGRPC.PowerState_RESET,
+var powerStateMap = map[string]pgrpc.PowerState{
+	"on":    pgrpc.PowerState_ON,
+	"off":   pgrpc.PowerState_OFF,
+	"reset": pgrpc.PowerState_RESET,
 }
 
-var powerStateStrMap = map[providerGRPC.PowerState]string{
-	providerGRPC.PowerState_ON:    "on",
-	providerGRPC.PowerState_OFF:   "off",
-	providerGRPC.PowerState_RESET: "reset",
+var powerStateStrMap = map[pgrpc.PowerState]string{
+	pgrpc.PowerState_ON:    "on",
+	pgrpc.PowerState_OFF:   "off",
+	pgrpc.PowerState_RESET: "reset",
 }
 
-func MarshalPowerState(v providerGRPC.PowerState) graphql.Marshaler {
+func MarshalPowerState(v pgrpc.PowerState) graphql.Marshaler {
 	return graphql.WriterFunc(func(w io.Writer) {
 		w.Write([]byte(powerStateStrMap[v]))
 	})
 }
 
-func UnmarshalPowerState(v interface{}) (providerGRPC.PowerState, error) {
+func UnmarshalPowerState(v interface{}) (pgrpc.PowerState, error) {
 	switch v := v.(type) {
 	case string:
 		return powerStateMap[v], nil
 	case int:
-		return providerGRPC.PowerState(v), nil
+		return pgrpc.PowerState(v), nil
 	default:
-		return providerGRPC.PowerState_OFF, fmt.Errorf("%T is not a PowerState", v)
+		return pgrpc.PowerState_OFF, fmt.Errorf("%T is not a PowerState", v)
 	}
 }

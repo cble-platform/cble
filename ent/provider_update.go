@@ -13,7 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/predicate"
-	"github.com/cble-platform/cble-backend/ent/provider"
+	entprovider "github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/google/uuid"
 )
 
@@ -170,13 +170,13 @@ func (pu *ProviderUpdate) ExecX(ctx context.Context) {
 // defaults sets the default values of the builder before save.
 func (pu *ProviderUpdate) defaults() {
 	if _, ok := pu.mutation.UpdatedAt(); !ok {
-		v := provider.UpdateDefaultUpdatedAt()
+		v := entprovider.UpdateDefaultUpdatedAt()
 		pu.mutation.SetUpdatedAt(v)
 	}
 }
 
 func (pu *ProviderUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	_spec := sqlgraph.NewUpdateSpec(provider.Table, provider.Columns, sqlgraph.NewFieldSpec(provider.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(entprovider.Table, entprovider.Columns, sqlgraph.NewFieldSpec(entprovider.FieldID, field.TypeUUID))
 	if ps := pu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -185,29 +185,29 @@ func (pu *ProviderUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 	}
 	if value, ok := pu.mutation.UpdatedAt(); ok {
-		_spec.SetField(provider.FieldUpdatedAt, field.TypeTime, value)
+		_spec.SetField(entprovider.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := pu.mutation.DisplayName(); ok {
-		_spec.SetField(provider.FieldDisplayName, field.TypeString, value)
+		_spec.SetField(entprovider.FieldDisplayName, field.TypeString, value)
 	}
 	if value, ok := pu.mutation.ProviderGitURL(); ok {
-		_spec.SetField(provider.FieldProviderGitURL, field.TypeString, value)
+		_spec.SetField(entprovider.FieldProviderGitURL, field.TypeString, value)
 	}
 	if value, ok := pu.mutation.ProviderVersion(); ok {
-		_spec.SetField(provider.FieldProviderVersion, field.TypeString, value)
+		_spec.SetField(entprovider.FieldProviderVersion, field.TypeString, value)
 	}
 	if value, ok := pu.mutation.ConfigBytes(); ok {
-		_spec.SetField(provider.FieldConfigBytes, field.TypeBytes, value)
+		_spec.SetField(entprovider.FieldConfigBytes, field.TypeBytes, value)
 	}
 	if value, ok := pu.mutation.IsLoaded(); ok {
-		_spec.SetField(provider.FieldIsLoaded, field.TypeBool, value)
+		_spec.SetField(entprovider.FieldIsLoaded, field.TypeBool, value)
 	}
 	if pu.mutation.BlueprintsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   provider.BlueprintsTable,
-			Columns: []string{provider.BlueprintsColumn},
+			Table:   entprovider.BlueprintsTable,
+			Columns: []string{entprovider.BlueprintsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(blueprint.FieldID, field.TypeUUID),
@@ -219,8 +219,8 @@ func (pu *ProviderUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   provider.BlueprintsTable,
-			Columns: []string{provider.BlueprintsColumn},
+			Table:   entprovider.BlueprintsTable,
+			Columns: []string{entprovider.BlueprintsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(blueprint.FieldID, field.TypeUUID),
@@ -235,8 +235,8 @@ func (pu *ProviderUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   provider.BlueprintsTable,
-			Columns: []string{provider.BlueprintsColumn},
+			Table:   entprovider.BlueprintsTable,
+			Columns: []string{entprovider.BlueprintsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(blueprint.FieldID, field.TypeUUID),
@@ -249,7 +249,7 @@ func (pu *ProviderUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, pu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
-			err = &NotFoundError{provider.Label}
+			err = &NotFoundError{entprovider.Label}
 		} else if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -420,13 +420,13 @@ func (puo *ProviderUpdateOne) ExecX(ctx context.Context) {
 // defaults sets the default values of the builder before save.
 func (puo *ProviderUpdateOne) defaults() {
 	if _, ok := puo.mutation.UpdatedAt(); !ok {
-		v := provider.UpdateDefaultUpdatedAt()
+		v := entprovider.UpdateDefaultUpdatedAt()
 		puo.mutation.SetUpdatedAt(v)
 	}
 }
 
 func (puo *ProviderUpdateOne) sqlSave(ctx context.Context) (_node *Provider, err error) {
-	_spec := sqlgraph.NewUpdateSpec(provider.Table, provider.Columns, sqlgraph.NewFieldSpec(provider.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(entprovider.Table, entprovider.Columns, sqlgraph.NewFieldSpec(entprovider.FieldID, field.TypeUUID))
 	id, ok := puo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Provider.id" for update`)}
@@ -434,12 +434,12 @@ func (puo *ProviderUpdateOne) sqlSave(ctx context.Context) (_node *Provider, err
 	_spec.Node.ID.Value = id
 	if fields := puo.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, provider.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, entprovider.FieldID)
 		for _, f := range fields {
-			if !provider.ValidColumn(f) {
+			if !entprovider.ValidColumn(f) {
 				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 			}
-			if f != provider.FieldID {
+			if f != entprovider.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, f)
 			}
 		}
@@ -452,29 +452,29 @@ func (puo *ProviderUpdateOne) sqlSave(ctx context.Context) (_node *Provider, err
 		}
 	}
 	if value, ok := puo.mutation.UpdatedAt(); ok {
-		_spec.SetField(provider.FieldUpdatedAt, field.TypeTime, value)
+		_spec.SetField(entprovider.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := puo.mutation.DisplayName(); ok {
-		_spec.SetField(provider.FieldDisplayName, field.TypeString, value)
+		_spec.SetField(entprovider.FieldDisplayName, field.TypeString, value)
 	}
 	if value, ok := puo.mutation.ProviderGitURL(); ok {
-		_spec.SetField(provider.FieldProviderGitURL, field.TypeString, value)
+		_spec.SetField(entprovider.FieldProviderGitURL, field.TypeString, value)
 	}
 	if value, ok := puo.mutation.ProviderVersion(); ok {
-		_spec.SetField(provider.FieldProviderVersion, field.TypeString, value)
+		_spec.SetField(entprovider.FieldProviderVersion, field.TypeString, value)
 	}
 	if value, ok := puo.mutation.ConfigBytes(); ok {
-		_spec.SetField(provider.FieldConfigBytes, field.TypeBytes, value)
+		_spec.SetField(entprovider.FieldConfigBytes, field.TypeBytes, value)
 	}
 	if value, ok := puo.mutation.IsLoaded(); ok {
-		_spec.SetField(provider.FieldIsLoaded, field.TypeBool, value)
+		_spec.SetField(entprovider.FieldIsLoaded, field.TypeBool, value)
 	}
 	if puo.mutation.BlueprintsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   provider.BlueprintsTable,
-			Columns: []string{provider.BlueprintsColumn},
+			Table:   entprovider.BlueprintsTable,
+			Columns: []string{entprovider.BlueprintsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(blueprint.FieldID, field.TypeUUID),
@@ -486,8 +486,8 @@ func (puo *ProviderUpdateOne) sqlSave(ctx context.Context) (_node *Provider, err
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   provider.BlueprintsTable,
-			Columns: []string{provider.BlueprintsColumn},
+			Table:   entprovider.BlueprintsTable,
+			Columns: []string{entprovider.BlueprintsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(blueprint.FieldID, field.TypeUUID),
@@ -502,8 +502,8 @@ func (puo *ProviderUpdateOne) sqlSave(ctx context.Context) (_node *Provider, err
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   provider.BlueprintsTable,
-			Columns: []string{provider.BlueprintsColumn},
+			Table:   entprovider.BlueprintsTable,
+			Columns: []string{entprovider.BlueprintsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(blueprint.FieldID, field.TypeUUID),
@@ -519,7 +519,7 @@ func (puo *ProviderUpdateOne) sqlSave(ctx context.Context) (_node *Provider, err
 	_spec.ScanValues = _node.scanValues
 	if err = sqlgraph.UpdateNode(ctx, puo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
-			err = &NotFoundError{provider.Label}
+			err = &NotFoundError{entprovider.Label}
 		} else if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}

@@ -210,7 +210,7 @@ func deployRoutine(ctx context.Context, client *ent.Client, cbleServer *provider
 			// Mark node as failed
 			failNode(ctx, deploymentNode)
 			// Log error
-			logrus.Errorf("failed to deploy resource: %s", *reply.Errors)
+			logrus.Errorf("failed to deploy resource: %s", *reply.Error)
 			return
 		}
 
@@ -244,7 +244,7 @@ func deployRoutine(ctx context.Context, client *ent.Client, cbleServer *provider
 			// Mark node as failed
 			failNode(ctx, deploymentNode)
 			// Log error
-			logrus.Errorf("failed to retrieve data: %s", *reply.Errors)
+			logrus.Errorf("failed to retrieve data: %s", *reply.Error)
 			return
 		}
 

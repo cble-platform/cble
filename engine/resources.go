@@ -3,13 +3,13 @@ package engine
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/cble-platform/cble-backend/engine/models"
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/cble-platform/cble-backend/providers"
+	pgrpc "github.com/cble-platform/cble-provider-grpc/pkg/provider"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
@@ -82,45 +82,57 @@ func LoadResources(ctx context.Context, client *ent.Client, cbleServer *provider
 		resourceMap[key] = entResource
 	}
 
-	// Request the dependencies from the provider
+	// Request the resources metadata from the provider
 	entProvider, err := entBlueprint.QueryProvider().Only(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to query provider from blueprint: %v", err)
 	}
-	dependencyReply, err := cbleServer.GenerateDependencies(ctx, entProvider, entResources)
+	metadataReply, err := cbleServer.ExtractResourceMetadata(ctx, entProvider, entResources)
 	if err != nil {
-		return fmt.Errorf("failed to call generate dependencies: %v", err)
+		return fmt.Errorf("failed to call extract resource metadata: %v", err)
 	}
-	if !dependencyReply.Success {
-		return fmt.Errorf("failed generate dependencies: %s", *dependencyReply.Errors)
-	}
-
-	// Update all the resource dependencies
-	for _, dependencyString := range dependencyReply.Dependencies {
-		// Split the dependency string (resource:dependency)
-		dependencyParts := strings.Split(dependencyString, ":")
-		if len(dependencyParts) != 2 {
-			return fmt.Errorf("improperly formatted dependency string %s", dependencyString)
+	if !metadataReply.Success {
+		if metadataReply.Error != nil {
+			return fmt.Errorf("failed extract resource metadata: %s", *metadataReply.Error)
 		}
-		resourceKey := dependencyParts[0]
-		resourceDependencyKey := dependencyParts[1]
+		return fmt.Errorf("failed to extract resource metadata: unknown error")
+	}
 
+	// Store all metadata of resources in the database
+	for resourceKey, resourceMetadata := range metadataReply.Metadata {
 		entResource, ok := resourceMap[resourceKey]
 		if !ok {
 			return fmt.Errorf("failed to pull resource %s from resource map: %v", resourceKey, err)
 		}
-		entResourceDependency, ok := resourceMap[resourceDependencyKey]
-		if !ok {
-			return fmt.Errorf("failed to pull resource dependency %s from resource map: %v", resourceDependencyKey, err)
-		}
-		logrus.Debugf("Updating resource dependency for resource %s", entResource.ID)
 
-		// Update the resource with dependencies
-		err = entResource.Update().
-			AddDependsOn(entResourceDependency).
-			Exec(ctx)
-		if err != nil {
-			return err
+		// Update resource features
+		if resourceMetadata.Features != nil {
+			err = entResource.Update().
+				SetFeatures(pgrpc.Features{ // Need to create new struct b/c otherwise copies lock value
+					Power:   resourceMetadata.Features.Power,
+					Console: resourceMetadata.Features.Console,
+				}).
+				Exec(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to update features for resource %s: %v", resourceKey, err)
+			}
+		}
+
+		// Update all the resource dependencies
+		for _, dependencyResourceKey := range resourceMetadata.DependsOnKeys {
+			entResourceDependency, ok := resourceMap[dependencyResourceKey]
+			if !ok {
+				return fmt.Errorf("failed to pull resource dependency %s from resource map: %v", dependencyResourceKey, err)
+			}
+			logrus.Debugf("Updating resource dependency for resource %s", entResource.ID)
+
+			// Update the resource with dependencies
+			err = entResource.Update().
+				AddDependsOn(entResourceDependency).
+				Exec(ctx)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

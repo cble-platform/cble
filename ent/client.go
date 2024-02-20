@@ -21,7 +21,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/deploymentnode"
 	"github.com/cble-platform/cble-backend/ent/grantedpermission"
 	"github.com/cble-platform/cble-backend/ent/group"
-	"github.com/cble-platform/cble-backend/ent/provider"
+	entprovider "github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/cble-platform/cble-backend/ent/user"
 )
@@ -379,7 +379,7 @@ func (c *BlueprintClient) QueryProvider(b *Blueprint) *ProviderQuery {
 		id := b.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(blueprint.Table, blueprint.FieldID, id),
-			sqlgraph.To(provider.Table, provider.FieldID),
+			sqlgraph.To(entprovider.Table, entprovider.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, blueprint.ProviderTable, blueprint.ProviderColumn),
 		)
 		fromV = sqlgraph.Neighbors(b.driver.Dialect(), step)
@@ -1148,13 +1148,13 @@ func NewProviderClient(c config) *ProviderClient {
 }
 
 // Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `provider.Hooks(f(g(h())))`.
+// A call to `Use(f, g, h)` equals to `entprovider.Hooks(f(g(h())))`.
 func (c *ProviderClient) Use(hooks ...Hook) {
 	c.hooks.Provider = append(c.hooks.Provider, hooks...)
 }
 
 // Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `provider.Intercept(f(g(h())))`.
+// A call to `Intercept(f, g, h)` equals to `entprovider.Intercept(f(g(h())))`.
 func (c *ProviderClient) Intercept(interceptors ...Interceptor) {
 	c.inters.Provider = append(c.inters.Provider, interceptors...)
 }
@@ -1216,7 +1216,7 @@ func (c *ProviderClient) DeleteOne(pr *Provider) *ProviderDeleteOne {
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
 func (c *ProviderClient) DeleteOneID(id uuid.UUID) *ProviderDeleteOne {
-	builder := c.Delete().Where(provider.ID(id))
+	builder := c.Delete().Where(entprovider.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
 	return &ProviderDeleteOne{builder}
@@ -1233,7 +1233,7 @@ func (c *ProviderClient) Query() *ProviderQuery {
 
 // Get returns a Provider entity by its id.
 func (c *ProviderClient) Get(ctx context.Context, id uuid.UUID) (*Provider, error) {
-	return c.Query().Where(provider.ID(id)).Only(ctx)
+	return c.Query().Where(entprovider.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
@@ -1251,9 +1251,9 @@ func (c *ProviderClient) QueryBlueprints(pr *Provider) *BlueprintQuery {
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := pr.ID
 		step := sqlgraph.NewStep(
-			sqlgraph.From(provider.Table, provider.FieldID, id),
+			sqlgraph.From(entprovider.Table, entprovider.FieldID, id),
 			sqlgraph.To(blueprint.Table, blueprint.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, provider.BlueprintsTable, provider.BlueprintsColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, entprovider.BlueprintsTable, entprovider.BlueprintsColumn),
 		)
 		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
 		return fromV, nil

@@ -13,7 +13,7 @@ import (
 	"github.com/cble-platform/cble-backend/engine/models"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
-	"github.com/cble-platform/cble-backend/ent/provider"
+	entprovider "github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/google/uuid"
 )
@@ -271,7 +271,7 @@ func (bc *BlueprintCreate) createSpec() (*Blueprint, *sqlgraph.CreateSpec) {
 			Columns: []string{blueprint.ProviderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(provider.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(entprovider.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

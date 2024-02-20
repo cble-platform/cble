@@ -8,6 +8,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/cble-platform/cble-provider-grpc/pkg/provider"
 	"github.com/google/uuid"
 )
 
@@ -26,6 +27,8 @@ const (
 	FieldKey = "key"
 	// FieldResourceType holds the string denoting the resource_type field in the database.
 	FieldResourceType = "resource_type"
+	// FieldFeatures holds the string denoting the features field in the database.
+	FieldFeatures = "features"
 	// FieldObject holds the string denoting the object field in the database.
 	FieldObject = "object"
 	// EdgeBlueprint holds the string denoting the blueprint edge name in mutations.
@@ -57,6 +60,7 @@ var Columns = []string{
 	FieldType,
 	FieldKey,
 	FieldResourceType,
+	FieldFeatures,
 	FieldObject,
 }
 
@@ -97,6 +101,8 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
+	// DefaultFeatures holds the default value on creation for the "features" field.
+	DefaultFeatures provider.Features
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )

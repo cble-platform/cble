@@ -19,7 +19,7 @@ import (
 	"github.com/cble-platform/cble-backend/graph/model"
 	"github.com/cble-platform/cble-backend/permission"
 	"github.com/cble-platform/cble-backend/permission/actions"
-	providerGRPC "github.com/cble-platform/cble-provider-grpc/pkg/provider"
+	pgrpc "github.com/cble-platform/cble-provider-grpc/pkg/provider"
 	"github.com/google/uuid"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	yaml "gopkg.in/yaml.v3"
@@ -611,7 +611,7 @@ func (r *mutationResolver) RedeployDeployment(ctx context.Context, id uuid.UUID,
 }
 
 // DeploymentNodePower is the resolver for the deploymentNodePower field.
-func (r *mutationResolver) DeploymentNodePower(ctx context.Context, id uuid.UUID, state providerGRPC.PowerState) (bool, error) {
+func (r *mutationResolver) DeploymentNodePower(ctx context.Context, id uuid.UUID, state pgrpc.PowerState) (bool, error) {
 	// // Check if current user has permission
 	// if hasPerm, err := permission.CurrentUserHasDeploymentRedeploy(ctx, r.ent, id); err != nil || !hasPerm {
 	// 	return nil, auth.PERMISSION_DENIED_GQL_ERROR
@@ -634,8 +634,8 @@ func (r *mutationResolver) DeploymentNodePower(ctx context.Context, id uuid.UUID
 		return false, gqlerror.Errorf("transport error: %v", err)
 	}
 	if !reply.Success {
-		if reply.Errors != nil {
-			return false, gqlerror.Errorf("failed to update power state: %v", *reply.Errors)
+		if reply.Error != nil {
+			return false, gqlerror.Errorf("failed to update power state: %v", *reply.Error)
 		}
 		return false, gqlerror.Errorf("failed to update power state: unknown error")
 	}

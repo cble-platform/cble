@@ -173,6 +173,7 @@ var (
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"resource", "data"}, Default: "resource"},
 		{Name: "key", Type: field.TypeString},
 		{Name: "resource_type", Type: field.TypeString},
+		{Name: "features", Type: field.TypeJSON, Nullable: true},
 		{Name: "object", Type: field.TypeJSON},
 		{Name: "resource_blueprint", Type: field.TypeUUID},
 	}
@@ -184,7 +185,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "resources_blueprints_blueprint",
-				Columns:    []*schema.Column{ResourcesColumns[7]},
+				Columns:    []*schema.Column{ResourcesColumns[8]},
 				RefColumns: []*schema.Column{BlueprintsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},

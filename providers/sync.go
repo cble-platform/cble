@@ -5,34 +5,34 @@ import (
 	"fmt"
 
 	"github.com/cble-platform/cble-backend/ent"
-	providerGRPC "github.com/cble-platform/cble-provider-grpc/pkg/provider"
+	pgrpc "github.com/cble-platform/cble-provider-grpc/pkg/provider"
 	"gopkg.in/yaml.v3"
 )
 
 // Runs a synchronous GenerateDependencies command
-func (ps *CBLEServer) Configure(ctx context.Context, entProvider *ent.Provider) (*providerGRPC.ConfigureReply, error) {
+func (ps *CBLEServer) Configure(ctx context.Context, entProvider *ent.Provider) (*pgrpc.ConfigureReply, error) {
 	client, err := ps.getProviderClient(entProvider.ID.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get provider client: %v", err)
 	}
 
 	// Create the request
-	request := &providerGRPC.ConfigureRequest{
+	request := &pgrpc.ConfigureRequest{
 		Config: entProvider.ConfigBytes,
 	}
 
 	return client.Configure(ctx, request)
 }
 
-// Runs a synchronous GenerateDependencies command
-func (ps *CBLEServer) GenerateDependencies(ctx context.Context, entProvider *ent.Provider, entResources []*ent.Resource) (*providerGRPC.GenerateDependenciesReply, error) {
+// Runs a synchronous ExtractResourceMetadata command
+func (ps *CBLEServer) ExtractResourceMetadata(ctx context.Context, entProvider *ent.Provider, entResources []*ent.Resource) (*pgrpc.ExtractResourceMetadataReply, error) {
 	client, err := ps.getProviderClient(entProvider.ID.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get provider client: %v", err)
 	}
 
 	// Convert resource structs
-	resources := make([]*providerGRPC.Resource, len(entResources))
+	resources := make([]*pgrpc.Resource, len(entResources))
 	for i, entResource := range entResources {
 		// Convert the object to YAML
 		objectBytes, err := yaml.Marshal(entResource.Object)
@@ -40,7 +40,7 @@ func (ps *CBLEServer) GenerateDependencies(ctx context.Context, entProvider *ent
 			return nil, fmt.Errorf("failed to marshal resource (%s) object into YAML: %v", entResource.ID, err)
 		}
 		// Convert to gRPC-ready resource
-		resources[i] = &providerGRPC.Resource{
+		resources[i] = &pgrpc.Resource{
 			Id:     entResource.ID.String(),
 			Key:    entResource.Key,
 			Object: objectBytes,
@@ -48,15 +48,15 @@ func (ps *CBLEServer) GenerateDependencies(ctx context.Context, entProvider *ent
 	}
 
 	// Create the request
-	request := &providerGRPC.GenerateDependenciesRequest{
+	request := &pgrpc.ExtractResourceMetadataRequest{
 		Resources: resources,
 	}
 
-	return client.GenerateDependencies(ctx, request)
+	return client.ExtractResourceMetadata(ctx, request)
 }
 
 // Runs a synchronous RetrieveData command
-func (ps *CBLEServer) RetrieveData(ctx context.Context, entProvider *ent.Provider, entDeploymentNode *ent.DeploymentNode, templatedObject []byte) (*providerGRPC.RetrieveDataReply, error) {
+func (ps *CBLEServer) RetrieveData(ctx context.Context, entProvider *ent.Provider, entDeploymentNode *ent.DeploymentNode, templatedObject []byte) (*pgrpc.RetrieveDataReply, error) {
 	// Get the provider client
 	client, err := ps.getProviderClient(entProvider.ID.String())
 	if err != nil {
@@ -75,25 +75,25 @@ func (ps *CBLEServer) RetrieveData(ctx context.Context, entProvider *ent.Provide
 	}
 
 	// Generate dependency var map
-	dependencyVarsMap := make(map[string]*providerGRPC.DependencyVars)
+	dependencyVarsMap := make(map[string]*pgrpc.DependencyVars)
 	entDependencyNodes, err := entDeploymentNode.QueryPrevNodes().WithResource().All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query dependency nodes: %v", err)
 	}
 	for _, entDependencyNode := range entDependencyNodes {
 		// Add the dependency's vars to dependency var map
-		dependencyVarsMap[entDependencyNode.Edges.Resource.Key] = &providerGRPC.DependencyVars{
+		dependencyVarsMap[entDependencyNode.Edges.Resource.Key] = &pgrpc.DependencyVars{
 			Vars: entDependencyNode.Vars,
 		}
 	}
 
 	// Create the request
-	request := &providerGRPC.RetrieveDataRequest{
-		Deployment: &providerGRPC.Deployment{
+	request := &pgrpc.RetrieveDataRequest{
+		Deployment: &pgrpc.Deployment{
 			Id:           entDeployment.ID.String(),
 			TemplateVars: entDeployment.TemplateVars,
 		},
-		Resource: &providerGRPC.Resource{
+		Resource: &pgrpc.Resource{
 			Id:     entResource.ID.String(),
 			Key:    entResource.Key,
 			Object: templatedObject,
@@ -106,7 +106,7 @@ func (ps *CBLEServer) RetrieveData(ctx context.Context, entProvider *ent.Provide
 }
 
 // Runs a synchronous DeployResource command
-func (ps *CBLEServer) DeployResource(ctx context.Context, entProvider *ent.Provider, entDeploymentNode *ent.DeploymentNode, templatedObject []byte) (*providerGRPC.DeployResourceReply, error) {
+func (ps *CBLEServer) DeployResource(ctx context.Context, entProvider *ent.Provider, entDeploymentNode *ent.DeploymentNode, templatedObject []byte) (*pgrpc.DeployResourceReply, error) {
 	// Get the provider client
 	client, err := ps.getProviderClient(entProvider.ID.String())
 	if err != nil {
@@ -125,25 +125,25 @@ func (ps *CBLEServer) DeployResource(ctx context.Context, entProvider *ent.Provi
 	}
 
 	// Generate dependency var map
-	dependencyVarsMap := make(map[string]*providerGRPC.DependencyVars)
+	dependencyVarsMap := make(map[string]*pgrpc.DependencyVars)
 	entDependencyNodes, err := entDeploymentNode.QueryPrevNodes().WithResource().All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query dependency nodes: %v", err)
 	}
 	for _, entDependencyNode := range entDependencyNodes {
 		// Add the dependency's vars to dependency var map
-		dependencyVarsMap[entDependencyNode.Edges.Resource.Key] = &providerGRPC.DependencyVars{
+		dependencyVarsMap[entDependencyNode.Edges.Resource.Key] = &pgrpc.DependencyVars{
 			Vars: entDependencyNode.Vars,
 		}
 	}
 
 	// Create the request
-	request := &providerGRPC.DeployResourceRequest{
-		Deployment: &providerGRPC.Deployment{
+	request := &pgrpc.DeployResourceRequest{
+		Deployment: &pgrpc.Deployment{
 			Id:           entDeployment.ID.String(),
 			TemplateVars: entDeployment.TemplateVars,
 		},
-		Resource: &providerGRPC.Resource{
+		Resource: &pgrpc.Resource{
 			Id:     entResource.ID.String(),
 			Key:    entResource.Key,
 			Object: templatedObject,
@@ -156,7 +156,7 @@ func (ps *CBLEServer) DeployResource(ctx context.Context, entProvider *ent.Provi
 }
 
 // Runs a synchronous DestroyResource command
-func (ps *CBLEServer) DestroyResource(ctx context.Context, entProvider *ent.Provider, entDeploymentNode *ent.DeploymentNode) (*providerGRPC.DestroyResourceReply, error) {
+func (ps *CBLEServer) DestroyResource(ctx context.Context, entProvider *ent.Provider, entDeploymentNode *ent.DeploymentNode) (*pgrpc.DestroyResourceReply, error) {
 	// Get the provider client
 	client, err := ps.getProviderClient(entProvider.ID.String())
 	if err != nil {
@@ -181,12 +181,12 @@ func (ps *CBLEServer) DestroyResource(ctx context.Context, entProvider *ent.Prov
 	}
 
 	// Create the request
-	request := &providerGRPC.DestroyResourceRequest{
-		Deployment: &providerGRPC.Deployment{
+	request := &pgrpc.DestroyResourceRequest{
+		Deployment: &pgrpc.Deployment{
 			Id:           entDeployment.ID.String(),
 			TemplateVars: entDeployment.TemplateVars,
 		},
-		Resource: &providerGRPC.Resource{
+		Resource: &pgrpc.Resource{
 			Id:     entResource.ID.String(),
 			Key:    entResource.Key,
 			Object: objectBytes,
@@ -198,7 +198,7 @@ func (ps *CBLEServer) DestroyResource(ctx context.Context, entProvider *ent.Prov
 }
 
 // Runs a synchronous GetConsole command
-func (ps *CBLEServer) GetConsole(ctx context.Context, entProvider *ent.Provider, entDeploymentNode *ent.DeploymentNode) (*providerGRPC.GetConsoleReply, error) {
+func (ps *CBLEServer) GetConsole(ctx context.Context, entProvider *ent.Provider, entDeploymentNode *ent.DeploymentNode) (*pgrpc.GetConsoleReply, error) {
 	// Get the provider client
 	client, err := ps.getProviderClient(entProvider.ID.String())
 	if err != nil {
@@ -218,8 +218,8 @@ func (ps *CBLEServer) GetConsole(ctx context.Context, entProvider *ent.Provider,
 	}
 
 	// Create the request
-	request := &providerGRPC.GetConsoleRequest{
-		Resource: &providerGRPC.Resource{
+	request := &pgrpc.GetConsoleRequest{
+		Resource: &pgrpc.Resource{
 			Id:     entResource.ID.String(),
 			Key:    entResource.Key,
 			Object: objectBytes,
@@ -231,7 +231,7 @@ func (ps *CBLEServer) GetConsole(ctx context.Context, entProvider *ent.Provider,
 }
 
 // Runs a synchronous ResourcePower command
-func (ps *CBLEServer) ResourcePower(ctx context.Context, entProvider *ent.Provider, entDeploymentNode *ent.DeploymentNode, state providerGRPC.PowerState) (*providerGRPC.ResourcePowerReply, error) {
+func (ps *CBLEServer) ResourcePower(ctx context.Context, entProvider *ent.Provider, entDeploymentNode *ent.DeploymentNode, state pgrpc.PowerState) (*pgrpc.ResourcePowerReply, error) {
 	// Get the provider client
 	client, err := ps.getProviderClient(entProvider.ID.String())
 	if err != nil {
@@ -251,8 +251,8 @@ func (ps *CBLEServer) ResourcePower(ctx context.Context, entProvider *ent.Provid
 	}
 
 	// Create the request
-	request := &providerGRPC.ResourcePowerRequest{
-		Resource: &providerGRPC.Resource{
+	request := &pgrpc.ResourcePowerRequest{
+		Resource: &pgrpc.Resource{
 			Id:     entResource.ID.String(),
 			Key:    entResource.Key,
 			Object: objectBytes,

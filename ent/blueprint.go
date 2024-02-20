@@ -12,7 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/cble-platform/cble-backend/engine/models"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
-	"github.com/cble-platform/cble-backend/ent/provider"
+	entprovider "github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/google/uuid"
 )
 
@@ -59,7 +59,7 @@ func (e BlueprintEdges) ProviderOrErr() (*Provider, error) {
 	if e.loadedTypes[0] {
 		if e.Provider == nil {
 			// Edge was loaded but was not found.
-			return nil, &NotFoundError{label: provider.Label}
+			return nil, &NotFoundError{label: entprovider.Label}
 		}
 		return e.Provider, nil
 	}
