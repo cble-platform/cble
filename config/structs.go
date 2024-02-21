@@ -7,6 +7,7 @@ type Config struct {
 	Initialization InitializationConfig `yaml:"initialization"`
 	Providers      ProvidersConfig      `yaml:"providers,omitempty"`
 	Auth           AuthConfig           `yaml:"auth"`
+	Deployments    DeploymentsConfig    `yaml:"deployments"`
 }
 
 type ServerConfig struct {
@@ -48,4 +49,8 @@ type ProvidersConfig struct {
 type AuthConfig struct {
 	JWTKey         string `yaml:"jwt_key"`
 	SessionTimeout int    `yaml:"session_timeout"`
+}
+
+type DeploymentsConfig struct {
+	AutoSuspendTime int `yaml:"auto_suspend_time"`
 }

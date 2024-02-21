@@ -24,3 +24,5 @@ initialization:
     username: cble
     password: cble
   admin_group: CBLE Administrators
+deployments:
+  auto_suspend_time: 180 # 3 hours * 60 mins
