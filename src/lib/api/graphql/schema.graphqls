@@ -30,6 +30,11 @@ enum ResourceType {
   DATA
 }
 
+type ResourceFeatures {
+  power: Boolean!
+  console: Boolean!
+}
+
 type Resource {
   id: ID!
   createdAt: Time!
@@ -37,6 +42,7 @@ type Resource {
   type: ResourceType!
   key: String!
   resourceType: String!
+  features: ResourceFeatures!
   object: String!
 
   blueprint: Blueprint!

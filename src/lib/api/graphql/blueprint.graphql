@@ -16,6 +16,18 @@ fragment BlueprintFragement on Blueprint {
   }
 }
 
+fragment ResourceFragment on Resource {
+  id
+  createdAt
+  updatedAt
+  key
+  features {
+    power
+    console
+  }
+  object
+}
+
 query Blueprints {
   deployableBlueprints {
     blueprints {
