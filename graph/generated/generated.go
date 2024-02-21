@@ -151,6 +151,7 @@ type ComplexityRoot struct {
 		DeleteUser          func(childComplexity int, id uuid.UUID) int
 		DeployBlueprint     func(childComplexity int, id uuid.UUID, templateVars map[string]string) int
 		DeploymentNodePower func(childComplexity int, id uuid.UUID, state provider.PowerState) int
+		DeploymentPower     func(childComplexity int, id uuid.UUID, state provider.PowerState) int
 		DestroyDeployment   func(childComplexity int, id uuid.UUID) int
 		GrantPermission     func(childComplexity int, subjectType grantedpermission.SubjectType, subjectID uuid.UUID, objectType grantedpermission.ObjectType, objectID *uuid.UUID, action actions.PermissionAction) int
 		LoadProvider        func(childComplexity int, id uuid.UUID) int
@@ -206,6 +207,7 @@ type ComplexityRoot struct {
 		Blueprint    func(childComplexity int) int
 		CreatedAt    func(childComplexity int) int
 		DependsOn    func(childComplexity int) int
+		Features     func(childComplexity int) int
 		ID           func(childComplexity int) int
 		Key          func(childComplexity int) int
 		Object       func(childComplexity int) int
@@ -213,6 +215,11 @@ type ComplexityRoot struct {
 		ResourceType func(childComplexity int) int
 		Type         func(childComplexity int) int
 		UpdatedAt    func(childComplexity int) int
+	}
+
+	ResourceFeatures struct {
+		Console func(childComplexity int) int
+		Power   func(childComplexity int) int
 	}
 
 	User struct {
@@ -285,6 +292,7 @@ type MutationResolver interface {
 	DestroyDeployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error)
 	RedeployDeployment(ctx context.Context, id uuid.UUID, nodeIds []uuid.UUID) (*ent.Deployment, error)
 	DeploymentNodePower(ctx context.Context, id uuid.UUID, state provider.PowerState) (bool, error)
+	DeploymentPower(ctx context.Context, id uuid.UUID, state provider.PowerState) (bool, error)
 }
 type ProviderResolver interface {
 	ConfigBytes(ctx context.Context, obj *ent.Provider) (string, error)
@@ -831,6 +839,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DeploymentNodePower(childComplexity, args["id"].(uuid.UUID), args["state"].(provider.PowerState)), true
 
+	case "Mutation.deploymentPower":
+		if e.complexity.Mutation.DeploymentPower == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deploymentPower_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeploymentPower(childComplexity, args["id"].(uuid.UUID), args["state"].(provider.PowerState)), true
+
 	case "Mutation.destroyDeployment":
 		if e.complexity.Mutation.DestroyDeployment == nil {
 			break
@@ -1272,6 +1292,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Resource.DependsOn(childComplexity), true
 
+	case "Resource.features":
+		if e.complexity.Resource.Features == nil {
+			break
+		}
+
+		return e.complexity.Resource.Features(childComplexity), true
+
 	case "Resource.id":
 		if e.complexity.Resource.ID == nil {
 			break
@@ -1320,6 +1347,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Resource.UpdatedAt(childComplexity), true
+
+	case "ResourceFeatures.console":
+		if e.complexity.ResourceFeatures.Console == nil {
+			break
+		}
+
+		return e.complexity.ResourceFeatures.Console(childComplexity), true
+
+	case "ResourceFeatures.power":
+		if e.complexity.ResourceFeatures.Power == nil {
+			break
+		}
+
+		return e.complexity.ResourceFeatures.Power(childComplexity), true
 
 	case "User.createdAt":
 		if e.complexity.User.CreatedAt == nil {
@@ -1540,6 +1581,11 @@ enum ResourceType {
   DATA
 }
 
+type ResourceFeatures {
+  power: Boolean!
+  console: Boolean!
+}
+
 type Resource {
   id: ID!
   createdAt: Time!
@@ -1547,6 +1593,7 @@ type Resource {
   type: ResourceType!
   key: String!
   resourceType: String!
+  features: ResourceFeatures!
   object: String!
 
   blueprint: Blueprint!
@@ -1648,6 +1695,7 @@ enum Action {
   deployment_delete
   deployment_destroy
   deployment_redeploy
+  deployment_power
   deployment_console
   group_list
   group_create
@@ -1952,6 +2000,10 @@ type Mutation {
   Control the power state of a deployment node
   """
   deploymentNodePower(id: ID!, state: PowerState!): Boolean!
+  """
+  Control the power state of a deployment
+  """
+  deploymentPower(id: ID!, state: PowerState!): Boolean!
   # """
   # Get a vm console (requires permission ` + "`" + `x.x.deployments.x.console` + "`" + `)
   # """
@@ -2125,6 +2177,30 @@ func (ec *executionContext) field_Mutation_deployBlueprint_args(ctx context.Cont
 }
 
 func (ec *executionContext) field_Mutation_deploymentNodePower_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uuid.UUID
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 provider.PowerState
+	if tmp, ok := rawArgs["state"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("state"))
+		arg1, err = ec.unmarshalNPowerState2githubᚗcomᚋcbleᚑplatformᚋcbleᚑproviderᚑgrpcᚋpkgᚋproviderᚐPowerState(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["state"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deploymentPower_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 uuid.UUID
@@ -3296,6 +3372,8 @@ func (ec *executionContext) fieldContext_Blueprint_resources(ctx context.Context
 				return ec.fieldContext_Resource_key(ctx, field)
 			case "resourceType":
 				return ec.fieldContext_Resource_resourceType(ctx, field)
+			case "features":
+				return ec.fieldContext_Resource_features(ctx, field)
 			case "object":
 				return ec.fieldContext_Resource_object(ctx, field)
 			case "blueprint":
@@ -4323,6 +4401,8 @@ func (ec *executionContext) fieldContext_DeploymentNode_resource(ctx context.Con
 				return ec.fieldContext_Resource_key(ctx, field)
 			case "resourceType":
 				return ec.fieldContext_Resource_resourceType(ctx, field)
+			case "features":
+				return ec.fieldContext_Resource_features(ctx, field)
 			case "object":
 				return ec.fieldContext_Resource_object(ctx, field)
 			case "blueprint":
@@ -6998,6 +7078,61 @@ func (ec *executionContext) fieldContext_Mutation_deploymentNodePower(ctx contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_deploymentPower(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deploymentPower(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeploymentPower(rctx, fc.Args["id"].(uuid.UUID), fc.Args["state"].(provider.PowerState))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deploymentPower(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deploymentPower_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Provider_id(ctx context.Context, field graphql.CollectedField, obj *ent.Provider) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Provider_id(ctx, field)
 	if err != nil {
@@ -9028,6 +9163,56 @@ func (ec *executionContext) fieldContext_Resource_resourceType(ctx context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Resource_features(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Resource_features(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Features, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(provider.Features)
+	fc.Result = res
+	return ec.marshalNResourceFeatures2githubᚗcomᚋcbleᚑplatformᚋcbleᚑproviderᚑgrpcᚋpkgᚋproviderᚐFeatures(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Resource_features(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Resource",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "power":
+				return ec.fieldContext_ResourceFeatures_power(ctx, field)
+			case "console":
+				return ec.fieldContext_ResourceFeatures_console(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ResourceFeatures", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Resource_object(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Resource_object(ctx, field)
 	if err != nil {
@@ -9189,6 +9374,8 @@ func (ec *executionContext) fieldContext_Resource_requiredBy(ctx context.Context
 				return ec.fieldContext_Resource_key(ctx, field)
 			case "resourceType":
 				return ec.fieldContext_Resource_resourceType(ctx, field)
+			case "features":
+				return ec.fieldContext_Resource_features(ctx, field)
 			case "object":
 				return ec.fieldContext_Resource_object(ctx, field)
 			case "blueprint":
@@ -9255,6 +9442,8 @@ func (ec *executionContext) fieldContext_Resource_dependsOn(ctx context.Context,
 				return ec.fieldContext_Resource_key(ctx, field)
 			case "resourceType":
 				return ec.fieldContext_Resource_resourceType(ctx, field)
+			case "features":
+				return ec.fieldContext_Resource_features(ctx, field)
 			case "object":
 				return ec.fieldContext_Resource_object(ctx, field)
 			case "blueprint":
@@ -9265,6 +9454,94 @@ func (ec *executionContext) fieldContext_Resource_dependsOn(ctx context.Context,
 				return ec.fieldContext_Resource_dependsOn(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Resource", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourceFeatures_power(ctx context.Context, field graphql.CollectedField, obj *provider.Features) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourceFeatures_power(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Power, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourceFeatures_power(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourceFeatures",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourceFeatures_console(ctx context.Context, field graphql.CollectedField, obj *provider.Features) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourceFeatures_console(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Console, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourceFeatures_console(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourceFeatures",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -12994,6 +13271,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "deploymentPower":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deploymentPower(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -13695,6 +13979,11 @@ func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "features":
+			out.Values[i] = ec._Resource_features(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "object":
 			field := field
 
@@ -13839,6 +14128,50 @@ func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet,
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var resourceFeaturesImplementors = []string{"ResourceFeatures"}
+
+func (ec *executionContext) _ResourceFeatures(ctx context.Context, sel ast.SelectionSet, obj *provider.Features) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, resourceFeaturesImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ResourceFeatures")
+		case "power":
+			out.Values[i] = ec._ResourceFeatures_power(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "console":
+			out.Values[i] = ec._ResourceFeatures_console(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -15083,6 +15416,10 @@ func (ec *executionContext) marshalNResource2ᚖgithubᚗcomᚋcbleᚑplatform�
 		return graphql.Null
 	}
 	return ec._Resource(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNResourceFeatures2githubᚗcomᚋcbleᚑplatformᚋcbleᚑproviderᚑgrpcᚋpkgᚋproviderᚐFeatures(ctx context.Context, sel ast.SelectionSet, v provider.Features) graphql.Marshaler {
+	return ec._ResourceFeatures(ctx, sel, &v)
 }
 
 func (ec *executionContext) unmarshalNResourceType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐResourceType(ctx context.Context, v interface{}) (model.ResourceType, error) {

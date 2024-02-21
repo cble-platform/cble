@@ -31,7 +31,10 @@ func LoadResources(ctx context.Context, client *ent.Client, cbleServer *provider
 			return fmt.Errorf("object %s has no resource or data type", key)
 		}
 
-		logrus.Debugf("Loading resource %s", key)
+		logrus.WithFields(logrus.Fields{
+			"component":   "BLUEPRINT_ENGINE",
+			"blueprintId": entBlueprint.ID,
+		}).Debugf("Loading resource %s", key)
 
 		// Check if the resource already exists
 		entResource, err := client.Resource.Query().Where(
@@ -124,7 +127,10 @@ func LoadResources(ctx context.Context, client *ent.Client, cbleServer *provider
 			if !ok {
 				return fmt.Errorf("failed to pull resource dependency %s from resource map: %v", dependencyResourceKey, err)
 			}
-			logrus.Debugf("Updating resource dependency for resource %s", entResource.ID)
+			logrus.WithFields(logrus.Fields{
+				"component":   "BLUEPRINT_ENGINE",
+				"blueprintId": entBlueprint.ID,
+			}).Debugf("Updating resource dependency for resource %s", entResource.ID)
 
 			// Update the resource with dependencies
 			err = entResource.Update().
@@ -146,7 +152,10 @@ func LoadResources(ctx context.Context, client *ent.Client, cbleServer *provider
 	if err != nil {
 		return err
 	}
-	logrus.Debugf("Deleted %d dangling resources", deleteCount)
+	logrus.WithFields(logrus.Fields{
+		"component":   "BLUEPRINT_ENGINE",
+		"blueprintId": entBlueprint.ID,
+	}).Debugf("Deleted %d dangling resources", deleteCount)
 
 	return nil
 }

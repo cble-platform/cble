@@ -66,6 +66,11 @@ func UpdatedAt(v time.Time) predicate.Deployment {
 	return predicate.Deployment(sql.FieldEQ(FieldUpdatedAt, v))
 }
 
+// LastAccessed applies equality check predicate on the "last_accessed" field. It's identical to LastAccessedEQ.
+func LastAccessed(v time.Time) predicate.Deployment {
+	return predicate.Deployment(sql.FieldEQ(FieldLastAccessed, v))
+}
+
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
 func Name(v string) predicate.Deployment {
 	return predicate.Deployment(sql.FieldEQ(FieldName, v))
@@ -154,6 +159,56 @@ func UpdatedAtLT(v time.Time) predicate.Deployment {
 // UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
 func UpdatedAtLTE(v time.Time) predicate.Deployment {
 	return predicate.Deployment(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// LastAccessedEQ applies the EQ predicate on the "last_accessed" field.
+func LastAccessedEQ(v time.Time) predicate.Deployment {
+	return predicate.Deployment(sql.FieldEQ(FieldLastAccessed, v))
+}
+
+// LastAccessedNEQ applies the NEQ predicate on the "last_accessed" field.
+func LastAccessedNEQ(v time.Time) predicate.Deployment {
+	return predicate.Deployment(sql.FieldNEQ(FieldLastAccessed, v))
+}
+
+// LastAccessedIn applies the In predicate on the "last_accessed" field.
+func LastAccessedIn(vs ...time.Time) predicate.Deployment {
+	return predicate.Deployment(sql.FieldIn(FieldLastAccessed, vs...))
+}
+
+// LastAccessedNotIn applies the NotIn predicate on the "last_accessed" field.
+func LastAccessedNotIn(vs ...time.Time) predicate.Deployment {
+	return predicate.Deployment(sql.FieldNotIn(FieldLastAccessed, vs...))
+}
+
+// LastAccessedGT applies the GT predicate on the "last_accessed" field.
+func LastAccessedGT(v time.Time) predicate.Deployment {
+	return predicate.Deployment(sql.FieldGT(FieldLastAccessed, v))
+}
+
+// LastAccessedGTE applies the GTE predicate on the "last_accessed" field.
+func LastAccessedGTE(v time.Time) predicate.Deployment {
+	return predicate.Deployment(sql.FieldGTE(FieldLastAccessed, v))
+}
+
+// LastAccessedLT applies the LT predicate on the "last_accessed" field.
+func LastAccessedLT(v time.Time) predicate.Deployment {
+	return predicate.Deployment(sql.FieldLT(FieldLastAccessed, v))
+}
+
+// LastAccessedLTE applies the LTE predicate on the "last_accessed" field.
+func LastAccessedLTE(v time.Time) predicate.Deployment {
+	return predicate.Deployment(sql.FieldLTE(FieldLastAccessed, v))
+}
+
+// LastAccessedIsNil applies the IsNil predicate on the "last_accessed" field.
+func LastAccessedIsNil() predicate.Deployment {
+	return predicate.Deployment(sql.FieldIsNull(FieldLastAccessed))
+}
+
+// LastAccessedNotNil applies the NotNil predicate on the "last_accessed" field.
+func LastAccessedNotNil() predicate.Deployment {
+	return predicate.Deployment(sql.FieldNotNull(FieldLastAccessed))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.

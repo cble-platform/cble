@@ -29,14 +29,18 @@ func main() {
 	// Create the CBLEServer instance
 	cbleServer, err := cble.NewServer(ctx, cfgFile)
 	if err != nil {
-		logrus.Fatalf("failed to create CBLE server: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component": "CBLE",
+		}).Fatalf("failed to create CBLE server: %v", err)
 	}
 
 	// Do the CBLE lifetime
 
 	// Initialize
 	if err := cbleServer.Initialize(ctx); err != nil {
-		logrus.Fatalf("failed to initialize CBLE server: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component": "CBLE",
+		}).Fatalf("failed to initialize CBLE server: %v", err)
 	}
 
 	// Run all runtimes
@@ -49,7 +53,9 @@ func main() {
 	wg.Add(1)
 	go func() {
 		s := <-sigCh
-		logrus.Warnf("Received signal %v, attempting graceful shutdown...", s)
+		logrus.WithFields(logrus.Fields{
+			"component": "CBLE",
+		}).Warnf("Received signal %v, attempting graceful shutdown...", s)
 		closeContext()
 		wg.Done()
 	}()
@@ -59,8 +65,12 @@ func main() {
 
 	// Shutdown
 	if err := cbleServer.Shutdown(); err != nil {
-		logrus.Fatalf("failed to initialize CBLE server: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component": "CBLE",
+		}).Fatalf("failed to initialize CBLE server: %v", err)
 	}
 
-	logrus.Infof("CBLE shutdown successful")
+	logrus.WithFields(logrus.Fields{
+		"component": "CBLE",
+	}).Infof("CBLE shutdown successful")
 }

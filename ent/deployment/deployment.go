@@ -20,6 +20,8 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
+	// FieldLastAccessed holds the string denoting the last_accessed field in the database.
+	FieldLastAccessed = "last_accessed"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldDescription holds the string denoting the description field in the database.
@@ -64,6 +66,7 @@ var Columns = []string{
 	FieldID,
 	FieldCreatedAt,
 	FieldUpdatedAt,
+	FieldLastAccessed,
 	FieldName,
 	FieldDescription,
 	FieldState,
@@ -99,6 +102,8 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
+	// DefaultLastAccessed holds the default value on creation for the "last_accessed" field.
+	DefaultLastAccessed func() time.Time
 	// DefaultTemplateVars holds the default value on creation for the "template_vars" field.
 	DefaultTemplateVars map[string]string
 	// DefaultID holds the default value on creation for the "id" field.
@@ -115,6 +120,7 @@ const (
 	StateComplete   State = "complete"
 	StateFailed     State = "failed"
 	StateDestroyed  State = "destroyed"
+	StateSuspended  State = "suspended"
 )
 
 func (s State) String() string {
@@ -124,7 +130,7 @@ func (s State) String() string {
 // StateValidator is a validator for the "state" field enum values. It is called by the builders before save.
 func StateValidator(s State) error {
 	switch s {
-	case StateAwaiting, StateInProgress, StateComplete, StateFailed, StateDestroyed:
+	case StateAwaiting, StateInProgress, StateComplete, StateFailed, StateDestroyed, StateSuspended:
 		return nil
 	default:
 		return fmt.Errorf("deployment: invalid enum value for state field: %q", s)
@@ -147,6 +153,11 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByUpdatedAt orders the results by the updated_at field.
 func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
+}
+
+// ByLastAccessed orders the results by the last_accessed field.
+func ByLastAccessed(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastAccessed, opts...).ToFunc()
 }
 
 // ByName orders the results by the name field.

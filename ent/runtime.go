@@ -50,8 +50,12 @@ func init() {
 	deployment.DefaultUpdatedAt = deploymentDescUpdatedAt.Default.(func() time.Time)
 	// deployment.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	deployment.UpdateDefaultUpdatedAt = deploymentDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// deploymentDescLastAccessed is the schema descriptor for last_accessed field.
+	deploymentDescLastAccessed := deploymentFields[3].Descriptor()
+	// deployment.DefaultLastAccessed holds the default value on creation for the last_accessed field.
+	deployment.DefaultLastAccessed = deploymentDescLastAccessed.Default.(func() time.Time)
 	// deploymentDescTemplateVars is the schema descriptor for template_vars field.
-	deploymentDescTemplateVars := deploymentFields[6].Descriptor()
+	deploymentDescTemplateVars := deploymentFields[7].Descriptor()
 	// deployment.DefaultTemplateVars holds the default value on creation for the template_vars field.
 	deployment.DefaultTemplateVars = deploymentDescTemplateVars.Default.(map[string]string)
 	// deploymentDescID is the schema descriptor for id field.

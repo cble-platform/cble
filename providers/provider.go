@@ -21,7 +21,10 @@ func (ps *CBLEServer) downloadProvider(entProvider *ent.Provider) error {
 
 	// Clone/checkout the provider from git if needed
 	if _, err := os.Stat(providerRepoPath); os.IsNotExist(err) {
-		logrus.Debugf("Provider does not exist, cloning repo")
+		logrus.WithFields(logrus.Fields{
+			"component":  "PROVIDER_ENGINE",
+			"providerId": entProvider.ID,
+		}).Debugf("Provider does not exist, cloning repo")
 		// Provider dir doesn't exist so clone repo
 		err := git.CloneProvider(providerRepoPath, entProvider)
 		if err != nil {
@@ -58,27 +61,42 @@ func (ps *CBLEServer) runProvider(ctx context.Context, entProvider *ent.Provider
 	// Check the provider is compiled
 	if _, err := os.Stat(providerBinaryPath); os.IsNotExist(err) {
 		// The provider binary has yet to be built
-		logrus.Errorf("failed to run provider server: provider has not been compiled yet")
+		logrus.WithFields(logrus.Fields{
+			"component":  "PROVIDER_ENGINE",
+			"providerId": entProvider.ID,
+		}).Errorf("failed to run provider server: provider has not been compiled yet")
 		return
 	}
 
-	logrus.Debugf("Executing provider server binary for %s", entProvider.ID.String())
+	logrus.WithFields(logrus.Fields{
+		"component":  "PROVIDER_ENGINE",
+		"providerId": entProvider.ID,
+	}).Debugf("Executing provider server binary for %s", entProvider.ID.String())
 
 	// Start the binary with the provider ID as argument
 	cmd := exec.Command(providerBinaryPath, entProvider.ID.String())
 	if err := cmd.Start(); err != nil {
-		logrus.Errorf("failed to run provider server: failed to start provider: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":  "PROVIDER_ENGINE",
+			"providerId": entProvider.ID,
+		}).Errorf("failed to run provider server: failed to start provider: %v", err)
 		return
 	}
 
 	for {
 		select {
 		case <-ctx.Done():
-			logrus.Warnf("Gracefully shutting down Provider %s", entProvider.DisplayName)
+			logrus.WithFields(logrus.Fields{
+				"component":  "PROVIDER_ENGINE",
+				"providerId": entProvider.ID,
+			}).Warnf("Gracefully shutting down Provider %s", entProvider.DisplayName)
 			cmd.Process.Signal(syscall.SIGTERM)
 			return
 		case <-shutdown:
-			logrus.Warnf("Gracefully shutting down Provider %s", entProvider.DisplayName)
+			logrus.WithFields(logrus.Fields{
+				"component":  "PROVIDER_ENGINE",
+				"providerId": entProvider.ID,
+			}).Warnf("Gracefully shutting down Provider %s", entProvider.DisplayName)
 			cmd.Process.Signal(syscall.SIGTERM)
 			return
 		}
@@ -88,11 +106,17 @@ func (ps *CBLEServer) runProvider(ctx context.Context, entProvider *ent.Provider
 func (ps *CBLEServer) startProviderConnection(ctx context.Context, providerId string) {
 	registeredProvider, exists := ps.registeredProviders.Load(providerId)
 	if !exists {
-		logrus.Errorf("attempted to start provider on non-registered provider (%s)", providerId)
+		logrus.WithFields(logrus.Fields{
+			"component":  "PROVIDER_ENGINE",
+			"providerId": providerId,
+		}).Errorf("attempted to start provider on non-registered provider (%s)", providerId)
 		return
 	}
 
-	logrus.Debugf("starting provider connection to provider %s with socket ID %s", providerId, registeredProvider.(RegisteredProvider).SocketID)
+	logrus.WithFields(logrus.Fields{
+		"component":  "PROVIDER_ENGINE",
+		"providerId": providerId,
+	}).Debugf("starting provider connection to provider %s with socket ID %s", providerId, registeredProvider.(RegisteredProvider).SocketID)
 
 	providerOpts := &pgrpc.ProviderClientOptions{
 		// TODO: implement TLS for provider connections
@@ -102,12 +126,18 @@ func (ps *CBLEServer) startProviderConnection(ctx context.Context, providerId st
 	}
 	providerConn, err := pgrpc.Connect(providerOpts)
 	if err != nil {
-		logrus.Errorf("failed to connect to provider gRPC server (%s): %v", providerId, err)
+		logrus.WithFields(logrus.Fields{
+			"component":  "PROVIDER_ENGINE",
+			"providerId": providerId,
+		}).Errorf("failed to connect to provider gRPC server (%s): %v", providerId, err)
 		return
 	}
 	client, err := pgrpc.NewClient(ctx, providerConn)
 	if err != nil {
-		logrus.Errorf("failed to create client for provider (%s): %v", providerId, err)
+		logrus.WithFields(logrus.Fields{
+			"component":  "PROVIDER_ENGINE",
+			"providerId": providerId,
+		}).Errorf("failed to create client for provider (%s): %v", providerId, err)
 		return
 	}
 	// Store the client reference for synchronous use
@@ -116,20 +146,29 @@ func (ps *CBLEServer) startProviderConnection(ctx context.Context, providerId st
 	// Convert providerId to UUID
 	providerUuid, err := uuid.Parse(providerId)
 	if err != nil {
-		logrus.Errorf("failed to parse providerId as UUID: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":  "PROVIDER_ENGINE",
+			"providerId": providerId,
+		}).Errorf("failed to parse providerId as UUID: %v", err)
 		return
 	}
 
 	// Get the provider from ENT
 	entProvider, err := ps.entClient.Provider.Get(ctx, providerUuid)
 	if err != nil {
-		logrus.Errorf("failed to query provider: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":  "PROVIDER_ENGINE",
+			"providerId": providerId,
+		}).Errorf("failed to query provider: %v", err)
 	}
 
 	// Configure the provider
 	reply, err := ps.Configure(ctx, entProvider)
 	if err != nil || !reply.Success {
-		logrus.Errorf("failed to configure provider %s: %v", providerId, err)
+		logrus.WithFields(logrus.Fields{
+			"component":  "PROVIDER_ENGINE",
+			"providerId": providerId,
+		}).Errorf("failed to configure provider %s: %v", providerId, err)
 		return
 	}
 }

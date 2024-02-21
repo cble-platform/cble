@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/cble-platform/cble-backend/config"
+	"github.com/cble-platform/cble-backend/engine/runtimes"
 	"github.com/cble-platform/cble-backend/internal/database"
 	"github.com/cble-platform/cble-backend/internal/defaultadmin"
 	"github.com/cble-platform/cble-backend/internal/webserver"
@@ -26,6 +27,8 @@ func NewServer(ctx context.Context, configFile string) (*CBLEServer, error) {
 	// Enable debug logging in debug mode
 	if cbleConfig.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
+	} else {
+		logrus.SetLevel(logrus.InfoLevel)
 	}
 
 	//-----//
@@ -99,7 +102,9 @@ func (s *CBLEServer) Run(ctx context.Context, wg *sync.WaitGroup) {
 	if s.Config.Providers.AutoLoad == nil || *s.Config.Providers.AutoLoad {
 		err := s.GRPCServer.RunAllProviders(ctx)
 		if err != nil {
-			logrus.Errorf("failed to initialize providers: %v", err)
+			logrus.WithFields(logrus.Fields{
+				"component": "GRPC_SERVER",
+			}).Errorf("failed to initialize providers: %v", err)
 		}
 	}
 
@@ -109,6 +114,12 @@ func (s *CBLEServer) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 	wg.Add(1)
 	go s.Webserver.Listen(ctx, wg)
+
+	//----------//
+	// Runtimes //
+	//----------//
+
+	go runtimes.DeploymentAutoSuspendWatchdog(ctx, s.Ent, s.GRPCServer, s.Config.Deployments.AutoSuspendTime)
 }
 
 // Shutdown should be called after Run returns

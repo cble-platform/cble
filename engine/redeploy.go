@@ -23,7 +23,10 @@ func StartRedeploy(client *ent.Client, cbleServer *providers.CBLEServer, entDepl
 		deploymentnode.IDIn(nodeIdsToRedeploy...),
 	).All(ctx)
 	if err != nil {
-		logrus.Errorf("failed to query deployment nodes: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":    "REDEPLOY_ENGINE",
+			"deploymentId": entDeployment.ID,
+		}).Errorf("failed to query deployment nodes: %v", err)
 		return
 	}
 
@@ -32,7 +35,10 @@ func StartRedeploy(client *ent.Client, cbleServer *providers.CBLEServer, entDepl
 		SetState(deployment.StateInProgress).
 		Save(ctx)
 	if err != nil {
-		logrus.Errorf("failed to update deployment state: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":    "REDEPLOY_ENGINE",
+			"deploymentId": entDeployment.ID,
+		}).Errorf("failed to update deployment state: %v", err)
 		return
 	}
 
@@ -40,7 +46,10 @@ func StartRedeploy(client *ent.Client, cbleServer *providers.CBLEServer, entDepl
 	for _, deploymentNode := range entDeploymentNodes {
 		err = markRedeployChildren(ctx, client, deploymentNode, deploymentnode.StateToDestroy)
 		if err != nil {
-			logrus.Errorf("failed to mark nodes for redeploy: %v", err)
+			logrus.WithFields(logrus.Fields{
+				"component":    "REDEPLOY_ENGINE",
+				"deploymentId": entDeployment.ID,
+			}).Errorf("failed to mark nodes for redeploy: %v", err)
 			return
 		}
 	}
@@ -48,7 +57,10 @@ func StartRedeploy(client *ent.Client, cbleServer *providers.CBLEServer, entDepl
 	// Query all of the deployment nodes marked for redeploy
 	entDeploymentNodes, err = entDeployment.QueryDeploymentNodes().All(ctx)
 	if err != nil {
-		logrus.Errorf("failed to query deployment nodes: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":    "REDEPLOY_ENGINE",
+			"deploymentId": entDeployment.ID,
+		}).Errorf("failed to query deployment nodes: %v", err)
 		return
 	}
 
@@ -63,7 +75,10 @@ func StartRedeploy(client *ent.Client, cbleServer *providers.CBLEServer, entDepl
 	// Wait for all routines to finish
 	wg.Wait()
 
-	logrus.Debug("deployment destroyed!")
+	logrus.WithFields(logrus.Fields{
+		"component":    "REDEPLOY_ENGINE",
+		"deploymentId": entDeployment.ID,
+	}).Debug("deployment destroyed!")
 
 	// Set all destroyed resources as TO_DEPLOY
 	err = client.DeploymentNode.Update().
@@ -76,14 +91,20 @@ func StartRedeploy(client *ent.Client, cbleServer *providers.CBLEServer, entDepl
 		).
 		Exec(ctx)
 	if err != nil {
-		logrus.Errorf("failed to mark all destroyed nodes for redeployment: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":    "REDEPLOY_ENGINE",
+			"deploymentId": entDeployment.ID,
+		}).Errorf("failed to mark all destroyed nodes for redeployment: %v", err)
 		return
 	}
 
 	// Query all of the deployment nodes marked for redeploy
 	entDeploymentNodes, err = entDeployment.QueryDeploymentNodes().All(ctx)
 	if err != nil {
-		logrus.Errorf("failed to query deployment nodes: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":    "REDEPLOY_ENGINE",
+			"deploymentId": entDeployment.ID,
+		}).Errorf("failed to query deployment nodes: %v", err)
 		return
 	}
 
@@ -96,14 +117,20 @@ func StartRedeploy(client *ent.Client, cbleServer *providers.CBLEServer, entDepl
 	// Wait for all routines to finish
 	wg.Wait()
 
-	logrus.Debug("deployment successful!")
+	logrus.WithFields(logrus.Fields{
+		"component":    "REDEPLOY_ENGINE",
+		"deploymentId": entDeployment.ID,
+	}).Debug("deployment successful!")
 
 	// Set the deployment as COMPLETE
 	err = entDeployment.Update().
 		SetState(deployment.StateComplete).
 		Exec(ctx)
 	if err != nil {
-		logrus.Errorf("failed to update deployment state: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":    "REDEPLOY_ENGINE",
+			"deploymentId": entDeployment.ID,
+		}).Errorf("failed to update deployment state: %v", err)
 		return
 	}
 }

@@ -30,6 +30,11 @@ enum ResourceType {
   DATA
 }
 
+type ResourceFeatures {
+  power: Boolean!
+  console: Boolean!
+}
+
 type Resource {
   id: ID!
   createdAt: Time!
@@ -37,6 +42,7 @@ type Resource {
   type: ResourceType!
   key: String!
   resourceType: String!
+  features: ResourceFeatures!
   object: String!
 
   blueprint: Blueprint!
@@ -138,6 +144,7 @@ enum Action {
   deployment_delete
   deployment_destroy
   deployment_redeploy
+  deployment_power
   deployment_console
   group_list
   group_create
@@ -442,6 +449,10 @@ type Mutation {
   Control the power state of a deployment node
   """
   deploymentNodePower(id: ID!, state: PowerState!): Boolean!
+  """
+  Control the power state of a deployment
+  """
+  deploymentPower(id: ID!, state: PowerState!): Boolean!
   # """
   # Get a vm console (requires permission `x.x.deployments.x.console`)
   # """

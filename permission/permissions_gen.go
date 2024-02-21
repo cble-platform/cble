@@ -28,6 +28,7 @@ var AllSubjectActions = map[grantedpermission.ObjectType][]actions.PermissionAct
 		actions.ActionDeploymentDelete,
 		actions.ActionDeploymentDestroy,
 		actions.ActionDeploymentRedeploy,
+		actions.ActionDeploymentPower,
 		actions.ActionDeploymentConsole,
 	},
 	grantedpermission.ObjectTypeGroup: {
@@ -288,6 +289,18 @@ func HasDeploymentRedeploy(ctx context.Context, client *ent.Client, entUser *ent
 	)
 }
 
+// HasDeploymentPowerreports whether a given user has the "deployment_power" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+func HasDeploymentPower(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
+	return HasPermission(
+		ctx,
+		client,
+		entUser,
+		grantedpermission.ObjectTypeDeployment,
+		objectID,
+		actions.ActionDeploymentPower,
+	)
+}
+
 // HasDeploymentConsolereports whether a given user has the "deployment_console" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasDeploymentConsole(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
@@ -374,6 +387,17 @@ func CurrentUserHasDeploymentRedeploy(ctx context.Context, client *ent.Client, o
 		grantedpermission.ObjectTypeDeployment,
 		objectID,
 		actions.ActionDeploymentRedeploy,
+	)
+}
+
+// CurrentUserHasDeploymentPowerreports whether the current user (pulled from context) has the "deployment_power" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+func CurrentUserHasDeploymentPower(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
+	return CurrentUserHasPermission(
+		ctx,
+		client,
+		grantedpermission.ObjectTypeDeployment,
+		objectID,
+		actions.ActionDeploymentPower,
 	)
 }
 

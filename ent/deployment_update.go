@@ -38,6 +38,26 @@ func (du *DeploymentUpdate) SetUpdatedAt(t time.Time) *DeploymentUpdate {
 	return du
 }
 
+// SetLastAccessed sets the "last_accessed" field.
+func (du *DeploymentUpdate) SetLastAccessed(t time.Time) *DeploymentUpdate {
+	du.mutation.SetLastAccessed(t)
+	return du
+}
+
+// SetNillableLastAccessed sets the "last_accessed" field if the given value is not nil.
+func (du *DeploymentUpdate) SetNillableLastAccessed(t *time.Time) *DeploymentUpdate {
+	if t != nil {
+		du.SetLastAccessed(*t)
+	}
+	return du
+}
+
+// ClearLastAccessed clears the value of the "last_accessed" field.
+func (du *DeploymentUpdate) ClearLastAccessed() *DeploymentUpdate {
+	du.mutation.ClearLastAccessed()
+	return du
+}
+
 // SetName sets the "name" field.
 func (du *DeploymentUpdate) SetName(s string) *DeploymentUpdate {
 	du.mutation.SetName(s)
@@ -228,6 +248,12 @@ func (du *DeploymentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := du.mutation.UpdatedAt(); ok {
 		_spec.SetField(deployment.FieldUpdatedAt, field.TypeTime, value)
 	}
+	if value, ok := du.mutation.LastAccessed(); ok {
+		_spec.SetField(deployment.FieldLastAccessed, field.TypeTime, value)
+	}
+	if du.mutation.LastAccessedCleared() {
+		_spec.ClearField(deployment.FieldLastAccessed, field.TypeTime)
+	}
 	if value, ok := du.mutation.Name(); ok {
 		_spec.SetField(deployment.FieldName, field.TypeString, value)
 	}
@@ -366,6 +392,26 @@ type DeploymentUpdateOne struct {
 // SetUpdatedAt sets the "updated_at" field.
 func (duo *DeploymentUpdateOne) SetUpdatedAt(t time.Time) *DeploymentUpdateOne {
 	duo.mutation.SetUpdatedAt(t)
+	return duo
+}
+
+// SetLastAccessed sets the "last_accessed" field.
+func (duo *DeploymentUpdateOne) SetLastAccessed(t time.Time) *DeploymentUpdateOne {
+	duo.mutation.SetLastAccessed(t)
+	return duo
+}
+
+// SetNillableLastAccessed sets the "last_accessed" field if the given value is not nil.
+func (duo *DeploymentUpdateOne) SetNillableLastAccessed(t *time.Time) *DeploymentUpdateOne {
+	if t != nil {
+		duo.SetLastAccessed(*t)
+	}
+	return duo
+}
+
+// ClearLastAccessed clears the value of the "last_accessed" field.
+func (duo *DeploymentUpdateOne) ClearLastAccessed() *DeploymentUpdateOne {
+	duo.mutation.ClearLastAccessed()
 	return duo
 }
 
@@ -588,6 +634,12 @@ func (duo *DeploymentUpdateOne) sqlSave(ctx context.Context) (_node *Deployment,
 	}
 	if value, ok := duo.mutation.UpdatedAt(); ok {
 		_spec.SetField(deployment.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if value, ok := duo.mutation.LastAccessed(); ok {
+		_spec.SetField(deployment.FieldLastAccessed, field.TypeTime, value)
+	}
+	if duo.mutation.LastAccessedCleared() {
+		_spec.ClearField(deployment.FieldLastAccessed, field.TypeTime)
 	}
 	if value, ok := duo.mutation.Name(); ok {
 		_spec.SetField(deployment.FieldName, field.TypeString, value)
