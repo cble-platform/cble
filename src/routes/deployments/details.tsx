@@ -2,10 +2,14 @@ import { useSnackbar } from 'notistack'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
+  Action,
   GetDeploymentQuery,
+  ObjectType,
   PowerState,
   useDeploymentNodePowerMutation,
+  useDeploymentPowerMutation,
   useGetDeploymentQuery,
+  useMeHasPermissionQuery,
 } from '@/lib/api/generated'
 import {
   Container,
@@ -29,6 +33,7 @@ import {
 } from '@mui/material'
 import {
   ChevronLeft,
+  Delete,
   ExpandMore,
   MonitorTwoTone,
   MoreHoriz,
@@ -174,12 +179,15 @@ export default function DeploymentDetails() {
   const { enqueueSnackbar } = useSnackbar()
   const { fitView } = useReactFlow()
   const navigate = useNavigate()
+  // Main deployment data
   const {
     data: getDeploymentData,
     error: getDeploymentError,
     loading: getDeploymentLoading,
   } = useGetDeploymentQuery({ variables: { id: id || '' } })
-  const [moreMenuEl, setMoreMenuEl] = useState<null | HTMLElement>(null)
+  // Deployment actions menu
+  const [actionsMenuEl, setActionsMenuEl] = useState<null | HTMLElement>(null)
+  // Resource graph
   const [nodes, setNodes, onNodesChange] = useNodesState<
     GetDeploymentQuery['deployment']['deploymentNodes'][number]
   >([])
@@ -195,6 +203,15 @@ export default function DeploymentDetails() {
   )
   const [selectedResourceMenuItem, setSelectedResourceMenuItem] =
     useState<number>(0)
+  // Permissions
+  const { data: hasPowerPermissionData } = useMeHasPermissionQuery({
+    variables: {
+      objectType: ObjectType.Deployment,
+      objectID: id,
+      action: Action.DeploymentPower,
+    },
+  })
+  // Power Mutations
   const [
     deploymentNodePower,
     {
@@ -204,6 +221,15 @@ export default function DeploymentDetails() {
       reset: resetDeploymentNodePower,
     },
   ] = useDeploymentNodePowerMutation()
+  const [
+    deploymentPower,
+    {
+      data: deploymentPowerData,
+      error: deploymentPowerError,
+      loading: deploymentPowerLoading,
+      reset: resetDeploymentPower,
+    },
+  ] = useDeploymentPowerMutation()
 
   useEffect(() => {
     if (getDeploymentError)
@@ -253,6 +279,27 @@ export default function DeploymentDetails() {
     deploymentNodePowerLoading,
   ])
 
+  // DeploymentPower
+  useEffect(() => {
+    if (deploymentPowerLoading) return
+    if (deploymentPowerData) {
+      enqueueSnackbar({
+        message: deploymentPowerData.deploymentPower
+          ? 'Deployment power state updated'
+          : 'Failed to update deployment power state',
+        variant: 'success',
+      })
+    } else if (deploymentPowerError) {
+      console.error(deploymentPowerError.message)
+      enqueueSnackbar({
+        message: 'Error ocurred: see console for details',
+        variant: 'error',
+      })
+    }
+    setActionsMenuEl(null)
+    resetDeploymentPower()
+  }, [deploymentPowerData, deploymentPowerError, deploymentPowerLoading])
+
   const handleResourceSelect = (
     e: React.MouseEvent<HTMLElement>,
     index: number
@@ -266,7 +313,7 @@ export default function DeploymentDetails() {
     setResourceMenuAnchorEl(null)
   }
 
-  const handleDeploymentPower = (state: PowerState) => {
+  const handleDeploymentNodePower = (state: PowerState) => {
     if (
       !getDeploymentData ||
       !getDeploymentData.deployment.deploymentNodes[selectedResourceIndex]
@@ -279,6 +326,18 @@ export default function DeploymentDetails() {
           id: getDeploymentData.deployment.deploymentNodes[
             selectedResourceIndex
           ].id,
+          state,
+        },
+      })
+  }
+  const handleDeploymentPower = (state: PowerState) => {
+    if (!getDeploymentData) {
+      enqueueSnackbar({ message: 'Unknown error. Refresh page' })
+      return
+    } else
+      deploymentPower({
+        variables: {
+          id: getDeploymentData.deployment.id,
           state,
         },
       })
@@ -301,23 +360,45 @@ export default function DeploymentDetails() {
         </Typography>
         <Button
           id="more-button"
-          aria-controls={moreMenuEl ? 'more-menu' : undefined}
+          aria-controls={actionsMenuEl ? 'more-menu' : undefined}
           aria-haspopup="true"
-          aria-expanded={moreMenuEl ? 'true' : undefined}
-          onClick={(e) => setMoreMenuEl(e.currentTarget)}
+          aria-expanded={actionsMenuEl ? 'true' : undefined}
+          onClick={(e) => setActionsMenuEl(e.currentTarget)}
           startIcon={<ExpandMore />}
         >
           Actions
         </Button>
         <Menu
           id="more-menu"
-          anchorEl={moreMenuEl}
-          open={Boolean(moreMenuEl)}
-          onClose={() => setMoreMenuEl(null)}
+          anchorEl={actionsMenuEl}
+          open={Boolean(actionsMenuEl)}
+          onClose={() => setActionsMenuEl(null)}
           MenuListProps={{
             'aria-labelledby': 'more-button',
           }}
         >
+          {hasPowerPermissionData?.meHasPermission && (
+            <>
+              <MenuItem
+                onClick={() => handleDeploymentPower(PowerState.On)}
+                disabled={deploymentPowerLoading}
+              >
+                <ListItemIcon>
+                  <Power />
+                </ListItemIcon>
+                <ListItemText>Power On Deployment</ListItemText>
+              </MenuItem>
+              <MenuItem
+                onClick={() => handleDeploymentPower(PowerState.Off)}
+                disabled={deploymentPowerLoading}
+              >
+                <ListItemIcon>
+                  <PowerOff />
+                </ListItemIcon>
+                <ListItemText>Power Off Deployment</ListItemText>
+              </MenuItem>
+            </>
+          )}
           <MenuItem
             onClick={() =>
               navigate(
@@ -325,7 +406,10 @@ export default function DeploymentDetails() {
               )
             }
           >
-            Destroy
+            <ListItemIcon>
+              <Delete />
+            </ListItemIcon>
+            <ListItemText>Destroy Deployment</ListItemText>
           </MenuItem>
         </Menu>
       </Box>
@@ -362,7 +446,6 @@ export default function DeploymentDetails() {
               role: 'listbox',
             }}
           >
-            {}
             {getDeploymentData?.deployment.deploymentNodes[
               selectedResourceIndex
             ].resource.features.power ? (
@@ -370,7 +453,7 @@ export default function DeploymentDetails() {
                 <MenuItem
                   onClick={() => {
                     setSelectedResourceMenuItem(0)
-                    handleDeploymentPower(PowerState.On)
+                    handleDeploymentNodePower(PowerState.On)
                   }}
                   disabled={deploymentNodePowerLoading}
                 >
@@ -391,7 +474,7 @@ export default function DeploymentDetails() {
                 <MenuItem
                   onClick={() => {
                     setSelectedResourceMenuItem(1)
-                    handleDeploymentPower(PowerState.Off)
+                    handleDeploymentNodePower(PowerState.Off)
                   }}
                   disabled={deploymentNodePowerLoading}
                 >
@@ -412,7 +495,7 @@ export default function DeploymentDetails() {
                 <MenuItem
                   onClick={() => {
                     setSelectedResourceMenuItem(2)
-                    handleDeploymentPower(PowerState.Reset)
+                    handleDeploymentNodePower(PowerState.Reset)
                   }}
                   disabled={deploymentNodePowerLoading}
                 >
