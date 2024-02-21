@@ -5,7 +5,7 @@ go 1.21
 require (
 	entgo.io/ent v0.12.5
 	github.com/99designs/gqlgen v0.17.40
-	github.com/cble-platform/cble-provider-grpc v0.1.4-0.20240214223843-1afd3f7eafcd
+	github.com/cble-platform/cble-provider-grpc v0.1.4-0.20240221022251-831f4daa7c27
 	github.com/crewjam/saml v0.4.14
 	github.com/fatih/color v1.16.0
 	github.com/gin-contrib/cors v1.4.0
@@ -91,7 +91,7 @@ require (
 	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240213162025-012b6fc9bca9 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240221002015-b0ce06bbee7c // indirect
 	google.golang.org/grpc v1.61.1 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
