@@ -61,7 +61,9 @@ func (ps *CBLEServer) Listen(ctx context.Context, wg *sync.WaitGroup) {
 	go func() {
 		// Auto exists when the context is cancelled
 		if err := cbleGRPC.DefaultServe(serveCtx, ps); err != nil {
-			logrus.Fatalf("failed to serve: %v", err)
+			logrus.WithFields(logrus.Fields{
+				"component": "GRPC_SERVER",
+			}).Fatalf("failed to serve: %v", err)
 		}
 	}()
 
@@ -75,7 +77,9 @@ func (ps *CBLEServer) Listen(ctx context.Context, wg *sync.WaitGroup) {
 		if time.Until(timeoutTime) <= 0 {
 			break
 		}
-		logrus.Infof("Waiting for all providers to unregister (%.0fs)...", time.Until(timeoutTime).Seconds())
+		logrus.WithFields(logrus.Fields{
+			"component": "GRPC_SERVER",
+		}).Infof("Waiting for all providers to unregister (%.0fs)...", time.Until(timeoutTime).Seconds())
 		providersAreLoaded := false
 		ps.registeredProviders.Range(func(key, value any) bool {
 			providersAreLoaded = true
@@ -87,8 +91,12 @@ func (ps *CBLEServer) Listen(ctx context.Context, wg *sync.WaitGroup) {
 		}
 		time.Sleep(1 * time.Second)
 	}
-	logrus.Info("All providers unregistered!")
-	logrus.Warnf("Gracefully shutting down CBLE gRPC server...")
+	logrus.WithFields(logrus.Fields{
+		"component": "GRPC_SERVER",
+	}).Info("All providers unregistered!")
+	logrus.WithFields(logrus.Fields{
+		"component": "GRPC_SERVER",
+	}).Warnf("Gracefully shutting down CBLE gRPC server...")
 	// Shutdown gRPC server
 	cancelServeCtx()
 }
@@ -101,21 +109,33 @@ func (ps *CBLEServer) RunProviderServers(ctx context.Context, wg *sync.WaitGroup
 	for {
 		select {
 		case providerId := <-ps.providerServerQueue:
-			logrus.Debugf("Running provider server for %s", providerId)
+			logrus.WithFields(logrus.Fields{
+				"component":  "PROVIDER_ENGINE",
+				"providerId": providerId,
+			}).Debugf("Running provider server for %s", providerId)
 			providerUuid, err := uuid.Parse(providerId)
 			if err != nil {
-				logrus.Errorf("failed start provider server: failed to parse provider UUID %s", providerId)
+				logrus.WithFields(logrus.Fields{
+					"component":  "PROVIDER_ENGINE",
+					"providerId": providerId,
+				}).Errorf("failed start provider server: failed to parse provider UUID %s", providerId)
 				continue
 			}
 			entProvider, err := ps.entClient.Provider.Get(ctx, providerUuid)
 			if err != nil {
-				logrus.Errorf("failed start provider server: failed to find provider with ID %s", providerId)
+				logrus.WithFields(logrus.Fields{
+					"component":  "PROVIDER_ENGINE",
+					"providerId": providerId,
+				}).Errorf("failed start provider server: failed to find provider with ID %s", providerId)
 				continue
 			}
 			// Ensure the provider is downloaded/updates
 			err = ps.downloadProvider(entProvider)
 			if err != nil {
-				logrus.Errorf("failed to start provider server: failed to download/update provider: %v", err)
+				logrus.WithFields(logrus.Fields{
+					"component":  "PROVIDER_ENGINE",
+					"providerId": providerId,
+				}).Errorf("failed to start provider server: failed to download/update provider: %v", err)
 				continue
 			}
 			// Create an individual shutdown channel for this provider
@@ -124,7 +144,9 @@ func (ps *CBLEServer) RunProviderServers(ctx context.Context, wg *sync.WaitGroup
 			// Run the provider server in a go routine
 			go ps.runProvider(ctx, entProvider, shutdownChan)
 		case <-ctx.Done():
-			logrus.Warn("Gracefully shutting down provider server runtime...")
+			logrus.WithFields(logrus.Fields{
+				"component": "PROVIDER_ENGINE",
+			}).Warn("Gracefully shutting down provider server runtime...")
 			return
 		}
 	}
@@ -138,22 +160,30 @@ func (ps *CBLEServer) RunProviderClients(ctx context.Context, wg *sync.WaitGroup
 	for {
 		select {
 		case providerId := <-ps.connectionQueue:
-			logrus.Debugf("Running provider client for %s", providerId)
+			logrus.WithFields(logrus.Fields{
+				"component": "PROVIDER_ENGINE",
+			}).Debugf("Running provider client for %s", providerId)
 			go ps.startProviderConnection(ctx, providerId)
 		case <-ctx.Done():
-			logrus.Warn("Gracefully shutting down provider client runtime...")
+			logrus.WithFields(logrus.Fields{
+				"component": "PROVIDER_ENGINE",
+			}).Warn("Gracefully shutting down provider client runtime...")
 			return
 		}
 	}
 }
 
 func (ps *CBLEServer) QueueLoadProvider(id string) {
-	logrus.Debugf("Loading provider %s", id)
+	logrus.WithFields(logrus.Fields{
+		"component": "PROVIDER_ENGINE",
+	}).Debugf("Loading provider %s", id)
 	ps.providerServerQueue <- id
 }
 
 func (ps *CBLEServer) QueueUnloadProvider(id string) error {
-	logrus.Debugf("Unloading provider %s", id)
+	logrus.WithFields(logrus.Fields{
+		"component": "PROVIDER_ENGINE",
+	}).Debugf("Unloading provider %s", id)
 	// Check that the server shutdown channel exists
 	serverShutdown, ok := ps.serverShutdown.Load(id)
 	if !ok {
@@ -167,7 +197,9 @@ func (ps *CBLEServer) QueueUnloadProvider(id string) error {
 // func (ps *CBLEServer) StopAllProviders(ctx context.Context) {}
 
 func (ps *CBLEServer) RegisterProvider(ctx context.Context, request *cbleGRPC.RegistrationRequest) (*cbleGRPC.RegistrationReply, error) {
-	logrus.Debugf("Registration request from %s@%s (%s)", request.Name, request.Version, request.Id)
+	logrus.WithFields(logrus.Fields{
+		"component": "PROVIDER_ENGINE",
+	}).Debugf("Registration request from %s@%s (%s)", request.Name, request.Version, request.Id)
 	// Check if a provider with this ID is already registered
 	if _, exist := ps.registeredProviders.Load(request.Id); exist {
 		return nil, fmt.Errorf("provider with same ID (%s) already registered", request.Id)
@@ -197,7 +229,9 @@ func (ps *CBLEServer) RegisterProvider(ctx context.Context, request *cbleGRPC.Re
 	if err != nil {
 		return nil, fmt.Errorf("failed to set provider is_loaded state: %v", err)
 	}
-	logrus.Debugf("requesting provider %s start listening on socket ID %s", request.Id, socketId)
+	logrus.WithFields(logrus.Fields{
+		"component": "PROVIDER_ENGINE",
+	}).Debugf("requesting provider %s start listening on socket ID %s", request.Id, socketId)
 	// Reply to the provider
 	return &cbleGRPC.RegistrationReply{
 		Success:  true,
@@ -206,7 +240,9 @@ func (ps *CBLEServer) RegisterProvider(ctx context.Context, request *cbleGRPC.Re
 }
 
 func (ps *CBLEServer) UnregisterProvider(ctx context.Context, request *cbleGRPC.UnregistrationRequest) (*cbleGRPC.UnregistrationReply, error) {
-	logrus.Debugf("Unregistration request from %s@%s (%s)", request.Name, request.Version, request.Id)
+	logrus.WithFields(logrus.Fields{
+		"component": "PROVIDER_ENGINE",
+	}).Debugf("Unregistration request from %s@%s (%s)", request.Name, request.Version, request.Id)
 	// Check to make sure this provider is registered
 	prov, exists := ps.registeredProviders.Load(request.Id)
 	if !exists {

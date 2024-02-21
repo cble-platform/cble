@@ -23,7 +23,10 @@ func StartDestroy(client *ent.Client, cbleServer *providers.CBLEServer, entDeplo
 		SetState(deployment.StateInProgress).
 		Save(ctx)
 	if err != nil {
-		logrus.Errorf("failed to update deployment state: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":    "DESTROY_ENGINE",
+			"deploymentId": entDeployment.ID,
+		}).Errorf("failed to update deployment state: %v", err)
 		return
 	}
 
@@ -38,13 +41,19 @@ func StartDestroy(client *ent.Client, cbleServer *providers.CBLEServer, entDeplo
 		SetState(deploymentnode.StateToDestroy).
 		Exec(ctx)
 	if err != nil {
-		logrus.Errorf("failed to set deployment nodes to TO_DESTROY: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":    "DESTROY_ENGINE",
+			"deploymentId": entDeployment.ID,
+		}).Errorf("failed to set deployment nodes to TO_DESTROY: %v", err)
 	}
 
 	// Query all of the deployment nodes
 	entDeploymentNodes, err := entDeployment.QueryDeploymentNodes().All(ctx)
 	if err != nil {
-		logrus.Errorf("failed to query deployment nodes: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":    "DESTROY_ENGINE",
+			"deploymentId": entDeployment.ID,
+		}).Errorf("failed to query deployment nodes: %v", err)
 		return
 	}
 
@@ -59,14 +68,20 @@ func StartDestroy(client *ent.Client, cbleServer *providers.CBLEServer, entDeplo
 	// Wait for all routines to finish
 	wg.Wait()
 
-	logrus.Debug("deployment destroyed!")
+	logrus.WithFields(logrus.Fields{
+		"component":    "DESTROY_ENGINE",
+		"deploymentId": entDeployment.ID,
+	}).Debug("deployment destroyed!")
 
 	// Set the deployment as DESTROYED
 	err = entDeployment.Update().
 		SetState(deployment.StateDestroyed).
 		Exec(ctx)
 	if err != nil {
-		logrus.Errorf("failed to update deployment state: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":    "DESTROY_ENGINE",
+			"deploymentId": entDeployment.ID,
+		}).Errorf("failed to update deployment state: %v", err)
 		return
 	}
 }
@@ -74,14 +89,20 @@ func StartDestroy(client *ent.Client, cbleServer *providers.CBLEServer, entDeplo
 func destroyRoutine(ctx context.Context, client *ent.Client, cbleServer *providers.CBLEServer, entDeploymentNode *ent.DeploymentNode, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	logrus.WithField("node", entDeploymentNode.ID).Debug("destroy routine starting")
+	logrus.WithFields(logrus.Fields{
+		"component":        "DESTROY_ENGINE",
+		"deploymentNodeId": entDeploymentNode.ID,
+	}).Debug("destroy routine starting")
 
 	entResource, err := entDeploymentNode.QueryResource().Only(ctx)
 	if err != nil {
 		// Mark node as failed
 		failNode(ctx, entDeploymentNode)
 		// Log error
-		logrus.Errorf("failed to query resource from deployment node: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":        "DESTROY_ENGINE",
+			"deploymentNodeId": entDeploymentNode.ID,
+		}).Errorf("failed to query resource from deployment node: %v", err)
 		return
 	}
 
@@ -94,14 +115,20 @@ func destroyRoutine(ctx context.Context, client *ent.Client, cbleServer *provide
 			// Mark node as failed
 			failNode(ctx, entDeploymentNode)
 			// Log error
-			logrus.Errorf("failed to update node vars and state: %v", err)
+			logrus.WithFields(logrus.Fields{
+				"component":        "DESTROY_ENGINE",
+				"deploymentNodeId": entDeploymentNode.ID,
+			}).Errorf("failed to update node vars and state: %v", err)
 		}
 		return
 	}
 
 	// If the node is not awaiting destruction, return
 	if entDeploymentNode.State != deploymentnode.StateToDestroy {
-		logrus.WithField("node", entDeploymentNode.ID).Debug("node not in state \"to_destroy\"")
+		logrus.WithFields(logrus.Fields{
+			"component":        "DESTROY_ENGINE",
+			"deploymentNodeId": entDeploymentNode.ID,
+		}).Debug("node not in state \"to_destroy\"")
 		return
 	}
 
@@ -111,11 +138,17 @@ func destroyRoutine(ctx context.Context, client *ent.Client, cbleServer *provide
 		// Mark node as failed
 		failNode(ctx, entDeploymentNode)
 		// Log error
-		logrus.WithField("node", entDeploymentNode.ID).Error(err)
+		logrus.WithFields(logrus.Fields{
+			"component":        "DESTROY_ENGINE",
+			"deploymentNodeId": entDeploymentNode.ID,
+		}).Error(err)
 		return
 	}
 
-	logrus.WithField("node", entDeploymentNode.ID).Debug("waiting for children to destroy")
+	logrus.WithFields(logrus.Fields{
+		"component":        "DESTROY_ENGINE",
+		"deploymentNodeId": entDeploymentNode.ID,
+	}).Debug("waiting for children to destroy")
 
 	// Wait for all next nodes to be destroyed
 	for {
@@ -127,7 +160,10 @@ func destroyRoutine(ctx context.Context, client *ent.Client, cbleServer *provide
 			// Mark node as failed
 			failNode(ctx, entDeploymentNode)
 			// Log error
-			logrus.WithField("node", entDeploymentNode.ID).Errorf("failed to query uncompleted next nodes from node: %v", err)
+			logrus.WithFields(logrus.Fields{
+				"component":        "DESTROY_ENGINE",
+				"deploymentNodeId": entDeploymentNode.ID,
+			}).Errorf("failed to query uncompleted next nodes from node: %v", err)
 			return
 		}
 
@@ -140,7 +176,10 @@ func destroyRoutine(ctx context.Context, client *ent.Client, cbleServer *provide
 		time.Sleep(time.Second)
 	}
 
-	logrus.WithField("node", entDeploymentNode.ID).Debug("children completed")
+	logrus.WithFields(logrus.Fields{
+		"component":        "DESTROY_ENGINE",
+		"deploymentNodeId": entDeploymentNode.ID,
+	}).Debug("children completed")
 
 	// Set the node's status to IN_PROGRESS
 	err = setStatus(ctx, entDeploymentNode, deploymentnode.StateInProgress)
@@ -148,7 +187,10 @@ func destroyRoutine(ctx context.Context, client *ent.Client, cbleServer *provide
 		// Mark node as failed
 		failNode(ctx, entDeploymentNode)
 		// Log error
-		logrus.WithField("node", entDeploymentNode.ID).Error(err)
+		logrus.WithFields(logrus.Fields{
+			"component":        "DESTROY_ENGINE",
+			"deploymentNodeId": entDeploymentNode.ID,
+		}).Error(err)
 		return
 	}
 
@@ -161,11 +203,17 @@ func destroyRoutine(ctx context.Context, client *ent.Client, cbleServer *provide
 		// Mark node as failed
 		failNode(ctx, entDeploymentNode)
 		// Log error
-		logrus.WithField("node", entDeploymentNode.ID).Errorf("failed to query provider from node: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":        "DESTROY_ENGINE",
+			"deploymentNodeId": entDeploymentNode.ID,
+		}).Errorf("failed to query provider from node: %v", err)
 		return
 	}
 
-	logrus.WithField("node", entDeploymentNode.ID).Debug("destroying resource...")
+	logrus.WithFields(logrus.Fields{
+		"component":        "DESTROY_ENGINE",
+		"deploymentNodeId": entDeploymentNode.ID,
+	}).Debug("destroying resource...")
 
 	// Have the provider destroy the resource
 	reply, err := cbleServer.DestroyResource(ctx, entProvider, entDeploymentNode)
@@ -173,18 +221,27 @@ func destroyRoutine(ctx context.Context, client *ent.Client, cbleServer *provide
 		// Mark node as failed
 		failNode(ctx, entDeploymentNode)
 		// Log error
-		logrus.Errorf("failed to destroy resource: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":        "DESTROY_ENGINE",
+			"deploymentNodeId": entDeploymentNode.ID,
+		}).Errorf("failed to destroy resource: %v", err)
 		return
 	}
 	if !reply.Success {
 		// Mark node as failed
 		failNode(ctx, entDeploymentNode)
 		// Log error
-		logrus.Errorf("failed to destroy resource: %s", *reply.Error)
+		logrus.WithFields(logrus.Fields{
+			"component":        "DESTROY_ENGINE",
+			"deploymentNodeId": entDeploymentNode.ID,
+		}).Errorf("failed to destroy resource: %s", *reply.Error)
 		return
 	}
 
-	logrus.WithField("node", entDeploymentNode.ID).Debug("destroyed resource successfully!")
+	logrus.WithFields(logrus.Fields{
+		"component":        "DESTROY_ENGINE",
+		"deploymentNodeId": entDeploymentNode.ID,
+	}).Debug("destroyed resource successfully!")
 
 	// Update the vars and state on success
 	err = entDeploymentNode.Update().
@@ -195,7 +252,10 @@ func destroyRoutine(ctx context.Context, client *ent.Client, cbleServer *provide
 		// Mark node as failed
 		failNode(ctx, entDeploymentNode)
 		// Log error
-		logrus.Errorf("failed to update node vars and state: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":        "DESTROY_ENGINE",
+			"deploymentNodeId": entDeploymentNode.ID,
+		}).Errorf("failed to update node vars and state: %v", err)
 		return
 	}
 }

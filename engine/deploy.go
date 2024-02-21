@@ -23,7 +23,10 @@ func StartDeployment(client *ent.Client, cbleServer *providers.CBLEServer, entDe
 		SetState(deployment.StateInProgress).
 		Save(ctx)
 	if err != nil {
-		logrus.Errorf("failed to update deployment state: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":    "DEPLOY_ENGINE",
+			"deploymentId": entDeployment.ID,
+		}).Errorf("failed to update deployment state: %v", err)
 		return
 	}
 
@@ -38,7 +41,10 @@ func StartDeployment(client *ent.Client, cbleServer *providers.CBLEServer, entDe
 		SetState(deploymentnode.StateToDeploy).
 		Exec(ctx)
 	if err != nil {
-		logrus.Errorf("failed to set deployment nodes to TO_DEPLOY: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":    "DEPLOY_ENGINE",
+			"deploymentId": entDeployment.ID,
+		}).Errorf("failed to set deployment nodes to TO_DEPLOY: %v", err)
 	}
 
 	// Query all of the deployment nodes (data only)
@@ -46,7 +52,10 @@ func StartDeployment(client *ent.Client, cbleServer *providers.CBLEServer, entDe
 		deploymentnode.HasResourceWith(resource.TypeEQ(resource.TypeData)),
 	).All(ctx)
 	if err != nil {
-		logrus.Errorf("failed to query data deployment nodes: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":    "DEPLOY_ENGINE",
+			"deploymentId": entDeployment.ID,
+		}).Errorf("failed to query data deployment nodes: %v", err)
 		return
 	}
 
@@ -61,14 +70,20 @@ func StartDeployment(client *ent.Client, cbleServer *providers.CBLEServer, entDe
 	// Wait for all routines to finish
 	wg.Wait()
 
-	logrus.Debug("deployment data gathered!")
+	logrus.WithFields(logrus.Fields{
+		"component":    "DEPLOY_ENGINE",
+		"deploymentId": entDeployment.ID,
+	}).Debug("deployment data gathered!")
 
 	// Query all of the deployment nodes (resource only)
 	entDeploymentNodes, err = entDeployment.QueryDeploymentNodes().Where(
 		deploymentnode.HasResourceWith(resource.TypeEQ(resource.TypeResource)),
 	).All(ctx)
 	if err != nil {
-		logrus.Errorf("failed to query resource deployment nodes: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":    "DEPLOY_ENGINE",
+			"deploymentId": entDeployment.ID,
+		}).Errorf("failed to query resource deployment nodes: %v", err)
 		return
 	}
 
@@ -81,14 +96,20 @@ func StartDeployment(client *ent.Client, cbleServer *providers.CBLEServer, entDe
 	// Wait for all routines to finish
 	wg.Wait()
 
-	logrus.Debug("deployment successful!")
+	logrus.WithFields(logrus.Fields{
+		"component":    "DEPLOY_ENGINE",
+		"deploymentId": entDeployment.ID,
+	}).Debug("deployment successful!")
 
 	// Set the deployment as COMPLETE
 	err = entDeployment.Update().
 		SetState(deployment.StateComplete).
 		Exec(ctx)
 	if err != nil {
-		logrus.Errorf("failed to update deployment state: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":    "DEPLOY_ENGINE",
+			"deploymentId": entDeployment.ID,
+		}).Errorf("failed to update deployment state: %v", err)
 		return
 	}
 }
@@ -96,11 +117,17 @@ func StartDeployment(client *ent.Client, cbleServer *providers.CBLEServer, entDe
 func deployRoutine(ctx context.Context, client *ent.Client, cbleServer *providers.CBLEServer, deploymentNode *ent.DeploymentNode, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	logrus.WithField("node", deploymentNode.ID).Debug("deploy routine starting")
+	logrus.WithFields(logrus.Fields{
+		"component":        "DEPLOY_ENGINE",
+		"deploymentNodeId": deploymentNode.ID,
+	}).Debug("deploy routine starting")
 
 	// If the node is not awaiting deployment, return
 	if deploymentNode.State != deploymentnode.StateToDeploy {
-		logrus.WithField("node", deploymentNode.ID).Debug("node not in state \"to_deploy\"")
+		logrus.WithFields(logrus.Fields{
+			"component":        "DEPLOY_ENGINE",
+			"deploymentNodeId": deploymentNode.ID,
+		}).Debug("node not in state \"to_deploy\"")
 		return
 	}
 
@@ -110,11 +137,17 @@ func deployRoutine(ctx context.Context, client *ent.Client, cbleServer *provider
 		// Mark node as failed
 		failNode(ctx, deploymentNode)
 		// Log error
-		logrus.WithField("node", deploymentNode.ID).Error(err)
+		logrus.WithFields(logrus.Fields{
+			"component":        "DEPLOY_ENGINE",
+			"deploymentNodeId": deploymentNode.ID,
+		}).Error(err)
 		return
 	}
 
-	logrus.WithField("node", deploymentNode.ID).Debug("waiting for parents to complete")
+	logrus.WithFields(logrus.Fields{
+		"component":        "DEPLOY_ENGINE",
+		"deploymentNodeId": deploymentNode.ID,
+	}).Debug("waiting for parents to complete")
 
 	// Wait for all prev nodes to be completed
 	for {
@@ -126,7 +159,10 @@ func deployRoutine(ctx context.Context, client *ent.Client, cbleServer *provider
 			// Mark node as failed
 			failNode(ctx, deploymentNode)
 			// Log error
-			logrus.WithField("node", deploymentNode.ID).Errorf("failed to query uncompleted prev nodes from node: %v", err)
+			logrus.WithFields(logrus.Fields{
+				"component":        "DEPLOY_ENGINE",
+				"deploymentNodeId": deploymentNode.ID,
+			}).Errorf("failed to query uncompleted prev nodes from node: %v", err)
 			return
 		}
 
@@ -140,7 +176,10 @@ func deployRoutine(ctx context.Context, client *ent.Client, cbleServer *provider
 			if prevNode.State == deploymentnode.StateFailed || prevNode.State == deploymentnode.StateTainted {
 				err = setStatus(ctx, deploymentNode, deploymentnode.StateTainted)
 				if err != nil {
-					logrus.WithField("node", deploymentNode.ID).Error(err)
+					logrus.WithFields(logrus.Fields{
+						"component":        "DEPLOY_ENGINE",
+						"deploymentNodeId": deploymentNode.ID,
+					}).Error(err)
 				}
 				return
 			}
@@ -150,7 +189,10 @@ func deployRoutine(ctx context.Context, client *ent.Client, cbleServer *provider
 		time.Sleep(time.Second)
 	}
 
-	logrus.WithField("node", deploymentNode.ID).Debug("parents completed")
+	logrus.WithFields(logrus.Fields{
+		"component":        "DEPLOY_ENGINE",
+		"deploymentNodeId": deploymentNode.ID,
+	}).Debug("parents completed")
 
 	// Set the node's status to IN_PROGRESS
 	err = setStatus(ctx, deploymentNode, deploymentnode.StateInProgress)
@@ -158,7 +200,10 @@ func deployRoutine(ctx context.Context, client *ent.Client, cbleServer *provider
 		// Mark node as failed
 		failNode(ctx, deploymentNode)
 		// Log error
-		logrus.WithField("node", deploymentNode.ID).Error(err)
+		logrus.WithFields(logrus.Fields{
+			"component":        "DEPLOY_ENGINE",
+			"deploymentNodeId": deploymentNode.ID,
+		}).Error(err)
 		return
 	}
 
@@ -171,7 +216,10 @@ func deployRoutine(ctx context.Context, client *ent.Client, cbleServer *provider
 		// Mark node as failed
 		failNode(ctx, deploymentNode)
 		// Log error
-		logrus.WithField("node", deploymentNode.ID).Errorf("failed to query provider from node: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":        "DEPLOY_ENGINE",
+			"deploymentNodeId": deploymentNode.ID,
+		}).Errorf("failed to query provider from node: %v", err)
 		return
 	}
 
@@ -181,7 +229,10 @@ func deployRoutine(ctx context.Context, client *ent.Client, cbleServer *provider
 		// Mark node as failed
 		failNode(ctx, deploymentNode)
 		// Log error
-		logrus.WithField("node", deploymentNode.ID).Errorf("failed to template node object definition: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":        "DEPLOY_ENGINE",
+			"deploymentNodeId": deploymentNode.ID,
+		}).Errorf("failed to template node object definition: %v", err)
 		return
 	}
 
@@ -190,12 +241,18 @@ func deployRoutine(ctx context.Context, client *ent.Client, cbleServer *provider
 		// Mark node as failed
 		failNode(ctx, deploymentNode)
 		// Log error
-		logrus.WithField("node", deploymentNode.ID).Errorf("failed to query resource from node: %v", err)
+		logrus.WithFields(logrus.Fields{
+			"component":        "DEPLOY_ENGINE",
+			"deploymentNodeId": deploymentNode.ID,
+		}).Errorf("failed to query resource from node: %v", err)
 		return
 	}
 
 	if entResource.Type == resource.TypeResource {
-		logrus.WithField("node", deploymentNode.ID).Debug("deploying resource...")
+		logrus.WithFields(logrus.Fields{
+			"component":        "DEPLOY_ENGINE",
+			"deploymentNodeId": deploymentNode.ID,
+		}).Debug("deploying resource...")
 
 		// Have the provider deploy the resource
 		reply, err := cbleServer.DeployResource(ctx, entProvider, deploymentNode, templatedObject)
@@ -203,18 +260,27 @@ func deployRoutine(ctx context.Context, client *ent.Client, cbleServer *provider
 			// Mark node as failed
 			failNode(ctx, deploymentNode)
 			// Log error
-			logrus.Errorf("failed to deploy resource: %v", err)
+			logrus.WithFields(logrus.Fields{
+				"component":        "DEPLOY_ENGINE",
+				"deploymentNodeId": deploymentNode.ID,
+			}).Errorf("failed to deploy resource: %v", err)
 			return
 		}
 		if !reply.Success {
 			// Mark node as failed
 			failNode(ctx, deploymentNode)
 			// Log error
-			logrus.Errorf("failed to deploy resource: %s", *reply.Error)
+			logrus.WithFields(logrus.Fields{
+				"component":        "DEPLOY_ENGINE",
+				"deploymentNodeId": deploymentNode.ID,
+			}).Errorf("failed to deploy resource: %s", *reply.Error)
 			return
 		}
 
-		logrus.WithField("node", deploymentNode.ID).Debug("deployed resource successfully!")
+		logrus.WithFields(logrus.Fields{
+			"component":        "DEPLOY_ENGINE",
+			"deploymentNodeId": deploymentNode.ID,
+		}).Debug("deployed resource successfully!")
 
 		// Update the vars and state on success
 		err = deploymentNode.Update().
@@ -225,11 +291,17 @@ func deployRoutine(ctx context.Context, client *ent.Client, cbleServer *provider
 			// Mark node as failed
 			failNode(ctx, deploymentNode)
 			// Log error
-			logrus.Errorf("failed to update node vars and state: %v", err)
+			logrus.WithFields(logrus.Fields{
+				"component":        "DEPLOY_ENGINE",
+				"deploymentNodeId": deploymentNode.ID,
+			}).Errorf("failed to update node vars and state: %v", err)
 			return
 		}
 	} else if entResource.Type == resource.TypeData {
-		logrus.WithField("node", deploymentNode.ID).Debug("retrieving data...")
+		logrus.WithFields(logrus.Fields{
+			"component":        "DEPLOY_ENGINE",
+			"deploymentNodeId": deploymentNode.ID,
+		}).Debug("retrieving data...")
 
 		// Have the provider deploy the resource
 		reply, err := cbleServer.RetrieveData(ctx, entProvider, deploymentNode, templatedObject)
@@ -237,18 +309,27 @@ func deployRoutine(ctx context.Context, client *ent.Client, cbleServer *provider
 			// Mark node as failed
 			failNode(ctx, deploymentNode)
 			// Log error
-			logrus.Errorf("failed to retrieve data: %v", err)
+			logrus.WithFields(logrus.Fields{
+				"component":        "DEPLOY_ENGINE",
+				"deploymentNodeId": deploymentNode.ID,
+			}).Errorf("failed to retrieve data: %v", err)
 			return
 		}
 		if !reply.Success {
 			// Mark node as failed
 			failNode(ctx, deploymentNode)
 			// Log error
-			logrus.Errorf("failed to retrieve data: %s", *reply.Error)
+			logrus.WithFields(logrus.Fields{
+				"component":        "DEPLOY_ENGINE",
+				"deploymentNodeId": deploymentNode.ID,
+			}).Errorf("failed to retrieve data: %s", *reply.Error)
 			return
 		}
 
-		logrus.WithField("node", deploymentNode.ID).Debug("retrieved data successfully!")
+		logrus.WithFields(logrus.Fields{
+			"component":        "DEPLOY_ENGINE",
+			"deploymentNodeId": deploymentNode.ID,
+		}).Debug("retrieved data successfully!")
 
 		// Update the vars and state on success
 		err = deploymentNode.Update().
@@ -259,7 +340,10 @@ func deployRoutine(ctx context.Context, client *ent.Client, cbleServer *provider
 			// Mark node as failed
 			failNode(ctx, deploymentNode)
 			// Log error
-			logrus.Errorf("failed to update node vars and state: %v", err)
+			logrus.WithFields(logrus.Fields{
+				"component":        "DEPLOY_ENGINE",
+				"deploymentNodeId": deploymentNode.ID,
+			}).Errorf("failed to update node vars and state: %v", err)
 			return
 		}
 	}

@@ -84,7 +84,9 @@ func InitializeDefaultAdminUserGroup(ctx context.Context, client *ent.Client, cb
 			if err != nil {
 				return fmt.Errorf("failed to create default admin: %v", err)
 			}
-			logrus.Info("Created default admin user")
+			logrus.WithFields(logrus.Fields{
+				"component": "INITIALIZATION",
+			}).Info("Created default admin user")
 		}
 	}
 

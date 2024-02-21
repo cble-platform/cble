@@ -134,11 +134,15 @@ func (w *CBLEWebserver) Listen(ctx context.Context, wg *sync.WaitGroup) {
 
 	go func() {
 		if err := w.webserver.ListenAndServe(); err != http.ErrServerClosed {
-			logrus.Fatalf("failed to start webserver")
+			logrus.WithFields(logrus.Fields{
+				"component": "WEBSERVER",
+			}).Fatalf("failed to start webserver")
 		}
 	}()
 
 	<-ctx.Done()
-	logrus.Warnf("Gracefully shutting down CBLE webserver...")
+	logrus.WithFields(logrus.Fields{
+		"component": "WEBSERVER",
+	}).Warnf("Gracefully shutting down CBLE webserver...")
 	w.webserver.Shutdown(ctx)
 }
