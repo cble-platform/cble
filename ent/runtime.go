@@ -10,10 +10,11 @@ import (
 	"github.com/cble-platform/cble-backend/ent/deploymentnode"
 	"github.com/cble-platform/cble-backend/ent/grantedpermission"
 	"github.com/cble-platform/cble-backend/ent/group"
-	"github.com/cble-platform/cble-backend/ent/provider"
+	entprovider "github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/cble-platform/cble-backend/ent/schema"
 	"github.com/cble-platform/cble-backend/ent/user"
+	"github.com/cble-platform/cble-provider-grpc/pkg/provider"
 	"github.com/google/uuid"
 )
 
@@ -109,26 +110,26 @@ func init() {
 	groupDescID := groupFields[0].Descriptor()
 	// group.DefaultID holds the default value on creation for the id field.
 	group.DefaultID = groupDescID.Default.(func() uuid.UUID)
-	providerFields := schema.Provider{}.Fields()
-	_ = providerFields
-	// providerDescCreatedAt is the schema descriptor for created_at field.
-	providerDescCreatedAt := providerFields[1].Descriptor()
-	// provider.DefaultCreatedAt holds the default value on creation for the created_at field.
-	provider.DefaultCreatedAt = providerDescCreatedAt.Default.(func() time.Time)
-	// providerDescUpdatedAt is the schema descriptor for updated_at field.
-	providerDescUpdatedAt := providerFields[2].Descriptor()
-	// provider.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	provider.DefaultUpdatedAt = providerDescUpdatedAt.Default.(func() time.Time)
-	// provider.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	provider.UpdateDefaultUpdatedAt = providerDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// providerDescIsLoaded is the schema descriptor for is_loaded field.
-	providerDescIsLoaded := providerFields[7].Descriptor()
-	// provider.DefaultIsLoaded holds the default value on creation for the is_loaded field.
-	provider.DefaultIsLoaded = providerDescIsLoaded.Default.(bool)
-	// providerDescID is the schema descriptor for id field.
-	providerDescID := providerFields[0].Descriptor()
-	// provider.DefaultID holds the default value on creation for the id field.
-	provider.DefaultID = providerDescID.Default.(func() uuid.UUID)
+	entproviderFields := schema.Provider{}.Fields()
+	_ = entproviderFields
+	// entproviderDescCreatedAt is the schema descriptor for created_at field.
+	entproviderDescCreatedAt := entproviderFields[1].Descriptor()
+	// entprovider.DefaultCreatedAt holds the default value on creation for the created_at field.
+	entprovider.DefaultCreatedAt = entproviderDescCreatedAt.Default.(func() time.Time)
+	// entproviderDescUpdatedAt is the schema descriptor for updated_at field.
+	entproviderDescUpdatedAt := entproviderFields[2].Descriptor()
+	// entprovider.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	entprovider.DefaultUpdatedAt = entproviderDescUpdatedAt.Default.(func() time.Time)
+	// entprovider.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	entprovider.UpdateDefaultUpdatedAt = entproviderDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// entproviderDescIsLoaded is the schema descriptor for is_loaded field.
+	entproviderDescIsLoaded := entproviderFields[7].Descriptor()
+	// entprovider.DefaultIsLoaded holds the default value on creation for the is_loaded field.
+	entprovider.DefaultIsLoaded = entproviderDescIsLoaded.Default.(bool)
+	// entproviderDescID is the schema descriptor for id field.
+	entproviderDescID := entproviderFields[0].Descriptor()
+	// entprovider.DefaultID holds the default value on creation for the id field.
+	entprovider.DefaultID = entproviderDescID.Default.(func() uuid.UUID)
 	resourceFields := schema.Resource{}.Fields()
 	_ = resourceFields
 	// resourceDescCreatedAt is the schema descriptor for created_at field.
@@ -141,6 +142,10 @@ func init() {
 	resource.DefaultUpdatedAt = resourceDescUpdatedAt.Default.(func() time.Time)
 	// resource.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	resource.UpdateDefaultUpdatedAt = resourceDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// resourceDescFeatures is the schema descriptor for features field.
+	resourceDescFeatures := resourceFields[6].Descriptor()
+	// resource.DefaultFeatures holds the default value on creation for the features field.
+	resource.DefaultFeatures = resourceDescFeatures.Default.(provider.Features)
 	// resourceDescID is the schema descriptor for id field.
 	resourceDescID := resourceFields[0].Descriptor()
 	// resource.DefaultID holds the default value on creation for the id field.

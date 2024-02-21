@@ -14,7 +14,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/predicate"
-	"github.com/cble-platform/cble-backend/ent/provider"
+	entprovider "github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/google/uuid"
 )
@@ -79,7 +79,7 @@ func (bq *BlueprintQuery) QueryProvider() *ProviderQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(blueprint.Table, blueprint.FieldID, selector),
-			sqlgraph.To(provider.Table, provider.FieldID),
+			sqlgraph.To(entprovider.Table, entprovider.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, blueprint.ProviderTable, blueprint.ProviderColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(bq.driver.Dialect(), step)
@@ -514,7 +514,7 @@ func (bq *BlueprintQuery) loadProvider(ctx context.Context, query *ProviderQuery
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(provider.IDIn(ids...))
+	query.Where(entprovider.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err

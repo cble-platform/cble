@@ -13,6 +13,7 @@ import (
 	"github.com/cble-platform/cble-backend/engine/models"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/resource"
+	"github.com/cble-platform/cble-provider-grpc/pkg/provider"
 	"github.com/google/uuid"
 )
 
@@ -31,6 +32,8 @@ type Resource struct {
 	Key string `json:"key,omitempty"`
 	// The resource/data string from the blueprint
 	ResourceType string `json:"resource_type,omitempty"`
+	// Features holds the value of the "features" field.
+	Features provider.Features `json:"features,omitempty"`
 	// The entire resource/data object from the blueprint
 	Object *models.Object `json:"object,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -89,7 +92,7 @@ func (*Resource) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case resource.FieldObject:
+		case resource.FieldFeatures, resource.FieldObject:
 			values[i] = new([]byte)
 		case resource.FieldType, resource.FieldKey, resource.FieldResourceType:
 			values[i] = new(sql.NullString)
@@ -149,6 +152,14 @@ func (r *Resource) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field resource_type", values[i])
 			} else if value.Valid {
 				r.ResourceType = value.String
+			}
+		case resource.FieldFeatures:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field features", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &r.Features); err != nil {
+					return fmt.Errorf("unmarshal field features: %w", err)
+				}
 			}
 		case resource.FieldObject:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -230,6 +241,9 @@ func (r *Resource) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("resource_type=")
 	builder.WriteString(r.ResourceType)
+	builder.WriteString(", ")
+	builder.WriteString("features=")
+	builder.WriteString(fmt.Sprintf("%v", r.Features))
 	builder.WriteString(", ")
 	builder.WriteString("object=")
 	builder.WriteString(fmt.Sprintf("%v", r.Object))

@@ -180,7 +180,7 @@ func destroyRoutine(ctx context.Context, client *ent.Client, cbleServer *provide
 		// Mark node as failed
 		failNode(ctx, entDeploymentNode)
 		// Log error
-		logrus.Errorf("failed to destroy resource: %s", *reply.Errors)
+		logrus.Errorf("failed to destroy resource: %s", *reply.Error)
 		return
 	}
 

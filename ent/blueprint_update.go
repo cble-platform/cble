@@ -15,7 +15,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/predicate"
-	"github.com/cble-platform/cble-backend/ent/provider"
+	entprovider "github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/google/uuid"
 )
@@ -252,7 +252,7 @@ func (bu *BlueprintUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{blueprint.ProviderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(provider.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(entprovider.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -265,7 +265,7 @@ func (bu *BlueprintUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{blueprint.ProviderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(provider.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(entprovider.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -632,7 +632,7 @@ func (buo *BlueprintUpdateOne) sqlSave(ctx context.Context) (_node *Blueprint, e
 			Columns: []string{blueprint.ProviderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(provider.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(entprovider.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -645,7 +645,7 @@ func (buo *BlueprintUpdateOne) sqlSave(ctx context.Context) (_node *Blueprint, e
 			Columns: []string{blueprint.ProviderColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(provider.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(entprovider.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

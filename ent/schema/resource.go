@@ -7,6 +7,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/cble-platform/cble-backend/engine/models"
+	pgrpc "github.com/cble-platform/cble-provider-grpc/pkg/provider"
 	"github.com/google/uuid"
 )
 
@@ -34,6 +35,7 @@ func (Resource) Fields() []ent.Field {
 			Comment("The resource/data key from the blueprint"),
 		field.String("resource_type").
 			Comment("The resource/data string from the blueprint"),
+		field.JSON("features", pgrpc.Features{}).Optional().Default(pgrpc.Features{}),
 		field.JSON("object", &models.Object{}).
 			Comment("The entire resource/data object from the blueprint"),
 	}

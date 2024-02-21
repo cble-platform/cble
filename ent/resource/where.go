@@ -306,6 +306,16 @@ func ResourceTypeContainsFold(v string) predicate.Resource {
 	return predicate.Resource(sql.FieldContainsFold(FieldResourceType, v))
 }
 
+// FeaturesIsNil applies the IsNil predicate on the "features" field.
+func FeaturesIsNil() predicate.Resource {
+	return predicate.Resource(sql.FieldIsNull(FieldFeatures))
+}
+
+// FeaturesNotNil applies the NotNil predicate on the "features" field.
+func FeaturesNotNil() predicate.Resource {
+	return predicate.Resource(sql.FieldNotNull(FieldFeatures))
+}
+
 // HasBlueprint applies the HasEdge predicate on the "blueprint" edge.
 func HasBlueprint() predicate.Resource {
 	return predicate.Resource(func(s *sql.Selector) {

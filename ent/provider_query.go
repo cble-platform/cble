@@ -13,7 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/predicate"
-	"github.com/cble-platform/cble-backend/ent/provider"
+	entprovider "github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/google/uuid"
 )
 
@@ -21,7 +21,7 @@ import (
 type ProviderQuery struct {
 	config
 	ctx            *QueryContext
-	order          []provider.OrderOption
+	order          []entprovider.OrderOption
 	inters         []Interceptor
 	predicates     []predicate.Provider
 	withBlueprints *BlueprintQuery
@@ -56,7 +56,7 @@ func (pq *ProviderQuery) Unique(unique bool) *ProviderQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (pq *ProviderQuery) Order(o ...provider.OrderOption) *ProviderQuery {
+func (pq *ProviderQuery) Order(o ...entprovider.OrderOption) *ProviderQuery {
 	pq.order = append(pq.order, o...)
 	return pq
 }
@@ -73,9 +73,9 @@ func (pq *ProviderQuery) QueryBlueprints() *BlueprintQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(provider.Table, provider.FieldID, selector),
+			sqlgraph.From(entprovider.Table, entprovider.FieldID, selector),
 			sqlgraph.To(blueprint.Table, blueprint.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, provider.BlueprintsTable, provider.BlueprintsColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, entprovider.BlueprintsTable, entprovider.BlueprintsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -91,7 +91,7 @@ func (pq *ProviderQuery) First(ctx context.Context) (*Provider, error) {
 		return nil, err
 	}
 	if len(nodes) == 0 {
-		return nil, &NotFoundError{provider.Label}
+		return nil, &NotFoundError{entprovider.Label}
 	}
 	return nodes[0], nil
 }
@@ -113,7 +113,7 @@ func (pq *ProviderQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) 
 		return
 	}
 	if len(ids) == 0 {
-		err = &NotFoundError{provider.Label}
+		err = &NotFoundError{entprovider.Label}
 		return
 	}
 	return ids[0], nil
@@ -140,9 +140,9 @@ func (pq *ProviderQuery) Only(ctx context.Context) (*Provider, error) {
 	case 1:
 		return nodes[0], nil
 	case 0:
-		return nil, &NotFoundError{provider.Label}
+		return nil, &NotFoundError{entprovider.Label}
 	default:
-		return nil, &NotSingularError{provider.Label}
+		return nil, &NotSingularError{entprovider.Label}
 	}
 }
 
@@ -167,9 +167,9 @@ func (pq *ProviderQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	case 1:
 		id = ids[0]
 	case 0:
-		err = &NotFoundError{provider.Label}
+		err = &NotFoundError{entprovider.Label}
 	default:
-		err = &NotSingularError{provider.Label}
+		err = &NotSingularError{entprovider.Label}
 	}
 	return
 }
@@ -208,7 +208,7 @@ func (pq *ProviderQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 		pq.Unique(true)
 	}
 	ctx = setContextOp(ctx, pq.ctx, "IDs")
-	if err = pq.Select(provider.FieldID).Scan(ctx, &ids); err != nil {
+	if err = pq.Select(entprovider.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
@@ -272,7 +272,7 @@ func (pq *ProviderQuery) Clone() *ProviderQuery {
 	return &ProviderQuery{
 		config:         pq.config,
 		ctx:            pq.ctx.Clone(),
-		order:          append([]provider.OrderOption{}, pq.order...),
+		order:          append([]entprovider.OrderOption{}, pq.order...),
 		inters:         append([]Interceptor{}, pq.inters...),
 		predicates:     append([]predicate.Provider{}, pq.predicates...),
 		withBlueprints: pq.withBlueprints.Clone(),
@@ -304,14 +304,14 @@ func (pq *ProviderQuery) WithBlueprints(opts ...func(*BlueprintQuery)) *Provider
 //	}
 //
 //	client.Provider.Query().
-//		GroupBy(provider.FieldCreatedAt).
+//		GroupBy(entprovider.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (pq *ProviderQuery) GroupBy(field string, fields ...string) *ProviderGroupBy {
 	pq.ctx.Fields = append([]string{field}, fields...)
 	grbuild := &ProviderGroupBy{build: pq}
 	grbuild.flds = &pq.ctx.Fields
-	grbuild.label = provider.Label
+	grbuild.label = entprovider.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
 }
@@ -326,12 +326,12 @@ func (pq *ProviderQuery) GroupBy(field string, fields ...string) *ProviderGroupB
 //	}
 //
 //	client.Provider.Query().
-//		Select(provider.FieldCreatedAt).
+//		Select(entprovider.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (pq *ProviderQuery) Select(fields ...string) *ProviderSelect {
 	pq.ctx.Fields = append(pq.ctx.Fields, fields...)
 	sbuild := &ProviderSelect{ProviderQuery: pq}
-	sbuild.label = provider.Label
+	sbuild.label = entprovider.Label
 	sbuild.flds, sbuild.scan = &pq.ctx.Fields, sbuild.Scan
 	return sbuild
 }
@@ -353,7 +353,7 @@ func (pq *ProviderQuery) prepareQuery(ctx context.Context) error {
 		}
 	}
 	for _, f := range pq.ctx.Fields {
-		if !provider.ValidColumn(f) {
+		if !entprovider.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
@@ -415,7 +415,7 @@ func (pq *ProviderQuery) loadBlueprints(ctx context.Context, query *BlueprintQue
 	}
 	query.withFKs = true
 	query.Where(predicate.Blueprint(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(provider.BlueprintsColumn), fks...))
+		s.Where(sql.InValues(s.C(entprovider.BlueprintsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -445,7 +445,7 @@ func (pq *ProviderQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (pq *ProviderQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(provider.Table, provider.Columns, sqlgraph.NewFieldSpec(provider.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(entprovider.Table, entprovider.Columns, sqlgraph.NewFieldSpec(entprovider.FieldID, field.TypeUUID))
 	_spec.From = pq.sql
 	if unique := pq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -454,9 +454,9 @@ func (pq *ProviderQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := pq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, provider.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, entprovider.FieldID)
 		for i := range fields {
-			if fields[i] != provider.FieldID {
+			if fields[i] != entprovider.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
@@ -486,10 +486,10 @@ func (pq *ProviderQuery) querySpec() *sqlgraph.QuerySpec {
 
 func (pq *ProviderQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(pq.driver.Dialect())
-	t1 := builder.Table(provider.Table)
+	t1 := builder.Table(entprovider.Table)
 	columns := pq.ctx.Fields
 	if len(columns) == 0 {
-		columns = provider.Columns
+		columns = entprovider.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if pq.sql != nil {

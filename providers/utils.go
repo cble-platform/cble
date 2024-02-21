@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	providerGRPC "github.com/cble-platform/cble-provider-grpc/pkg/provider"
+	pgrpc "github.com/cble-platform/cble-provider-grpc/pkg/provider"
 )
 
 func (ps *CBLEServer) RunAllProviders(ctx context.Context) error {
@@ -21,12 +21,12 @@ func (ps *CBLEServer) RunAllProviders(ctx context.Context) error {
 	return nil
 }
 
-func (ps *CBLEServer) getProviderClient(providerId string) (providerGRPC.ProviderClient, error) {
+func (ps *CBLEServer) getProviderClient(providerId string) (pgrpc.ProviderClient, error) {
 	clientRaw, ok := ps.providerClients.Load(providerId)
 	if !ok {
 		return nil, fmt.Errorf("provider is not loaded")
 	}
-	client, ok := clientRaw.(providerGRPC.ProviderClient)
+	client, ok := clientRaw.(pgrpc.ProviderClient)
 	if !ok {
 		return nil, fmt.Errorf("provider client not stored properly")
 	}

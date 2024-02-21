@@ -9,7 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/cble-platform/cble-backend/ent/provider"
+	entprovider "github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/google/uuid"
 )
 
@@ -61,15 +61,15 @@ func (*Provider) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case provider.FieldConfigBytes:
+		case entprovider.FieldConfigBytes:
 			values[i] = new([]byte)
-		case provider.FieldIsLoaded:
+		case entprovider.FieldIsLoaded:
 			values[i] = new(sql.NullBool)
-		case provider.FieldDisplayName, provider.FieldProviderGitURL, provider.FieldProviderVersion:
+		case entprovider.FieldDisplayName, entprovider.FieldProviderGitURL, entprovider.FieldProviderVersion:
 			values[i] = new(sql.NullString)
-		case provider.FieldCreatedAt, provider.FieldUpdatedAt:
+		case entprovider.FieldCreatedAt, entprovider.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case provider.FieldID:
+		case entprovider.FieldID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -86,49 +86,49 @@ func (pr *Provider) assignValues(columns []string, values []any) error {
 	}
 	for i := range columns {
 		switch columns[i] {
-		case provider.FieldID:
+		case entprovider.FieldID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				pr.ID = *value
 			}
-		case provider.FieldCreatedAt:
+		case entprovider.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
 				pr.CreatedAt = value.Time
 			}
-		case provider.FieldUpdatedAt:
+		case entprovider.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
 				pr.UpdatedAt = value.Time
 			}
-		case provider.FieldDisplayName:
+		case entprovider.FieldDisplayName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field display_name", values[i])
 			} else if value.Valid {
 				pr.DisplayName = value.String
 			}
-		case provider.FieldProviderGitURL:
+		case entprovider.FieldProviderGitURL:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field provider_git_url", values[i])
 			} else if value.Valid {
 				pr.ProviderGitURL = value.String
 			}
-		case provider.FieldProviderVersion:
+		case entprovider.FieldProviderVersion:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field provider_version", values[i])
 			} else if value.Valid {
 				pr.ProviderVersion = value.String
 			}
-		case provider.FieldConfigBytes:
+		case entprovider.FieldConfigBytes:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field config_bytes", values[i])
 			} else if value != nil {
 				pr.ConfigBytes = *value
 			}
-		case provider.FieldIsLoaded:
+		case entprovider.FieldIsLoaded:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field is_loaded", values[i])
 			} else if value.Valid {

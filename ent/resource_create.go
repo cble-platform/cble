@@ -13,6 +13,7 @@ import (
 	"github.com/cble-platform/cble-backend/engine/models"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/resource"
+	"github.com/cble-platform/cble-provider-grpc/pkg/provider"
 	"github.com/google/uuid"
 )
 
@@ -74,6 +75,20 @@ func (rc *ResourceCreate) SetKey(s string) *ResourceCreate {
 // SetResourceType sets the "resource_type" field.
 func (rc *ResourceCreate) SetResourceType(s string) *ResourceCreate {
 	rc.mutation.SetResourceType(s)
+	return rc
+}
+
+// SetFeatures sets the "features" field.
+func (rc *ResourceCreate) SetFeatures(pr provider.Features) *ResourceCreate {
+	rc.mutation.SetFeatures(pr)
+	return rc
+}
+
+// SetNillableFeatures sets the "features" field if the given value is not nil.
+func (rc *ResourceCreate) SetNillableFeatures(pr *provider.Features) *ResourceCreate {
+	if pr != nil {
+		rc.SetFeatures(*pr)
+	}
 	return rc
 }
 
@@ -185,6 +200,10 @@ func (rc *ResourceCreate) defaults() {
 		v := resource.DefaultType
 		rc.mutation.SetType(v)
 	}
+	if _, ok := rc.mutation.Features(); !ok {
+		v := resource.DefaultFeatures
+		rc.mutation.SetFeatures(v)
+	}
 	if _, ok := rc.mutation.ID(); !ok {
 		v := resource.DefaultID()
 		rc.mutation.SetID(v)
@@ -273,6 +292,10 @@ func (rc *ResourceCreate) createSpec() (*Resource, *sqlgraph.CreateSpec) {
 	if value, ok := rc.mutation.ResourceType(); ok {
 		_spec.SetField(resource.FieldResourceType, field.TypeString, value)
 		_node.ResourceType = value
+	}
+	if value, ok := rc.mutation.Features(); ok {
+		_spec.SetField(resource.FieldFeatures, field.TypeJSON, value)
+		_node.Features = value
 	}
 	if value, ok := rc.mutation.Object(); ok {
 		_spec.SetField(resource.FieldObject, field.TypeJSON, value)

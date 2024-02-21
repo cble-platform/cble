@@ -18,10 +18,11 @@ import (
 	"github.com/cble-platform/cble-backend/ent/grantedpermission"
 	"github.com/cble-platform/cble-backend/ent/group"
 	"github.com/cble-platform/cble-backend/ent/predicate"
-	"github.com/cble-platform/cble-backend/ent/provider"
+	entprovider "github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/cble-platform/cble-backend/permission/actions"
+	"github.com/cble-platform/cble-provider-grpc/pkg/provider"
 	"github.com/google/uuid"
 )
 
@@ -4265,25 +4266,25 @@ func (m *ProviderMutation) Type() string {
 func (m *ProviderMutation) Fields() []string {
 	fields := make([]string, 0, 7)
 	if m.created_at != nil {
-		fields = append(fields, provider.FieldCreatedAt)
+		fields = append(fields, entprovider.FieldCreatedAt)
 	}
 	if m.updated_at != nil {
-		fields = append(fields, provider.FieldUpdatedAt)
+		fields = append(fields, entprovider.FieldUpdatedAt)
 	}
 	if m.display_name != nil {
-		fields = append(fields, provider.FieldDisplayName)
+		fields = append(fields, entprovider.FieldDisplayName)
 	}
 	if m.provider_git_url != nil {
-		fields = append(fields, provider.FieldProviderGitURL)
+		fields = append(fields, entprovider.FieldProviderGitURL)
 	}
 	if m.provider_version != nil {
-		fields = append(fields, provider.FieldProviderVersion)
+		fields = append(fields, entprovider.FieldProviderVersion)
 	}
 	if m.config_bytes != nil {
-		fields = append(fields, provider.FieldConfigBytes)
+		fields = append(fields, entprovider.FieldConfigBytes)
 	}
 	if m.is_loaded != nil {
-		fields = append(fields, provider.FieldIsLoaded)
+		fields = append(fields, entprovider.FieldIsLoaded)
 	}
 	return fields
 }
@@ -4293,19 +4294,19 @@ func (m *ProviderMutation) Fields() []string {
 // schema.
 func (m *ProviderMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case provider.FieldCreatedAt:
+	case entprovider.FieldCreatedAt:
 		return m.CreatedAt()
-	case provider.FieldUpdatedAt:
+	case entprovider.FieldUpdatedAt:
 		return m.UpdatedAt()
-	case provider.FieldDisplayName:
+	case entprovider.FieldDisplayName:
 		return m.DisplayName()
-	case provider.FieldProviderGitURL:
+	case entprovider.FieldProviderGitURL:
 		return m.ProviderGitURL()
-	case provider.FieldProviderVersion:
+	case entprovider.FieldProviderVersion:
 		return m.ProviderVersion()
-	case provider.FieldConfigBytes:
+	case entprovider.FieldConfigBytes:
 		return m.ConfigBytes()
-	case provider.FieldIsLoaded:
+	case entprovider.FieldIsLoaded:
 		return m.IsLoaded()
 	}
 	return nil, false
@@ -4316,19 +4317,19 @@ func (m *ProviderMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *ProviderMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case provider.FieldCreatedAt:
+	case entprovider.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
-	case provider.FieldUpdatedAt:
+	case entprovider.FieldUpdatedAt:
 		return m.OldUpdatedAt(ctx)
-	case provider.FieldDisplayName:
+	case entprovider.FieldDisplayName:
 		return m.OldDisplayName(ctx)
-	case provider.FieldProviderGitURL:
+	case entprovider.FieldProviderGitURL:
 		return m.OldProviderGitURL(ctx)
-	case provider.FieldProviderVersion:
+	case entprovider.FieldProviderVersion:
 		return m.OldProviderVersion(ctx)
-	case provider.FieldConfigBytes:
+	case entprovider.FieldConfigBytes:
 		return m.OldConfigBytes(ctx)
-	case provider.FieldIsLoaded:
+	case entprovider.FieldIsLoaded:
 		return m.OldIsLoaded(ctx)
 	}
 	return nil, fmt.Errorf("unknown Provider field %s", name)
@@ -4339,49 +4340,49 @@ func (m *ProviderMutation) OldField(ctx context.Context, name string) (ent.Value
 // type.
 func (m *ProviderMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case provider.FieldCreatedAt:
+	case entprovider.FieldCreatedAt:
 		v, ok := value.(time.Time)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedAt(v)
 		return nil
-	case provider.FieldUpdatedAt:
+	case entprovider.FieldUpdatedAt:
 		v, ok := value.(time.Time)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUpdatedAt(v)
 		return nil
-	case provider.FieldDisplayName:
+	case entprovider.FieldDisplayName:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDisplayName(v)
 		return nil
-	case provider.FieldProviderGitURL:
+	case entprovider.FieldProviderGitURL:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetProviderGitURL(v)
 		return nil
-	case provider.FieldProviderVersion:
+	case entprovider.FieldProviderVersion:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetProviderVersion(v)
 		return nil
-	case provider.FieldConfigBytes:
+	case entprovider.FieldConfigBytes:
 		v, ok := value.([]byte)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetConfigBytes(v)
 		return nil
-	case provider.FieldIsLoaded:
+	case entprovider.FieldIsLoaded:
 		v, ok := value.(bool)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
@@ -4437,25 +4438,25 @@ func (m *ProviderMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *ProviderMutation) ResetField(name string) error {
 	switch name {
-	case provider.FieldCreatedAt:
+	case entprovider.FieldCreatedAt:
 		m.ResetCreatedAt()
 		return nil
-	case provider.FieldUpdatedAt:
+	case entprovider.FieldUpdatedAt:
 		m.ResetUpdatedAt()
 		return nil
-	case provider.FieldDisplayName:
+	case entprovider.FieldDisplayName:
 		m.ResetDisplayName()
 		return nil
-	case provider.FieldProviderGitURL:
+	case entprovider.FieldProviderGitURL:
 		m.ResetProviderGitURL()
 		return nil
-	case provider.FieldProviderVersion:
+	case entprovider.FieldProviderVersion:
 		m.ResetProviderVersion()
 		return nil
-	case provider.FieldConfigBytes:
+	case entprovider.FieldConfigBytes:
 		m.ResetConfigBytes()
 		return nil
-	case provider.FieldIsLoaded:
+	case entprovider.FieldIsLoaded:
 		m.ResetIsLoaded()
 		return nil
 	}
@@ -4466,7 +4467,7 @@ func (m *ProviderMutation) ResetField(name string) error {
 func (m *ProviderMutation) AddedEdges() []string {
 	edges := make([]string, 0, 1)
 	if m.blueprints != nil {
-		edges = append(edges, provider.EdgeBlueprints)
+		edges = append(edges, entprovider.EdgeBlueprints)
 	}
 	return edges
 }
@@ -4475,7 +4476,7 @@ func (m *ProviderMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *ProviderMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case provider.EdgeBlueprints:
+	case entprovider.EdgeBlueprints:
 		ids := make([]ent.Value, 0, len(m.blueprints))
 		for id := range m.blueprints {
 			ids = append(ids, id)
@@ -4489,7 +4490,7 @@ func (m *ProviderMutation) AddedIDs(name string) []ent.Value {
 func (m *ProviderMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 1)
 	if m.removedblueprints != nil {
-		edges = append(edges, provider.EdgeBlueprints)
+		edges = append(edges, entprovider.EdgeBlueprints)
 	}
 	return edges
 }
@@ -4498,7 +4499,7 @@ func (m *ProviderMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *ProviderMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
-	case provider.EdgeBlueprints:
+	case entprovider.EdgeBlueprints:
 		ids := make([]ent.Value, 0, len(m.removedblueprints))
 		for id := range m.removedblueprints {
 			ids = append(ids, id)
@@ -4512,7 +4513,7 @@ func (m *ProviderMutation) RemovedIDs(name string) []ent.Value {
 func (m *ProviderMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 1)
 	if m.clearedblueprints {
-		edges = append(edges, provider.EdgeBlueprints)
+		edges = append(edges, entprovider.EdgeBlueprints)
 	}
 	return edges
 }
@@ -4521,7 +4522,7 @@ func (m *ProviderMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *ProviderMutation) EdgeCleared(name string) bool {
 	switch name {
-	case provider.EdgeBlueprints:
+	case entprovider.EdgeBlueprints:
 		return m.clearedblueprints
 	}
 	return false
@@ -4539,7 +4540,7 @@ func (m *ProviderMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *ProviderMutation) ResetEdge(name string) error {
 	switch name {
-	case provider.EdgeBlueprints:
+	case entprovider.EdgeBlueprints:
 		m.ResetBlueprints()
 		return nil
 	}
@@ -4557,6 +4558,7 @@ type ResourceMutation struct {
 	_type              *resource.Type
 	key                *string
 	resource_type      *string
+	features           *provider.Features
 	object             **models.Object
 	clearedFields      map[string]struct{}
 	blueprint          *uuid.UUID
@@ -4856,6 +4858,55 @@ func (m *ResourceMutation) ResetResourceType() {
 	m.resource_type = nil
 }
 
+// SetFeatures sets the "features" field.
+func (m *ResourceMutation) SetFeatures(pr provider.Features) {
+	m.features = &pr
+}
+
+// Features returns the value of the "features" field in the mutation.
+func (m *ResourceMutation) Features() (r provider.Features, exists bool) {
+	v := m.features
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFeatures returns the old "features" field's value of the Resource entity.
+// If the Resource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ResourceMutation) OldFeatures(ctx context.Context) (v provider.Features, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFeatures is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFeatures requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFeatures: %w", err)
+	}
+	return oldValue.Features, nil
+}
+
+// ClearFeatures clears the value of the "features" field.
+func (m *ResourceMutation) ClearFeatures() {
+	m.features = nil
+	m.clearedFields[resource.FieldFeatures] = struct{}{}
+}
+
+// FeaturesCleared returns if the "features" field was cleared in this mutation.
+func (m *ResourceMutation) FeaturesCleared() bool {
+	_, ok := m.clearedFields[resource.FieldFeatures]
+	return ok
+}
+
+// ResetFeatures resets all changes to the "features" field.
+func (m *ResourceMutation) ResetFeatures() {
+	m.features = nil
+	delete(m.clearedFields, resource.FieldFeatures)
+}
+
 // SetObject sets the "object" field.
 func (m *ResourceMutation) SetObject(value *models.Object) {
 	m.object = &value
@@ -5073,7 +5124,7 @@ func (m *ResourceMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ResourceMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.created_at != nil {
 		fields = append(fields, resource.FieldCreatedAt)
 	}
@@ -5088,6 +5139,9 @@ func (m *ResourceMutation) Fields() []string {
 	}
 	if m.resource_type != nil {
 		fields = append(fields, resource.FieldResourceType)
+	}
+	if m.features != nil {
+		fields = append(fields, resource.FieldFeatures)
 	}
 	if m.object != nil {
 		fields = append(fields, resource.FieldObject)
@@ -5110,6 +5164,8 @@ func (m *ResourceMutation) Field(name string) (ent.Value, bool) {
 		return m.Key()
 	case resource.FieldResourceType:
 		return m.ResourceType()
+	case resource.FieldFeatures:
+		return m.Features()
 	case resource.FieldObject:
 		return m.Object()
 	}
@@ -5131,6 +5187,8 @@ func (m *ResourceMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldKey(ctx)
 	case resource.FieldResourceType:
 		return m.OldResourceType(ctx)
+	case resource.FieldFeatures:
+		return m.OldFeatures(ctx)
 	case resource.FieldObject:
 		return m.OldObject(ctx)
 	}
@@ -5177,6 +5235,13 @@ func (m *ResourceMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetResourceType(v)
 		return nil
+	case resource.FieldFeatures:
+		v, ok := value.(provider.Features)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFeatures(v)
+		return nil
 	case resource.FieldObject:
 		v, ok := value.(*models.Object)
 		if !ok {
@@ -5213,7 +5278,11 @@ func (m *ResourceMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ResourceMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(resource.FieldFeatures) {
+		fields = append(fields, resource.FieldFeatures)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -5226,6 +5295,11 @@ func (m *ResourceMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ResourceMutation) ClearField(name string) error {
+	switch name {
+	case resource.FieldFeatures:
+		m.ClearFeatures()
+		return nil
+	}
 	return fmt.Errorf("unknown Resource nullable field %s", name)
 }
 
@@ -5247,6 +5321,9 @@ func (m *ResourceMutation) ResetField(name string) error {
 		return nil
 	case resource.FieldResourceType:
 		m.ResetResourceType()
+		return nil
+	case resource.FieldFeatures:
+		m.ResetFeatures()
 		return nil
 	case resource.FieldObject:
 		m.ResetObject()

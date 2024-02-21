@@ -11,7 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
-	"github.com/cble-platform/cble-backend/ent/provider"
+	entprovider "github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/google/uuid"
 )
 
@@ -153,19 +153,19 @@ func (pc *ProviderCreate) ExecX(ctx context.Context) {
 // defaults sets the default values of the builder before save.
 func (pc *ProviderCreate) defaults() {
 	if _, ok := pc.mutation.CreatedAt(); !ok {
-		v := provider.DefaultCreatedAt()
+		v := entprovider.DefaultCreatedAt()
 		pc.mutation.SetCreatedAt(v)
 	}
 	if _, ok := pc.mutation.UpdatedAt(); !ok {
-		v := provider.DefaultUpdatedAt()
+		v := entprovider.DefaultUpdatedAt()
 		pc.mutation.SetUpdatedAt(v)
 	}
 	if _, ok := pc.mutation.IsLoaded(); !ok {
-		v := provider.DefaultIsLoaded
+		v := entprovider.DefaultIsLoaded
 		pc.mutation.SetIsLoaded(v)
 	}
 	if _, ok := pc.mutation.ID(); !ok {
-		v := provider.DefaultID()
+		v := entprovider.DefaultID()
 		pc.mutation.SetID(v)
 	}
 }
@@ -222,46 +222,46 @@ func (pc *ProviderCreate) sqlSave(ctx context.Context) (*Provider, error) {
 func (pc *ProviderCreate) createSpec() (*Provider, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Provider{config: pc.config}
-		_spec = sqlgraph.NewCreateSpec(provider.Table, sqlgraph.NewFieldSpec(provider.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(entprovider.Table, sqlgraph.NewFieldSpec(entprovider.FieldID, field.TypeUUID))
 	)
 	if id, ok := pc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
 	if value, ok := pc.mutation.CreatedAt(); ok {
-		_spec.SetField(provider.FieldCreatedAt, field.TypeTime, value)
+		_spec.SetField(entprovider.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
 	if value, ok := pc.mutation.UpdatedAt(); ok {
-		_spec.SetField(provider.FieldUpdatedAt, field.TypeTime, value)
+		_spec.SetField(entprovider.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
 	if value, ok := pc.mutation.DisplayName(); ok {
-		_spec.SetField(provider.FieldDisplayName, field.TypeString, value)
+		_spec.SetField(entprovider.FieldDisplayName, field.TypeString, value)
 		_node.DisplayName = value
 	}
 	if value, ok := pc.mutation.ProviderGitURL(); ok {
-		_spec.SetField(provider.FieldProviderGitURL, field.TypeString, value)
+		_spec.SetField(entprovider.FieldProviderGitURL, field.TypeString, value)
 		_node.ProviderGitURL = value
 	}
 	if value, ok := pc.mutation.ProviderVersion(); ok {
-		_spec.SetField(provider.FieldProviderVersion, field.TypeString, value)
+		_spec.SetField(entprovider.FieldProviderVersion, field.TypeString, value)
 		_node.ProviderVersion = value
 	}
 	if value, ok := pc.mutation.ConfigBytes(); ok {
-		_spec.SetField(provider.FieldConfigBytes, field.TypeBytes, value)
+		_spec.SetField(entprovider.FieldConfigBytes, field.TypeBytes, value)
 		_node.ConfigBytes = value
 	}
 	if value, ok := pc.mutation.IsLoaded(); ok {
-		_spec.SetField(provider.FieldIsLoaded, field.TypeBool, value)
+		_spec.SetField(entprovider.FieldIsLoaded, field.TypeBool, value)
 		_node.IsLoaded = value
 	}
 	if nodes := pc.mutation.BlueprintsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   provider.BlueprintsTable,
-			Columns: []string{provider.BlueprintsColumn},
+			Table:   entprovider.BlueprintsTable,
+			Columns: []string{entprovider.BlueprintsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(blueprint.FieldID, field.TypeUUID),

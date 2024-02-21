@@ -17,7 +17,8 @@ import (
 	"github.com/cble-platform/cble-backend/ent/deploymentnode"
 	"github.com/cble-platform/cble-backend/ent/grantedpermission"
 	"github.com/cble-platform/cble-backend/ent/group"
-	"github.com/cble-platform/cble-backend/ent/provider"
+
+	entprovider "github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/cble-platform/cble-backend/ent/user"
 )
@@ -85,7 +86,7 @@ func checkColumn(table, column string) error {
 			deploymentnode.Table:    deploymentnode.ValidColumn,
 			grantedpermission.Table: grantedpermission.ValidColumn,
 			group.Table:             group.ValidColumn,
-			provider.Table:          provider.ValidColumn,
+			entprovider.Table:       entprovider.ValidColumn,
 			resource.Table:          resource.ValidColumn,
 			user.Table:              user.ValidColumn,
 		})
