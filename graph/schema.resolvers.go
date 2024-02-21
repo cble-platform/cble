@@ -518,6 +518,11 @@ func (r *mutationResolver) ConfigureProvider(ctx context.Context, id uuid.UUID) 
 		return nil, gqlerror.Errorf("could not find provider with id %s: %v", id, err)
 	}
 
+	// Check the provider is loaded
+	if !entProvider.IsLoaded {
+		return nil, gqlerror.Errorf("provider is not loaded")
+	}
+
 	reply, err := r.cbleServer.Configure(ctx, entProvider)
 	if err != nil {
 		return nil, gqlerror.Errorf("failed to configure provider: %v", err)
@@ -545,7 +550,18 @@ func (r *mutationResolver) DeployBlueprint(ctx context.Context, id uuid.UUID, te
 	// Get the blueprint by ID
 	entBlueprint, err := r.ent.Blueprint.Get(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query blueprint: %v", err)
+		return nil, gqlerror.Errorf("failed to query blueprint: %v", err)
+	}
+
+	// Get the provider from blueprint
+	entProvider, err := entBlueprint.QueryProvider().Only(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query provider from blueprint: %v", err)
+	}
+
+	// Check the provider is loaded
+	if !entProvider.IsLoaded {
+		return nil, gqlerror.Errorf("provider is not loaded")
 	}
 
 	// Create a transactional client
@@ -593,6 +609,17 @@ func (r *mutationResolver) DestroyDeployment(ctx context.Context, id uuid.UUID) 
 		return nil, fmt.Errorf("failed to query deployment: %v", err)
 	}
 
+	// Get the provider from deployment
+	entProvider, err := entDeployment.QueryBlueprint().QueryProvider().Only(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query provider from deployment: %v", err)
+	}
+
+	// Check the provider is loaded
+	if !entProvider.IsLoaded {
+		return nil, gqlerror.Errorf("provider is not loaded")
+	}
+
 	// Spawn destruction routine
 	go engine.StartDestroy(r.ent, r.cbleServer, entDeployment)
 
@@ -610,6 +637,17 @@ func (r *mutationResolver) RedeployDeployment(ctx context.Context, id uuid.UUID,
 	entDeployment, err := r.ent.Deployment.Get(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query deployment: %v", err)
+	}
+
+	// Get the provider from deployment
+	entProvider, err := entDeployment.QueryBlueprint().QueryProvider().Only(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query provider from deployment: %v", err)
+	}
+
+	// Check the provider is loaded
+	if !entProvider.IsLoaded {
+		return nil, gqlerror.Errorf("provider is not loaded")
 	}
 
 	// Spawn destruction routine
@@ -641,6 +679,11 @@ func (r *mutationResolver) DeploymentNodePower(ctx context.Context, id uuid.UUID
 	entProvider, err := entDeploymentNode.QueryDeployment().QueryBlueprint().QueryProvider().Only(ctx)
 	if err != nil {
 		return false, gqlerror.Errorf("failed to query provider: %v", err)
+	}
+
+	// Check the provider is loaded
+	if !entProvider.IsLoaded {
+		return false, gqlerror.Errorf("provider is not loaded")
 	}
 
 	// Update the resource power state
@@ -675,6 +718,12 @@ func (r *mutationResolver) DeploymentPower(ctx context.Context, id uuid.UUID, st
 	if err != nil {
 		return false, gqlerror.Errorf("failed to query provider: %v", err)
 	}
+
+	// Check the provider is loaded
+	if !entProvider.IsLoaded {
+		return false, gqlerror.Errorf("provider is not loaded")
+	}
+
 	// Get all of the deployment nodes which support power feature
 	entDeploymentNodes, err := entDeployment.QueryDeploymentNodes().Where(
 		deploymentnode.HasResourceWith(func(s *sql.Selector) {
@@ -696,7 +745,7 @@ func (r *mutationResolver) DeploymentPower(ctx context.Context, id uuid.UUID, st
 			if err != nil {
 				graphql.AddErrorf(ctx, "transport error: %v", err)
 			}
-			if !reply.Success {
+			if reply != nil && !reply.Success {
 				if reply.Error != nil {
 					graphql.AddErrorf(ctx, "failed to update power state: %v", *reply.Error)
 				}

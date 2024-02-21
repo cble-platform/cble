@@ -18,7 +18,7 @@ import (
 )
 
 // DeploymentAutoSuspendWatchdog is designed to be executed as a go routine which searches for all deployments powered on which haven't been accessed in a time period
-func DeploymentAutoSuspendWatchdog(ctx context.Context, client *ent.Client, cbleServer *providers.CBLEServer, suspendTime int) {
+func DeploymentAutoSuspendWatchdog(ctx context.Context, client *ent.Client, cbleServer *providers.CBLEServer, suspendTime uint) {
 	// Query for stale deployments every 30 minutes
 	ticker := time.NewTicker(30 * time.Minute)
 
@@ -79,7 +79,7 @@ func powerOffDeployment(ctx context.Context, cbleServer *providers.CBLEServer, e
 			defer nodeWg.Done()
 			// Update the resource power state
 			reply, err = cbleServer.ResourcePower(ctx, entProvider, entDeploymentNode, provider.PowerState_OFF)
-			if !reply.Success {
+			if reply != nil && !reply.Success {
 				if reply.Error != nil {
 					err = fmt.Errorf("failed to power off node: %v", reply.Error)
 				} else {

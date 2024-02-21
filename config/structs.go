@@ -48,9 +48,9 @@ type ProvidersConfig struct {
 
 type AuthConfig struct {
 	JWTKey         string `yaml:"jwt_key"`
-	SessionTimeout int    `yaml:"session_timeout"`
+	SessionTimeout uint   `yaml:"session_timeout"`
 }
 
 type DeploymentsConfig struct {
-	AutoSuspendTime int `yaml:"auto_suspend_time"`
+	AutoSuspendTime uint `yaml:"auto_suspend_time"`
 }
