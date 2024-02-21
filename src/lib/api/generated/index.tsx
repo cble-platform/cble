@@ -543,6 +543,7 @@ export type Resource = {
   blueprint: Blueprint;
   createdAt: Scalars['Time']['output'];
   dependsOn: Array<Resource>;
+  features: ResourceFeatures;
   id: Scalars['ID']['output'];
   key: Scalars['String']['output'];
   object: Scalars['String']['output'];
@@ -550,6 +551,12 @@ export type Resource = {
   resourceType: Scalars['String']['output'];
   type: ResourceType;
   updatedAt: Scalars['Time']['output'];
+};
+
+export type ResourceFeatures = {
+  __typename?: 'ResourceFeatures';
+  console: Scalars['Boolean']['output'];
+  power: Scalars['Boolean']['output'];
 };
 
 export enum ResourceType {
@@ -590,6 +597,8 @@ export type UserPage = {
 
 export type BlueprintFragementFragment = { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> };
 
+export type ResourceFragmentFragment = { __typename?: 'Resource', id: string, createdAt: any, updatedAt: any, key: string, object: string, features: { __typename?: 'ResourceFeatures', power: boolean, console: boolean } };
+
 export type BlueprintsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -627,6 +636,8 @@ export type DeployBlueprintMutation = { __typename?: 'Mutation', deployBlueprint
 
 export type DeploymentFragmentFragment = { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any };
 
+export type DeploymentNodeFragmentFragment = { __typename?: 'DeploymentNode', id: string, createdAt: any, updatedAt: any, state: DeploymentNodeState, vars?: any | null, resource: { __typename?: 'Resource', id: string, createdAt: any, updatedAt: any, key: string, object: string, features: { __typename?: 'ResourceFeatures', power: boolean, console: boolean } }, nextNodes: Array<{ __typename?: 'DeploymentNode', id: string }> };
+
 export type ListDeploymentsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -637,7 +648,7 @@ export type GetDeploymentQueryVariables = Exact<{
 }>;
 
 
-export type GetDeploymentQuery = { __typename?: 'Query', deployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string }, deploymentNodes: Array<{ __typename?: 'DeploymentNode', id: string, createdAt: any, updatedAt: any, state: DeploymentNodeState, vars?: any | null, resource: { __typename?: 'Resource', id: string, createdAt: any, updatedAt: any, key: string, object: string }, nextNodes: Array<{ __typename?: 'DeploymentNode', id: string }> }> } };
+export type GetDeploymentQuery = { __typename?: 'Query', deployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string }, deploymentNodes: Array<{ __typename?: 'DeploymentNode', id: string, createdAt: any, updatedAt: any, state: DeploymentNodeState, vars?: any | null, resource: { __typename?: 'Resource', id: string, createdAt: any, updatedAt: any, key: string, object: string, features: { __typename?: 'ResourceFeatures', power: boolean, console: boolean } }, nextNodes: Array<{ __typename?: 'DeploymentNode', id: string }> }> } };
 
 export type UpdateDeploymentMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -819,6 +830,34 @@ export const DeploymentFragmentFragmentDoc = gql`
   templateVars
 }
     `;
+export const ResourceFragmentFragmentDoc = gql`
+    fragment ResourceFragment on Resource {
+  id
+  createdAt
+  updatedAt
+  key
+  features {
+    power
+    console
+  }
+  object
+}
+    `;
+export const DeploymentNodeFragmentFragmentDoc = gql`
+    fragment DeploymentNodeFragment on DeploymentNode {
+  id
+  createdAt
+  updatedAt
+  state
+  vars
+  resource {
+    ...ResourceFragment
+  }
+  nextNodes {
+    id
+  }
+}
+    ${ResourceFragmentFragmentDoc}`;
 export const GroupFragmentFragmentDoc = gql`
     fragment GroupFragment on Group {
   id
@@ -1107,27 +1146,14 @@ export const GetDeploymentDocument = gql`
       ...UserFragment
     }
     deploymentNodes {
-      id
-      createdAt
-      updatedAt
-      state
-      vars
-      resource {
-        id
-        createdAt
-        updatedAt
-        key
-        object
-      }
-      nextNodes {
-        id
-      }
+      ...DeploymentNodeFragment
     }
   }
 }
     ${DeploymentFragmentFragmentDoc}
 ${BlueprintFragementFragmentDoc}
-${UserFragmentFragmentDoc}`;
+${UserFragmentFragmentDoc}
+${DeploymentNodeFragmentFragmentDoc}`;
 
 /**
  * __useGetDeploymentQuery__

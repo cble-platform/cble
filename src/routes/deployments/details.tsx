@@ -25,13 +25,16 @@ import {
   Grid,
   ListItemIcon,
   CircularProgress,
+  Stack,
 } from '@mui/material'
 import {
   ChevronLeft,
   ExpandMore,
+  MonitorTwoTone,
   MoreHoriz,
   Power,
   PowerOff,
+  PowerTwoTone,
   RestartAlt,
 } from '@mui/icons-material'
 import ReactFlow, {
@@ -140,11 +143,26 @@ function DeploymentNodeNode({
 }) {
   return (
     <Card variant="outlined" sx={{ width: nodeWidth, height: nodeHeight }}>
-      <CardContent sx={{ p: '0.25rem !important' }}>
+      <CardContent
+        sx={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingX: 1,
+        }}
+      >
         <Handle type="target" position={Position.Top} />
         <Typography component="div" variant="h5" sx={{ fontSize: '0.75rem' }}>
           {data.resource.key}
         </Typography>
+        <Stack direction="row">
+          {data.resource.features.power && <PowerTwoTone fontSize="small" />}
+          {data.resource.features.console && (
+            <MonitorTwoTone fontSize="small" />
+          )}
+        </Stack>
         <Handle type="source" position={Position.Bottom} />
       </CardContent>
     </Card>
@@ -344,69 +362,80 @@ export default function DeploymentDetails() {
               role: 'listbox',
             }}
           >
-            <MenuItem
-              onClick={() => {
-                setSelectedResourceMenuItem(0)
-                handleDeploymentPower(PowerState.On)
-              }}
-              disabled={deploymentNodePowerLoading}
-            >
-              <ListItemIcon>
-                {deploymentNodePowerLoading &&
-                selectedResourceMenuItem === 0 ? (
-                  <CircularProgress
-                    size="small"
-                    color="secondary"
-                    sx={{ width: '1rem' }}
-                  />
-                ) : (
-                  <Power fontSize="small" />
-                )}
-              </ListItemIcon>
-              <ListItemText>Power On</ListItemText>
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                setSelectedResourceMenuItem(1)
-                handleDeploymentPower(PowerState.Off)
-              }}
-              disabled={deploymentNodePowerLoading}
-            >
-              <ListItemIcon>
-                {deploymentNodePowerLoading &&
-                selectedResourceMenuItem === 1 ? (
-                  <CircularProgress
-                    size="small"
-                    color="secondary"
-                    sx={{ width: '1rem' }}
-                  />
-                ) : (
-                  <PowerOff fontSize="small" />
-                )}
-              </ListItemIcon>
-              <ListItemText>Power Off</ListItemText>
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                setSelectedResourceMenuItem(2)
-                handleDeploymentPower(PowerState.Reset)
-              }}
-              disabled={deploymentNodePowerLoading}
-            >
-              <ListItemIcon>
-                {deploymentNodePowerLoading &&
-                selectedResourceMenuItem === 2 ? (
-                  <CircularProgress
-                    size="small"
-                    color="secondary"
-                    sx={{ width: '1rem' }}
-                  />
-                ) : (
-                  <RestartAlt fontSize="small" />
-                )}
-              </ListItemIcon>
-              <ListItemText>Reset</ListItemText>
-            </MenuItem>
+            {}
+            {getDeploymentData?.deployment.deploymentNodes[
+              selectedResourceIndex
+            ].resource.features.power ? (
+              <>
+                <MenuItem
+                  onClick={() => {
+                    setSelectedResourceMenuItem(0)
+                    handleDeploymentPower(PowerState.On)
+                  }}
+                  disabled={deploymentNodePowerLoading}
+                >
+                  <ListItemIcon>
+                    {deploymentNodePowerLoading &&
+                    selectedResourceMenuItem === 0 ? (
+                      <CircularProgress
+                        size="small"
+                        color="secondary"
+                        sx={{ width: '1rem' }}
+                      />
+                    ) : (
+                      <Power fontSize="small" />
+                    )}
+                  </ListItemIcon>
+                  <ListItemText>Power On</ListItemText>
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setSelectedResourceMenuItem(1)
+                    handleDeploymentPower(PowerState.Off)
+                  }}
+                  disabled={deploymentNodePowerLoading}
+                >
+                  <ListItemIcon>
+                    {deploymentNodePowerLoading &&
+                    selectedResourceMenuItem === 1 ? (
+                      <CircularProgress
+                        size="small"
+                        color="secondary"
+                        sx={{ width: '1rem' }}
+                      />
+                    ) : (
+                      <PowerOff fontSize="small" />
+                    )}
+                  </ListItemIcon>
+                  <ListItemText>Power Off</ListItemText>
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setSelectedResourceMenuItem(2)
+                    handleDeploymentPower(PowerState.Reset)
+                  }}
+                  disabled={deploymentNodePowerLoading}
+                >
+                  <ListItemIcon>
+                    {deploymentNodePowerLoading &&
+                    selectedResourceMenuItem === 2 ? (
+                      <CircularProgress
+                        size="small"
+                        color="secondary"
+                        sx={{ width: '1rem' }}
+                      />
+                    ) : (
+                      <RestartAlt fontSize="small" />
+                    )}
+                  </ListItemIcon>
+                  <ListItemText>Reset</ListItemText>
+                </MenuItem>
+              </>
+            ) : (
+              <MenuItem disabled>
+                <ListItemText>Power Controls Not Available</ListItemText>
+              </MenuItem>
+            )}
           </Menu>
         </Grid>
         <Grid item md={9}>
