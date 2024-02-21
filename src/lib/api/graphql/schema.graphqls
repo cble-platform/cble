@@ -144,6 +144,7 @@ enum Action {
   deployment_delete
   deployment_destroy
   deployment_redeploy
+  deployment_power
   deployment_console
   group_list
   group_create
@@ -464,6 +465,10 @@ type Mutation {
   Control the power state of a deployment node
   """
   deploymentNodePower(id: ID!, state: PowerState!): Boolean!
+  """
+  Control the power state of a deployment
+  """
+  deploymentPower(id: ID!, state: PowerState!): Boolean!
   # """
   # Get a vm console (requires permission `x.x.deployments.x.console`)
   # """
