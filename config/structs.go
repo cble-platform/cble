@@ -1,5 +1,7 @@
 package config
 
+import "time"
+
 type Config struct {
 	Debug          bool                 `yaml:"debug,omitempty"`
 	Server         ServerConfig         `yaml:"server"`
@@ -47,10 +49,11 @@ type ProvidersConfig struct {
 }
 
 type AuthConfig struct {
-	JWTKey         string `yaml:"jwt_key"`
-	SessionTimeout uint   `yaml:"session_timeout"`
+	JWTKey         string        `yaml:"jwt_key"`
+	SessionTimeout time.Duration `yaml:"session_timeout"`
 }
 
 type DeploymentsConfig struct {
-	AutoSuspendTime uint `yaml:"auto_suspend_time"`
+	AutoSuspendTime time.Duration `yaml:"auto_suspend_time"`
+	LeaseTime       time.Duration `yaml:"lease_time"`
 }

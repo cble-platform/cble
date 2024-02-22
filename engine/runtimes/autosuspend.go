@@ -18,7 +18,7 @@ import (
 )
 
 // DeploymentAutoSuspendWatchdog is designed to be executed as a go routine which searches for all deployments powered on which haven't been accessed in a time period
-func DeploymentAutoSuspendWatchdog(ctx context.Context, client *ent.Client, cbleServer *providers.CBLEServer, suspendTime uint) {
+func DeploymentAutoSuspendWatchdog(ctx context.Context, client *ent.Client, cbleServer *providers.CBLEServer, suspendTime time.Duration) {
 	// Query for stale deployments every 30 minutes
 	ticker := time.NewTicker(30 * time.Minute)
 
@@ -31,8 +31,8 @@ func DeploymentAutoSuspendWatchdog(ctx context.Context, client *ent.Client, cble
 
 			// Find all deployments which are considered "stale"
 			staleDeployments, err := client.Deployment.Query().Where(
-				deployment.StateEQ(deployment.StateComplete),                                            // Is currently in the COMPLETE (powered on) state
-				deployment.LastAccessedLTE(time.Now().Add(-(time.Duration(suspendTime) * time.Minute))), // last accessed at least suspendTime ago
+				deployment.StateEQ(deployment.StateComplete),                         // Is currently in the COMPLETE (powered on) state
+				deployment.LastAccessedLTE(time.Now().Add(-suspendTime*time.Minute)), // last accessed at least suspendTime ago
 			).All(ctx)
 			if err != nil {
 				logrus.WithField("component", "AUTO_SUSPEND").Errorf("failed to query stale deployments for auto-suspend: %v", err)
