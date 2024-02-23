@@ -17,8 +17,13 @@ type PermissionAction string
 /*
 enum Action {
 {{- range $target, $actions := . }}
-{{- range $actions }}
-  {{ $target -}}_{{- . }}
+{{- range $actions.Content }}
+	{{- if ne .LineComment "" }}
+	"""
+	{{ .LineComment | TrimCommentPrefix }}
+	"""
+	{{- end }}
+  {{ $target -}}_{{- .Value }}
 {{- end }}
 {{- end }}
 }
@@ -26,9 +31,15 @@ enum Action {
 
 const (
   {{- range $target, $actions := . }}
+	// -----------------------------------------------------------------
   // {{ $target | Title }}
-  {{- range $actions }}
-  Action{{- $target | Title -}}{{- . | Title }} PermissionAction = "{{- $target -}}_{{- . -}}"
+	// -----------------------------------------------------------------
+
+  {{ range $actions.Content }}
+	{{- if ne .LineComment "" }}
+	// {{ .LineComment | TrimCommentPrefix }}
+	{{- end }}
+  Action{{- $target | Title -}}{{- .Value | Title }} PermissionAction = "{{- $target | ToLower -}}_{{- .Value | ToLower -}}"
   {{- end }}
   {{- end }}
 	// Returned for any potential errors
@@ -49,8 +60,8 @@ var actionMap = map[string]map[string]PermissionAction{
   {{- range $target, $actions := . }}
   // {{ $target | Title }}
   "{{- $target | ToLower -}}": {
-  {{- range $actions }}
-    "{{- . | ToLower -}}": Action{{- $target | Title -}}{{- . | Title -}},
+  {{- range $actions.Content }}
+    "{{- .Value | ToLower -}}": Action{{- $target | Title -}}{{- .Value | Title -}},
   {{- end }}
   },
   {{- end }}
@@ -70,8 +81,8 @@ func Get(object string, action string) PermissionAction {
 func (PermissionAction) Values() (kinds []string) {
   for _, s := range []PermissionAction{
     {{- range $target, $actions := . }}
-    {{- range $actions }}
-    Action{{- $target | Title -}}{{- . | Title -}},
+    {{- range $actions.Content }}
+    Action{{- $target | Title -}}{{- .Value | Title -}},
     {{- end }}
     {{- end }}
     ActionUnknown,
@@ -81,7 +92,7 @@ func (PermissionAction) Values() (kinds []string) {
   return
 }
 
-func MarshalUUID(val PermissionAction) graphql.Marshaler {
+func MarshalPermissionAction(val PermissionAction) graphql.Marshaler {
 	return graphql.WriterFunc(func(w io.Writer) {
 		err := json.NewEncoder(w).Encode(val)
 		if err != nil {
@@ -90,7 +101,7 @@ func MarshalUUID(val PermissionAction) graphql.Marshaler {
 	})
 }
 
-func UnmarshalUUID(v interface{}) (PermissionAction, error) {
+func UnmarshalPermissionAction(v interface{}) (PermissionAction, error) {
 	if m, ok := v.(string); ok {
 		return PermissionAction(m), nil
 	}

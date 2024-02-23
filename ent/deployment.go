@@ -35,6 +35,8 @@ type Deployment struct {
 	State deployment.State `json:"state,omitempty"`
 	// Stores the variable values to be injected into the blueprint template
 	TemplateVars map[string]string `json:"template_vars,omitempty"`
+	// The time this deployment expires
+	ExpiresAt time.Time `json:"expires_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DeploymentQuery when eager-loading is set.
 	Edges                DeploymentEdges `json:"edges"`
@@ -100,7 +102,7 @@ func (*Deployment) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case deployment.FieldName, deployment.FieldDescription, deployment.FieldState:
 			values[i] = new(sql.NullString)
-		case deployment.FieldCreatedAt, deployment.FieldUpdatedAt, deployment.FieldLastAccessed:
+		case deployment.FieldCreatedAt, deployment.FieldUpdatedAt, deployment.FieldLastAccessed, deployment.FieldExpiresAt:
 			values[i] = new(sql.NullTime)
 		case deployment.FieldID:
 			values[i] = new(uuid.UUID)
@@ -172,6 +174,12 @@ func (d *Deployment) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &d.TemplateVars); err != nil {
 					return fmt.Errorf("unmarshal field template_vars: %w", err)
 				}
+			}
+		case deployment.FieldExpiresAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field expires_at", values[i])
+			} else if value.Valid {
+				d.ExpiresAt = value.Time
 			}
 		case deployment.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -258,6 +266,9 @@ func (d *Deployment) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("template_vars=")
 	builder.WriteString(fmt.Sprintf("%v", d.TemplateVars))
+	builder.WriteString(", ")
+	builder.WriteString("expires_at=")
+	builder.WriteString(d.ExpiresAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

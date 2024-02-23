@@ -43,11 +43,12 @@ var templateFuncs = template.FuncMap{
 	"Title":   cases.Title(language.AmericanEnglish).String,
 	"ToUpper": strings.ToUpper,
 	"ToLower": strings.ToLower,
+	"TrimCommentPrefix": func(s string) string {
+		return strings.TrimLeft(s, "# ")
+	},
 }
 
 func main() {
-	// fmt.Printf("Running %s go on %s\n", os.Args[0], os.Getenv("GOFILE"))
-
 	cwd, err := os.Getwd()
 	if err != nil {
 		panic(err)
@@ -61,7 +62,7 @@ func main() {
 	}
 
 	// Marshal the file as a map for the templates
-	var actionsMap map[string][]string
+	var actionsMap map[string]yaml.Node
 	err = yaml.Unmarshal(actionsFileBytes, &actionsMap)
 	if err != nil {
 		panic(fmt.Errorf("failed to unmarshal actions.yml file: %v", err))

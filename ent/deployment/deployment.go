@@ -30,6 +30,8 @@ const (
 	FieldState = "state"
 	// FieldTemplateVars holds the string denoting the template_vars field in the database.
 	FieldTemplateVars = "template_vars"
+	// FieldExpiresAt holds the string denoting the expires_at field in the database.
+	FieldExpiresAt = "expires_at"
 	// EdgeBlueprint holds the string denoting the blueprint edge name in mutations.
 	EdgeBlueprint = "blueprint"
 	// EdgeDeploymentNodes holds the string denoting the deployment_nodes edge name in mutations.
@@ -71,6 +73,7 @@ var Columns = []string{
 	FieldDescription,
 	FieldState,
 	FieldTemplateVars,
+	FieldExpiresAt,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "deployments"
@@ -173,6 +176,11 @@ func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 // ByState orders the results by the state field.
 func ByState(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldState, opts...).ToFunc()
+}
+
+// ByExpiresAt orders the results by the expires_at field.
+func ByExpiresAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExpiresAt, opts...).ToFunc()
 }
 
 // ByBlueprintField orders the results by blueprint field.

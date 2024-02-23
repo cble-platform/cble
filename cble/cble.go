@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/cble-platform/cble-backend/config"
-	"github.com/cble-platform/cble-backend/engine/runtimes"
+	"github.com/cble-platform/cble-backend/engine"
 	"github.com/cble-platform/cble-backend/internal/database"
 	"github.com/cble-platform/cble-backend/internal/defaultadmin"
 	"github.com/cble-platform/cble-backend/internal/webserver"
@@ -119,7 +119,8 @@ func (s *CBLEServer) Run(ctx context.Context, wg *sync.WaitGroup) {
 	// Runtimes //
 	//----------//
 
-	go runtimes.DeploymentAutoSuspendWatchdog(ctx, s.Ent, s.GRPCServer, s.Config.Deployments.AutoSuspendTime)
+	go engine.AutoSuspendDeploymentWatchdog(ctx, s.Ent, s.GRPCServer, s.Config.Deployments.AutoSuspendTime)
+	go engine.AutoDestroyExpiredDeploymentWatchdog(ctx, s.Ent, s.GRPCServer)
 }
 
 // Shutdown should be called after Run returns

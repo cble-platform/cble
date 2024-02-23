@@ -84,6 +84,7 @@ type ComplexityRoot struct {
 		CreatedAt       func(childComplexity int) int
 		DeploymentNodes func(childComplexity int) int
 		Description     func(childComplexity int) int
+		ExpiresAt       func(childComplexity int) int
 		ID              func(childComplexity int) int
 		Name            func(childComplexity int) int
 		Requester       func(childComplexity int) int
@@ -193,6 +194,7 @@ type ComplexityRoot struct {
 		Groups               func(childComplexity int, count int, offset *int) int
 		Me                   func(childComplexity int) int
 		MeHasPermission      func(childComplexity int, objectType grantedpermission.ObjectType, objectID *uuid.UUID, action actions.PermissionAction) int
+		MyDeployments        func(childComplexity int, includeExpiredAndDestroyed bool, count int, offset *int) int
 		Permission           func(childComplexity int, id uuid.UUID) int
 		Permissions          func(childComplexity int, count int, offset *int) int
 		Provider             func(childComplexity int, id uuid.UUID) int
@@ -314,6 +316,7 @@ type QueryResolver interface {
 	DeployableBlueprints(ctx context.Context, count int, offset *int) (*model.BlueprintPage, error)
 	Blueprint(ctx context.Context, id uuid.UUID) (*ent.Blueprint, error)
 	Deployments(ctx context.Context, count int, offset *int) (*model.DeploymentPage, error)
+	MyDeployments(ctx context.Context, includeExpiredAndDestroyed bool, count int, offset *int) (*model.DeploymentPage, error)
 	Deployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error)
 	SearchUsers(ctx context.Context, search string, count int, offset *int) (*model.UserPage, error)
 	SearchGroups(ctx context.Context, search string, count int, offset *int) (*model.GroupPage, error)
@@ -461,6 +464,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Deployment.Description(childComplexity), true
+
+	case "Deployment.expiresAt":
+		if e.complexity.Deployment.ExpiresAt == nil {
+			break
+		}
+
+		return e.complexity.Deployment.ExpiresAt(childComplexity), true
 
 	case "Deployment.id":
 		if e.complexity.Deployment.ID == nil {
@@ -1175,6 +1185,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.MeHasPermission(childComplexity, args["objectType"].(grantedpermission.ObjectType), args["objectID"].(*uuid.UUID), args["action"].(actions.PermissionAction)), true
 
+	case "Query.myDeployments":
+		if e.complexity.Query.MyDeployments == nil {
+			break
+		}
+
+		args, err := ec.field_Query_myDeployments_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.MyDeployments(childComplexity, args["includeExpiredAndDestroyed"].(bool), args["count"].(int), args["offset"].(*int)), true
+
 	case "Query.permission":
 		if e.complexity.Query.Permission == nil {
 			break
@@ -1602,11 +1624,12 @@ type Resource {
 }
 
 enum DeploymentState {
-  AWAITING
-  INPROGRESS
-  COMPLETE
-  FAILED
-  DELETED
+  awaiting
+  in_progress
+  complete
+  failed
+  destroyed
+  suspended
 }
 
 type Deployment {
@@ -1617,6 +1640,7 @@ type Deployment {
   description: String!
   state: DeploymentState!
   templateVars: StrMap!
+  expiresAt: Time!
 
   blueprint: Blueprint!
   deploymentNodes: [DeploymentNode!]!
@@ -1629,15 +1653,16 @@ type DeploymentPage {
 }
 
 enum DeploymentNodeState {
-  AWAITING
-  PARENTAWAITING
-  INPROGRESS
-  COMPLETE
-  TAINTED
-  FAILED
-  TODELETE
-  DELETED
-  TOREBUILD
+  to_deploy
+  to_destroy
+  to_rebuild
+  parent_awaiting
+  child_awaiting
+  in_progress
+  complete
+  tainted
+  failed
+  destroyed
 }
 
 type DeploymentNode {
@@ -1682,42 +1707,149 @@ enum ObjectType {
 }
 
 enum Action {
+  """
+  List all blueprints (only compatible with wildcard ID *)
+  """
   blueprint_list
+  """
+  Create blueprints (only compatible with wildcard ID *)
+  """
   blueprint_create
+  """
+  Get a given blueprint
+  """
   blueprint_get
+  """
+  Update a given blueprint
+  """
   blueprint_update
+  """
+  Delete a given blueprint
+  """
   blueprint_delete
+  """
+  Deploy a given blueprint
+  """
   blueprint_deploy
+  """
+  List all deployments (only compatible with wildcard ID *)
+  """
   deployment_list
-  deployment_create
+  """
+  Get a given deployment
+  """
   deployment_get
+  """
+  Update a given deployment
+  """
   deployment_update
+  """
+  Delete a given deployment
+  """
   deployment_delete
+  """
+  Destroy a given deployment
+  """
   deployment_destroy
+  """
+  Redeploy a given deployment
+  """
   deployment_redeploy
+  """
+  Control the power state of resources in a given deployment
+  """
   deployment_power
+  """
+  Get the console of resources in a given deployment
+  """
   deployment_console
+  """
+  List all groups (only compatible with wildcard ID *)
+  """
   group_list
+  """
+  Create groups
+  """
   group_create
+  """
+  Get a given group
+  """
   group_get
+  """
+  Update a given group
+  """
   group_update
+  """
+  Delete a given group
+  """
   group_delete
+  """
+  List all permissions (only compatible with wildcard ID *)
+  """
   permission_list
+  """
+  Get a given permission
+  """
   permission_get
+  """
+  Grant permissions (only compatible with wildcard ID *)
+  """
   permission_grant
+  """
+  Revoke permissions (only compatible with wildcard ID *)
+  """
   permission_revoke
+  """
+  List all providers (only compatible with wildcard ID *)
+  """
   provider_list
+  """
+  Create providers
+  """
   provider_create
+  """
+  Get a given provider
+  """
   provider_get
+  """
+  Update a given provider
+  """
   provider_update
+  """
+  Delete a given provider
+  """
   provider_delete
+  """
+  Load a given provider
+  """
   provider_load
+  """
+  Unload a given provider
+  """
   provider_unload
+  """
+  Configure a given provider
+  """
   provider_configure
+  """
+  List all users (only compatible with wildcard ID *)
+  """
   user_list
+  """
+  Create users
+  """
   user_create
+  """
+  Get a given user
+  """
   user_get
+  """
+  Update a given user
+  """
   user_update
+  """
+  Delete a given user
+  """
   user_delete
 }
 
@@ -1832,6 +1964,10 @@ type Query {
   List deployments (requires permission ` + "`" + `x.x.deployments.*.list` + "`" + `)
   """
   deployments(count: Int! = 10, offset: Int): DeploymentPage!
+  """
+  List deployments user is the requester of
+  """
+  myDeployments(includeExpiredAndDestroyed: Boolean! = false, count: Int! = 10, offset: Int): DeploymentPage!
   """
   Get a deployment (requires permission ` + "`" + `x.x.deployments.x.get` + "`" + `)
   """
@@ -2728,6 +2864,39 @@ func (ec *executionContext) field_Query_meHasPermission_args(ctx context.Context
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_myDeployments_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 bool
+	if tmp, ok := rawArgs["includeExpiredAndDestroyed"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeExpiredAndDestroyed"))
+		arg0, err = ec.unmarshalNBoolean2bool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["includeExpiredAndDestroyed"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["count"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("count"))
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["count"] = arg1
+	var arg2 *int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg2, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg2
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_permission_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -3442,6 +3611,8 @@ func (ec *executionContext) fieldContext_Blueprint_deployments(ctx context.Conte
 				return ec.fieldContext_Deployment_state(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
 			case "deploymentNodes":
@@ -3868,6 +4039,50 @@ func (ec *executionContext) fieldContext_Deployment_templateVars(ctx context.Con
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type StrMap does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Deployment_expiresAt(ctx context.Context, field graphql.CollectedField, obj *ent.Deployment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Deployment_expiresAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ExpiresAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Deployment_expiresAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Deployment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4337,6 +4552,8 @@ func (ec *executionContext) fieldContext_DeploymentNode_deployment(ctx context.C
 				return ec.fieldContext_Deployment_state(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
 			case "deploymentNodes":
@@ -4599,6 +4816,8 @@ func (ec *executionContext) fieldContext_DeploymentPage_deployments(ctx context.
 				return ec.fieldContext_Deployment_state(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
 			case "deploymentNodes":
@@ -6543,6 +6762,8 @@ func (ec *executionContext) fieldContext_Mutation_updateDeployment(ctx context.C
 				return ec.fieldContext_Deployment_state(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
 			case "deploymentNodes":
@@ -6845,6 +7066,8 @@ func (ec *executionContext) fieldContext_Mutation_deployBlueprint(ctx context.Co
 				return ec.fieldContext_Deployment_state(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
 			case "deploymentNodes":
@@ -6922,6 +7145,8 @@ func (ec *executionContext) fieldContext_Mutation_destroyDeployment(ctx context.
 				return ec.fieldContext_Deployment_state(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
 			case "deploymentNodes":
@@ -6999,6 +7224,8 @@ func (ec *executionContext) fieldContext_Mutation_redeployDeployment(ctx context
 				return ec.fieldContext_Deployment_state(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
 			case "deploymentNodes":
@@ -8571,6 +8798,67 @@ func (ec *executionContext) fieldContext_Query_deployments(ctx context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_myDeployments(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_myDeployments(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().MyDeployments(rctx, fc.Args["includeExpiredAndDestroyed"].(bool), fc.Args["count"].(int), fc.Args["offset"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.DeploymentPage)
+	fc.Result = res
+	return ec.marshalNDeploymentPage2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐDeploymentPage(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_myDeployments(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "deployments":
+				return ec.fieldContext_DeploymentPage_deployments(ctx, field)
+			case "total":
+				return ec.fieldContext_DeploymentPage_total(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DeploymentPage", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_myDeployments_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_deployment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_deployment(ctx, field)
 	if err != nil {
@@ -8624,6 +8912,8 @@ func (ec *executionContext) fieldContext_Query_deployment(ctx context.Context, f
 				return ec.fieldContext_Deployment_state(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
 			case "deploymentNodes":
@@ -9964,6 +10254,8 @@ func (ec *executionContext) fieldContext_User_deployments(ctx context.Context, f
 				return ec.fieldContext_Deployment_state(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
 			case "deploymentNodes":
@@ -12400,6 +12692,11 @@ func (ec *executionContext) _Deployment(ctx context.Context, sel ast.SelectionSe
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "expiresAt":
+			out.Values[i] = ec._Deployment_expiresAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "blueprint":
 			field := field
 
@@ -13810,6 +14107,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "myDeployments":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_myDeployments(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "deployment":
 			field := field
 
@@ -14707,13 +15026,12 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 // region    ***************************** type.gotpl *****************************
 
 func (ec *executionContext) unmarshalNAction2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋpermissionᚋactionsᚐPermissionAction(ctx context.Context, v interface{}) (actions.PermissionAction, error) {
-	tmp, err := graphql.UnmarshalString(v)
-	res := actions.PermissionAction(tmp)
+	res, err := actions.UnmarshalPermissionAction(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNAction2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋpermissionᚋactionsᚐPermissionAction(ctx context.Context, sel ast.SelectionSet, v actions.PermissionAction) graphql.Marshaler {
-	res := graphql.MarshalString(string(v))
+	res := actions.MarshalPermissionAction(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
