@@ -43,6 +43,7 @@ var (
 		{Name: "description", Type: field.TypeString},
 		{Name: "state", Type: field.TypeEnum, Enums: []string{"awaiting", "in_progress", "complete", "failed", "destroyed", "suspended"}},
 		{Name: "template_vars", Type: field.TypeJSON},
+		{Name: "expires_at", Type: field.TypeTime},
 		{Name: "deployment_blueprint", Type: field.TypeUUID},
 		{Name: "deployment_requester", Type: field.TypeUUID},
 	}
@@ -54,13 +55,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "deployments_blueprints_blueprint",
-				Columns:    []*schema.Column{DeploymentsColumns[8]},
+				Columns:    []*schema.Column{DeploymentsColumns[9]},
 				RefColumns: []*schema.Column{BlueprintsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "deployments_users_requester",
-				Columns:    []*schema.Column{DeploymentsColumns[9]},
+				Columns:    []*schema.Column{DeploymentsColumns[10]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},

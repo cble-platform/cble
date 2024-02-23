@@ -106,6 +106,20 @@ func (du *DeploymentUpdate) SetTemplateVars(m map[string]string) *DeploymentUpda
 	return du
 }
 
+// SetExpiresAt sets the "expires_at" field.
+func (du *DeploymentUpdate) SetExpiresAt(t time.Time) *DeploymentUpdate {
+	du.mutation.SetExpiresAt(t)
+	return du
+}
+
+// SetNillableExpiresAt sets the "expires_at" field if the given value is not nil.
+func (du *DeploymentUpdate) SetNillableExpiresAt(t *time.Time) *DeploymentUpdate {
+	if t != nil {
+		du.SetExpiresAt(*t)
+	}
+	return du
+}
+
 // SetBlueprintID sets the "blueprint" edge to the Blueprint entity by ID.
 func (du *DeploymentUpdate) SetBlueprintID(id uuid.UUID) *DeploymentUpdate {
 	du.mutation.SetBlueprintID(id)
@@ -265,6 +279,9 @@ func (du *DeploymentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := du.mutation.TemplateVars(); ok {
 		_spec.SetField(deployment.FieldTemplateVars, field.TypeJSON, value)
+	}
+	if value, ok := du.mutation.ExpiresAt(); ok {
+		_spec.SetField(deployment.FieldExpiresAt, field.TypeTime, value)
 	}
 	if du.mutation.BlueprintCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -463,6 +480,20 @@ func (duo *DeploymentUpdateOne) SetTemplateVars(m map[string]string) *Deployment
 	return duo
 }
 
+// SetExpiresAt sets the "expires_at" field.
+func (duo *DeploymentUpdateOne) SetExpiresAt(t time.Time) *DeploymentUpdateOne {
+	duo.mutation.SetExpiresAt(t)
+	return duo
+}
+
+// SetNillableExpiresAt sets the "expires_at" field if the given value is not nil.
+func (duo *DeploymentUpdateOne) SetNillableExpiresAt(t *time.Time) *DeploymentUpdateOne {
+	if t != nil {
+		duo.SetExpiresAt(*t)
+	}
+	return duo
+}
+
 // SetBlueprintID sets the "blueprint" edge to the Blueprint entity by ID.
 func (duo *DeploymentUpdateOne) SetBlueprintID(id uuid.UUID) *DeploymentUpdateOne {
 	duo.mutation.SetBlueprintID(id)
@@ -652,6 +683,9 @@ func (duo *DeploymentUpdateOne) sqlSave(ctx context.Context) (_node *Deployment,
 	}
 	if value, ok := duo.mutation.TemplateVars(); ok {
 		_spec.SetField(deployment.FieldTemplateVars, field.TypeJSON, value)
+	}
+	if value, ok := duo.mutation.ExpiresAt(); ok {
+		_spec.SetField(deployment.FieldExpiresAt, field.TypeTime, value)
 	}
 	if duo.mutation.BlueprintCleared() {
 		edge := &sqlgraph.EdgeSpec{

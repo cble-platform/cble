@@ -895,6 +895,7 @@ type DeploymentMutation struct {
 	description             *string
 	state                   *deployment.State
 	template_vars           *map[string]string
+	expires_at              *time.Time
 	clearedFields           map[string]struct{}
 	blueprint               *uuid.UUID
 	clearedblueprint        bool
@@ -1277,6 +1278,42 @@ func (m *DeploymentMutation) ResetTemplateVars() {
 	m.template_vars = nil
 }
 
+// SetExpiresAt sets the "expires_at" field.
+func (m *DeploymentMutation) SetExpiresAt(t time.Time) {
+	m.expires_at = &t
+}
+
+// ExpiresAt returns the value of the "expires_at" field in the mutation.
+func (m *DeploymentMutation) ExpiresAt() (r time.Time, exists bool) {
+	v := m.expires_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiresAt returns the old "expires_at" field's value of the Deployment entity.
+// If the Deployment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DeploymentMutation) OldExpiresAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiresAt: %w", err)
+	}
+	return oldValue.ExpiresAt, nil
+}
+
+// ResetExpiresAt resets all changes to the "expires_at" field.
+func (m *DeploymentMutation) ResetExpiresAt() {
+	m.expires_at = nil
+}
+
 // SetBlueprintID sets the "blueprint" edge to the Blueprint entity by id.
 func (m *DeploymentMutation) SetBlueprintID(id uuid.UUID) {
 	m.blueprint = &id
@@ -1443,7 +1480,7 @@ func (m *DeploymentMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *DeploymentMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.created_at != nil {
 		fields = append(fields, deployment.FieldCreatedAt)
 	}
@@ -1464,6 +1501,9 @@ func (m *DeploymentMutation) Fields() []string {
 	}
 	if m.template_vars != nil {
 		fields = append(fields, deployment.FieldTemplateVars)
+	}
+	if m.expires_at != nil {
+		fields = append(fields, deployment.FieldExpiresAt)
 	}
 	return fields
 }
@@ -1487,6 +1527,8 @@ func (m *DeploymentMutation) Field(name string) (ent.Value, bool) {
 		return m.State()
 	case deployment.FieldTemplateVars:
 		return m.TemplateVars()
+	case deployment.FieldExpiresAt:
+		return m.ExpiresAt()
 	}
 	return nil, false
 }
@@ -1510,6 +1552,8 @@ func (m *DeploymentMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldState(ctx)
 	case deployment.FieldTemplateVars:
 		return m.OldTemplateVars(ctx)
+	case deployment.FieldExpiresAt:
+		return m.OldExpiresAt(ctx)
 	}
 	return nil, fmt.Errorf("unknown Deployment field %s", name)
 }
@@ -1567,6 +1611,13 @@ func (m *DeploymentMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetTemplateVars(v)
+		return nil
+	case deployment.FieldExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiresAt(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Deployment field %s", name)
@@ -1646,6 +1697,9 @@ func (m *DeploymentMutation) ResetField(name string) error {
 		return nil
 	case deployment.FieldTemplateVars:
 		m.ResetTemplateVars()
+		return nil
+	case deployment.FieldExpiresAt:
+		m.ResetExpiresAt()
 		return nil
 	}
 	return fmt.Errorf("unknown Deployment field %s", name)

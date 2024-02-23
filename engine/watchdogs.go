@@ -1,4 +1,4 @@
-package runtimes
+package engine
 
 import (
 	"context"
@@ -17,8 +17,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// DeploymentAutoSuspendWatchdog is designed to be executed as a go routine which searches for all deployments powered on which haven't been accessed in a time period
-func DeploymentAutoSuspendWatchdog(ctx context.Context, client *ent.Client, cbleServer *providers.CBLEServer, suspendTime time.Duration) {
+// AutoSuspendDeploymentWatchdog is designed to be executed as a go routine which searches for all deployments powered on which haven't been accessed in a time period
+func AutoSuspendDeploymentWatchdog(ctx context.Context, client *ent.Client, cbleServer *providers.CBLEServer, suspendTime time.Duration) {
 	// Query for stale deployments every 30 minutes
 	ticker := time.NewTicker(30 * time.Minute)
 
@@ -36,6 +36,7 @@ func DeploymentAutoSuspendWatchdog(ctx context.Context, client *ent.Client, cble
 			).All(ctx)
 			if err != nil {
 				logrus.WithField("component", "AUTO_SUSPEND").Errorf("failed to query stale deployments for auto-suspend: %v", err)
+				continue
 			}
 
 			var wg sync.WaitGroup
@@ -100,6 +101,36 @@ func powerOffDeployment(ctx context.Context, cbleServer *providers.CBLEServer, e
 		if err != nil {
 			logrus.WithField("component", "AUTO_SUSPEND").Errorf("failed to update state for deployment %s: %v", entDeployment.ID, err)
 			return
+		}
+	}
+}
+
+func AutoDestroyExpiredDeploymentWatchdog(ctx context.Context, client *ent.Client, cbleServer *providers.CBLEServer) {
+	// Query for expired deployments every 30 minutes
+	ticker := time.NewTicker(30 * time.Minute)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			logrus.WithField("component", "AUTO_DESTROY").Debug("destroying expired deployments")
+
+			// Find all deployments which are expired
+			expiredDeployments, err := client.Deployment.Query().Where(
+				deployment.StateNEQ(deployment.StateDestroyed),  // Is not already destroyed
+				deployment.StateNEQ(deployment.StateInProgress), // Is not currently destroying
+				deployment.ExpiresAtLTE(time.Now()),             // Expiry time has passed
+			).All(ctx)
+			if err != nil {
+				logrus.WithField("component", "AUTO_DESTROY").Errorf("failed to query expired deployments for auto-destructions: %v", err)
+				continue
+			}
+
+			// Destroy the expired deployments
+			for _, expiredDeployment := range expiredDeployments {
+				go StartDestroy(client, cbleServer, expiredDeployment)
+			}
 		}
 	}
 }

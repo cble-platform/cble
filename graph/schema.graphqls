@@ -66,6 +66,7 @@ type Deployment {
   description: String!
   state: DeploymentState!
   templateVars: StrMap!
+  expiresAt: Time!
 
   blueprint: Blueprint!
   deploymentNodes: [DeploymentNode!]!

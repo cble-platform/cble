@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/ent/deployment"
@@ -10,13 +11,14 @@ import (
 	"github.com/cble-platform/cble-backend/ent/resource"
 )
 
-func CreateDeployment(ctx context.Context, client *ent.Client, entBlueprint *ent.Blueprint, templateVars map[string]string, requester *ent.User) (*ent.Deployment, error) {
+func CreateDeployment(ctx context.Context, client *ent.Client, entBlueprint *ent.Blueprint, templateVars map[string]string, expiryTime time.Time, requester *ent.User) (*ent.Deployment, error) {
 	// Create the deployment
 	entDeployment, err := client.Deployment.Create().
 		SetName(entBlueprint.Name).
 		SetDescription(entBlueprint.Description).
 		SetState(deployment.StateAwaiting).
 		SetTemplateVars(templateVars).
+		SetExpiresAt(expiryTime).
 		SetBlueprint(entBlueprint).
 		SetRequester(requester).
 		Save(ctx)

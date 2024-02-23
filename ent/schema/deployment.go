@@ -41,6 +41,8 @@ func (Deployment) Fields() []ent.Field {
 		field.JSON("template_vars", map[string]string{}).
 			Default(make(map[string]string)).
 			Comment("Stores the variable values to be injected into the blueprint template"),
+		field.Time("expires_at").
+			Comment("The time this deployment expires"),
 	}
 }
 

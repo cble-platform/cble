@@ -84,6 +84,7 @@ type ComplexityRoot struct {
 		CreatedAt       func(childComplexity int) int
 		DeploymentNodes func(childComplexity int) int
 		Description     func(childComplexity int) int
+		ExpiresAt       func(childComplexity int) int
 		ID              func(childComplexity int) int
 		Name            func(childComplexity int) int
 		Requester       func(childComplexity int) int
@@ -461,6 +462,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Deployment.Description(childComplexity), true
+
+	case "Deployment.expiresAt":
+		if e.complexity.Deployment.ExpiresAt == nil {
+			break
+		}
+
+		return e.complexity.Deployment.ExpiresAt(childComplexity), true
 
 	case "Deployment.id":
 		if e.complexity.Deployment.ID == nil {
@@ -1617,6 +1625,7 @@ type Deployment {
   description: String!
   state: DeploymentState!
   templateVars: StrMap!
+  expiresAt: Time!
 
   blueprint: Blueprint!
   deploymentNodes: [DeploymentNode!]!
@@ -3442,6 +3451,8 @@ func (ec *executionContext) fieldContext_Blueprint_deployments(ctx context.Conte
 				return ec.fieldContext_Deployment_state(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
 			case "deploymentNodes":
@@ -3868,6 +3879,50 @@ func (ec *executionContext) fieldContext_Deployment_templateVars(ctx context.Con
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type StrMap does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Deployment_expiresAt(ctx context.Context, field graphql.CollectedField, obj *ent.Deployment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Deployment_expiresAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ExpiresAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Deployment_expiresAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Deployment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4337,6 +4392,8 @@ func (ec *executionContext) fieldContext_DeploymentNode_deployment(ctx context.C
 				return ec.fieldContext_Deployment_state(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
 			case "deploymentNodes":
@@ -4599,6 +4656,8 @@ func (ec *executionContext) fieldContext_DeploymentPage_deployments(ctx context.
 				return ec.fieldContext_Deployment_state(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
 			case "deploymentNodes":
@@ -6543,6 +6602,8 @@ func (ec *executionContext) fieldContext_Mutation_updateDeployment(ctx context.C
 				return ec.fieldContext_Deployment_state(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
 			case "deploymentNodes":
@@ -6845,6 +6906,8 @@ func (ec *executionContext) fieldContext_Mutation_deployBlueprint(ctx context.Co
 				return ec.fieldContext_Deployment_state(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
 			case "deploymentNodes":
@@ -6922,6 +6985,8 @@ func (ec *executionContext) fieldContext_Mutation_destroyDeployment(ctx context.
 				return ec.fieldContext_Deployment_state(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
 			case "deploymentNodes":
@@ -6999,6 +7064,8 @@ func (ec *executionContext) fieldContext_Mutation_redeployDeployment(ctx context
 				return ec.fieldContext_Deployment_state(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
 			case "deploymentNodes":
@@ -8624,6 +8691,8 @@ func (ec *executionContext) fieldContext_Query_deployment(ctx context.Context, f
 				return ec.fieldContext_Deployment_state(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
 			case "deploymentNodes":
@@ -9964,6 +10033,8 @@ func (ec *executionContext) fieldContext_User_deployments(ctx context.Context, f
 				return ec.fieldContext_Deployment_state(ctx, field)
 			case "templateVars":
 				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
 			case "deploymentNodes":
@@ -12397,6 +12468,11 @@ func (ec *executionContext) _Deployment(ctx context.Context, sel ast.SelectionSe
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "templateVars":
 			out.Values[i] = ec._Deployment_templateVars(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "expiresAt":
+			out.Values[i] = ec._Deployment_expiresAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}

@@ -90,6 +90,12 @@ func (dc *DeploymentCreate) SetTemplateVars(m map[string]string) *DeploymentCrea
 	return dc
 }
 
+// SetExpiresAt sets the "expires_at" field.
+func (dc *DeploymentCreate) SetExpiresAt(t time.Time) *DeploymentCreate {
+	dc.mutation.SetExpiresAt(t)
+	return dc
+}
+
 // SetID sets the "id" field.
 func (dc *DeploymentCreate) SetID(u uuid.UUID) *DeploymentCreate {
 	dc.mutation.SetID(u)
@@ -223,6 +229,9 @@ func (dc *DeploymentCreate) check() error {
 	if _, ok := dc.mutation.TemplateVars(); !ok {
 		return &ValidationError{Name: "template_vars", err: errors.New(`ent: missing required field "Deployment.template_vars"`)}
 	}
+	if _, ok := dc.mutation.ExpiresAt(); !ok {
+		return &ValidationError{Name: "expires_at", err: errors.New(`ent: missing required field "Deployment.expires_at"`)}
+	}
 	if _, ok := dc.mutation.BlueprintID(); !ok {
 		return &ValidationError{Name: "blueprint", err: errors.New(`ent: missing required edge "Deployment.blueprint"`)}
 	}
@@ -291,6 +300,10 @@ func (dc *DeploymentCreate) createSpec() (*Deployment, *sqlgraph.CreateSpec) {
 	if value, ok := dc.mutation.TemplateVars(); ok {
 		_spec.SetField(deployment.FieldTemplateVars, field.TypeJSON, value)
 		_node.TemplateVars = value
+	}
+	if value, ok := dc.mutation.ExpiresAt(); ok {
+		_spec.SetField(deployment.FieldExpiresAt, field.TypeTime, value)
+		_node.ExpiresAt = value
 	}
 	if nodes := dc.mutation.BlueprintIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
