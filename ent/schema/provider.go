@@ -1,12 +1,11 @@
 package schema
 
 import (
-	"time"
-
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"github.com/cble-platform/cble-backend/ent/mixins"
 	"github.com/google/uuid"
 )
 
@@ -21,12 +20,6 @@ func (Provider) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).
 			Immutable().
 			Default(uuid.New),
-		field.Time("created_at").
-			Immutable().
-			Default(time.Now),
-		field.Time("updated_at").
-			Default(time.Now).
-			UpdateDefault(time.Now),
 		field.String("display_name"),
 		field.String("provider_git_url"),
 		field.String("provider_version"),
@@ -43,5 +36,12 @@ func (Provider) Edges() []ent.Edge {
 				OnDelete: entsql.Restrict,
 			}).
 			Ref("provider"),
+	}
+}
+
+// Mixins of the Provider.
+func (Provider) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		mixins.Timestamps{},
 	}
 }

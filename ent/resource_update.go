@@ -100,6 +100,26 @@ func (ru *ResourceUpdate) ClearFeatures() *ResourceUpdate {
 	return ru
 }
 
+// SetQuotaRequirements sets the "quota_requirements" field.
+func (ru *ResourceUpdate) SetQuotaRequirements(pr provider.QuotaRequirements) *ResourceUpdate {
+	ru.mutation.SetQuotaRequirements(pr)
+	return ru
+}
+
+// SetNillableQuotaRequirements sets the "quota_requirements" field if the given value is not nil.
+func (ru *ResourceUpdate) SetNillableQuotaRequirements(pr *provider.QuotaRequirements) *ResourceUpdate {
+	if pr != nil {
+		ru.SetQuotaRequirements(*pr)
+	}
+	return ru
+}
+
+// ClearQuotaRequirements clears the value of the "quota_requirements" field.
+func (ru *ResourceUpdate) ClearQuotaRequirements() *ResourceUpdate {
+	ru.mutation.ClearQuotaRequirements()
+	return ru
+}
+
 // SetObject sets the "object" field.
 func (ru *ResourceUpdate) SetObject(m *models.Object) *ResourceUpdate {
 	ru.mutation.SetObject(m)
@@ -278,6 +298,12 @@ func (ru *ResourceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if ru.mutation.FeaturesCleared() {
 		_spec.ClearField(resource.FieldFeatures, field.TypeJSON)
+	}
+	if value, ok := ru.mutation.QuotaRequirements(); ok {
+		_spec.SetField(resource.FieldQuotaRequirements, field.TypeJSON, value)
+	}
+	if ru.mutation.QuotaRequirementsCleared() {
+		_spec.ClearField(resource.FieldQuotaRequirements, field.TypeJSON)
 	}
 	if value, ok := ru.mutation.Object(); ok {
 		_spec.SetField(resource.FieldObject, field.TypeJSON, value)
@@ -489,6 +515,26 @@ func (ruo *ResourceUpdateOne) ClearFeatures() *ResourceUpdateOne {
 	return ruo
 }
 
+// SetQuotaRequirements sets the "quota_requirements" field.
+func (ruo *ResourceUpdateOne) SetQuotaRequirements(pr provider.QuotaRequirements) *ResourceUpdateOne {
+	ruo.mutation.SetQuotaRequirements(pr)
+	return ruo
+}
+
+// SetNillableQuotaRequirements sets the "quota_requirements" field if the given value is not nil.
+func (ruo *ResourceUpdateOne) SetNillableQuotaRequirements(pr *provider.QuotaRequirements) *ResourceUpdateOne {
+	if pr != nil {
+		ruo.SetQuotaRequirements(*pr)
+	}
+	return ruo
+}
+
+// ClearQuotaRequirements clears the value of the "quota_requirements" field.
+func (ruo *ResourceUpdateOne) ClearQuotaRequirements() *ResourceUpdateOne {
+	ruo.mutation.ClearQuotaRequirements()
+	return ruo
+}
+
 // SetObject sets the "object" field.
 func (ruo *ResourceUpdateOne) SetObject(m *models.Object) *ResourceUpdateOne {
 	ruo.mutation.SetObject(m)
@@ -697,6 +743,12 @@ func (ruo *ResourceUpdateOne) sqlSave(ctx context.Context) (_node *Resource, err
 	}
 	if ruo.mutation.FeaturesCleared() {
 		_spec.ClearField(resource.FieldFeatures, field.TypeJSON)
+	}
+	if value, ok := ruo.mutation.QuotaRequirements(); ok {
+		_spec.SetField(resource.FieldQuotaRequirements, field.TypeJSON, value)
+	}
+	if ruo.mutation.QuotaRequirementsCleared() {
+		_spec.ClearField(resource.FieldQuotaRequirements, field.TypeJSON)
 	}
 	if value, ok := ruo.mutation.Object(); ok {
 		_spec.SetField(resource.FieldObject, field.TypeJSON, value)

@@ -4689,6 +4689,7 @@ type ResourceMutation struct {
 	key                *string
 	resource_type      *string
 	features           *provider.Features
+	quota_requirements *provider.QuotaRequirements
 	object             **models.Object
 	clearedFields      map[string]struct{}
 	blueprint          *uuid.UUID
@@ -5037,6 +5038,55 @@ func (m *ResourceMutation) ResetFeatures() {
 	delete(m.clearedFields, resource.FieldFeatures)
 }
 
+// SetQuotaRequirements sets the "quota_requirements" field.
+func (m *ResourceMutation) SetQuotaRequirements(pr provider.QuotaRequirements) {
+	m.quota_requirements = &pr
+}
+
+// QuotaRequirements returns the value of the "quota_requirements" field in the mutation.
+func (m *ResourceMutation) QuotaRequirements() (r provider.QuotaRequirements, exists bool) {
+	v := m.quota_requirements
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldQuotaRequirements returns the old "quota_requirements" field's value of the Resource entity.
+// If the Resource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ResourceMutation) OldQuotaRequirements(ctx context.Context) (v provider.QuotaRequirements, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldQuotaRequirements is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldQuotaRequirements requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldQuotaRequirements: %w", err)
+	}
+	return oldValue.QuotaRequirements, nil
+}
+
+// ClearQuotaRequirements clears the value of the "quota_requirements" field.
+func (m *ResourceMutation) ClearQuotaRequirements() {
+	m.quota_requirements = nil
+	m.clearedFields[resource.FieldQuotaRequirements] = struct{}{}
+}
+
+// QuotaRequirementsCleared returns if the "quota_requirements" field was cleared in this mutation.
+func (m *ResourceMutation) QuotaRequirementsCleared() bool {
+	_, ok := m.clearedFields[resource.FieldQuotaRequirements]
+	return ok
+}
+
+// ResetQuotaRequirements resets all changes to the "quota_requirements" field.
+func (m *ResourceMutation) ResetQuotaRequirements() {
+	m.quota_requirements = nil
+	delete(m.clearedFields, resource.FieldQuotaRequirements)
+}
+
 // SetObject sets the "object" field.
 func (m *ResourceMutation) SetObject(value *models.Object) {
 	m.object = &value
@@ -5254,7 +5304,7 @@ func (m *ResourceMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ResourceMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.created_at != nil {
 		fields = append(fields, resource.FieldCreatedAt)
 	}
@@ -5272,6 +5322,9 @@ func (m *ResourceMutation) Fields() []string {
 	}
 	if m.features != nil {
 		fields = append(fields, resource.FieldFeatures)
+	}
+	if m.quota_requirements != nil {
+		fields = append(fields, resource.FieldQuotaRequirements)
 	}
 	if m.object != nil {
 		fields = append(fields, resource.FieldObject)
@@ -5296,6 +5349,8 @@ func (m *ResourceMutation) Field(name string) (ent.Value, bool) {
 		return m.ResourceType()
 	case resource.FieldFeatures:
 		return m.Features()
+	case resource.FieldQuotaRequirements:
+		return m.QuotaRequirements()
 	case resource.FieldObject:
 		return m.Object()
 	}
@@ -5319,6 +5374,8 @@ func (m *ResourceMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldResourceType(ctx)
 	case resource.FieldFeatures:
 		return m.OldFeatures(ctx)
+	case resource.FieldQuotaRequirements:
+		return m.OldQuotaRequirements(ctx)
 	case resource.FieldObject:
 		return m.OldObject(ctx)
 	}
@@ -5372,6 +5429,13 @@ func (m *ResourceMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetFeatures(v)
 		return nil
+	case resource.FieldQuotaRequirements:
+		v, ok := value.(provider.QuotaRequirements)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetQuotaRequirements(v)
+		return nil
 	case resource.FieldObject:
 		v, ok := value.(*models.Object)
 		if !ok {
@@ -5412,6 +5476,9 @@ func (m *ResourceMutation) ClearedFields() []string {
 	if m.FieldCleared(resource.FieldFeatures) {
 		fields = append(fields, resource.FieldFeatures)
 	}
+	if m.FieldCleared(resource.FieldQuotaRequirements) {
+		fields = append(fields, resource.FieldQuotaRequirements)
+	}
 	return fields
 }
 
@@ -5428,6 +5495,9 @@ func (m *ResourceMutation) ClearField(name string) error {
 	switch name {
 	case resource.FieldFeatures:
 		m.ClearFeatures()
+		return nil
+	case resource.FieldQuotaRequirements:
+		m.ClearQuotaRequirements()
 		return nil
 	}
 	return fmt.Errorf("unknown Resource nullable field %s", name)
@@ -5454,6 +5524,9 @@ func (m *ResourceMutation) ResetField(name string) error {
 		return nil
 	case resource.FieldFeatures:
 		m.ResetFeatures()
+		return nil
+	case resource.FieldQuotaRequirements:
+		m.ResetQuotaRequirements()
 		return nil
 	case resource.FieldObject:
 		m.ResetObject()

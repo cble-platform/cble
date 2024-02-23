@@ -1,12 +1,11 @@
 package schema
 
 import (
-	"time"
-
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/cble-platform/cble-backend/ent/mixins"
 	"github.com/cble-platform/cble-backend/permission/actions"
 	"github.com/google/uuid"
 )
@@ -16,18 +15,12 @@ type GrantedPermission struct {
 	ent.Schema
 }
 
-// Fields of the Permission.
+// Fields of the GrantedPermission.
 func (GrantedPermission) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).
 			Immutable().
 			Default(uuid.New),
-		field.Time("created_at").
-			Immutable().
-			Default(time.Now),
-		field.Time("updated_at").
-			Default(time.Now).
-			UpdateDefault(time.Now),
 		field.Enum("subject_type").
 			Values("user", "group").
 			Comment("The type of subject this permission applies to"),
@@ -52,7 +45,7 @@ func (GrantedPermission) Indexes() []ent.Index {
 	}
 }
 
-// Edges of the Permission.
+// Edges of the GrantedPermission.
 func (GrantedPermission) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("user", User.Type).
@@ -61,5 +54,12 @@ func (GrantedPermission) Edges() []ent.Edge {
 		edge.To("group", Group.Type).
 			Unique().
 			Comment("The subject group (if of type user)"),
+	}
+}
+
+// Mixins of the GrantedPermission.
+func (GrantedPermission) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		mixins.Timestamps{},
 	}
 }

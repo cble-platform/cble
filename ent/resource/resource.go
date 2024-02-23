@@ -29,6 +29,8 @@ const (
 	FieldResourceType = "resource_type"
 	// FieldFeatures holds the string denoting the features field in the database.
 	FieldFeatures = "features"
+	// FieldQuotaRequirements holds the string denoting the quota_requirements field in the database.
+	FieldQuotaRequirements = "quota_requirements"
 	// FieldObject holds the string denoting the object field in the database.
 	FieldObject = "object"
 	// EdgeBlueprint holds the string denoting the blueprint edge name in mutations.
@@ -61,6 +63,7 @@ var Columns = []string{
 	FieldKey,
 	FieldResourceType,
 	FieldFeatures,
+	FieldQuotaRequirements,
 	FieldObject,
 }
 
@@ -103,6 +106,8 @@ var (
 	UpdateDefaultUpdatedAt func() time.Time
 	// DefaultFeatures holds the default value on creation for the "features" field.
 	DefaultFeatures provider.Features
+	// DefaultQuotaRequirements holds the default value on creation for the "quota_requirements" field.
+	DefaultQuotaRequirements provider.QuotaRequirements
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )

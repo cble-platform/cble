@@ -176,6 +176,7 @@ var (
 		{Name: "key", Type: field.TypeString},
 		{Name: "resource_type", Type: field.TypeString},
 		{Name: "features", Type: field.TypeJSON, Nullable: true},
+		{Name: "quota_requirements", Type: field.TypeJSON, Nullable: true},
 		{Name: "object", Type: field.TypeJSON},
 		{Name: "resource_blueprint", Type: field.TypeUUID},
 	}
@@ -187,7 +188,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "resources_blueprints_blueprint",
-				Columns:    []*schema.Column{ResourcesColumns[8]},
+				Columns:    []*schema.Column{ResourcesColumns[9]},
 				RefColumns: []*schema.Column{BlueprintsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},

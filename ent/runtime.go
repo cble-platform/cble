@@ -22,14 +22,17 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	blueprintMixin := schema.Blueprint{}.Mixin()
+	blueprintMixinFields0 := blueprintMixin[0].Fields()
+	_ = blueprintMixinFields0
 	blueprintFields := schema.Blueprint{}.Fields()
 	_ = blueprintFields
 	// blueprintDescCreatedAt is the schema descriptor for created_at field.
-	blueprintDescCreatedAt := blueprintFields[1].Descriptor()
+	blueprintDescCreatedAt := blueprintMixinFields0[0].Descriptor()
 	// blueprint.DefaultCreatedAt holds the default value on creation for the created_at field.
 	blueprint.DefaultCreatedAt = blueprintDescCreatedAt.Default.(func() time.Time)
 	// blueprintDescUpdatedAt is the schema descriptor for updated_at field.
-	blueprintDescUpdatedAt := blueprintFields[2].Descriptor()
+	blueprintDescUpdatedAt := blueprintMixinFields0[1].Descriptor()
 	// blueprint.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	blueprint.DefaultUpdatedAt = blueprintDescUpdatedAt.Default.(func() time.Time)
 	// blueprint.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -38,58 +41,67 @@ func init() {
 	blueprintDescID := blueprintFields[0].Descriptor()
 	// blueprint.DefaultID holds the default value on creation for the id field.
 	blueprint.DefaultID = blueprintDescID.Default.(func() uuid.UUID)
+	deploymentMixin := schema.Deployment{}.Mixin()
+	deploymentMixinFields0 := deploymentMixin[0].Fields()
+	_ = deploymentMixinFields0
 	deploymentFields := schema.Deployment{}.Fields()
 	_ = deploymentFields
 	// deploymentDescCreatedAt is the schema descriptor for created_at field.
-	deploymentDescCreatedAt := deploymentFields[1].Descriptor()
+	deploymentDescCreatedAt := deploymentMixinFields0[0].Descriptor()
 	// deployment.DefaultCreatedAt holds the default value on creation for the created_at field.
 	deployment.DefaultCreatedAt = deploymentDescCreatedAt.Default.(func() time.Time)
 	// deploymentDescUpdatedAt is the schema descriptor for updated_at field.
-	deploymentDescUpdatedAt := deploymentFields[2].Descriptor()
+	deploymentDescUpdatedAt := deploymentMixinFields0[1].Descriptor()
 	// deployment.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	deployment.DefaultUpdatedAt = deploymentDescUpdatedAt.Default.(func() time.Time)
 	// deployment.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	deployment.UpdateDefaultUpdatedAt = deploymentDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// deploymentDescLastAccessed is the schema descriptor for last_accessed field.
-	deploymentDescLastAccessed := deploymentFields[3].Descriptor()
+	deploymentDescLastAccessed := deploymentFields[1].Descriptor()
 	// deployment.DefaultLastAccessed holds the default value on creation for the last_accessed field.
 	deployment.DefaultLastAccessed = deploymentDescLastAccessed.Default.(func() time.Time)
 	// deploymentDescTemplateVars is the schema descriptor for template_vars field.
-	deploymentDescTemplateVars := deploymentFields[7].Descriptor()
+	deploymentDescTemplateVars := deploymentFields[5].Descriptor()
 	// deployment.DefaultTemplateVars holds the default value on creation for the template_vars field.
 	deployment.DefaultTemplateVars = deploymentDescTemplateVars.Default.(map[string]string)
 	// deploymentDescID is the schema descriptor for id field.
 	deploymentDescID := deploymentFields[0].Descriptor()
 	// deployment.DefaultID holds the default value on creation for the id field.
 	deployment.DefaultID = deploymentDescID.Default.(func() uuid.UUID)
+	deploymentnodeMixin := schema.DeploymentNode{}.Mixin()
+	deploymentnodeMixinFields0 := deploymentnodeMixin[0].Fields()
+	_ = deploymentnodeMixinFields0
 	deploymentnodeFields := schema.DeploymentNode{}.Fields()
 	_ = deploymentnodeFields
 	// deploymentnodeDescCreatedAt is the schema descriptor for created_at field.
-	deploymentnodeDescCreatedAt := deploymentnodeFields[1].Descriptor()
+	deploymentnodeDescCreatedAt := deploymentnodeMixinFields0[0].Descriptor()
 	// deploymentnode.DefaultCreatedAt holds the default value on creation for the created_at field.
 	deploymentnode.DefaultCreatedAt = deploymentnodeDescCreatedAt.Default.(func() time.Time)
 	// deploymentnodeDescUpdatedAt is the schema descriptor for updated_at field.
-	deploymentnodeDescUpdatedAt := deploymentnodeFields[2].Descriptor()
+	deploymentnodeDescUpdatedAt := deploymentnodeMixinFields0[1].Descriptor()
 	// deploymentnode.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	deploymentnode.DefaultUpdatedAt = deploymentnodeDescUpdatedAt.Default.(func() time.Time)
 	// deploymentnode.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	deploymentnode.UpdateDefaultUpdatedAt = deploymentnodeDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// deploymentnodeDescVars is the schema descriptor for vars field.
-	deploymentnodeDescVars := deploymentnodeFields[4].Descriptor()
+	deploymentnodeDescVars := deploymentnodeFields[2].Descriptor()
 	// deploymentnode.DefaultVars holds the default value on creation for the vars field.
 	deploymentnode.DefaultVars = deploymentnodeDescVars.Default.(map[string]string)
 	// deploymentnodeDescID is the schema descriptor for id field.
 	deploymentnodeDescID := deploymentnodeFields[0].Descriptor()
 	// deploymentnode.DefaultID holds the default value on creation for the id field.
 	deploymentnode.DefaultID = deploymentnodeDescID.Default.(func() uuid.UUID)
+	grantedpermissionMixin := schema.GrantedPermission{}.Mixin()
+	grantedpermissionMixinFields0 := grantedpermissionMixin[0].Fields()
+	_ = grantedpermissionMixinFields0
 	grantedpermissionFields := schema.GrantedPermission{}.Fields()
 	_ = grantedpermissionFields
 	// grantedpermissionDescCreatedAt is the schema descriptor for created_at field.
-	grantedpermissionDescCreatedAt := grantedpermissionFields[1].Descriptor()
+	grantedpermissionDescCreatedAt := grantedpermissionMixinFields0[0].Descriptor()
 	// grantedpermission.DefaultCreatedAt holds the default value on creation for the created_at field.
 	grantedpermission.DefaultCreatedAt = grantedpermissionDescCreatedAt.Default.(func() time.Time)
 	// grantedpermissionDescUpdatedAt is the schema descriptor for updated_at field.
-	grantedpermissionDescUpdatedAt := grantedpermissionFields[2].Descriptor()
+	grantedpermissionDescUpdatedAt := grantedpermissionMixinFields0[1].Descriptor()
 	// grantedpermission.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	grantedpermission.DefaultUpdatedAt = grantedpermissionDescUpdatedAt.Default.(func() time.Time)
 	// grantedpermission.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -98,14 +110,17 @@ func init() {
 	grantedpermissionDescID := grantedpermissionFields[0].Descriptor()
 	// grantedpermission.DefaultID holds the default value on creation for the id field.
 	grantedpermission.DefaultID = grantedpermissionDescID.Default.(func() uuid.UUID)
+	groupMixin := schema.Group{}.Mixin()
+	groupMixinFields0 := groupMixin[0].Fields()
+	_ = groupMixinFields0
 	groupFields := schema.Group{}.Fields()
 	_ = groupFields
 	// groupDescCreatedAt is the schema descriptor for created_at field.
-	groupDescCreatedAt := groupFields[1].Descriptor()
+	groupDescCreatedAt := groupMixinFields0[0].Descriptor()
 	// group.DefaultCreatedAt holds the default value on creation for the created_at field.
 	group.DefaultCreatedAt = groupDescCreatedAt.Default.(func() time.Time)
 	// groupDescUpdatedAt is the schema descriptor for updated_at field.
-	groupDescUpdatedAt := groupFields[2].Descriptor()
+	groupDescUpdatedAt := groupMixinFields0[1].Descriptor()
 	// group.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	group.DefaultUpdatedAt = groupDescUpdatedAt.Default.(func() time.Time)
 	// group.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -114,54 +129,67 @@ func init() {
 	groupDescID := groupFields[0].Descriptor()
 	// group.DefaultID holds the default value on creation for the id field.
 	group.DefaultID = groupDescID.Default.(func() uuid.UUID)
+	entproviderMixin := schema.Provider{}.Mixin()
+	entproviderMixinFields0 := entproviderMixin[0].Fields()
+	_ = entproviderMixinFields0
 	entproviderFields := schema.Provider{}.Fields()
 	_ = entproviderFields
 	// entproviderDescCreatedAt is the schema descriptor for created_at field.
-	entproviderDescCreatedAt := entproviderFields[1].Descriptor()
+	entproviderDescCreatedAt := entproviderMixinFields0[0].Descriptor()
 	// entprovider.DefaultCreatedAt holds the default value on creation for the created_at field.
 	entprovider.DefaultCreatedAt = entproviderDescCreatedAt.Default.(func() time.Time)
 	// entproviderDescUpdatedAt is the schema descriptor for updated_at field.
-	entproviderDescUpdatedAt := entproviderFields[2].Descriptor()
+	entproviderDescUpdatedAt := entproviderMixinFields0[1].Descriptor()
 	// entprovider.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	entprovider.DefaultUpdatedAt = entproviderDescUpdatedAt.Default.(func() time.Time)
 	// entprovider.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	entprovider.UpdateDefaultUpdatedAt = entproviderDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// entproviderDescIsLoaded is the schema descriptor for is_loaded field.
-	entproviderDescIsLoaded := entproviderFields[7].Descriptor()
+	entproviderDescIsLoaded := entproviderFields[5].Descriptor()
 	// entprovider.DefaultIsLoaded holds the default value on creation for the is_loaded field.
 	entprovider.DefaultIsLoaded = entproviderDescIsLoaded.Default.(bool)
 	// entproviderDescID is the schema descriptor for id field.
 	entproviderDescID := entproviderFields[0].Descriptor()
 	// entprovider.DefaultID holds the default value on creation for the id field.
 	entprovider.DefaultID = entproviderDescID.Default.(func() uuid.UUID)
+	resourceMixin := schema.Resource{}.Mixin()
+	resourceMixinFields0 := resourceMixin[0].Fields()
+	_ = resourceMixinFields0
 	resourceFields := schema.Resource{}.Fields()
 	_ = resourceFields
 	// resourceDescCreatedAt is the schema descriptor for created_at field.
-	resourceDescCreatedAt := resourceFields[1].Descriptor()
+	resourceDescCreatedAt := resourceMixinFields0[0].Descriptor()
 	// resource.DefaultCreatedAt holds the default value on creation for the created_at field.
 	resource.DefaultCreatedAt = resourceDescCreatedAt.Default.(func() time.Time)
 	// resourceDescUpdatedAt is the schema descriptor for updated_at field.
-	resourceDescUpdatedAt := resourceFields[2].Descriptor()
+	resourceDescUpdatedAt := resourceMixinFields0[1].Descriptor()
 	// resource.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	resource.DefaultUpdatedAt = resourceDescUpdatedAt.Default.(func() time.Time)
 	// resource.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	resource.UpdateDefaultUpdatedAt = resourceDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// resourceDescFeatures is the schema descriptor for features field.
-	resourceDescFeatures := resourceFields[6].Descriptor()
+	resourceDescFeatures := resourceFields[4].Descriptor()
 	// resource.DefaultFeatures holds the default value on creation for the features field.
 	resource.DefaultFeatures = resourceDescFeatures.Default.(provider.Features)
+	// resourceDescQuotaRequirements is the schema descriptor for quota_requirements field.
+	resourceDescQuotaRequirements := resourceFields[5].Descriptor()
+	// resource.DefaultQuotaRequirements holds the default value on creation for the quota_requirements field.
+	resource.DefaultQuotaRequirements = resourceDescQuotaRequirements.Default.(provider.QuotaRequirements)
 	// resourceDescID is the schema descriptor for id field.
 	resourceDescID := resourceFields[0].Descriptor()
 	// resource.DefaultID holds the default value on creation for the id field.
 	resource.DefaultID = resourceDescID.Default.(func() uuid.UUID)
+	userMixin := schema.User{}.Mixin()
+	userMixinFields0 := userMixin[0].Fields()
+	_ = userMixinFields0
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescCreatedAt is the schema descriptor for created_at field.
-	userDescCreatedAt := userFields[1].Descriptor()
+	userDescCreatedAt := userMixinFields0[0].Descriptor()
 	// user.DefaultCreatedAt holds the default value on creation for the created_at field.
 	user.DefaultCreatedAt = userDescCreatedAt.Default.(func() time.Time)
 	// userDescUpdatedAt is the schema descriptor for updated_at field.
-	userDescUpdatedAt := userFields[2].Descriptor()
+	userDescUpdatedAt := userMixinFields0[1].Descriptor()
 	// user.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	user.DefaultUpdatedAt = userDescUpdatedAt.Default.(func() time.Time)
 	// user.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

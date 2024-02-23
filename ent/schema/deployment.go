@@ -7,6 +7,7 @@ import (
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"github.com/cble-platform/cble-backend/ent/mixins"
 	"github.com/google/uuid"
 )
 
@@ -21,12 +22,6 @@ func (Deployment) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).
 			Immutable().
 			Default(uuid.New),
-		field.Time("created_at").
-			Immutable().
-			Default(time.Now),
-		field.Time("updated_at").
-			Default(time.Now).
-			UpdateDefault(time.Now),
 		field.Time("last_accessed").
 			Optional().
 			Default(time.Now).
@@ -63,5 +58,12 @@ func (Deployment) Edges() []ent.Edge {
 			Unique().
 			Required().
 			Comment("The user who requested this deployment"),
+	}
+}
+
+// Mixins of the Deployment.
+func (Deployment) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		mixins.Timestamps{},
 	}
 }
