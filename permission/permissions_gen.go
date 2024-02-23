@@ -22,7 +22,6 @@ var AllSubjectActions = map[grantedpermission.ObjectType][]actions.PermissionAct
 	},
 	grantedpermission.ObjectTypeDeployment: {
 		actions.ActionDeploymentList,
-		actions.ActionDeploymentCreate,
 		actions.ActionDeploymentGet,
 		actions.ActionDeploymentUpdate,
 		actions.ActionDeploymentDelete,
@@ -65,7 +64,7 @@ var AllSubjectActions = map[grantedpermission.ObjectType][]actions.PermissionAct
 
 // Blueprint //
 
-// HasBlueprintListreports whether a given user has the "blueprint_list" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasBlueprintList reports whether a given user can list all blueprints (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasBlueprintList(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -77,7 +76,7 @@ func HasBlueprintList(ctx context.Context, client *ent.Client, entUser *ent.User
 	)
 }
 
-// HasBlueprintCreatereports whether a given user has the "blueprint_create" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasBlueprintCreate reports whether a given user can create blueprints (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasBlueprintCreate(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -89,7 +88,7 @@ func HasBlueprintCreate(ctx context.Context, client *ent.Client, entUser *ent.Us
 	)
 }
 
-// HasBlueprintGetreports whether a given user has the "blueprint_get" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasBlueprintGet reports whether a given user can get a given blueprint. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasBlueprintGet(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -101,7 +100,7 @@ func HasBlueprintGet(ctx context.Context, client *ent.Client, entUser *ent.User,
 	)
 }
 
-// HasBlueprintUpdatereports whether a given user has the "blueprint_update" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasBlueprintUpdate reports whether a given user can update a given blueprint. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasBlueprintUpdate(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -113,7 +112,7 @@ func HasBlueprintUpdate(ctx context.Context, client *ent.Client, entUser *ent.Us
 	)
 }
 
-// HasBlueprintDeletereports whether a given user has the "blueprint_delete" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasBlueprintDelete reports whether a given user can delete a given blueprint. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasBlueprintDelete(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -125,7 +124,7 @@ func HasBlueprintDelete(ctx context.Context, client *ent.Client, entUser *ent.Us
 	)
 }
 
-// HasBlueprintDeployreports whether a given user has the "blueprint_deploy" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasBlueprintDeploy reports whether a given user can deploy a given blueprint. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasBlueprintDeploy(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -137,7 +136,7 @@ func HasBlueprintDeploy(ctx context.Context, client *ent.Client, entUser *ent.Us
 	)
 }
 
-// CurrentUserHasBlueprintListreports whether the current user (pulled from context) has the "blueprint_list" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasBlueprintList reports whether the current user (pulled from context) can list all blueprints (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasBlueprintList(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -148,7 +147,7 @@ func CurrentUserHasBlueprintList(ctx context.Context, client *ent.Client, object
 	)
 }
 
-// CurrentUserHasBlueprintCreatereports whether the current user (pulled from context) has the "blueprint_create" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasBlueprintCreate reports whether the current user (pulled from context) can create blueprints (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasBlueprintCreate(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -159,7 +158,7 @@ func CurrentUserHasBlueprintCreate(ctx context.Context, client *ent.Client, obje
 	)
 }
 
-// CurrentUserHasBlueprintGetreports whether the current user (pulled from context) has the "blueprint_get" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasBlueprintGet reports whether the current user (pulled from context) can get a given blueprint. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasBlueprintGet(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -170,7 +169,7 @@ func CurrentUserHasBlueprintGet(ctx context.Context, client *ent.Client, objectI
 	)
 }
 
-// CurrentUserHasBlueprintUpdatereports whether the current user (pulled from context) has the "blueprint_update" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasBlueprintUpdate reports whether the current user (pulled from context) can update a given blueprint. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasBlueprintUpdate(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -181,7 +180,7 @@ func CurrentUserHasBlueprintUpdate(ctx context.Context, client *ent.Client, obje
 	)
 }
 
-// CurrentUserHasBlueprintDeletereports whether the current user (pulled from context) has the "blueprint_delete" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasBlueprintDelete reports whether the current user (pulled from context) can delete a given blueprint. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasBlueprintDelete(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -192,7 +191,7 @@ func CurrentUserHasBlueprintDelete(ctx context.Context, client *ent.Client, obje
 	)
 }
 
-// CurrentUserHasBlueprintDeployreports whether the current user (pulled from context) has the "blueprint_deploy" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasBlueprintDeploy reports whether the current user (pulled from context) can deploy a given blueprint. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasBlueprintDeploy(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -205,7 +204,7 @@ func CurrentUserHasBlueprintDeploy(ctx context.Context, client *ent.Client, obje
 
 // Deployment //
 
-// HasDeploymentListreports whether a given user has the "deployment_list" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasDeploymentList reports whether a given user can list all deployments (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasDeploymentList(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -217,19 +216,7 @@ func HasDeploymentList(ctx context.Context, client *ent.Client, entUser *ent.Use
 	)
 }
 
-// HasDeploymentCreatereports whether a given user has the "deployment_create" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func HasDeploymentCreate(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
-	return HasPermission(
-		ctx,
-		client,
-		entUser,
-		grantedpermission.ObjectTypeDeployment,
-		objectID,
-		actions.ActionDeploymentCreate,
-	)
-}
-
-// HasDeploymentGetreports whether a given user has the "deployment_get" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasDeploymentGet reports whether a given user can get a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasDeploymentGet(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -241,7 +228,7 @@ func HasDeploymentGet(ctx context.Context, client *ent.Client, entUser *ent.User
 	)
 }
 
-// HasDeploymentUpdatereports whether a given user has the "deployment_update" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasDeploymentUpdate reports whether a given user can update a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasDeploymentUpdate(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -253,7 +240,7 @@ func HasDeploymentUpdate(ctx context.Context, client *ent.Client, entUser *ent.U
 	)
 }
 
-// HasDeploymentDeletereports whether a given user has the "deployment_delete" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasDeploymentDelete reports whether a given user can delete a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasDeploymentDelete(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -265,7 +252,7 @@ func HasDeploymentDelete(ctx context.Context, client *ent.Client, entUser *ent.U
 	)
 }
 
-// HasDeploymentDestroyreports whether a given user has the "deployment_destroy" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasDeploymentDestroy reports whether a given user can destroy a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasDeploymentDestroy(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -277,7 +264,7 @@ func HasDeploymentDestroy(ctx context.Context, client *ent.Client, entUser *ent.
 	)
 }
 
-// HasDeploymentRedeployreports whether a given user has the "deployment_redeploy" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasDeploymentRedeploy reports whether a given user can redeploy a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasDeploymentRedeploy(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -289,7 +276,7 @@ func HasDeploymentRedeploy(ctx context.Context, client *ent.Client, entUser *ent
 	)
 }
 
-// HasDeploymentPowerreports whether a given user has the "deployment_power" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasDeploymentPower reports whether a given user can control the power state of resources in a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasDeploymentPower(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -301,7 +288,7 @@ func HasDeploymentPower(ctx context.Context, client *ent.Client, entUser *ent.Us
 	)
 }
 
-// HasDeploymentConsolereports whether a given user has the "deployment_console" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasDeploymentConsole reports whether a given user can get the console of resources in a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasDeploymentConsole(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -313,7 +300,7 @@ func HasDeploymentConsole(ctx context.Context, client *ent.Client, entUser *ent.
 	)
 }
 
-// CurrentUserHasDeploymentListreports whether the current user (pulled from context) has the "deployment_list" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasDeploymentList reports whether the current user (pulled from context) can list all deployments (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasDeploymentList(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -324,18 +311,7 @@ func CurrentUserHasDeploymentList(ctx context.Context, client *ent.Client, objec
 	)
 }
 
-// CurrentUserHasDeploymentCreatereports whether the current user (pulled from context) has the "deployment_create" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func CurrentUserHasDeploymentCreate(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
-	return CurrentUserHasPermission(
-		ctx,
-		client,
-		grantedpermission.ObjectTypeDeployment,
-		objectID,
-		actions.ActionDeploymentCreate,
-	)
-}
-
-// CurrentUserHasDeploymentGetreports whether the current user (pulled from context) has the "deployment_get" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasDeploymentGet reports whether the current user (pulled from context) can get a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasDeploymentGet(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -346,7 +322,7 @@ func CurrentUserHasDeploymentGet(ctx context.Context, client *ent.Client, object
 	)
 }
 
-// CurrentUserHasDeploymentUpdatereports whether the current user (pulled from context) has the "deployment_update" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasDeploymentUpdate reports whether the current user (pulled from context) can update a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasDeploymentUpdate(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -357,7 +333,7 @@ func CurrentUserHasDeploymentUpdate(ctx context.Context, client *ent.Client, obj
 	)
 }
 
-// CurrentUserHasDeploymentDeletereports whether the current user (pulled from context) has the "deployment_delete" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasDeploymentDelete reports whether the current user (pulled from context) can delete a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasDeploymentDelete(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -368,7 +344,7 @@ func CurrentUserHasDeploymentDelete(ctx context.Context, client *ent.Client, obj
 	)
 }
 
-// CurrentUserHasDeploymentDestroyreports whether the current user (pulled from context) has the "deployment_destroy" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasDeploymentDestroy reports whether the current user (pulled from context) can destroy a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasDeploymentDestroy(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -379,7 +355,7 @@ func CurrentUserHasDeploymentDestroy(ctx context.Context, client *ent.Client, ob
 	)
 }
 
-// CurrentUserHasDeploymentRedeployreports whether the current user (pulled from context) has the "deployment_redeploy" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasDeploymentRedeploy reports whether the current user (pulled from context) can redeploy a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasDeploymentRedeploy(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -390,7 +366,7 @@ func CurrentUserHasDeploymentRedeploy(ctx context.Context, client *ent.Client, o
 	)
 }
 
-// CurrentUserHasDeploymentPowerreports whether the current user (pulled from context) has the "deployment_power" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasDeploymentPower reports whether the current user (pulled from context) can control the power state of resources in a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasDeploymentPower(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -401,7 +377,7 @@ func CurrentUserHasDeploymentPower(ctx context.Context, client *ent.Client, obje
 	)
 }
 
-// CurrentUserHasDeploymentConsolereports whether the current user (pulled from context) has the "deployment_console" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasDeploymentConsole reports whether the current user (pulled from context) can get the console of resources in a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasDeploymentConsole(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -414,7 +390,7 @@ func CurrentUserHasDeploymentConsole(ctx context.Context, client *ent.Client, ob
 
 // Group //
 
-// HasGroupListreports whether a given user has the "group_list" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasGroupList reports whether a given user can list all groups (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasGroupList(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -426,7 +402,7 @@ func HasGroupList(ctx context.Context, client *ent.Client, entUser *ent.User, ob
 	)
 }
 
-// HasGroupCreatereports whether a given user has the "group_create" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasGroupCreate reports whether a given user can create groups. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasGroupCreate(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -438,7 +414,7 @@ func HasGroupCreate(ctx context.Context, client *ent.Client, entUser *ent.User, 
 	)
 }
 
-// HasGroupGetreports whether a given user has the "group_get" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasGroupGet reports whether a given user can get a given group. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasGroupGet(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -450,7 +426,7 @@ func HasGroupGet(ctx context.Context, client *ent.Client, entUser *ent.User, obj
 	)
 }
 
-// HasGroupUpdatereports whether a given user has the "group_update" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasGroupUpdate reports whether a given user can update a given group. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasGroupUpdate(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -462,7 +438,7 @@ func HasGroupUpdate(ctx context.Context, client *ent.Client, entUser *ent.User, 
 	)
 }
 
-// HasGroupDeletereports whether a given user has the "group_delete" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasGroupDelete reports whether a given user can delete a given group. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasGroupDelete(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -474,7 +450,7 @@ func HasGroupDelete(ctx context.Context, client *ent.Client, entUser *ent.User, 
 	)
 }
 
-// CurrentUserHasGroupListreports whether the current user (pulled from context) has the "group_list" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasGroupList reports whether the current user (pulled from context) can list all groups (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasGroupList(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -485,7 +461,7 @@ func CurrentUserHasGroupList(ctx context.Context, client *ent.Client, objectID u
 	)
 }
 
-// CurrentUserHasGroupCreatereports whether the current user (pulled from context) has the "group_create" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasGroupCreate reports whether the current user (pulled from context) can create groups. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasGroupCreate(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -496,7 +472,7 @@ func CurrentUserHasGroupCreate(ctx context.Context, client *ent.Client, objectID
 	)
 }
 
-// CurrentUserHasGroupGetreports whether the current user (pulled from context) has the "group_get" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasGroupGet reports whether the current user (pulled from context) can get a given group. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasGroupGet(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -507,7 +483,7 @@ func CurrentUserHasGroupGet(ctx context.Context, client *ent.Client, objectID uu
 	)
 }
 
-// CurrentUserHasGroupUpdatereports whether the current user (pulled from context) has the "group_update" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasGroupUpdate reports whether the current user (pulled from context) can update a given group. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasGroupUpdate(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -518,7 +494,7 @@ func CurrentUserHasGroupUpdate(ctx context.Context, client *ent.Client, objectID
 	)
 }
 
-// CurrentUserHasGroupDeletereports whether the current user (pulled from context) has the "group_delete" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasGroupDelete reports whether the current user (pulled from context) can delete a given group. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasGroupDelete(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -531,7 +507,7 @@ func CurrentUserHasGroupDelete(ctx context.Context, client *ent.Client, objectID
 
 // Permission //
 
-// HasPermissionListreports whether a given user has the "permission_list" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasPermissionList reports whether a given user can list all permissions (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasPermissionList(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -543,7 +519,7 @@ func HasPermissionList(ctx context.Context, client *ent.Client, entUser *ent.Use
 	)
 }
 
-// HasPermissionGetreports whether a given user has the "permission_get" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasPermissionGet reports whether a given user can get a given permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasPermissionGet(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -555,7 +531,7 @@ func HasPermissionGet(ctx context.Context, client *ent.Client, entUser *ent.User
 	)
 }
 
-// HasPermissionGrantreports whether a given user has the "permission_grant" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasPermissionGrant reports whether a given user can grant permissions (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasPermissionGrant(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -567,7 +543,7 @@ func HasPermissionGrant(ctx context.Context, client *ent.Client, entUser *ent.Us
 	)
 }
 
-// HasPermissionRevokereports whether a given user has the "permission_revoke" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasPermissionRevoke reports whether a given user can revoke permissions (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasPermissionRevoke(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -579,7 +555,7 @@ func HasPermissionRevoke(ctx context.Context, client *ent.Client, entUser *ent.U
 	)
 }
 
-// CurrentUserHasPermissionListreports whether the current user (pulled from context) has the "permission_list" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasPermissionList reports whether the current user (pulled from context) can list all permissions (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasPermissionList(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -590,7 +566,7 @@ func CurrentUserHasPermissionList(ctx context.Context, client *ent.Client, objec
 	)
 }
 
-// CurrentUserHasPermissionGetreports whether the current user (pulled from context) has the "permission_get" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasPermissionGet reports whether the current user (pulled from context) can get a given permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasPermissionGet(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -601,7 +577,7 @@ func CurrentUserHasPermissionGet(ctx context.Context, client *ent.Client, object
 	)
 }
 
-// CurrentUserHasPermissionGrantreports whether the current user (pulled from context) has the "permission_grant" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasPermissionGrant reports whether the current user (pulled from context) can grant permissions (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasPermissionGrant(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -612,7 +588,7 @@ func CurrentUserHasPermissionGrant(ctx context.Context, client *ent.Client, obje
 	)
 }
 
-// CurrentUserHasPermissionRevokereports whether the current user (pulled from context) has the "permission_revoke" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasPermissionRevoke reports whether the current user (pulled from context) can revoke permissions (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasPermissionRevoke(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -625,7 +601,7 @@ func CurrentUserHasPermissionRevoke(ctx context.Context, client *ent.Client, obj
 
 // Provider //
 
-// HasProviderListreports whether a given user has the "provider_list" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasProviderList reports whether a given user can list all providers (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasProviderList(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -637,7 +613,7 @@ func HasProviderList(ctx context.Context, client *ent.Client, entUser *ent.User,
 	)
 }
 
-// HasProviderCreatereports whether a given user has the "provider_create" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasProviderCreate reports whether a given user can create providers. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasProviderCreate(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -649,7 +625,7 @@ func HasProviderCreate(ctx context.Context, client *ent.Client, entUser *ent.Use
 	)
 }
 
-// HasProviderGetreports whether a given user has the "provider_get" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasProviderGet reports whether a given user can get a given provider. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasProviderGet(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -661,7 +637,7 @@ func HasProviderGet(ctx context.Context, client *ent.Client, entUser *ent.User, 
 	)
 }
 
-// HasProviderUpdatereports whether a given user has the "provider_update" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasProviderUpdate reports whether a given user can update a given provider. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasProviderUpdate(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -673,7 +649,7 @@ func HasProviderUpdate(ctx context.Context, client *ent.Client, entUser *ent.Use
 	)
 }
 
-// HasProviderDeletereports whether a given user has the "provider_delete" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasProviderDelete reports whether a given user can delete a given provider. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasProviderDelete(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -685,7 +661,7 @@ func HasProviderDelete(ctx context.Context, client *ent.Client, entUser *ent.Use
 	)
 }
 
-// HasProviderLoadreports whether a given user has the "provider_load" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasProviderLoad reports whether a given user can load a given provider. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasProviderLoad(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -697,7 +673,7 @@ func HasProviderLoad(ctx context.Context, client *ent.Client, entUser *ent.User,
 	)
 }
 
-// HasProviderUnloadreports whether a given user has the "provider_unload" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasProviderUnload reports whether a given user can unload a given provider. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasProviderUnload(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -709,7 +685,7 @@ func HasProviderUnload(ctx context.Context, client *ent.Client, entUser *ent.Use
 	)
 }
 
-// HasProviderConfigurereports whether a given user has the "provider_configure" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasProviderConfigure reports whether a given user can configure a given provider. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasProviderConfigure(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -721,7 +697,7 @@ func HasProviderConfigure(ctx context.Context, client *ent.Client, entUser *ent.
 	)
 }
 
-// CurrentUserHasProviderListreports whether the current user (pulled from context) has the "provider_list" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasProviderList reports whether the current user (pulled from context) can list all providers (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasProviderList(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -732,7 +708,7 @@ func CurrentUserHasProviderList(ctx context.Context, client *ent.Client, objectI
 	)
 }
 
-// CurrentUserHasProviderCreatereports whether the current user (pulled from context) has the "provider_create" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasProviderCreate reports whether the current user (pulled from context) can create providers. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasProviderCreate(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -743,7 +719,7 @@ func CurrentUserHasProviderCreate(ctx context.Context, client *ent.Client, objec
 	)
 }
 
-// CurrentUserHasProviderGetreports whether the current user (pulled from context) has the "provider_get" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasProviderGet reports whether the current user (pulled from context) can get a given provider. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasProviderGet(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -754,7 +730,7 @@ func CurrentUserHasProviderGet(ctx context.Context, client *ent.Client, objectID
 	)
 }
 
-// CurrentUserHasProviderUpdatereports whether the current user (pulled from context) has the "provider_update" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasProviderUpdate reports whether the current user (pulled from context) can update a given provider. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasProviderUpdate(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -765,7 +741,7 @@ func CurrentUserHasProviderUpdate(ctx context.Context, client *ent.Client, objec
 	)
 }
 
-// CurrentUserHasProviderDeletereports whether the current user (pulled from context) has the "provider_delete" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasProviderDelete reports whether the current user (pulled from context) can delete a given provider. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasProviderDelete(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -776,7 +752,7 @@ func CurrentUserHasProviderDelete(ctx context.Context, client *ent.Client, objec
 	)
 }
 
-// CurrentUserHasProviderLoadreports whether the current user (pulled from context) has the "provider_load" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasProviderLoad reports whether the current user (pulled from context) can load a given provider. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasProviderLoad(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -787,7 +763,7 @@ func CurrentUserHasProviderLoad(ctx context.Context, client *ent.Client, objectI
 	)
 }
 
-// CurrentUserHasProviderUnloadreports whether the current user (pulled from context) has the "provider_unload" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasProviderUnload reports whether the current user (pulled from context) can unload a given provider. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasProviderUnload(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -798,7 +774,7 @@ func CurrentUserHasProviderUnload(ctx context.Context, client *ent.Client, objec
 	)
 }
 
-// CurrentUserHasProviderConfigurereports whether the current user (pulled from context) has the "provider_configure" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasProviderConfigure reports whether the current user (pulled from context) can configure a given provider. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasProviderConfigure(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -811,7 +787,7 @@ func CurrentUserHasProviderConfigure(ctx context.Context, client *ent.Client, ob
 
 // User //
 
-// HasUserListreports whether a given user has the "user_list" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasUserList reports whether a given user can list all users (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasUserList(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -823,7 +799,7 @@ func HasUserList(ctx context.Context, client *ent.Client, entUser *ent.User, obj
 	)
 }
 
-// HasUserCreatereports whether a given user has the "user_create" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasUserCreate reports whether a given user can create users. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasUserCreate(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -835,7 +811,7 @@ func HasUserCreate(ctx context.Context, client *ent.Client, entUser *ent.User, o
 	)
 }
 
-// HasUserGetreports whether a given user has the "user_get" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasUserGet reports whether a given user can get a given user. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasUserGet(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -847,7 +823,7 @@ func HasUserGet(ctx context.Context, client *ent.Client, entUser *ent.User, obje
 	)
 }
 
-// HasUserUpdatereports whether a given user has the "user_update" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasUserUpdate reports whether a given user can update a given user. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasUserUpdate(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -859,7 +835,7 @@ func HasUserUpdate(ctx context.Context, client *ent.Client, entUser *ent.User, o
 	)
 }
 
-// HasUserDeletereports whether a given user has the "user_delete" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// HasUserDelete reports whether a given user can delete a given user. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func HasUserDelete(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
 	return HasPermission(
 		ctx,
@@ -871,7 +847,7 @@ func HasUserDelete(ctx context.Context, client *ent.Client, entUser *ent.User, o
 	)
 }
 
-// CurrentUserHasUserListreports whether the current user (pulled from context) has the "user_list" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasUserList reports whether the current user (pulled from context) can list all users (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasUserList(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -882,7 +858,7 @@ func CurrentUserHasUserList(ctx context.Context, client *ent.Client, objectID uu
 	)
 }
 
-// CurrentUserHasUserCreatereports whether the current user (pulled from context) has the "user_create" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasUserCreate reports whether the current user (pulled from context) can create users. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasUserCreate(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -893,7 +869,7 @@ func CurrentUserHasUserCreate(ctx context.Context, client *ent.Client, objectID 
 	)
 }
 
-// CurrentUserHasUserGetreports whether the current user (pulled from context) has the "user_get" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasUserGet reports whether the current user (pulled from context) can get a given user. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasUserGet(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -904,7 +880,7 @@ func CurrentUserHasUserGet(ctx context.Context, client *ent.Client, objectID uui
 	)
 }
 
-// CurrentUserHasUserUpdatereports whether the current user (pulled from context) has the "user_update" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasUserUpdate reports whether the current user (pulled from context) can update a given user. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasUserUpdate(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,
@@ -915,7 +891,7 @@ func CurrentUserHasUserUpdate(ctx context.Context, client *ent.Client, objectID 
 	)
 }
 
-// CurrentUserHasUserDeletereports whether the current user (pulled from context) has the "user_delete" permission. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+// CurrentUserHasUserDelete reports whether the current user (pulled from context) can delete a given user. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
 func CurrentUserHasUserDelete(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
 	return CurrentUserHasPermission(
 		ctx,

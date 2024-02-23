@@ -1691,42 +1691,149 @@ enum ObjectType {
 }
 
 enum Action {
+  """
+  List all blueprints (only compatible with wildcard ID *)
+  """
   blueprint_list
+  """
+  Create blueprints (only compatible with wildcard ID *)
+  """
   blueprint_create
+  """
+  Get a given blueprint
+  """
   blueprint_get
+  """
+  Update a given blueprint
+  """
   blueprint_update
+  """
+  Delete a given blueprint
+  """
   blueprint_delete
+  """
+  Deploy a given blueprint
+  """
   blueprint_deploy
+  """
+  List all deployments (only compatible with wildcard ID *)
+  """
   deployment_list
-  deployment_create
+  """
+  Get a given deployment
+  """
   deployment_get
+  """
+  Update a given deployment
+  """
   deployment_update
+  """
+  Delete a given deployment
+  """
   deployment_delete
+  """
+  Destroy a given deployment
+  """
   deployment_destroy
+  """
+  Redeploy a given deployment
+  """
   deployment_redeploy
+  """
+  Control the power state of resources in a given deployment
+  """
   deployment_power
+  """
+  Get the console of resources in a given deployment
+  """
   deployment_console
+  """
+  List all groups (only compatible with wildcard ID *)
+  """
   group_list
+  """
+  Create groups
+  """
   group_create
+  """
+  Get a given group
+  """
   group_get
+  """
+  Update a given group
+  """
   group_update
+  """
+  Delete a given group
+  """
   group_delete
+  """
+  List all permissions (only compatible with wildcard ID *)
+  """
   permission_list
+  """
+  Get a given permission
+  """
   permission_get
+  """
+  Grant permissions (only compatible with wildcard ID *)
+  """
   permission_grant
+  """
+  Revoke permissions (only compatible with wildcard ID *)
+  """
   permission_revoke
+  """
+  List all providers (only compatible with wildcard ID *)
+  """
   provider_list
+  """
+  Create providers
+  """
   provider_create
+  """
+  Get a given provider
+  """
   provider_get
+  """
+  Update a given provider
+  """
   provider_update
+  """
+  Delete a given provider
+  """
   provider_delete
+  """
+  Load a given provider
+  """
   provider_load
+  """
+  Unload a given provider
+  """
   provider_unload
+  """
+  Configure a given provider
+  """
   provider_configure
+  """
+  List all users (only compatible with wildcard ID *)
+  """
   user_list
+  """
+  Create users
+  """
   user_create
+  """
+  Get a given user
+  """
   user_get
+  """
+  Update a given user
+  """
   user_update
+  """
+  Delete a given user
+  """
   user_delete
 }
 
@@ -14783,13 +14890,12 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 // region    ***************************** type.gotpl *****************************
 
 func (ec *executionContext) unmarshalNAction2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋpermissionᚋactionsᚐPermissionAction(ctx context.Context, v interface{}) (actions.PermissionAction, error) {
-	tmp, err := graphql.UnmarshalString(v)
-	res := actions.PermissionAction(tmp)
+	res, err := actions.UnmarshalPermissionAction(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNAction2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋpermissionᚋactionsᚐPermissionAction(ctx context.Context, sel ast.SelectionSet, v actions.PermissionAction) graphql.Marshaler {
-	res := graphql.MarshalString(string(v))
+	res := actions.MarshalPermissionAction(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")

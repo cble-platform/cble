@@ -16,89 +16,249 @@ type PermissionAction string
 // The following is an enum for use in the GraphQL Schema
 /*
 enum Action {
+	"""
+	List all blueprints (only compatible with wildcard ID *)
+	"""
   blueprint_list
+	"""
+	Create blueprints (only compatible with wildcard ID *)
+	"""
   blueprint_create
+	"""
+	Get a given blueprint
+	"""
   blueprint_get
+	"""
+	Update a given blueprint
+	"""
   blueprint_update
+	"""
+	Delete a given blueprint
+	"""
   blueprint_delete
+	"""
+	Deploy a given blueprint
+	"""
   blueprint_deploy
+	"""
+	List all deployments (only compatible with wildcard ID *)
+	"""
   deployment_list
-  deployment_create
+	"""
+	Get a given deployment
+	"""
   deployment_get
+	"""
+	Update a given deployment
+	"""
   deployment_update
+	"""
+	Delete a given deployment
+	"""
   deployment_delete
+	"""
+	Destroy a given deployment
+	"""
   deployment_destroy
+	"""
+	Redeploy a given deployment
+	"""
   deployment_redeploy
+	"""
+	Control the power state of resources in a given deployment
+	"""
   deployment_power
+	"""
+	Get the console of resources in a given deployment
+	"""
   deployment_console
+	"""
+	List all groups (only compatible with wildcard ID *)
+	"""
   group_list
+	"""
+	Create groups
+	"""
   group_create
+	"""
+	Get a given group
+	"""
   group_get
+	"""
+	Update a given group
+	"""
   group_update
+	"""
+	Delete a given group
+	"""
   group_delete
+	"""
+	List all permissions (only compatible with wildcard ID *)
+	"""
   permission_list
+	"""
+	Get a given permission
+	"""
   permission_get
+	"""
+	Grant permissions (only compatible with wildcard ID *)
+	"""
   permission_grant
+	"""
+	Revoke permissions (only compatible with wildcard ID *)
+	"""
   permission_revoke
+	"""
+	List all providers (only compatible with wildcard ID *)
+	"""
   provider_list
+	"""
+	Create providers
+	"""
   provider_create
+	"""
+	Get a given provider
+	"""
   provider_get
+	"""
+	Update a given provider
+	"""
   provider_update
+	"""
+	Delete a given provider
+	"""
   provider_delete
+	"""
+	Load a given provider
+	"""
   provider_load
+	"""
+	Unload a given provider
+	"""
   provider_unload
+	"""
+	Configure a given provider
+	"""
   provider_configure
+	"""
+	List all users (only compatible with wildcard ID *)
+	"""
   user_list
+	"""
+	Create users
+	"""
   user_create
+	"""
+	Get a given user
+	"""
   user_get
+	"""
+	Update a given user
+	"""
   user_update
+	"""
+	Delete a given user
+	"""
   user_delete
 }
 */
 
 const (
+	// -----------------------------------------------------------------
 	// Blueprint
-	ActionBlueprintList   PermissionAction = "blueprint_list"
+	// -----------------------------------------------------------------
+
+	// List all blueprints (only compatible with wildcard ID *)
+	ActionBlueprintList PermissionAction = "blueprint_list"
+	// Create blueprints (only compatible with wildcard ID *)
 	ActionBlueprintCreate PermissionAction = "blueprint_create"
-	ActionBlueprintGet    PermissionAction = "blueprint_get"
+	// Get a given blueprint
+	ActionBlueprintGet PermissionAction = "blueprint_get"
+	// Update a given blueprint
 	ActionBlueprintUpdate PermissionAction = "blueprint_update"
+	// Delete a given blueprint
 	ActionBlueprintDelete PermissionAction = "blueprint_delete"
+	// Deploy a given blueprint
 	ActionBlueprintDeploy PermissionAction = "blueprint_deploy"
+	// -----------------------------------------------------------------
 	// Deployment
-	ActionDeploymentList     PermissionAction = "deployment_list"
-	ActionDeploymentCreate   PermissionAction = "deployment_create"
-	ActionDeploymentGet      PermissionAction = "deployment_get"
-	ActionDeploymentUpdate   PermissionAction = "deployment_update"
-	ActionDeploymentDelete   PermissionAction = "deployment_delete"
-	ActionDeploymentDestroy  PermissionAction = "deployment_destroy"
+	// -----------------------------------------------------------------
+
+	// List all deployments (only compatible with wildcard ID *)
+	ActionDeploymentList PermissionAction = "deployment_list"
+	// Get a given deployment
+	ActionDeploymentGet PermissionAction = "deployment_get"
+	// Update a given deployment
+	ActionDeploymentUpdate PermissionAction = "deployment_update"
+	// Delete a given deployment
+	ActionDeploymentDelete PermissionAction = "deployment_delete"
+	// Destroy a given deployment
+	ActionDeploymentDestroy PermissionAction = "deployment_destroy"
+	// Redeploy a given deployment
 	ActionDeploymentRedeploy PermissionAction = "deployment_redeploy"
-	ActionDeploymentPower    PermissionAction = "deployment_power"
-	ActionDeploymentConsole  PermissionAction = "deployment_console"
+	// Control the power state of resources in a given deployment
+	ActionDeploymentPower PermissionAction = "deployment_power"
+	// Get the console of resources in a given deployment
+	ActionDeploymentConsole PermissionAction = "deployment_console"
+	// -----------------------------------------------------------------
 	// Group
-	ActionGroupList   PermissionAction = "group_list"
+	// -----------------------------------------------------------------
+
+	// List all groups (only compatible with wildcard ID *)
+	ActionGroupList PermissionAction = "group_list"
+	// Create groups
 	ActionGroupCreate PermissionAction = "group_create"
-	ActionGroupGet    PermissionAction = "group_get"
+	// Get a given group
+	ActionGroupGet PermissionAction = "group_get"
+	// Update a given group
 	ActionGroupUpdate PermissionAction = "group_update"
+	// Delete a given group
 	ActionGroupDelete PermissionAction = "group_delete"
+	// -----------------------------------------------------------------
 	// Permission
-	ActionPermissionList   PermissionAction = "permission_list"
-	ActionPermissionGet    PermissionAction = "permission_get"
-	ActionPermissionGrant  PermissionAction = "permission_grant"
+	// -----------------------------------------------------------------
+
+	// List all permissions (only compatible with wildcard ID *)
+	ActionPermissionList PermissionAction = "permission_list"
+	// Get a given permission
+	ActionPermissionGet PermissionAction = "permission_get"
+	// Grant permissions (only compatible with wildcard ID *)
+	ActionPermissionGrant PermissionAction = "permission_grant"
+	// Revoke permissions (only compatible with wildcard ID *)
 	ActionPermissionRevoke PermissionAction = "permission_revoke"
+	// -----------------------------------------------------------------
 	// Provider
-	ActionProviderList      PermissionAction = "provider_list"
-	ActionProviderCreate    PermissionAction = "provider_create"
-	ActionProviderGet       PermissionAction = "provider_get"
-	ActionProviderUpdate    PermissionAction = "provider_update"
-	ActionProviderDelete    PermissionAction = "provider_delete"
-	ActionProviderLoad      PermissionAction = "provider_load"
-	ActionProviderUnload    PermissionAction = "provider_unload"
+	// -----------------------------------------------------------------
+
+	// List all providers (only compatible with wildcard ID *)
+	ActionProviderList PermissionAction = "provider_list"
+	// Create providers
+	ActionProviderCreate PermissionAction = "provider_create"
+	// Get a given provider
+	ActionProviderGet PermissionAction = "provider_get"
+	// Update a given provider
+	ActionProviderUpdate PermissionAction = "provider_update"
+	// Delete a given provider
+	ActionProviderDelete PermissionAction = "provider_delete"
+	// Load a given provider
+	ActionProviderLoad PermissionAction = "provider_load"
+	// Unload a given provider
+	ActionProviderUnload PermissionAction = "provider_unload"
+	// Configure a given provider
 	ActionProviderConfigure PermissionAction = "provider_configure"
+	// -----------------------------------------------------------------
 	// User
-	ActionUserList   PermissionAction = "user_list"
+	// -----------------------------------------------------------------
+
+	// List all users (only compatible with wildcard ID *)
+	ActionUserList PermissionAction = "user_list"
+	// Create users
 	ActionUserCreate PermissionAction = "user_create"
-	ActionUserGet    PermissionAction = "user_get"
+	// Get a given user
+	ActionUserGet PermissionAction = "user_get"
+	// Update a given user
 	ActionUserUpdate PermissionAction = "user_update"
+	// Delete a given user
 	ActionUserDelete PermissionAction = "user_delete"
 	// Returned for any potential errors
 	ActionUnknown PermissionAction = "unknown"
@@ -126,7 +286,6 @@ var actionMap = map[string]map[string]PermissionAction{
 	// Deployment
 	"deployment": {
 		"list":     ActionDeploymentList,
-		"create":   ActionDeploymentCreate,
 		"get":      ActionDeploymentGet,
 		"update":   ActionDeploymentUpdate,
 		"delete":   ActionDeploymentDelete,
@@ -191,7 +350,6 @@ func (PermissionAction) Values() (kinds []string) {
 		ActionBlueprintDelete,
 		ActionBlueprintDeploy,
 		ActionDeploymentList,
-		ActionDeploymentCreate,
 		ActionDeploymentGet,
 		ActionDeploymentUpdate,
 		ActionDeploymentDelete,
@@ -228,7 +386,7 @@ func (PermissionAction) Values() (kinds []string) {
 	return
 }
 
-func MarshalUUID(val PermissionAction) graphql.Marshaler {
+func MarshalPermissionAction(val PermissionAction) graphql.Marshaler {
 	return graphql.WriterFunc(func(w io.Writer) {
 		err := json.NewEncoder(w).Encode(val)
 		if err != nil {
@@ -237,7 +395,7 @@ func MarshalUUID(val PermissionAction) graphql.Marshaler {
 	})
 }
 
-func UnmarshalUUID(v interface{}) (PermissionAction, error) {
+func UnmarshalPermissionAction(v interface{}) (PermissionAction, error) {
 	if m, ok := v.(string); ok {
 		return PermissionAction(m), nil
 	}

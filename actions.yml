@@ -1,43 +1,42 @@
 blueprint:
-  - list
-  - create
-  - get
-  - update
-  - delete
-  - deploy
+  - list # List all blueprints (only compatible with wildcard ID *)
+  - create # Create blueprints (only compatible with wildcard ID *)
+  - get # Get a given blueprint
+  - update # Update a given blueprint
+  - delete # Delete a given blueprint
+  - deploy # Deploy a given blueprint
 deployment:
-  - list
-  - create
-  - get
-  - update
-  - delete
-  - destroy
-  - redeploy
-  - power
-  - console
+  - list # List all deployments (only compatible with wildcard ID *)
+  - get # Get a given deployment
+  - update # Update a given deployment
+  - delete # Delete a given deployment
+  - destroy # Destroy a given deployment
+  - redeploy # Redeploy a given deployment
+  - power # Control the power state of resources in a given deployment
+  - console # Get the console of resources in a given deployment
 group:
-  - list
-  - create
-  - get
-  - update
-  - delete
+  - list # List all groups (only compatible with wildcard ID *)
+  - create # Create groups
+  - get # Get a given group
+  - update # Update a given group
+  - delete # Delete a given group
 permission:
-  - list
-  - get
-  - grant
-  - revoke
+  - list # List all permissions (only compatible with wildcard ID *)
+  - get # Get a given permission
+  - grant # Grant permissions (only compatible with wildcard ID *)
+  - revoke # Revoke permissions (only compatible with wildcard ID *)
 provider:
-  - list
-  - create
-  - get
-  - update
-  - delete
-  - load
-  - unload
-  - configure
+  - list # List all providers (only compatible with wildcard ID *)
+  - create # Create providers
+  - get # Get a given provider
+  - update # Update a given provider
+  - delete # Delete a given provider
+  - load # Load a given provider
+  - unload # Unload a given provider
+  - configure # Configure a given provider
 user:
-  - list
-  - create
-  - get
-  - update
-  - delete
+  - list # List all users (only compatible with wildcard ID *)
+  - create # Create users
+  - get # Get a given user
+  - update # Update a given user
+  - delete # Delete a given user
