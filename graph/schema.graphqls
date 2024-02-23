@@ -51,11 +51,12 @@ type Resource {
 }
 
 enum DeploymentState {
-  AWAITING
-  INPROGRESS
-  COMPLETE
-  FAILED
-  DELETED
+  awaiting
+  in_progress
+  complete
+  failed
+  destroyed
+  suspended
 }
 
 type Deployment {
@@ -79,15 +80,16 @@ type DeploymentPage {
 }
 
 enum DeploymentNodeState {
-  AWAITING
-  PARENTAWAITING
-  INPROGRESS
-  COMPLETE
-  TAINTED
-  FAILED
-  TODELETE
-  DELETED
-  TOREBUILD
+  to_deploy
+  to_destroy
+  to_rebuild
+  parent_awaiting
+  child_awaiting
+  in_progress
+  complete
+  tainted
+  failed
+  destroyed
 }
 
 type DeploymentNode {
@@ -389,6 +391,10 @@ type Query {
   List deployments (requires permission `x.x.deployments.*.list`)
   """
   deployments(count: Int! = 10, offset: Int): DeploymentPage!
+  """
+  List deployments user is the requester of
+  """
+  myDeployments(includeExpiredAndDestroyed: Boolean! = false, count: Int! = 10, offset: Int): DeploymentPage!
   """
   Get a deployment (requires permission `x.x.deployments.x.get`)
   """

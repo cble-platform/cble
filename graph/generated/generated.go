@@ -194,6 +194,7 @@ type ComplexityRoot struct {
 		Groups               func(childComplexity int, count int, offset *int) int
 		Me                   func(childComplexity int) int
 		MeHasPermission      func(childComplexity int, objectType grantedpermission.ObjectType, objectID *uuid.UUID, action actions.PermissionAction) int
+		MyDeployments        func(childComplexity int, includeExpiredAndDestroyed bool, count int, offset *int) int
 		Permission           func(childComplexity int, id uuid.UUID) int
 		Permissions          func(childComplexity int, count int, offset *int) int
 		Provider             func(childComplexity int, id uuid.UUID) int
@@ -315,6 +316,7 @@ type QueryResolver interface {
 	DeployableBlueprints(ctx context.Context, count int, offset *int) (*model.BlueprintPage, error)
 	Blueprint(ctx context.Context, id uuid.UUID) (*ent.Blueprint, error)
 	Deployments(ctx context.Context, count int, offset *int) (*model.DeploymentPage, error)
+	MyDeployments(ctx context.Context, includeExpiredAndDestroyed bool, count int, offset *int) (*model.DeploymentPage, error)
 	Deployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error)
 	SearchUsers(ctx context.Context, search string, count int, offset *int) (*model.UserPage, error)
 	SearchGroups(ctx context.Context, search string, count int, offset *int) (*model.GroupPage, error)
@@ -1183,6 +1185,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.MeHasPermission(childComplexity, args["objectType"].(grantedpermission.ObjectType), args["objectID"].(*uuid.UUID), args["action"].(actions.PermissionAction)), true
 
+	case "Query.myDeployments":
+		if e.complexity.Query.MyDeployments == nil {
+			break
+		}
+
+		args, err := ec.field_Query_myDeployments_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.MyDeployments(childComplexity, args["includeExpiredAndDestroyed"].(bool), args["count"].(int), args["offset"].(*int)), true
+
 	case "Query.permission":
 		if e.complexity.Query.Permission == nil {
 			break
@@ -1610,11 +1624,12 @@ type Resource {
 }
 
 enum DeploymentState {
-  AWAITING
-  INPROGRESS
-  COMPLETE
-  FAILED
-  DELETED
+  awaiting
+  in_progress
+  complete
+  failed
+  destroyed
+  suspended
 }
 
 type Deployment {
@@ -1638,15 +1653,16 @@ type DeploymentPage {
 }
 
 enum DeploymentNodeState {
-  AWAITING
-  PARENTAWAITING
-  INPROGRESS
-  COMPLETE
-  TAINTED
-  FAILED
-  TODELETE
-  DELETED
-  TOREBUILD
+  to_deploy
+  to_destroy
+  to_rebuild
+  parent_awaiting
+  child_awaiting
+  in_progress
+  complete
+  tainted
+  failed
+  destroyed
 }
 
 type DeploymentNode {
@@ -1948,6 +1964,10 @@ type Query {
   List deployments (requires permission ` + "`" + `x.x.deployments.*.list` + "`" + `)
   """
   deployments(count: Int! = 10, offset: Int): DeploymentPage!
+  """
+  List deployments user is the requester of
+  """
+  myDeployments(includeExpiredAndDestroyed: Boolean! = false, count: Int! = 10, offset: Int): DeploymentPage!
   """
   Get a deployment (requires permission ` + "`" + `x.x.deployments.x.get` + "`" + `)
   """
@@ -2841,6 +2861,39 @@ func (ec *executionContext) field_Query_meHasPermission_args(ctx context.Context
 		}
 	}
 	args["action"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_myDeployments_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 bool
+	if tmp, ok := rawArgs["includeExpiredAndDestroyed"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeExpiredAndDestroyed"))
+		arg0, err = ec.unmarshalNBoolean2bool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["includeExpiredAndDestroyed"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["count"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("count"))
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["count"] = arg1
+	var arg2 *int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg2, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg2
 	return args, nil
 }
 
@@ -8745,6 +8798,67 @@ func (ec *executionContext) fieldContext_Query_deployments(ctx context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_myDeployments(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_myDeployments(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().MyDeployments(rctx, fc.Args["includeExpiredAndDestroyed"].(bool), fc.Args["count"].(int), fc.Args["offset"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.DeploymentPage)
+	fc.Result = res
+	return ec.marshalNDeploymentPage2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐDeploymentPage(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_myDeployments(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "deployments":
+				return ec.fieldContext_DeploymentPage_deployments(ctx, field)
+			case "total":
+				return ec.fieldContext_DeploymentPage_total(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DeploymentPage", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_myDeployments_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_deployment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_deployment(ctx, field)
 	if err != nil {
@@ -13981,6 +14095,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_deployments(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "myDeployments":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_myDeployments(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

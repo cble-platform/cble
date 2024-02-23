@@ -1083,6 +1083,43 @@ func (r *queryResolver) Deployments(ctx context.Context, count int, offset *int)
 	}, nil
 }
 
+// MyDeployments is the resolver for the myDeployments field.
+func (r *queryResolver) MyDeployments(ctx context.Context, includeExpiredAndDestroyed bool, count int, offset *int) (*model.DeploymentPage, error) {
+	// Get the current authenticated user
+	currentUser, err := auth.ForContext(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to get user from context: %v", err)
+	}
+
+	// Query all deployments where current user is requester of the deployment
+	q := r.ent.Deployment.Query().Where(
+		deployment.HasRequesterWith(user.IDEQ(currentUser.ID)), // Where current user is requester
+	).
+		Limit(count).
+		Order(ent.Desc(deployment.FieldCreatedAt)) // Order by creation date newest to oldest
+	// Exclude expired and destroyed deployments by default
+	if !includeExpiredAndDestroyed {
+		q = q.Where(deployment.ExpiresAtGTE(time.Now()), deployment.StateNEQ(deployment.StateDestroyed))
+	}
+	if offset != nil {
+		q = q.Offset(*offset)
+	}
+	entDeployments, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entDeploymentCount, err := r.ent.Deployment.Query().Where(
+		deployment.HasRequesterWith(user.IDEQ(currentUser.ID)), // Where current user is requester
+	).Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.DeploymentPage{
+		Deployments: entDeployments,
+		Total:       entDeploymentCount,
+	}, nil
+}
+
 // Get a deployment (requires permission `x.x.deployments.x.get`)
 func (r *queryResolver) Deployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error) {
 	// Check if current user has permission

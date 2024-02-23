@@ -75,32 +75,34 @@ type UserPage struct {
 type DeploymentNodeState string
 
 const (
-	DeploymentNodeStateAwaiting       DeploymentNodeState = "AWAITING"
-	DeploymentNodeStateParentawaiting DeploymentNodeState = "PARENTAWAITING"
-	DeploymentNodeStateInprogress     DeploymentNodeState = "INPROGRESS"
-	DeploymentNodeStateComplete       DeploymentNodeState = "COMPLETE"
-	DeploymentNodeStateTainted        DeploymentNodeState = "TAINTED"
-	DeploymentNodeStateFailed         DeploymentNodeState = "FAILED"
-	DeploymentNodeStateTodelete       DeploymentNodeState = "TODELETE"
-	DeploymentNodeStateDeleted        DeploymentNodeState = "DELETED"
-	DeploymentNodeStateTorebuild      DeploymentNodeState = "TOREBUILD"
+	DeploymentNodeStateToDeploy       DeploymentNodeState = "to_deploy"
+	DeploymentNodeStateToDestroy      DeploymentNodeState = "to_destroy"
+	DeploymentNodeStateToRebuild      DeploymentNodeState = "to_rebuild"
+	DeploymentNodeStateParentAwaiting DeploymentNodeState = "parent_awaiting"
+	DeploymentNodeStateChildAwaiting  DeploymentNodeState = "child_awaiting"
+	DeploymentNodeStateInProgress     DeploymentNodeState = "in_progress"
+	DeploymentNodeStateComplete       DeploymentNodeState = "complete"
+	DeploymentNodeStateTainted        DeploymentNodeState = "tainted"
+	DeploymentNodeStateFailed         DeploymentNodeState = "failed"
+	DeploymentNodeStateDestroyed      DeploymentNodeState = "destroyed"
 )
 
 var AllDeploymentNodeState = []DeploymentNodeState{
-	DeploymentNodeStateAwaiting,
-	DeploymentNodeStateParentawaiting,
-	DeploymentNodeStateInprogress,
+	DeploymentNodeStateToDeploy,
+	DeploymentNodeStateToDestroy,
+	DeploymentNodeStateToRebuild,
+	DeploymentNodeStateParentAwaiting,
+	DeploymentNodeStateChildAwaiting,
+	DeploymentNodeStateInProgress,
 	DeploymentNodeStateComplete,
 	DeploymentNodeStateTainted,
 	DeploymentNodeStateFailed,
-	DeploymentNodeStateTodelete,
-	DeploymentNodeStateDeleted,
-	DeploymentNodeStateTorebuild,
+	DeploymentNodeStateDestroyed,
 }
 
 func (e DeploymentNodeState) IsValid() bool {
 	switch e {
-	case DeploymentNodeStateAwaiting, DeploymentNodeStateParentawaiting, DeploymentNodeStateInprogress, DeploymentNodeStateComplete, DeploymentNodeStateTainted, DeploymentNodeStateFailed, DeploymentNodeStateTodelete, DeploymentNodeStateDeleted, DeploymentNodeStateTorebuild:
+	case DeploymentNodeStateToDeploy, DeploymentNodeStateToDestroy, DeploymentNodeStateToRebuild, DeploymentNodeStateParentAwaiting, DeploymentNodeStateChildAwaiting, DeploymentNodeStateInProgress, DeploymentNodeStateComplete, DeploymentNodeStateTainted, DeploymentNodeStateFailed, DeploymentNodeStateDestroyed:
 		return true
 	}
 	return false
@@ -130,24 +132,26 @@ func (e DeploymentNodeState) MarshalGQL(w io.Writer) {
 type DeploymentState string
 
 const (
-	DeploymentStateAwaiting   DeploymentState = "AWAITING"
-	DeploymentStateInprogress DeploymentState = "INPROGRESS"
-	DeploymentStateComplete   DeploymentState = "COMPLETE"
-	DeploymentStateFailed     DeploymentState = "FAILED"
-	DeploymentStateDeleted    DeploymentState = "DELETED"
+	DeploymentStateAwaiting   DeploymentState = "awaiting"
+	DeploymentStateInProgress DeploymentState = "in_progress"
+	DeploymentStateComplete   DeploymentState = "complete"
+	DeploymentStateFailed     DeploymentState = "failed"
+	DeploymentStateDestroyed  DeploymentState = "destroyed"
+	DeploymentStateSuspended  DeploymentState = "suspended"
 )
 
 var AllDeploymentState = []DeploymentState{
 	DeploymentStateAwaiting,
-	DeploymentStateInprogress,
+	DeploymentStateInProgress,
 	DeploymentStateComplete,
 	DeploymentStateFailed,
-	DeploymentStateDeleted,
+	DeploymentStateDestroyed,
+	DeploymentStateSuspended,
 }
 
 func (e DeploymentState) IsValid() bool {
 	switch e {
-	case DeploymentStateAwaiting, DeploymentStateInprogress, DeploymentStateComplete, DeploymentStateFailed, DeploymentStateDeleted:
+	case DeploymentStateAwaiting, DeploymentStateInProgress, DeploymentStateComplete, DeploymentStateFailed, DeploymentStateDestroyed, DeploymentStateSuspended:
 		return true
 	}
 	return false
