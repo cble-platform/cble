@@ -18,223 +18,217 @@
         "enumValues": [
           {
             "name": "blueprint_create",
-            "description": null,
+            "description": "Create blueprints (only compatible with wildcard ID *)",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "blueprint_delete",
-            "description": null,
+            "description": "Delete a given blueprint",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "blueprint_deploy",
-            "description": null,
+            "description": "Deploy a given blueprint",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "blueprint_get",
-            "description": null,
+            "description": "Get a given blueprint",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "blueprint_list",
-            "description": null,
+            "description": "List all blueprints (only compatible with wildcard ID *)",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "blueprint_update",
-            "description": null,
+            "description": "Update a given blueprint",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "deployment_console",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "deployment_create",
-            "description": null,
+            "description": "Get the console of resources in a given deployment",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "deployment_delete",
-            "description": null,
+            "description": "Delete a given deployment",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "deployment_destroy",
-            "description": null,
+            "description": "Destroy a given deployment",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "deployment_get",
-            "description": null,
+            "description": "Get a given deployment",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "deployment_list",
-            "description": null,
+            "description": "List all deployments (only compatible with wildcard ID *)",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "deployment_power",
-            "description": null,
+            "description": "Control the power state of resources in a given deployment",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "deployment_redeploy",
-            "description": null,
+            "description": "Redeploy a given deployment",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "deployment_update",
-            "description": null,
+            "description": "Update a given deployment",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "group_create",
-            "description": null,
+            "description": "Create groups",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "group_delete",
-            "description": null,
+            "description": "Delete a given group",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "group_get",
-            "description": null,
+            "description": "Get a given group",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "group_list",
-            "description": null,
+            "description": "List all groups (only compatible with wildcard ID *)",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "group_update",
-            "description": null,
+            "description": "Update a given group",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "permission_get",
-            "description": null,
+            "description": "Get a given permission",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "permission_grant",
-            "description": null,
+            "description": "Grant permissions (only compatible with wildcard ID *)",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "permission_list",
-            "description": null,
+            "description": "List all permissions (only compatible with wildcard ID *)",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "permission_revoke",
-            "description": null,
+            "description": "Revoke permissions (only compatible with wildcard ID *)",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "provider_configure",
-            "description": null,
+            "description": "Configure a given provider",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "provider_create",
-            "description": null,
+            "description": "Create providers",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "provider_delete",
-            "description": null,
+            "description": "Delete a given provider",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "provider_get",
-            "description": null,
+            "description": "Get a given provider",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "provider_list",
-            "description": null,
+            "description": "List all providers (only compatible with wildcard ID *)",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "provider_load",
-            "description": null,
+            "description": "Load a given provider",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "provider_unload",
-            "description": null,
+            "description": "Unload a given provider",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "provider_update",
-            "description": null,
+            "description": "Update a given provider",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "user_create",
-            "description": null,
+            "description": "Create users",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "user_delete",
-            "description": null,
+            "description": "Delete a given user",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "user_get",
-            "description": null,
+            "description": "Get a given user",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "user_list",
-            "description": null,
+            "description": "List all users (only compatible with wildcard ID *)",
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
             "name": "user_update",
-            "description": null,
+            "description": "Update a given user",
             "isDeprecated": false,
             "deprecationReason": null
           }
@@ -654,6 +648,22 @@
             "deprecationReason": null
           },
           {
+            "name": "expiresAt",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Time",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "id",
             "description": null,
             "args": [],
@@ -958,55 +968,61 @@
         "interfaces": null,
         "enumValues": [
           {
-            "name": "AWAITING",
+            "name": "child_awaiting",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
-            "name": "COMPLETE",
+            "name": "complete",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
-            "name": "DELETED",
+            "name": "destroyed",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
-            "name": "FAILED",
+            "name": "failed",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
-            "name": "INPROGRESS",
+            "name": "in_progress",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
-            "name": "PARENTAWAITING",
+            "name": "parent_awaiting",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
-            "name": "TAINTED",
+            "name": "tainted",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
-            "name": "TODELETE",
+            "name": "to_deploy",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
-            "name": "TOREBUILD",
+            "name": "to_destroy",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "to_rebuild",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null
@@ -1074,31 +1090,37 @@
         "interfaces": null,
         "enumValues": [
           {
-            "name": "AWAITING",
+            "name": "awaiting",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
-            "name": "COMPLETE",
+            "name": "complete",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
-            "name": "DELETED",
+            "name": "destroyed",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
-            "name": "FAILED",
+            "name": "failed",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null
           },
           {
-            "name": "INPROGRESS",
+            "name": "in_progress",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "suspended",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null
@@ -3314,6 +3336,67 @@
               "ofType": {
                 "kind": "SCALAR",
                 "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "myDeployments",
+            "description": "List deployments user is the requester of",
+            "args": [
+              {
+                "name": "count",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Int",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": "10",
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "includeExpiredAndDestroyed",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Boolean",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": "false",
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "offset",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "DeploymentPage",
                 "ofType": null
               }
             },

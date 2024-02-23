@@ -23,42 +23,77 @@ export type Scalars = {
 };
 
 export enum Action {
+  /** Create blueprints (only compatible with wildcard ID *) */
   BlueprintCreate = 'blueprint_create',
+  /** Delete a given blueprint */
   BlueprintDelete = 'blueprint_delete',
+  /** Deploy a given blueprint */
   BlueprintDeploy = 'blueprint_deploy',
+  /** Get a given blueprint */
   BlueprintGet = 'blueprint_get',
+  /** List all blueprints (only compatible with wildcard ID *) */
   BlueprintList = 'blueprint_list',
+  /** Update a given blueprint */
   BlueprintUpdate = 'blueprint_update',
+  /** Get the console of resources in a given deployment */
   DeploymentConsole = 'deployment_console',
-  DeploymentCreate = 'deployment_create',
+  /** Delete a given deployment */
   DeploymentDelete = 'deployment_delete',
+  /** Destroy a given deployment */
   DeploymentDestroy = 'deployment_destroy',
+  /** Get a given deployment */
   DeploymentGet = 'deployment_get',
+  /** List all deployments (only compatible with wildcard ID *) */
   DeploymentList = 'deployment_list',
+  /** Control the power state of resources in a given deployment */
   DeploymentPower = 'deployment_power',
+  /** Redeploy a given deployment */
   DeploymentRedeploy = 'deployment_redeploy',
+  /** Update a given deployment */
   DeploymentUpdate = 'deployment_update',
+  /** Create groups */
   GroupCreate = 'group_create',
+  /** Delete a given group */
   GroupDelete = 'group_delete',
+  /** Get a given group */
   GroupGet = 'group_get',
+  /** List all groups (only compatible with wildcard ID *) */
   GroupList = 'group_list',
+  /** Update a given group */
   GroupUpdate = 'group_update',
+  /** Get a given permission */
   PermissionGet = 'permission_get',
+  /** Grant permissions (only compatible with wildcard ID *) */
   PermissionGrant = 'permission_grant',
+  /** List all permissions (only compatible with wildcard ID *) */
   PermissionList = 'permission_list',
+  /** Revoke permissions (only compatible with wildcard ID *) */
   PermissionRevoke = 'permission_revoke',
+  /** Configure a given provider */
   ProviderConfigure = 'provider_configure',
+  /** Create providers */
   ProviderCreate = 'provider_create',
+  /** Delete a given provider */
   ProviderDelete = 'provider_delete',
+  /** Get a given provider */
   ProviderGet = 'provider_get',
+  /** List all providers (only compatible with wildcard ID *) */
   ProviderList = 'provider_list',
+  /** Load a given provider */
   ProviderLoad = 'provider_load',
+  /** Unload a given provider */
   ProviderUnload = 'provider_unload',
+  /** Update a given provider */
   ProviderUpdate = 'provider_update',
+  /** Create users */
   UserCreate = 'user_create',
+  /** Delete a given user */
   UserDelete = 'user_delete',
+  /** Get a given user */
   UserGet = 'user_get',
+  /** List all users (only compatible with wildcard ID *) */
   UserList = 'user_list',
+  /** Update a given user */
   UserUpdate = 'user_update'
 }
 
@@ -96,6 +131,7 @@ export type Deployment = {
   createdAt: Scalars['Time']['output'];
   deploymentNodes: Array<DeploymentNode>;
   description: Scalars['String']['output'];
+  expiresAt: Scalars['Time']['output'];
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   requester: User;
@@ -122,15 +158,16 @@ export type DeploymentNode = {
 };
 
 export enum DeploymentNodeState {
-  Awaiting = 'AWAITING',
-  Complete = 'COMPLETE',
-  Deleted = 'DELETED',
-  Failed = 'FAILED',
-  Inprogress = 'INPROGRESS',
-  Parentawaiting = 'PARENTAWAITING',
-  Tainted = 'TAINTED',
-  Todelete = 'TODELETE',
-  Torebuild = 'TOREBUILD'
+  ChildAwaiting = 'child_awaiting',
+  Complete = 'complete',
+  Destroyed = 'destroyed',
+  Failed = 'failed',
+  InProgress = 'in_progress',
+  ParentAwaiting = 'parent_awaiting',
+  Tainted = 'tainted',
+  ToDeploy = 'to_deploy',
+  ToDestroy = 'to_destroy',
+  ToRebuild = 'to_rebuild'
 }
 
 export type DeploymentPage = {
@@ -140,11 +177,12 @@ export type DeploymentPage = {
 };
 
 export enum DeploymentState {
-  Awaiting = 'AWAITING',
-  Complete = 'COMPLETE',
-  Deleted = 'DELETED',
-  Failed = 'FAILED',
-  Inprogress = 'INPROGRESS'
+  Awaiting = 'awaiting',
+  Complete = 'complete',
+  Destroyed = 'destroyed',
+  Failed = 'failed',
+  InProgress = 'in_progress',
+  Suspended = 'suspended'
 }
 
 export type GrantedPermission = {
@@ -436,6 +474,8 @@ export type Query = {
   me: User;
   /** Retrieves if the current user has a given permission */
   meHasPermission: Scalars['Boolean']['output'];
+  /** List deployments user is the requester of */
+  myDeployments: DeploymentPage;
   /** Get a permission (requires permission `x.x.permission.x.get`) */
   permission: GrantedPermission;
   /** List permissions (requires permission `x.x.permission.*.list`) */
@@ -498,6 +538,13 @@ export type QueryMeHasPermissionArgs = {
   action: Action;
   objectID?: InputMaybe<Scalars['ID']['input']>;
   objectType: ObjectType;
+};
+
+
+export type QueryMyDeploymentsArgs = {
+  count?: Scalars['Int']['input'];
+  includeExpiredAndDestroyed?: Scalars['Boolean']['input'];
+  offset?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -641,23 +688,25 @@ export type DeployBlueprintMutationVariables = Exact<{
 }>;
 
 
-export type DeployBlueprintMutation = { __typename?: 'Mutation', deployBlueprint: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any } };
+export type DeployBlueprintMutation = { __typename?: 'Mutation', deployBlueprint: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, description: string, state: DeploymentState, templateVars: any, expiresAt: any } };
 
-export type DeploymentFragmentFragment = { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any };
+export type DeploymentFragmentFragment = { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, description: string, state: DeploymentState, templateVars: any, expiresAt: any };
 
 export type DeploymentNodeFragmentFragment = { __typename?: 'DeploymentNode', id: string, createdAt: any, updatedAt: any, state: DeploymentNodeState, vars?: any | null, resource: { __typename?: 'Resource', id: string, createdAt: any, updatedAt: any, key: string, object: string, features: { __typename?: 'ResourceFeatures', power: boolean, console: boolean } }, nextNodes: Array<{ __typename?: 'DeploymentNode', id: string }> };
 
-export type ListDeploymentsQueryVariables = Exact<{ [key: string]: never; }>;
+export type ListMyDeploymentsQueryVariables = Exact<{
+  includeExpiredAndDestroyed?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
 
 
-export type ListDeploymentsQuery = { __typename?: 'Query', deployments: { __typename?: 'DeploymentPage', total: number, deployments: Array<{ __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } }> } };
+export type ListMyDeploymentsQuery = { __typename?: 'Query', myDeployments: { __typename?: 'DeploymentPage', total: number, deployments: Array<{ __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, description: string, state: DeploymentState, templateVars: any, expiresAt: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } }> } };
 
 export type GetDeploymentQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetDeploymentQuery = { __typename?: 'Query', deployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string }, deploymentNodes: Array<{ __typename?: 'DeploymentNode', id: string, createdAt: any, updatedAt: any, state: DeploymentNodeState, vars?: any | null, resource: { __typename?: 'Resource', id: string, createdAt: any, updatedAt: any, key: string, object: string, features: { __typename?: 'ResourceFeatures', power: boolean, console: boolean } }, nextNodes: Array<{ __typename?: 'DeploymentNode', id: string }> }> } };
+export type GetDeploymentQuery = { __typename?: 'Query', deployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, description: string, state: DeploymentState, templateVars: any, expiresAt: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string }, deploymentNodes: Array<{ __typename?: 'DeploymentNode', id: string, createdAt: any, updatedAt: any, state: DeploymentNodeState, vars?: any | null, resource: { __typename?: 'Resource', id: string, createdAt: any, updatedAt: any, key: string, object: string, features: { __typename?: 'ResourceFeatures', power: boolean, console: boolean } }, nextNodes: Array<{ __typename?: 'DeploymentNode', id: string }> }> } };
 
 export type UpdateDeploymentMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -665,14 +714,14 @@ export type UpdateDeploymentMutationVariables = Exact<{
 }>;
 
 
-export type UpdateDeploymentMutation = { __typename?: 'Mutation', updateDeployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any } };
+export type UpdateDeploymentMutation = { __typename?: 'Mutation', updateDeployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, description: string, state: DeploymentState, templateVars: any, expiresAt: any } };
 
 export type DestroyDeploymentMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type DestroyDeploymentMutation = { __typename?: 'Mutation', destroyDeployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, templateVars: any } };
+export type DestroyDeploymentMutation = { __typename?: 'Mutation', destroyDeployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, description: string, state: DeploymentState, templateVars: any, expiresAt: any } };
 
 export type DeploymentNodePowerMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -844,7 +893,10 @@ export const DeploymentFragmentFragmentDoc = gql`
   createdAt
   updatedAt
   name
+  description
+  state
   templateVars
+  expiresAt
 }
     `;
 export const ResourceFragmentFragmentDoc = gql`
@@ -1102,9 +1154,9 @@ export function useDeployBlueprintMutation(baseOptions?: Apollo.MutationHookOpti
 export type DeployBlueprintMutationHookResult = ReturnType<typeof useDeployBlueprintMutation>;
 export type DeployBlueprintMutationResult = Apollo.MutationResult<DeployBlueprintMutation>;
 export type DeployBlueprintMutationOptions = Apollo.BaseMutationOptions<DeployBlueprintMutation, DeployBlueprintMutationVariables>;
-export const ListDeploymentsDocument = gql`
-    query ListDeployments {
-  deployments {
+export const ListMyDeploymentsDocument = gql`
+    query ListMyDeployments($includeExpiredAndDestroyed: Boolean = false) {
+  myDeployments(includeExpiredAndDestroyed: $includeExpiredAndDestroyed) {
     deployments {
       ...DeploymentFragment
       blueprint {
@@ -1122,36 +1174,37 @@ ${BlueprintFragementFragmentDoc}
 ${UserFragmentFragmentDoc}`;
 
 /**
- * __useListDeploymentsQuery__
+ * __useListMyDeploymentsQuery__
  *
- * To run a query within a React component, call `useListDeploymentsQuery` and pass it any options that fit your needs.
- * When your component renders, `useListDeploymentsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useListMyDeploymentsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListMyDeploymentsQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useListDeploymentsQuery({
+ * const { data, loading, error } = useListMyDeploymentsQuery({
  *   variables: {
+ *      includeExpiredAndDestroyed: // value for 'includeExpiredAndDestroyed'
  *   },
  * });
  */
-export function useListDeploymentsQuery(baseOptions?: Apollo.QueryHookOptions<ListDeploymentsQuery, ListDeploymentsQueryVariables>) {
+export function useListMyDeploymentsQuery(baseOptions?: Apollo.QueryHookOptions<ListMyDeploymentsQuery, ListMyDeploymentsQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return Apollo.useQuery<ListDeploymentsQuery, ListDeploymentsQueryVariables>(ListDeploymentsDocument, options);
+        return Apollo.useQuery<ListMyDeploymentsQuery, ListMyDeploymentsQueryVariables>(ListMyDeploymentsDocument, options);
       }
-export function useListDeploymentsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ListDeploymentsQuery, ListDeploymentsQueryVariables>) {
+export function useListMyDeploymentsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ListMyDeploymentsQuery, ListMyDeploymentsQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useLazyQuery<ListDeploymentsQuery, ListDeploymentsQueryVariables>(ListDeploymentsDocument, options);
+          return Apollo.useLazyQuery<ListMyDeploymentsQuery, ListMyDeploymentsQueryVariables>(ListMyDeploymentsDocument, options);
         }
-export function useListDeploymentsSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<ListDeploymentsQuery, ListDeploymentsQueryVariables>) {
+export function useListMyDeploymentsSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<ListMyDeploymentsQuery, ListMyDeploymentsQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return Apollo.useSuspenseQuery<ListDeploymentsQuery, ListDeploymentsQueryVariables>(ListDeploymentsDocument, options);
+          return Apollo.useSuspenseQuery<ListMyDeploymentsQuery, ListMyDeploymentsQueryVariables>(ListMyDeploymentsDocument, options);
         }
-export type ListDeploymentsQueryHookResult = ReturnType<typeof useListDeploymentsQuery>;
-export type ListDeploymentsLazyQueryHookResult = ReturnType<typeof useListDeploymentsLazyQuery>;
-export type ListDeploymentsSuspenseQueryHookResult = ReturnType<typeof useListDeploymentsSuspenseQuery>;
-export type ListDeploymentsQueryResult = Apollo.QueryResult<ListDeploymentsQuery, ListDeploymentsQueryVariables>;
+export type ListMyDeploymentsQueryHookResult = ReturnType<typeof useListMyDeploymentsQuery>;
+export type ListMyDeploymentsLazyQueryHookResult = ReturnType<typeof useListMyDeploymentsLazyQuery>;
+export type ListMyDeploymentsSuspenseQueryHookResult = ReturnType<typeof useListMyDeploymentsSuspenseQuery>;
+export type ListMyDeploymentsQueryResult = Apollo.QueryResult<ListMyDeploymentsQuery, ListMyDeploymentsQueryVariables>;
 export const GetDeploymentDocument = gql`
     query GetDeployment($id: ID!) {
   deployment(id: $id) {
