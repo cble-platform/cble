@@ -3,7 +3,10 @@ fragment DeploymentFragment on Deployment {
   createdAt
   updatedAt
   name
+  description
+  state
   templateVars
+  expiresAt
 }
 
 fragment DeploymentNodeFragment on DeploymentNode {
@@ -22,8 +25,8 @@ fragment DeploymentNodeFragment on DeploymentNode {
   }
 }
 
-query ListDeployments {
-  deployments {
+query ListMyDeployments($includeExpiredAndDestroyed: Boolean = false) {
+  myDeployments(includeExpiredAndDestroyed: $includeExpiredAndDestroyed) {
     deployments {
       ...DeploymentFragment
       blueprint {

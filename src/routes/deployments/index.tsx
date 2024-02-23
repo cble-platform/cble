@@ -14,9 +14,14 @@ import {
   LinearProgress,
   Button,
   Link,
+  Stack,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material'
 import {
-  useListDeploymentsQuery,
+  DeploymentState,
+  ListMyDeploymentsQuery,
+  useListMyDeploymentsQuery,
   useUpdateDeploymentMutation,
 } from '../../lib/api/generated'
 import { useSnackbar } from 'notistack'
@@ -24,15 +29,69 @@ import React, { useEffect, useState } from 'react'
 import { Cancel, Edit, ExpandMore, Save } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 
+function daysBetween(
+  date1: string | number | Date,
+  date2: string | number | Date
+) {
+  return (
+    (new Date(date1).getTime() - new Date(date2).getTime()) /
+    1000 /
+    60 /
+    60 /
+    24
+  )
+}
+
+function generateCreatedMessage(
+  deployment: ListMyDeploymentsQuery['myDeployments']['deployments'][number]
+): string {
+  const createdDaysDiff = daysBetween(
+    new Date(deployment.createdAt as string),
+    Date.now()
+  )
+  if (createdDaysDiff < 1) return 'Created Today'
+  if (createdDaysDiff < 2) return 'Created Yesterday'
+  if (createdDaysDiff > 30)
+    return `Created on ${new Date(deployment.createdAt as string).toDateString()}`
+  else return `${Math.floor(createdDaysDiff)} days ago`
+}
+
+function generateExpiryMessage(
+  deployment: ListMyDeploymentsQuery['myDeployments']['deployments'][number]
+): string {
+  const expiresDaysDiff = daysBetween(
+    new Date(deployment.expiresAt as string),
+    Date.now()
+  )
+  let expireTense = ''
+  if (expiresDaysDiff < 0) expireTense = 'Expired'
+  else expireTense = 'Expires'
+  let dayDisplay
+  if (Math.abs(expiresDaysDiff) < 1) dayDisplay = 'Today'
+  else if (expiresDaysDiff < -2)
+    dayDisplay = `days ${Math.ceil(Math.abs(expiresDaysDiff))} ago`
+  else if (expiresDaysDiff < -1) dayDisplay = 'Yesterday'
+  else if (expiresDaysDiff < 2) dayDisplay = 'Tomorrow'
+  else dayDisplay = `in ${Math.floor(Math.abs(expiresDaysDiff))} days`
+
+  return `${expireTense} ${dayDisplay}`
+}
+
 export default function Deployments() {
   const navigate = useNavigate()
   const { enqueueSnackbar } = useSnackbar()
+  const [includeExpiredAndDestroyed, setIncludeExpired] =
+    useState<boolean>(false)
   const {
-    data: listDeploymentsData,
-    error: listDeploymentsError,
-    loading: listDeploymentsLoading,
-    refetch: refetchListDeployments,
-  } = useListDeploymentsQuery()
+    data: listMyDeploymentsData,
+    error: listMyDeploymentsError,
+    loading: listMyDeploymentsLoading,
+    refetch: refetchListMyDeployments,
+  } = useListMyDeploymentsQuery({
+    variables: {
+      includeExpiredAndDestroyed,
+    },
+  })
   const [
     updateDeployment,
     {
@@ -50,9 +109,9 @@ export default function Deployments() {
   }>(null)
 
   useEffect(() => {
-    if (listDeploymentsError)
+    if (listMyDeploymentsError)
       enqueueSnackbar({
-        message: `Failed to get deployments: ${listDeploymentsError.message}`,
+        message: `Failed to get deployments: ${listMyDeploymentsError.message}`,
         variant: 'error',
       })
     if (updateDeploymentError)
@@ -60,16 +119,24 @@ export default function Deployments() {
         message: `Failed to update deployment: ${updateDeploymentError.message}`,
         variant: 'error',
       })
-  }, [listDeploymentsError, updateDeploymentError])
+  }, [listMyDeploymentsError, updateDeploymentError])
 
   useEffect(() => {
     if (updateDeploymentData) {
       enqueueSnackbar({ message: 'Updated deployment!', variant: 'success' })
       resetUpdateDeployment()
       setEditDeploymentNameData(null)
-      refetchListDeployments().catch(console.error)
+      refetchListMyDeployments({
+        includeExpiredAndDestroyed,
+      }).catch(console.error)
     }
   }, [updateDeploymentData, enqueueSnackbar, resetUpdateDeployment])
+
+  useEffect(() => {
+    refetchListMyDeployments({
+      includeExpiredAndDestroyed,
+    }).catch(console.error)
+  }, [includeExpiredAndDestroyed])
 
   const handleMoreMenuClick = (
     id: string,
@@ -98,34 +165,47 @@ export default function Deployments() {
 
   return (
     <Container sx={{ py: 3 }}>
-      <Box
-        sx={{
-          display: 'flex',
-          alignContent: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
+      <Stack direction="row" alignContent="center" gap={4}>
         <Typography variant="h4">Deployments</Typography>
-      </Box>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={includeExpiredAndDestroyed}
+              onChange={(_, checked) => setIncludeExpired(checked)}
+            />
+          }
+          label="Show Expired/Destroyed"
+        />
+      </Stack>
       <Divider sx={{ my: 3 }} />
       <Grid container spacing={2}>
-        {listDeploymentsLoading && (
+        {listMyDeploymentsLoading && (
           <Grid item xs={12} sx={{ my: 2 }}>
             <LinearProgress />
           </Grid>
         )}
-        {listDeploymentsData?.deployments.deployments.map((deployment) => {
-          const createdDaysDiff = Math.ceil(
-            (Date.now() - new Date(deployment.createdAt as string).getTime()) /
-              1000 /
-              60 /
-              60 /
-              24
+        {listMyDeploymentsData?.myDeployments.deployments.map((deployment) => {
+          const createdDaysDiff = daysBetween(
+            new Date(deployment.createdAt as string),
+            Date.now()
           )
           return (
             <Grid item xs={12} key={deployment.id}>
-              <Card sx={{ width: '100%' }}>
-                <CardContent>
+              <Card
+                sx={{
+                  width: '100%',
+                }}
+              >
+                <CardContent
+                  sx={{
+                    opacity:
+                      deployment.state === DeploymentState.Destroyed ? 0.5 : 1,
+                    pointerEvents:
+                      deployment.state === DeploymentState.Destroyed
+                        ? 'none'
+                        : 'auto',
+                  }}
+                >
                   <Grid
                     container
                     spacing={1}
@@ -207,8 +287,7 @@ export default function Deployments() {
                     </Grid>
                     <Grid item xs={4}>
                       <Typography variant="subtitle1">
-                        Created {createdDaysDiff} day
-                        {createdDaysDiff > 1 ? 's' : ''} ago
+                        {generateCreatedMessage(deployment)}
                       </Typography>
                     </Grid>
                     <Grid
@@ -233,8 +312,14 @@ export default function Deployments() {
                       <Typography variant="body1">
                         Owner: {deployment.requester.firstName}{' '}
                         {deployment.requester.lastName}
-                        {/* <br />
-                        Group: {deployment.blueprint.parentGroup.name} */}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={4}>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: 'text.secondary' }}
+                      >
+                        {generateExpiryMessage(deployment)}
                       </Typography>
                     </Grid>
                   </Grid>
