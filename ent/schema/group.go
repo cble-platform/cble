@@ -28,6 +28,9 @@ func (Group) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("users", User.Type).
 			Ref("groups"),
+		edge.From("projects", Project.Type).
+			Ref("group_members").
+			Comment("Projects this group has access to"),
 	}
 }
 

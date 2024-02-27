@@ -130,6 +130,7 @@ const (
 	ObjectTypeDeployment ObjectType = "deployment"
 	ObjectTypeGroup      ObjectType = "group"
 	ObjectTypePermission ObjectType = "permission"
+	ObjectTypeProject    ObjectType = "project"
 	ObjectTypeProvider   ObjectType = "provider"
 	ObjectTypeUser       ObjectType = "user"
 )
@@ -141,7 +142,7 @@ func (ot ObjectType) String() string {
 // ObjectTypeValidator is a validator for the "object_type" field enum values. It is called by the builders before save.
 func ObjectTypeValidator(ot ObjectType) error {
 	switch ot {
-	case ObjectTypeBlueprint, ObjectTypeDeployment, ObjectTypeGroup, ObjectTypePermission, ObjectTypeProvider, ObjectTypeUser:
+	case ObjectTypeBlueprint, ObjectTypeDeployment, ObjectTypeGroup, ObjectTypePermission, ObjectTypeProject, ObjectTypeProvider, ObjectTypeUser:
 		return nil
 	default:
 		return fmt.Errorf("grantedpermission: invalid enum value for object_type field: %q", ot)
@@ -151,7 +152,7 @@ func ObjectTypeValidator(ot ObjectType) error {
 // ActionValidator is a validator for the "action" field enum values. It is called by the builders before save.
 func ActionValidator(a actions.PermissionAction) error {
 	switch a {
-	case "blueprint_list", "blueprint_create", "blueprint_get", "blueprint_update", "blueprint_delete", "blueprint_deploy", "deployment_list", "deployment_get", "deployment_update", "deployment_delete", "deployment_destroy", "deployment_redeploy", "deployment_power", "deployment_console", "group_list", "group_create", "group_get", "group_update", "group_delete", "permission_list", "permission_get", "permission_grant", "permission_revoke", "provider_list", "provider_create", "provider_get", "provider_update", "provider_delete", "provider_load", "provider_unload", "provider_configure", "user_list", "user_create", "user_get", "user_update", "user_delete", "unknown":
+	case "blueprint_list", "blueprint_create", "blueprint_get", "blueprint_update", "blueprint_delete", "blueprint_deploy", "deployment_list", "deployment_get", "deployment_update", "deployment_delete", "deployment_destroy", "deployment_redeploy", "deployment_power", "deployment_console", "group_list", "group_create", "group_get", "group_update", "group_delete", "permission_list", "permission_get", "permission_grant", "permission_revoke", "project_list", "project_create", "project_update_membership", "project_create_blueprints", "project_update_blueprints", "project_delete_blueprints", "project_deploy_blueprints", "provider_list", "provider_create", "provider_get", "provider_update", "provider_delete", "provider_load", "provider_unload", "provider_configure", "user_list", "user_create", "user_get", "user_update", "user_delete", "unknown":
 		return nil
 	default:
 		return fmt.Errorf("grantedpermission: invalid enum value for action field: %q", a)

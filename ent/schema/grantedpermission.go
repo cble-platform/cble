@@ -27,7 +27,7 @@ func (GrantedPermission) Fields() []ent.Field {
 		field.UUID("subject_id", uuid.UUID{}).
 			Comment("The ID of subject this permission applies to"),
 		field.Enum("object_type").
-			Values("blueprint", "deployment", "group", "permission", "provider", "user").
+			Values("blueprint", "deployment", "group", "permission", "project", "provider", "user").
 			Comment("The type of object this permission applies to"),
 		field.UUID("object_id", uuid.UUID{}).
 			Comment("The ID of object this permission applies to (or `uuid.Nil` for wildcard)"),

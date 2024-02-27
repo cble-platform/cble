@@ -15,6 +15,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/predicate"
+	"github.com/cble-platform/cble-backend/ent/project"
 	entprovider "github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/google/uuid"
@@ -90,6 +91,17 @@ func (bu *BlueprintUpdate) SetProvider(p *Provider) *BlueprintUpdate {
 	return bu.SetProviderID(p.ID)
 }
 
+// SetProjectID sets the "project" edge to the Project entity by ID.
+func (bu *BlueprintUpdate) SetProjectID(id uuid.UUID) *BlueprintUpdate {
+	bu.mutation.SetProjectID(id)
+	return bu
+}
+
+// SetProject sets the "project" edge to the Project entity.
+func (bu *BlueprintUpdate) SetProject(p *Project) *BlueprintUpdate {
+	return bu.SetProjectID(p.ID)
+}
+
 // AddResourceIDs adds the "resources" edge to the Resource entity by IDs.
 func (bu *BlueprintUpdate) AddResourceIDs(ids ...uuid.UUID) *BlueprintUpdate {
 	bu.mutation.AddResourceIDs(ids...)
@@ -128,6 +140,12 @@ func (bu *BlueprintUpdate) Mutation() *BlueprintMutation {
 // ClearProvider clears the "provider" edge to the Provider entity.
 func (bu *BlueprintUpdate) ClearProvider() *BlueprintUpdate {
 	bu.mutation.ClearProvider()
+	return bu
+}
+
+// ClearProject clears the "project" edge to the Project entity.
+func (bu *BlueprintUpdate) ClearProject() *BlueprintUpdate {
+	bu.mutation.ClearProject()
 	return bu
 }
 
@@ -214,6 +232,9 @@ func (bu *BlueprintUpdate) check() error {
 	if _, ok := bu.mutation.ProviderID(); bu.mutation.ProviderCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Blueprint.provider"`)
 	}
+	if _, ok := bu.mutation.ProjectID(); bu.mutation.ProjectCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Blueprint.project"`)
+	}
 	return nil
 }
 
@@ -266,6 +287,35 @@ func (bu *BlueprintUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(entprovider.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if bu.mutation.ProjectCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   blueprint.ProjectTable,
+			Columns: []string{blueprint.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := bu.mutation.ProjectIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   blueprint.ProjectTable,
+			Columns: []string{blueprint.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -440,6 +490,17 @@ func (buo *BlueprintUpdateOne) SetProvider(p *Provider) *BlueprintUpdateOne {
 	return buo.SetProviderID(p.ID)
 }
 
+// SetProjectID sets the "project" edge to the Project entity by ID.
+func (buo *BlueprintUpdateOne) SetProjectID(id uuid.UUID) *BlueprintUpdateOne {
+	buo.mutation.SetProjectID(id)
+	return buo
+}
+
+// SetProject sets the "project" edge to the Project entity.
+func (buo *BlueprintUpdateOne) SetProject(p *Project) *BlueprintUpdateOne {
+	return buo.SetProjectID(p.ID)
+}
+
 // AddResourceIDs adds the "resources" edge to the Resource entity by IDs.
 func (buo *BlueprintUpdateOne) AddResourceIDs(ids ...uuid.UUID) *BlueprintUpdateOne {
 	buo.mutation.AddResourceIDs(ids...)
@@ -478,6 +539,12 @@ func (buo *BlueprintUpdateOne) Mutation() *BlueprintMutation {
 // ClearProvider clears the "provider" edge to the Provider entity.
 func (buo *BlueprintUpdateOne) ClearProvider() *BlueprintUpdateOne {
 	buo.mutation.ClearProvider()
+	return buo
+}
+
+// ClearProject clears the "project" edge to the Project entity.
+func (buo *BlueprintUpdateOne) ClearProject() *BlueprintUpdateOne {
+	buo.mutation.ClearProject()
 	return buo
 }
 
@@ -577,6 +644,9 @@ func (buo *BlueprintUpdateOne) check() error {
 	if _, ok := buo.mutation.ProviderID(); buo.mutation.ProviderCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Blueprint.provider"`)
 	}
+	if _, ok := buo.mutation.ProjectID(); buo.mutation.ProjectCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Blueprint.project"`)
+	}
 	return nil
 }
 
@@ -646,6 +716,35 @@ func (buo *BlueprintUpdateOne) sqlSave(ctx context.Context) (_node *Blueprint, e
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(entprovider.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if buo.mutation.ProjectCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   blueprint.ProjectTable,
+			Columns: []string{blueprint.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := buo.mutation.ProjectIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   blueprint.ProjectTable,
+			Columns: []string{blueprint.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

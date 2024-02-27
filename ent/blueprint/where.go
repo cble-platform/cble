@@ -354,6 +354,29 @@ func HasProviderWith(preds ...predicate.Provider) predicate.Blueprint {
 	})
 }
 
+// HasProject applies the HasEdge predicate on the "project" edge.
+func HasProject() predicate.Blueprint {
+	return predicate.Blueprint(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, ProjectTable, ProjectColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasProjectWith applies the HasEdge predicate on the "project" edge with a given conditions (other predicates).
+func HasProjectWith(preds ...predicate.Project) predicate.Blueprint {
+	return predicate.Blueprint(func(s *sql.Selector) {
+		step := newProjectStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasResources applies the HasEdge predicate on the "resources" edge.
 func HasResources() predicate.Blueprint {
 	return predicate.Blueprint(func(s *sql.Selector) {

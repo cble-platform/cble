@@ -35,6 +35,9 @@ func (User) Edges() []ent.Edge {
 		edge.To("groups", Group.Type),
 		edge.From("deployments", Deployment.Type).
 			Ref("requester"),
+		edge.From("projects", Project.Type).
+			Ref("members").
+			Comment("Projects user is a member of"),
 	}
 }
 

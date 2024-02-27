@@ -475,6 +475,29 @@ func HasRequesterWith(preds ...predicate.User) predicate.Deployment {
 	})
 }
 
+// HasProject applies the HasEdge predicate on the "project" edge.
+func HasProject() predicate.Deployment {
+	return predicate.Deployment(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, ProjectTable, ProjectColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasProjectWith applies the HasEdge predicate on the "project" edge with a given conditions (other predicates).
+func HasProjectWith(preds ...predicate.Project) predicate.Deployment {
+	return predicate.Deployment(func(s *sql.Selector) {
+		step := newProjectStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Deployment) predicate.Deployment {
 	return predicate.Deployment(sql.AndPredicates(predicates...))

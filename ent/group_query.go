@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/cble-platform/cble-backend/ent/group"
 	"github.com/cble-platform/cble-backend/ent/predicate"
+	"github.com/cble-platform/cble-backend/ent/project"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
 )
@@ -20,11 +21,12 @@ import (
 // GroupQuery is the builder for querying Group entities.
 type GroupQuery struct {
 	config
-	ctx        *QueryContext
-	order      []group.OrderOption
-	inters     []Interceptor
-	predicates []predicate.Group
-	withUsers  *UserQuery
+	ctx          *QueryContext
+	order        []group.OrderOption
+	inters       []Interceptor
+	predicates   []predicate.Group
+	withUsers    *UserQuery
+	withProjects *ProjectQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -76,6 +78,28 @@ func (gq *GroupQuery) QueryUsers() *UserQuery {
 			sqlgraph.From(group.Table, group.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, group.UsersTable, group.UsersPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(gq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryProjects chains the current query on the "projects" edge.
+func (gq *GroupQuery) QueryProjects() *ProjectQuery {
+	query := (&ProjectClient{config: gq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := gq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := gq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, selector),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, group.ProjectsTable, group.ProjectsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(gq.driver.Dialect(), step)
 		return fromU, nil
@@ -270,12 +294,13 @@ func (gq *GroupQuery) Clone() *GroupQuery {
 		return nil
 	}
 	return &GroupQuery{
-		config:     gq.config,
-		ctx:        gq.ctx.Clone(),
-		order:      append([]group.OrderOption{}, gq.order...),
-		inters:     append([]Interceptor{}, gq.inters...),
-		predicates: append([]predicate.Group{}, gq.predicates...),
-		withUsers:  gq.withUsers.Clone(),
+		config:       gq.config,
+		ctx:          gq.ctx.Clone(),
+		order:        append([]group.OrderOption{}, gq.order...),
+		inters:       append([]Interceptor{}, gq.inters...),
+		predicates:   append([]predicate.Group{}, gq.predicates...),
+		withUsers:    gq.withUsers.Clone(),
+		withProjects: gq.withProjects.Clone(),
 		// clone intermediate query.
 		sql:  gq.sql.Clone(),
 		path: gq.path,
@@ -290,6 +315,17 @@ func (gq *GroupQuery) WithUsers(opts ...func(*UserQuery)) *GroupQuery {
 		opt(query)
 	}
 	gq.withUsers = query
+	return gq
+}
+
+// WithProjects tells the query-builder to eager-load the nodes that are connected to
+// the "projects" edge. The optional arguments are used to configure the query builder of the edge.
+func (gq *GroupQuery) WithProjects(opts ...func(*ProjectQuery)) *GroupQuery {
+	query := (&ProjectClient{config: gq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	gq.withProjects = query
 	return gq
 }
 
@@ -371,8 +407,9 @@ func (gq *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 	var (
 		nodes       = []*Group{}
 		_spec       = gq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			gq.withUsers != nil,
+			gq.withProjects != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -397,6 +434,13 @@ func (gq *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 		if err := gq.loadUsers(ctx, query, nodes,
 			func(n *Group) { n.Edges.Users = []*User{} },
 			func(n *Group, e *User) { n.Edges.Users = append(n.Edges.Users, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := gq.withProjects; query != nil {
+		if err := gq.loadProjects(ctx, query, nodes,
+			func(n *Group) { n.Edges.Projects = []*Project{} },
+			func(n *Group, e *Project) { n.Edges.Projects = append(n.Edges.Projects, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -457,6 +501,67 @@ func (gq *GroupQuery) loadUsers(ctx context.Context, query *UserQuery, nodes []*
 		nodes, ok := nids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected "users" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (gq *GroupQuery) loadProjects(ctx context.Context, query *ProjectQuery, nodes []*Group, init func(*Group), assign func(*Group, *Project)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*Group)
+	nids := make(map[uuid.UUID]map[*Group]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(group.ProjectsTable)
+		s.Join(joinT).On(s.C(project.FieldID), joinT.C(group.ProjectsPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(group.ProjectsPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(group.ProjectsPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*Group]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Project](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "projects" node returned %v`, n.ID)
 		}
 		for kn := range nodes {
 			assign(kn, n)

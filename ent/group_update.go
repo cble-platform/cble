@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/cble-platform/cble-backend/ent/group"
 	"github.com/cble-platform/cble-backend/ent/predicate"
+	"github.com/cble-platform/cble-backend/ent/project"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
 )
@@ -65,6 +66,21 @@ func (gu *GroupUpdate) AddUsers(u ...*User) *GroupUpdate {
 	return gu.AddUserIDs(ids...)
 }
 
+// AddProjectIDs adds the "projects" edge to the Project entity by IDs.
+func (gu *GroupUpdate) AddProjectIDs(ids ...uuid.UUID) *GroupUpdate {
+	gu.mutation.AddProjectIDs(ids...)
+	return gu
+}
+
+// AddProjects adds the "projects" edges to the Project entity.
+func (gu *GroupUpdate) AddProjects(p ...*Project) *GroupUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return gu.AddProjectIDs(ids...)
+}
+
 // Mutation returns the GroupMutation object of the builder.
 func (gu *GroupUpdate) Mutation() *GroupMutation {
 	return gu.mutation
@@ -89,6 +105,27 @@ func (gu *GroupUpdate) RemoveUsers(u ...*User) *GroupUpdate {
 		ids[i] = u[i].ID
 	}
 	return gu.RemoveUserIDs(ids...)
+}
+
+// ClearProjects clears all "projects" edges to the Project entity.
+func (gu *GroupUpdate) ClearProjects() *GroupUpdate {
+	gu.mutation.ClearProjects()
+	return gu
+}
+
+// RemoveProjectIDs removes the "projects" edge to Project entities by IDs.
+func (gu *GroupUpdate) RemoveProjectIDs(ids ...uuid.UUID) *GroupUpdate {
+	gu.mutation.RemoveProjectIDs(ids...)
+	return gu
+}
+
+// RemoveProjects removes "projects" edges to Project entities.
+func (gu *GroupUpdate) RemoveProjects(p ...*Project) *GroupUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return gu.RemoveProjectIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -187,6 +224,51 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if gu.mutation.ProjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   group.ProjectsTable,
+			Columns: group.ProjectsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := gu.mutation.RemovedProjectsIDs(); len(nodes) > 0 && !gu.mutation.ProjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   group.ProjectsTable,
+			Columns: group.ProjectsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := gu.mutation.ProjectsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   group.ProjectsTable,
+			Columns: group.ProjectsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, gu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{group.Label}
@@ -242,6 +324,21 @@ func (guo *GroupUpdateOne) AddUsers(u ...*User) *GroupUpdateOne {
 	return guo.AddUserIDs(ids...)
 }
 
+// AddProjectIDs adds the "projects" edge to the Project entity by IDs.
+func (guo *GroupUpdateOne) AddProjectIDs(ids ...uuid.UUID) *GroupUpdateOne {
+	guo.mutation.AddProjectIDs(ids...)
+	return guo
+}
+
+// AddProjects adds the "projects" edges to the Project entity.
+func (guo *GroupUpdateOne) AddProjects(p ...*Project) *GroupUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return guo.AddProjectIDs(ids...)
+}
+
 // Mutation returns the GroupMutation object of the builder.
 func (guo *GroupUpdateOne) Mutation() *GroupMutation {
 	return guo.mutation
@@ -266,6 +363,27 @@ func (guo *GroupUpdateOne) RemoveUsers(u ...*User) *GroupUpdateOne {
 		ids[i] = u[i].ID
 	}
 	return guo.RemoveUserIDs(ids...)
+}
+
+// ClearProjects clears all "projects" edges to the Project entity.
+func (guo *GroupUpdateOne) ClearProjects() *GroupUpdateOne {
+	guo.mutation.ClearProjects()
+	return guo
+}
+
+// RemoveProjectIDs removes the "projects" edge to Project entities by IDs.
+func (guo *GroupUpdateOne) RemoveProjectIDs(ids ...uuid.UUID) *GroupUpdateOne {
+	guo.mutation.RemoveProjectIDs(ids...)
+	return guo
+}
+
+// RemoveProjects removes "projects" edges to Project entities.
+func (guo *GroupUpdateOne) RemoveProjects(p ...*Project) *GroupUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return guo.RemoveProjectIDs(ids...)
 }
 
 // Where appends a list predicates to the GroupUpdate builder.
@@ -387,6 +505,51 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if guo.mutation.ProjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   group.ProjectsTable,
+			Columns: group.ProjectsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := guo.mutation.RemovedProjectsIDs(); len(nodes) > 0 && !guo.mutation.ProjectsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   group.ProjectsTable,
+			Columns: group.ProjectsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := guo.mutation.ProjectsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   group.ProjectsTable,
+			Columns: group.ProjectsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -15,6 +15,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/deploymentnode"
 	"github.com/cble-platform/cble-backend/ent/predicate"
+	"github.com/cble-platform/cble-backend/ent/project"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
 )
@@ -29,6 +30,7 @@ type DeploymentQuery struct {
 	withBlueprint       *BlueprintQuery
 	withDeploymentNodes *DeploymentNodeQuery
 	withRequester       *UserQuery
+	withProject         *ProjectQuery
 	withFKs             bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -125,6 +127,28 @@ func (dq *DeploymentQuery) QueryRequester() *UserQuery {
 			sqlgraph.From(deployment.Table, deployment.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, deployment.RequesterTable, deployment.RequesterColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryProject chains the current query on the "project" edge.
+func (dq *DeploymentQuery) QueryProject() *ProjectQuery {
+	query := (&ProjectClient{config: dq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := dq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := dq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(deployment.Table, deployment.FieldID, selector),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, deployment.ProjectTable, deployment.ProjectColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(dq.driver.Dialect(), step)
 		return fromU, nil
@@ -327,6 +351,7 @@ func (dq *DeploymentQuery) Clone() *DeploymentQuery {
 		withBlueprint:       dq.withBlueprint.Clone(),
 		withDeploymentNodes: dq.withDeploymentNodes.Clone(),
 		withRequester:       dq.withRequester.Clone(),
+		withProject:         dq.withProject.Clone(),
 		// clone intermediate query.
 		sql:  dq.sql.Clone(),
 		path: dq.path,
@@ -363,6 +388,17 @@ func (dq *DeploymentQuery) WithRequester(opts ...func(*UserQuery)) *DeploymentQu
 		opt(query)
 	}
 	dq.withRequester = query
+	return dq
+}
+
+// WithProject tells the query-builder to eager-load the nodes that are connected to
+// the "project" edge. The optional arguments are used to configure the query builder of the edge.
+func (dq *DeploymentQuery) WithProject(opts ...func(*ProjectQuery)) *DeploymentQuery {
+	query := (&ProjectClient{config: dq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	dq.withProject = query
 	return dq
 }
 
@@ -445,13 +481,14 @@ func (dq *DeploymentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*D
 		nodes       = []*Deployment{}
 		withFKs     = dq.withFKs
 		_spec       = dq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			dq.withBlueprint != nil,
 			dq.withDeploymentNodes != nil,
 			dq.withRequester != nil,
+			dq.withProject != nil,
 		}
 	)
-	if dq.withBlueprint != nil || dq.withRequester != nil {
+	if dq.withBlueprint != nil || dq.withRequester != nil || dq.withProject != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -491,6 +528,12 @@ func (dq *DeploymentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*D
 	if query := dq.withRequester; query != nil {
 		if err := dq.loadRequester(ctx, query, nodes, nil,
 			func(n *Deployment, e *User) { n.Edges.Requester = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := dq.withProject; query != nil {
+		if err := dq.loadProject(ctx, query, nodes, nil,
+			func(n *Deployment, e *Project) { n.Edges.Project = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -585,6 +628,38 @@ func (dq *DeploymentQuery) loadRequester(ctx context.Context, query *UserQuery, 
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "deployment_requester" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (dq *DeploymentQuery) loadProject(ctx context.Context, query *ProjectQuery, nodes []*Deployment, init func(*Deployment), assign func(*Deployment, *Project)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Deployment)
+	for i := range nodes {
+		if nodes[i].deployment_project == nil {
+			continue
+		}
+		fk := *nodes[i].deployment_project
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(project.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "deployment_project" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

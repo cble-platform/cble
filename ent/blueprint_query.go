@@ -14,6 +14,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/predicate"
+	"github.com/cble-platform/cble-backend/ent/project"
 	entprovider "github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/google/uuid"
@@ -27,6 +28,7 @@ type BlueprintQuery struct {
 	inters          []Interceptor
 	predicates      []predicate.Blueprint
 	withProvider    *ProviderQuery
+	withProject     *ProjectQuery
 	withResources   *ResourceQuery
 	withDeployments *DeploymentQuery
 	withFKs         bool
@@ -81,6 +83,28 @@ func (bq *BlueprintQuery) QueryProvider() *ProviderQuery {
 			sqlgraph.From(blueprint.Table, blueprint.FieldID, selector),
 			sqlgraph.To(entprovider.Table, entprovider.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, blueprint.ProviderTable, blueprint.ProviderColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(bq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryProject chains the current query on the "project" edge.
+func (bq *BlueprintQuery) QueryProject() *ProjectQuery {
+	query := (&ProjectClient{config: bq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := bq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := bq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(blueprint.Table, blueprint.FieldID, selector),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, blueprint.ProjectTable, blueprint.ProjectColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(bq.driver.Dialect(), step)
 		return fromU, nil
@@ -325,6 +349,7 @@ func (bq *BlueprintQuery) Clone() *BlueprintQuery {
 		inters:          append([]Interceptor{}, bq.inters...),
 		predicates:      append([]predicate.Blueprint{}, bq.predicates...),
 		withProvider:    bq.withProvider.Clone(),
+		withProject:     bq.withProject.Clone(),
 		withResources:   bq.withResources.Clone(),
 		withDeployments: bq.withDeployments.Clone(),
 		// clone intermediate query.
@@ -341,6 +366,17 @@ func (bq *BlueprintQuery) WithProvider(opts ...func(*ProviderQuery)) *BlueprintQ
 		opt(query)
 	}
 	bq.withProvider = query
+	return bq
+}
+
+// WithProject tells the query-builder to eager-load the nodes that are connected to
+// the "project" edge. The optional arguments are used to configure the query builder of the edge.
+func (bq *BlueprintQuery) WithProject(opts ...func(*ProjectQuery)) *BlueprintQuery {
+	query := (&ProjectClient{config: bq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	bq.withProject = query
 	return bq
 }
 
@@ -445,13 +481,14 @@ func (bq *BlueprintQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Bl
 		nodes       = []*Blueprint{}
 		withFKs     = bq.withFKs
 		_spec       = bq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			bq.withProvider != nil,
+			bq.withProject != nil,
 			bq.withResources != nil,
 			bq.withDeployments != nil,
 		}
 	)
-	if bq.withProvider != nil {
+	if bq.withProvider != nil || bq.withProject != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -478,6 +515,12 @@ func (bq *BlueprintQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Bl
 	if query := bq.withProvider; query != nil {
 		if err := bq.loadProvider(ctx, query, nodes, nil,
 			func(n *Blueprint, e *Provider) { n.Edges.Provider = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := bq.withProject; query != nil {
+		if err := bq.loadProject(ctx, query, nodes, nil,
+			func(n *Blueprint, e *Project) { n.Edges.Project = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -523,6 +566,38 @@ func (bq *BlueprintQuery) loadProvider(ctx context.Context, query *ProviderQuery
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "blueprint_provider" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (bq *BlueprintQuery) loadProject(ctx context.Context, query *ProjectQuery, nodes []*Blueprint, init func(*Blueprint), assign func(*Blueprint, *Project)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Blueprint)
+	for i := range nodes {
+		if nodes[i].blueprint_project == nil {
+			continue
+		}
+		fk := *nodes[i].blueprint_project
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(project.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "blueprint_project" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

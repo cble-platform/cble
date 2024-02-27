@@ -38,6 +38,8 @@ const (
 	EdgeDeploymentNodes = "deployment_nodes"
 	// EdgeRequester holds the string denoting the requester edge name in mutations.
 	EdgeRequester = "requester"
+	// EdgeProject holds the string denoting the project edge name in mutations.
+	EdgeProject = "project"
 	// Table holds the table name of the deployment in the database.
 	Table = "deployments"
 	// BlueprintTable is the table that holds the blueprint relation/edge.
@@ -61,6 +63,13 @@ const (
 	RequesterInverseTable = "users"
 	// RequesterColumn is the table column denoting the requester relation/edge.
 	RequesterColumn = "deployment_requester"
+	// ProjectTable is the table that holds the project relation/edge.
+	ProjectTable = "deployments"
+	// ProjectInverseTable is the table name for the Project entity.
+	// It exists in this package in order to avoid circular dependency with the "project" package.
+	ProjectInverseTable = "projects"
+	// ProjectColumn is the table column denoting the project relation/edge.
+	ProjectColumn = "deployment_project"
 )
 
 // Columns holds all SQL columns for deployment fields.
@@ -81,6 +90,7 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"deployment_blueprint",
 	"deployment_requester",
+	"deployment_project",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -210,6 +220,13 @@ func ByRequesterField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newRequesterStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByProjectField orders the results by project field.
+func ByProjectField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newProjectStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newBlueprintStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -229,5 +246,12 @@ func newRequesterStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(RequesterInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, false, RequesterTable, RequesterColumn),
+	)
+}
+func newProjectStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ProjectInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, ProjectTable, ProjectColumn),
 	)
 }

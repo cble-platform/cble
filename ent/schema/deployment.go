@@ -58,6 +58,10 @@ func (Deployment) Edges() []ent.Edge {
 			Unique().
 			Required().
 			Comment("The user who requested this deployment"),
+		edge.To("project", Project.Type).
+			Unique().
+			Required().
+			Comment("The project to contain this deployment"),
 	}
 }
 

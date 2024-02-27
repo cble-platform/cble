@@ -39,6 +39,10 @@ func (Blueprint) Edges() []ent.Edge {
 			Unique().
 			Required().
 			Comment("The provider to use for this blueprint"),
+		edge.To("project", Project.Type).
+			Required().
+			Unique().
+			Comment("The project this blueprint is associated with (nil indicates a public blueprint)"),
 		edge.From("resources", Resource.Type).
 			Ref("blueprint").
 			Annotations(entsql.Annotation{

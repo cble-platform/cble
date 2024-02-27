@@ -15,6 +15,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/deploymentnode"
 	"github.com/cble-platform/cble-backend/ent/predicate"
+	"github.com/cble-platform/cble-backend/ent/project"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
 )
@@ -157,6 +158,17 @@ func (du *DeploymentUpdate) SetRequester(u *User) *DeploymentUpdate {
 	return du.SetRequesterID(u.ID)
 }
 
+// SetProjectID sets the "project" edge to the Project entity by ID.
+func (du *DeploymentUpdate) SetProjectID(id uuid.UUID) *DeploymentUpdate {
+	du.mutation.SetProjectID(id)
+	return du
+}
+
+// SetProject sets the "project" edge to the Project entity.
+func (du *DeploymentUpdate) SetProject(p *Project) *DeploymentUpdate {
+	return du.SetProjectID(p.ID)
+}
+
 // Mutation returns the DeploymentMutation object of the builder.
 func (du *DeploymentUpdate) Mutation() *DeploymentMutation {
 	return du.mutation
@@ -192,6 +204,12 @@ func (du *DeploymentUpdate) RemoveDeploymentNodes(d ...*DeploymentNode) *Deploym
 // ClearRequester clears the "requester" edge to the User entity.
 func (du *DeploymentUpdate) ClearRequester() *DeploymentUpdate {
 	du.mutation.ClearRequester()
+	return du
+}
+
+// ClearProject clears the "project" edge to the Project entity.
+func (du *DeploymentUpdate) ClearProject() *DeploymentUpdate {
+	du.mutation.ClearProject()
 	return du
 }
 
@@ -243,6 +261,9 @@ func (du *DeploymentUpdate) check() error {
 	}
 	if _, ok := du.mutation.RequesterID(); du.mutation.RequesterCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Deployment.requester"`)
+	}
+	if _, ok := du.mutation.ProjectID(); du.mutation.ProjectCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Deployment.project"`)
 	}
 	return nil
 }
@@ -379,6 +400,35 @@ func (du *DeploymentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if du.mutation.ProjectCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   deployment.ProjectTable,
+			Columns: []string{deployment.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := du.mutation.ProjectIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   deployment.ProjectTable,
+			Columns: []string{deployment.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -531,6 +581,17 @@ func (duo *DeploymentUpdateOne) SetRequester(u *User) *DeploymentUpdateOne {
 	return duo.SetRequesterID(u.ID)
 }
 
+// SetProjectID sets the "project" edge to the Project entity by ID.
+func (duo *DeploymentUpdateOne) SetProjectID(id uuid.UUID) *DeploymentUpdateOne {
+	duo.mutation.SetProjectID(id)
+	return duo
+}
+
+// SetProject sets the "project" edge to the Project entity.
+func (duo *DeploymentUpdateOne) SetProject(p *Project) *DeploymentUpdateOne {
+	return duo.SetProjectID(p.ID)
+}
+
 // Mutation returns the DeploymentMutation object of the builder.
 func (duo *DeploymentUpdateOne) Mutation() *DeploymentMutation {
 	return duo.mutation
@@ -566,6 +627,12 @@ func (duo *DeploymentUpdateOne) RemoveDeploymentNodes(d ...*DeploymentNode) *Dep
 // ClearRequester clears the "requester" edge to the User entity.
 func (duo *DeploymentUpdateOne) ClearRequester() *DeploymentUpdateOne {
 	duo.mutation.ClearRequester()
+	return duo
+}
+
+// ClearProject clears the "project" edge to the Project entity.
+func (duo *DeploymentUpdateOne) ClearProject() *DeploymentUpdateOne {
+	duo.mutation.ClearProject()
 	return duo
 }
 
@@ -630,6 +697,9 @@ func (duo *DeploymentUpdateOne) check() error {
 	}
 	if _, ok := duo.mutation.RequesterID(); duo.mutation.RequesterCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Deployment.requester"`)
+	}
+	if _, ok := duo.mutation.ProjectID(); duo.mutation.ProjectCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Deployment.project"`)
 	}
 	return nil
 }
@@ -783,6 +853,35 @@ func (duo *DeploymentUpdateOne) sqlSave(ctx context.Context) (_node *Deployment,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if duo.mutation.ProjectCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   deployment.ProjectTable,
+			Columns: []string{deployment.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := duo.mutation.ProjectIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   deployment.ProjectTable,
+			Columns: []string{deployment.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

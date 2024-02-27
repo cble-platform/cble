@@ -44,9 +44,11 @@ type UserEdges struct {
 	Groups []*Group `json:"groups,omitempty"`
 	// Deployments holds the value of the deployments edge.
 	Deployments []*Deployment `json:"deployments,omitempty"`
+	// Projects user is a member of
+	Projects []*Project `json:"projects,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // GroupsOrErr returns the Groups value or an error if the edge
@@ -65,6 +67,15 @@ func (e UserEdges) DeploymentsOrErr() ([]*Deployment, error) {
 		return e.Deployments, nil
 	}
 	return nil, &NotLoadedError{edge: "deployments"}
+}
+
+// ProjectsOrErr returns the Projects value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) ProjectsOrErr() ([]*Project, error) {
+	if e.loadedTypes[2] {
+		return e.Projects, nil
+	}
+	return nil, &NotLoadedError{edge: "projects"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -162,6 +173,11 @@ func (u *User) QueryGroups() *GroupQuery {
 // QueryDeployments queries the "deployments" edge of the User entity.
 func (u *User) QueryDeployments() *DeploymentQuery {
 	return NewUserClient(u.config).QueryDeployments(u)
+}
+
+// QueryProjects queries the "projects" edge of the User entity.
+func (u *User) QueryProjects() *ProjectQuery {
+	return NewUserClient(u.config).QueryProjects(u)
 }
 
 // Update returns a builder for updating this User.

@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/cble-platform/cble-backend/engine/models"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
+	"github.com/cble-platform/cble-backend/ent/project"
 	entprovider "github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/google/uuid"
 )
@@ -37,6 +38,7 @@ type Blueprint struct {
 	// The values are being populated by the BlueprintQuery when eager-loading is set.
 	Edges              BlueprintEdges `json:"edges"`
 	blueprint_provider *uuid.UUID
+	blueprint_project  *uuid.UUID
 	selectValues       sql.SelectValues
 }
 
@@ -44,13 +46,15 @@ type Blueprint struct {
 type BlueprintEdges struct {
 	// The provider to use for this blueprint
 	Provider *Provider `json:"provider,omitempty"`
+	// The project this blueprint is associated with (nil indicates a public blueprint)
+	Project *Project `json:"project,omitempty"`
 	// The resources which are part of this blueprint
 	Resources []*Resource `json:"resources,omitempty"`
 	// All deployments of this blueprints
 	Deployments []*Deployment `json:"deployments,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // ProviderOrErr returns the Provider value or an error if the edge
@@ -66,10 +70,23 @@ func (e BlueprintEdges) ProviderOrErr() (*Provider, error) {
 	return nil, &NotLoadedError{edge: "provider"}
 }
 
+// ProjectOrErr returns the Project value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e BlueprintEdges) ProjectOrErr() (*Project, error) {
+	if e.loadedTypes[1] {
+		if e.Project == nil {
+			// Edge was loaded but was not found.
+			return nil, &NotFoundError{label: project.Label}
+		}
+		return e.Project, nil
+	}
+	return nil, &NotLoadedError{edge: "project"}
+}
+
 // ResourcesOrErr returns the Resources value or an error if the edge
 // was not loaded in eager-loading.
 func (e BlueprintEdges) ResourcesOrErr() ([]*Resource, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Resources, nil
 	}
 	return nil, &NotLoadedError{edge: "resources"}
@@ -78,7 +95,7 @@ func (e BlueprintEdges) ResourcesOrErr() ([]*Resource, error) {
 // DeploymentsOrErr returns the Deployments value or an error if the edge
 // was not loaded in eager-loading.
 func (e BlueprintEdges) DeploymentsOrErr() ([]*Deployment, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[3] {
 		return e.Deployments, nil
 	}
 	return nil, &NotLoadedError{edge: "deployments"}
@@ -98,6 +115,8 @@ func (*Blueprint) scanValues(columns []string) ([]any, error) {
 		case blueprint.FieldID:
 			values[i] = new(uuid.UUID)
 		case blueprint.ForeignKeys[0]: // blueprint_provider
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+		case blueprint.ForeignKeys[1]: // blueprint_project
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
@@ -165,6 +184,13 @@ func (b *Blueprint) assignValues(columns []string, values []any) error {
 				b.blueprint_provider = new(uuid.UUID)
 				*b.blueprint_provider = *value.S.(*uuid.UUID)
 			}
+		case blueprint.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field blueprint_project", values[i])
+			} else if value.Valid {
+				b.blueprint_project = new(uuid.UUID)
+				*b.blueprint_project = *value.S.(*uuid.UUID)
+			}
 		default:
 			b.selectValues.Set(columns[i], values[i])
 		}
@@ -181,6 +207,11 @@ func (b *Blueprint) Value(name string) (ent.Value, error) {
 // QueryProvider queries the "provider" edge of the Blueprint entity.
 func (b *Blueprint) QueryProvider() *ProviderQuery {
 	return NewBlueprintClient(b.config).QueryProvider(b)
+}
+
+// QueryProject queries the "project" edge of the Blueprint entity.
+func (b *Blueprint) QueryProject() *ProjectQuery {
+	return NewBlueprintClient(b.config).QueryProject(b)
 }
 
 // QueryResources queries the "resources" edge of the Blueprint entity.
