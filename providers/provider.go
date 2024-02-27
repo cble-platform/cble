@@ -9,7 +9,7 @@ import (
 	"syscall"
 
 	"github.com/cble-platform/cble-backend/ent"
-	"github.com/cble-platform/cble-backend/internal/git"
+	"github.com/cble-platform/cble-backend/git"
 	pgrpc "github.com/cble-platform/cble-provider-grpc/pkg/provider"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

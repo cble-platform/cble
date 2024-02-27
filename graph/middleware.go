@@ -4,20 +4,25 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cble-platform/cble-backend/internal/contexts"
 	"github.com/gin-gonic/gin"
 )
 
+type contextKey struct {
+	field string
+}
+
+var GIN_CONTEXT_KEY = &contextKey{"gincontext"}
+
 func GinContextToContextMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		ctx := context.WithValue(c.Request.Context(), contexts.GIN_CONTEXT_KEY, c)
+		ctx := context.WithValue(c.Request.Context(), GIN_CONTEXT_KEY, c)
 		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 	}
 }
 
 func GinContextFromContext(ctx context.Context) (*gin.Context, error) {
-	ginContext := ctx.Value(contexts.GIN_CONTEXT_KEY)
+	ginContext := ctx.Value(GIN_CONTEXT_KEY)
 	if ginContext == nil {
 		err := fmt.Errorf("could not retrieve gin.Context")
 		return nil, err

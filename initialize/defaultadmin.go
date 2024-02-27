@@ -1,4 +1,4 @@
-package defaultadmin
+package initialize
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func InitializeDefaultAdminUserGroup(ctx context.Context, client *ent.Client, cbleConfig *config.Config) error {
+func InitDefaultAdminUserGroup(ctx context.Context, client *ent.Client, cbleConfig *config.Config, defaultProject *ent.Project) error {
 	// Ensure the built-in admin group exists
 	cbleAdminGroup, err := client.Group.Query().Where(
 		group.NameEQ(cbleConfig.Initialization.AdminGroup),
@@ -26,6 +26,7 @@ func InitializeDefaultAdminUserGroup(ctx context.Context, client *ent.Client, cb
 		// If it doesn't exist, make it
 		cbleAdminGroup, err = client.Group.Create().
 			SetName(cbleConfig.Initialization.AdminGroup).
+			AddProjects(defaultProject).
 			Save(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to create default admin group: %v", err)
@@ -80,6 +81,7 @@ func InitializeDefaultAdminUserGroup(ctx context.Context, client *ent.Client, cb
 				SetFirstName(cbleConfig.Initialization.DefaultAdmin.FirstName).
 				SetLastName(cbleConfig.Initialization.DefaultAdmin.LastName).
 				AddGroups(cbleAdminGroup).
+				AddProjects(defaultProject).
 				Save(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to create default admin: %v", err)

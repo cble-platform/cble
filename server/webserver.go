@@ -1,4 +1,4 @@
-package webserver
+package server
 
 import (
 	"context"
@@ -75,7 +75,7 @@ func playgroundHandler() gin.HandlerFunc {
 	}
 }
 
-func New(config *config.Config, client *ent.Client, cbleServer *providers.CBLEServer) *CBLEWebserver {
+func NewWebserver(config *config.Config, client *ent.Client, cbleServer *providers.CBLEServer) *CBLEWebserver {
 	// Use default gin route settings
 	r := gin.Default()
 

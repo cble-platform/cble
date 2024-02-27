@@ -8,8 +8,7 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/cble-platform/cble-backend/cble"
-	"github.com/cble-platform/cble-backend/internal/logo"
+	"github.com/cble-platform/cble-backend/server"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -19,7 +18,7 @@ func main() {
 	ctx, closeContext := context.WithCancel(context.Background())
 
 	// Print the logo
-	fmt.Println(logo.Print())
+	fmt.Println(PrintLogo())
 
 	// Parse the config path from command line args
 	var cfgFile string
@@ -27,7 +26,7 @@ func main() {
 	pflag.Parse()
 
 	// Create the CBLEServer instance
-	cbleServer, err := cble.NewServer(ctx, cfgFile)
+	cbleServer, err := server.NewServer(ctx, cfgFile)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"component": "CBLE",
