@@ -25,15 +25,15 @@ type Project struct {
 	// The name of the project
 	Name string `json:"name,omitempty"`
 	// The quota for number of CPU cores
-	QuotaCPU uint `json:"quota_cpu,omitempty"`
+	QuotaCPU int `json:"quota_cpu,omitempty"`
 	// The quota for total RAM usage (MiB)
-	QuotaRAM uint `json:"quota_ram,omitempty"`
+	QuotaRAM int `json:"quota_ram,omitempty"`
 	// The quota for total disk usage (MiB)
-	QuotaDisk uint `json:"quota_disk,omitempty"`
+	QuotaDisk int `json:"quota_disk,omitempty"`
 	// The quota for number of networks
-	QuotaNetwork uint `json:"quota_network,omitempty"`
+	QuotaNetwork int `json:"quota_network,omitempty"`
 	// The quota for number of routers
-	QuotaRouter uint `json:"quota_router,omitempty"`
+	QuotaRouter int `json:"quota_router,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ProjectQuery when eager-loading is set.
 	Edges        ProjectEdges `json:"edges"`
@@ -147,31 +147,31 @@ func (pr *Project) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field quota_cpu", values[i])
 			} else if value.Valid {
-				pr.QuotaCPU = uint(value.Int64)
+				pr.QuotaCPU = int(value.Int64)
 			}
 		case project.FieldQuotaRAM:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field quota_ram", values[i])
 			} else if value.Valid {
-				pr.QuotaRAM = uint(value.Int64)
+				pr.QuotaRAM = int(value.Int64)
 			}
 		case project.FieldQuotaDisk:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field quota_disk", values[i])
 			} else if value.Valid {
-				pr.QuotaDisk = uint(value.Int64)
+				pr.QuotaDisk = int(value.Int64)
 			}
 		case project.FieldQuotaNetwork:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field quota_network", values[i])
 			} else if value.Valid {
-				pr.QuotaNetwork = uint(value.Int64)
+				pr.QuotaNetwork = int(value.Int64)
 			}
 		case project.FieldQuotaRouter:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field quota_router", values[i])
 			} else if value.Valid {
-				pr.QuotaRouter = uint(value.Int64)
+				pr.QuotaRouter = int(value.Int64)
 			}
 		default:
 			pr.selectValues.Set(columns[i], values[i])

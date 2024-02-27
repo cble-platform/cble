@@ -12,6 +12,12 @@ import (
 )
 
 func CreateDeployment(ctx context.Context, client *ent.Client, entBlueprint *ent.Blueprint, templateVars map[string]string, expiryTime time.Time, requester *ent.User) (*ent.Deployment, error) {
+	// Get the project from blueprint
+	entProject, err := entBlueprint.QueryProject().Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query project: %v", err)
+	}
+
 	// Create the deployment
 	entDeployment, err := client.Deployment.Create().
 		SetName(entBlueprint.Name).
@@ -21,6 +27,7 @@ func CreateDeployment(ctx context.Context, client *ent.Client, entBlueprint *ent
 		SetExpiresAt(expiryTime).
 		SetBlueprint(entBlueprint).
 		SetRequester(requester).
+		SetProject(entProject).
 		Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create deployment: %v", err)

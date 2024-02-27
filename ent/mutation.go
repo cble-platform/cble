@@ -4140,15 +4140,15 @@ type ProjectMutation struct {
 	created_at           *time.Time
 	updated_at           *time.Time
 	name                 *string
-	quota_cpu            *uint
+	quota_cpu            *int
 	addquota_cpu         *int
-	quota_ram            *uint
+	quota_ram            *int
 	addquota_ram         *int
-	quota_disk           *uint
+	quota_disk           *int
 	addquota_disk        *int
-	quota_network        *uint
+	quota_network        *int
 	addquota_network     *int
-	quota_router         *uint
+	quota_router         *int
 	addquota_router      *int
 	clearedFields        map[string]struct{}
 	members              map[uuid.UUID]struct{}
@@ -4381,13 +4381,13 @@ func (m *ProjectMutation) ResetName() {
 }
 
 // SetQuotaCPU sets the "quota_cpu" field.
-func (m *ProjectMutation) SetQuotaCPU(u uint) {
-	m.quota_cpu = &u
+func (m *ProjectMutation) SetQuotaCPU(i int) {
+	m.quota_cpu = &i
 	m.addquota_cpu = nil
 }
 
 // QuotaCPU returns the value of the "quota_cpu" field in the mutation.
-func (m *ProjectMutation) QuotaCPU() (r uint, exists bool) {
+func (m *ProjectMutation) QuotaCPU() (r int, exists bool) {
 	v := m.quota_cpu
 	if v == nil {
 		return
@@ -4398,7 +4398,7 @@ func (m *ProjectMutation) QuotaCPU() (r uint, exists bool) {
 // OldQuotaCPU returns the old "quota_cpu" field's value of the Project entity.
 // If the Project object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ProjectMutation) OldQuotaCPU(ctx context.Context) (v uint, err error) {
+func (m *ProjectMutation) OldQuotaCPU(ctx context.Context) (v int, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldQuotaCPU is only allowed on UpdateOne operations")
 	}
@@ -4412,12 +4412,12 @@ func (m *ProjectMutation) OldQuotaCPU(ctx context.Context) (v uint, err error) {
 	return oldValue.QuotaCPU, nil
 }
 
-// AddQuotaCPU adds u to the "quota_cpu" field.
-func (m *ProjectMutation) AddQuotaCPU(u int) {
+// AddQuotaCPU adds i to the "quota_cpu" field.
+func (m *ProjectMutation) AddQuotaCPU(i int) {
 	if m.addquota_cpu != nil {
-		*m.addquota_cpu += u
+		*m.addquota_cpu += i
 	} else {
-		m.addquota_cpu = &u
+		m.addquota_cpu = &i
 	}
 }
 
@@ -4437,13 +4437,13 @@ func (m *ProjectMutation) ResetQuotaCPU() {
 }
 
 // SetQuotaRAM sets the "quota_ram" field.
-func (m *ProjectMutation) SetQuotaRAM(u uint) {
-	m.quota_ram = &u
+func (m *ProjectMutation) SetQuotaRAM(i int) {
+	m.quota_ram = &i
 	m.addquota_ram = nil
 }
 
 // QuotaRAM returns the value of the "quota_ram" field in the mutation.
-func (m *ProjectMutation) QuotaRAM() (r uint, exists bool) {
+func (m *ProjectMutation) QuotaRAM() (r int, exists bool) {
 	v := m.quota_ram
 	if v == nil {
 		return
@@ -4454,7 +4454,7 @@ func (m *ProjectMutation) QuotaRAM() (r uint, exists bool) {
 // OldQuotaRAM returns the old "quota_ram" field's value of the Project entity.
 // If the Project object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ProjectMutation) OldQuotaRAM(ctx context.Context) (v uint, err error) {
+func (m *ProjectMutation) OldQuotaRAM(ctx context.Context) (v int, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldQuotaRAM is only allowed on UpdateOne operations")
 	}
@@ -4468,12 +4468,12 @@ func (m *ProjectMutation) OldQuotaRAM(ctx context.Context) (v uint, err error) {
 	return oldValue.QuotaRAM, nil
 }
 
-// AddQuotaRAM adds u to the "quota_ram" field.
-func (m *ProjectMutation) AddQuotaRAM(u int) {
+// AddQuotaRAM adds i to the "quota_ram" field.
+func (m *ProjectMutation) AddQuotaRAM(i int) {
 	if m.addquota_ram != nil {
-		*m.addquota_ram += u
+		*m.addquota_ram += i
 	} else {
-		m.addquota_ram = &u
+		m.addquota_ram = &i
 	}
 }
 
@@ -4493,13 +4493,13 @@ func (m *ProjectMutation) ResetQuotaRAM() {
 }
 
 // SetQuotaDisk sets the "quota_disk" field.
-func (m *ProjectMutation) SetQuotaDisk(u uint) {
-	m.quota_disk = &u
+func (m *ProjectMutation) SetQuotaDisk(i int) {
+	m.quota_disk = &i
 	m.addquota_disk = nil
 }
 
 // QuotaDisk returns the value of the "quota_disk" field in the mutation.
-func (m *ProjectMutation) QuotaDisk() (r uint, exists bool) {
+func (m *ProjectMutation) QuotaDisk() (r int, exists bool) {
 	v := m.quota_disk
 	if v == nil {
 		return
@@ -4510,7 +4510,7 @@ func (m *ProjectMutation) QuotaDisk() (r uint, exists bool) {
 // OldQuotaDisk returns the old "quota_disk" field's value of the Project entity.
 // If the Project object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ProjectMutation) OldQuotaDisk(ctx context.Context) (v uint, err error) {
+func (m *ProjectMutation) OldQuotaDisk(ctx context.Context) (v int, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldQuotaDisk is only allowed on UpdateOne operations")
 	}
@@ -4524,12 +4524,12 @@ func (m *ProjectMutation) OldQuotaDisk(ctx context.Context) (v uint, err error) 
 	return oldValue.QuotaDisk, nil
 }
 
-// AddQuotaDisk adds u to the "quota_disk" field.
-func (m *ProjectMutation) AddQuotaDisk(u int) {
+// AddQuotaDisk adds i to the "quota_disk" field.
+func (m *ProjectMutation) AddQuotaDisk(i int) {
 	if m.addquota_disk != nil {
-		*m.addquota_disk += u
+		*m.addquota_disk += i
 	} else {
-		m.addquota_disk = &u
+		m.addquota_disk = &i
 	}
 }
 
@@ -4549,13 +4549,13 @@ func (m *ProjectMutation) ResetQuotaDisk() {
 }
 
 // SetQuotaNetwork sets the "quota_network" field.
-func (m *ProjectMutation) SetQuotaNetwork(u uint) {
-	m.quota_network = &u
+func (m *ProjectMutation) SetQuotaNetwork(i int) {
+	m.quota_network = &i
 	m.addquota_network = nil
 }
 
 // QuotaNetwork returns the value of the "quota_network" field in the mutation.
-func (m *ProjectMutation) QuotaNetwork() (r uint, exists bool) {
+func (m *ProjectMutation) QuotaNetwork() (r int, exists bool) {
 	v := m.quota_network
 	if v == nil {
 		return
@@ -4566,7 +4566,7 @@ func (m *ProjectMutation) QuotaNetwork() (r uint, exists bool) {
 // OldQuotaNetwork returns the old "quota_network" field's value of the Project entity.
 // If the Project object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ProjectMutation) OldQuotaNetwork(ctx context.Context) (v uint, err error) {
+func (m *ProjectMutation) OldQuotaNetwork(ctx context.Context) (v int, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldQuotaNetwork is only allowed on UpdateOne operations")
 	}
@@ -4580,12 +4580,12 @@ func (m *ProjectMutation) OldQuotaNetwork(ctx context.Context) (v uint, err erro
 	return oldValue.QuotaNetwork, nil
 }
 
-// AddQuotaNetwork adds u to the "quota_network" field.
-func (m *ProjectMutation) AddQuotaNetwork(u int) {
+// AddQuotaNetwork adds i to the "quota_network" field.
+func (m *ProjectMutation) AddQuotaNetwork(i int) {
 	if m.addquota_network != nil {
-		*m.addquota_network += u
+		*m.addquota_network += i
 	} else {
-		m.addquota_network = &u
+		m.addquota_network = &i
 	}
 }
 
@@ -4605,13 +4605,13 @@ func (m *ProjectMutation) ResetQuotaNetwork() {
 }
 
 // SetQuotaRouter sets the "quota_router" field.
-func (m *ProjectMutation) SetQuotaRouter(u uint) {
-	m.quota_router = &u
+func (m *ProjectMutation) SetQuotaRouter(i int) {
+	m.quota_router = &i
 	m.addquota_router = nil
 }
 
 // QuotaRouter returns the value of the "quota_router" field in the mutation.
-func (m *ProjectMutation) QuotaRouter() (r uint, exists bool) {
+func (m *ProjectMutation) QuotaRouter() (r int, exists bool) {
 	v := m.quota_router
 	if v == nil {
 		return
@@ -4622,7 +4622,7 @@ func (m *ProjectMutation) QuotaRouter() (r uint, exists bool) {
 // OldQuotaRouter returns the old "quota_router" field's value of the Project entity.
 // If the Project object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ProjectMutation) OldQuotaRouter(ctx context.Context) (v uint, err error) {
+func (m *ProjectMutation) OldQuotaRouter(ctx context.Context) (v int, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldQuotaRouter is only allowed on UpdateOne operations")
 	}
@@ -4636,12 +4636,12 @@ func (m *ProjectMutation) OldQuotaRouter(ctx context.Context) (v uint, err error
 	return oldValue.QuotaRouter, nil
 }
 
-// AddQuotaRouter adds u to the "quota_router" field.
-func (m *ProjectMutation) AddQuotaRouter(u int) {
+// AddQuotaRouter adds i to the "quota_router" field.
+func (m *ProjectMutation) AddQuotaRouter(i int) {
 	if m.addquota_router != nil {
-		*m.addquota_router += u
+		*m.addquota_router += i
 	} else {
-		m.addquota_router = &u
+		m.addquota_router = &i
 	}
 }
 
@@ -5015,35 +5015,35 @@ func (m *ProjectMutation) SetField(name string, value ent.Value) error {
 		m.SetName(v)
 		return nil
 	case project.FieldQuotaCPU:
-		v, ok := value.(uint)
+		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetQuotaCPU(v)
 		return nil
 	case project.FieldQuotaRAM:
-		v, ok := value.(uint)
+		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetQuotaRAM(v)
 		return nil
 	case project.FieldQuotaDisk:
-		v, ok := value.(uint)
+		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetQuotaDisk(v)
 		return nil
 	case project.FieldQuotaNetwork:
-		v, ok := value.(uint)
+		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetQuotaNetwork(v)
 		return nil
 	case project.FieldQuotaRouter:
-		v, ok := value.(uint)
+		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}

@@ -109,6 +109,34 @@ enum Action {
 	"""
   permission_revoke
 	"""
+	List all projects (only compatible with wildcard ID *)
+	"""
+  project_list
+	"""
+	Create projects (only compatible with wildcard ID *)
+	"""
+  project_create
+	"""
+	Modify project memberships
+	"""
+  project_update_membership
+	"""
+	Create blueprints in the project
+	"""
+  project_create_blueprints
+	"""
+	Update blueprints in the project
+	"""
+  project_update_blueprints
+	"""
+	Delete blueprints in the project
+	"""
+  project_delete_blueprints
+	"""
+	Deploy blueprints in the project
+	"""
+  project_deploy_blueprints
+	"""
 	List all providers (only compatible with wildcard ID *)
 	"""
   provider_list
@@ -227,6 +255,24 @@ const (
 	// Revoke permissions (only compatible with wildcard ID *)
 	ActionPermissionRevoke PermissionAction = "permission_revoke"
 	// -----------------------------------------------------------------
+	// Project
+	// -----------------------------------------------------------------
+
+	// List all projects (only compatible with wildcard ID *)
+	ActionProjectList PermissionAction = "project_list"
+	// Create projects (only compatible with wildcard ID *)
+	ActionProjectCreate PermissionAction = "project_create"
+	// Modify project memberships
+	ActionProjectUpdateMembership PermissionAction = "project_update_membership"
+	// Create blueprints in the project
+	ActionProjectCreateBlueprints PermissionAction = "project_create_blueprints"
+	// Update blueprints in the project
+	ActionProjectUpdateBlueprints PermissionAction = "project_update_blueprints"
+	// Delete blueprints in the project
+	ActionProjectDeleteBlueprints PermissionAction = "project_delete_blueprints"
+	// Deploy blueprints in the project
+	ActionProjectDeployBlueprints PermissionAction = "project_deploy_blueprints"
+	// -----------------------------------------------------------------
 	// Provider
 	// -----------------------------------------------------------------
 
@@ -309,6 +355,16 @@ var actionMap = map[string]map[string]PermissionAction{
 		"grant":  ActionPermissionGrant,
 		"revoke": ActionPermissionRevoke,
 	},
+	// Project
+	"project": {
+		"list":              ActionProjectList,
+		"create":            ActionProjectCreate,
+		"update_membership": ActionProjectUpdateMembership,
+		"create_blueprints": ActionProjectCreateBlueprints,
+		"update_blueprints": ActionProjectUpdateBlueprints,
+		"delete_blueprints": ActionProjectDeleteBlueprints,
+		"deploy_blueprints": ActionProjectDeployBlueprints,
+	},
 	// Provider
 	"provider": {
 		"list":      ActionProviderList,
@@ -366,6 +422,13 @@ func (PermissionAction) Values() (kinds []string) {
 		ActionPermissionGet,
 		ActionPermissionGrant,
 		ActionPermissionRevoke,
+		ActionProjectList,
+		ActionProjectCreate,
+		ActionProjectUpdateMembership,
+		ActionProjectCreateBlueprints,
+		ActionProjectUpdateBlueprints,
+		ActionProjectDeleteBlueprints,
+		ActionProjectDeployBlueprints,
 		ActionProviderList,
 		ActionProviderCreate,
 		ActionProviderGet,

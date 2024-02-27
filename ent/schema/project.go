@@ -21,15 +21,15 @@ func (Project) Fields() []ent.Field {
 			Default(uuid.New),
 		field.String("name").
 			Comment("The name of the project"),
-		field.Uint("quota_cpu").
+		field.Int("quota_cpu").
 			Comment("The quota for number of CPU cores"),
-		field.Uint("quota_ram").
+		field.Int("quota_ram").
 			Comment("The quota for total RAM usage (MiB)"),
-		field.Uint("quota_disk").
+		field.Int("quota_disk").
 			Comment("The quota for total disk usage (MiB)"),
-		field.Uint("quota_network").
+		field.Int("quota_network").
 			Comment("The quota for number of networks"),
-		field.Uint("quota_router").
+		field.Int("quota_router").
 			Comment("The quota for number of routers"),
 	}
 }

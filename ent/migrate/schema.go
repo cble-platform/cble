@@ -170,11 +170,11 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString},
-		{Name: "quota_cpu", Type: field.TypeUint},
-		{Name: "quota_ram", Type: field.TypeUint},
-		{Name: "quota_disk", Type: field.TypeUint},
-		{Name: "quota_network", Type: field.TypeUint},
-		{Name: "quota_router", Type: field.TypeUint},
+		{Name: "quota_cpu", Type: field.TypeInt},
+		{Name: "quota_ram", Type: field.TypeInt},
+		{Name: "quota_disk", Type: field.TypeInt},
+		{Name: "quota_network", Type: field.TypeInt},
+		{Name: "quota_router", Type: field.TypeInt},
 	}
 	// ProjectsTable holds the schema information for the "projects" table.
 	ProjectsTable = &schema.Table{

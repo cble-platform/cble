@@ -21,6 +21,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/deploymentnode"
 	"github.com/cble-platform/cble-backend/ent/grantedpermission"
 	"github.com/cble-platform/cble-backend/ent/group"
+	"github.com/cble-platform/cble-backend/ent/project"
 	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/cble-platform/cble-backend/graph/generated"
@@ -346,6 +347,10 @@ func (r *mutationResolver) CreateBlueprint(ctx context.Context, input model.Blue
 	if err != nil {
 		return nil, gqlerror.Errorf("failed to query provider by ID: %v", err)
 	}
+	entProject, err := r.ent.Project.Get(ctx, input.ProjectID)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query project by ID: %v", err)
+	}
 
 	// Create a transactional client
 	tx, err := r.ent.Tx(ctx)
@@ -361,6 +366,7 @@ func (r *mutationResolver) CreateBlueprint(ctx context.Context, input model.Blue
 		// SetVariableTypes(varTypes).
 		SetVariableTypes(input.VariableTypes).
 		SetProvider(entProvider).
+		SetProject(entProject).
 		Save(ctx)
 	if err != nil {
 		tx.Rollback()
@@ -777,6 +783,51 @@ func (r *mutationResolver) DeploymentPower(ctx context.Context, id uuid.UUID, st
 	return true, nil
 }
 
+// QuotaCPU is the resolver for the quotaCpu field.
+func (r *projectResolver) QuotaCPU(ctx context.Context, obj *ent.Project) (int, error) {
+	panic(fmt.Errorf("not implemented: QuotaCPU - quotaCpu"))
+}
+
+// QuotaRAM is the resolver for the quotaRam field.
+func (r *projectResolver) QuotaRAM(ctx context.Context, obj *ent.Project) (int, error) {
+	panic(fmt.Errorf("not implemented: QuotaRAM - quotaRam"))
+}
+
+// QuotaDisk is the resolver for the quotaDisk field.
+func (r *projectResolver) QuotaDisk(ctx context.Context, obj *ent.Project) (int, error) {
+	panic(fmt.Errorf("not implemented: QuotaDisk - quotaDisk"))
+}
+
+// QuotaNetwork is the resolver for the quotaNetwork field.
+func (r *projectResolver) QuotaNetwork(ctx context.Context, obj *ent.Project) (int, error) {
+	panic(fmt.Errorf("not implemented: QuotaNetwork - quotaNetwork"))
+}
+
+// QuotaRouter is the resolver for the quotaRouter field.
+func (r *projectResolver) QuotaRouter(ctx context.Context, obj *ent.Project) (int, error) {
+	panic(fmt.Errorf("not implemented: QuotaRouter - quotaRouter"))
+}
+
+// Members is the resolver for the members field.
+func (r *projectResolver) Members(ctx context.Context, obj *ent.Project) ([]*ent.User, error) {
+	return obj.QueryMembers().All(ctx)
+}
+
+// GroupMembers is the resolver for the groupMembers field.
+func (r *projectResolver) GroupMembers(ctx context.Context, obj *ent.Project) ([]*ent.Group, error) {
+	return obj.QueryGroupMembers().All(ctx)
+}
+
+// Blueprints is the resolver for the blueprints field.
+func (r *projectResolver) Blueprints(ctx context.Context, obj *ent.Project) ([]*ent.Blueprint, error) {
+	return obj.QueryBlueprints().All(ctx)
+}
+
+// Deployments is the resolver for the deployments field.
+func (r *projectResolver) Deployments(ctx context.Context, obj *ent.Project) ([]*ent.Deployment, error) {
+	return obj.QueryDeployments().All(ctx)
+}
+
 // ConfigBytes is the resolver for the configBytes field.
 func (r *providerResolver) ConfigBytes(ctx context.Context, obj *ent.Provider) (string, error) {
 	return string(obj.ConfigBytes), nil
@@ -913,6 +964,71 @@ func (r *queryResolver) Permission(ctx context.Context, id uuid.UUID) (*ent.Gran
 	}
 
 	return r.ent.GrantedPermission.Get(ctx, id)
+}
+
+// Projects is the resolver for the projects field.
+func (r *queryResolver) Projects(ctx context.Context, count int, offset *int) (*model.ProjectPage, error) {
+	// Get the current user
+	currentUser, err := auth.ForContext(ctx)
+	if err != nil {
+		return nil, auth.AUTH_REQUIRED_GQL_ERROR
+	}
+
+	// Check if current user has permission to list all
+	hasListPerm, err := permission.CurrentUserHasProjectList(ctx, r.ent, uuid.Nil)
+	if err != nil {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	// If has list permission, return them all
+	if hasListPerm {
+		q := r.ent.Project.Query().Limit(count)
+		if offset != nil {
+			q = q.Offset(*offset)
+		}
+		entProjects, err := q.All(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to query projects: %v", err)
+		}
+
+		projectCount, err := r.ent.Project.Query().Count(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get total project count: %v", err)
+		}
+		return &model.ProjectPage{
+			Projects: entProjects,
+			Total:    projectCount,
+		}, nil
+	}
+
+	// If not, only list projects the current user is a member of
+	q := r.ent.Project.Query().Where(
+		project.HasMembersWith(user.IDEQ(currentUser.ID)),
+		project.HasGroupMembersWith(group.HasUsersWith(user.IDEQ(currentUser.ID))),
+	).Limit(count)
+	if offset != nil {
+		q = q.Offset(*offset)
+	}
+	entProjects, err := q.All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query projects: %v", err)
+	}
+	projectCount, err := r.ent.Project.Query().Where(
+		project.HasMembersWith(user.IDEQ(currentUser.ID)),
+		project.HasGroupMembersWith(group.HasUsersWith(user.IDEQ(currentUser.ID))),
+	).Count(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get total project count: %v", err)
+	}
+	return &model.ProjectPage{
+		Projects: entProjects,
+		Total:    projectCount,
+	}, nil
+}
+
+// Project is the resolver for the project field.
+func (r *queryResolver) Project(ctx context.Context, id uuid.UUID) (*ent.Project, error) {
+	panic(fmt.Errorf("not implemented: Project - project"))
 }
 
 // List providers (requires permission `x.x.providers.*.list`)
@@ -1249,6 +1365,9 @@ func (r *Resolver) Group() generated.GroupResolver { return &groupResolver{r} }
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
+// Project returns generated.ProjectResolver implementation.
+func (r *Resolver) Project() generated.ProjectResolver { return &projectResolver{r} }
+
 // Provider returns generated.ProviderResolver implementation.
 func (r *Resolver) Provider() generated.ProviderResolver { return &providerResolver{r} }
 
@@ -1267,6 +1386,7 @@ type deploymentNodeResolver struct{ *Resolver }
 type grantedPermissionResolver struct{ *Resolver }
 type groupResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
+type projectResolver struct{ *Resolver }
 type providerResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type resourceResolver struct{ *Resolver }

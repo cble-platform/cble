@@ -18,6 +18,7 @@ type BlueprintInput struct {
 	BlueprintTemplate string                                  `json:"blueprintTemplate"`
 	VariableTypes     map[string]models.BlueprintVariableType `json:"variableTypes"`
 	ProviderID        uuid.UUID                               `json:"providerId"`
+	ProjectID         uuid.UUID                               `json:"projectId"`
 }
 
 type BlueprintPage struct {
@@ -46,6 +47,11 @@ type GroupInput struct {
 type GroupPage struct {
 	Groups []*ent.Group `json:"groups"`
 	Total  int          `json:"total"`
+}
+
+type ProjectPage struct {
+	Projects []*ent.Project `json:"projects"`
+	Total    int            `json:"total"`
 }
 
 type ProviderInput struct {

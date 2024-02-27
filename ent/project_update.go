@@ -54,107 +54,107 @@ func (pu *ProjectUpdate) SetNillableName(s *string) *ProjectUpdate {
 }
 
 // SetQuotaCPU sets the "quota_cpu" field.
-func (pu *ProjectUpdate) SetQuotaCPU(u uint) *ProjectUpdate {
+func (pu *ProjectUpdate) SetQuotaCPU(i int) *ProjectUpdate {
 	pu.mutation.ResetQuotaCPU()
-	pu.mutation.SetQuotaCPU(u)
+	pu.mutation.SetQuotaCPU(i)
 	return pu
 }
 
 // SetNillableQuotaCPU sets the "quota_cpu" field if the given value is not nil.
-func (pu *ProjectUpdate) SetNillableQuotaCPU(u *uint) *ProjectUpdate {
-	if u != nil {
-		pu.SetQuotaCPU(*u)
+func (pu *ProjectUpdate) SetNillableQuotaCPU(i *int) *ProjectUpdate {
+	if i != nil {
+		pu.SetQuotaCPU(*i)
 	}
 	return pu
 }
 
-// AddQuotaCPU adds u to the "quota_cpu" field.
-func (pu *ProjectUpdate) AddQuotaCPU(u int) *ProjectUpdate {
-	pu.mutation.AddQuotaCPU(u)
+// AddQuotaCPU adds i to the "quota_cpu" field.
+func (pu *ProjectUpdate) AddQuotaCPU(i int) *ProjectUpdate {
+	pu.mutation.AddQuotaCPU(i)
 	return pu
 }
 
 // SetQuotaRAM sets the "quota_ram" field.
-func (pu *ProjectUpdate) SetQuotaRAM(u uint) *ProjectUpdate {
+func (pu *ProjectUpdate) SetQuotaRAM(i int) *ProjectUpdate {
 	pu.mutation.ResetQuotaRAM()
-	pu.mutation.SetQuotaRAM(u)
+	pu.mutation.SetQuotaRAM(i)
 	return pu
 }
 
 // SetNillableQuotaRAM sets the "quota_ram" field if the given value is not nil.
-func (pu *ProjectUpdate) SetNillableQuotaRAM(u *uint) *ProjectUpdate {
-	if u != nil {
-		pu.SetQuotaRAM(*u)
+func (pu *ProjectUpdate) SetNillableQuotaRAM(i *int) *ProjectUpdate {
+	if i != nil {
+		pu.SetQuotaRAM(*i)
 	}
 	return pu
 }
 
-// AddQuotaRAM adds u to the "quota_ram" field.
-func (pu *ProjectUpdate) AddQuotaRAM(u int) *ProjectUpdate {
-	pu.mutation.AddQuotaRAM(u)
+// AddQuotaRAM adds i to the "quota_ram" field.
+func (pu *ProjectUpdate) AddQuotaRAM(i int) *ProjectUpdate {
+	pu.mutation.AddQuotaRAM(i)
 	return pu
 }
 
 // SetQuotaDisk sets the "quota_disk" field.
-func (pu *ProjectUpdate) SetQuotaDisk(u uint) *ProjectUpdate {
+func (pu *ProjectUpdate) SetQuotaDisk(i int) *ProjectUpdate {
 	pu.mutation.ResetQuotaDisk()
-	pu.mutation.SetQuotaDisk(u)
+	pu.mutation.SetQuotaDisk(i)
 	return pu
 }
 
 // SetNillableQuotaDisk sets the "quota_disk" field if the given value is not nil.
-func (pu *ProjectUpdate) SetNillableQuotaDisk(u *uint) *ProjectUpdate {
-	if u != nil {
-		pu.SetQuotaDisk(*u)
+func (pu *ProjectUpdate) SetNillableQuotaDisk(i *int) *ProjectUpdate {
+	if i != nil {
+		pu.SetQuotaDisk(*i)
 	}
 	return pu
 }
 
-// AddQuotaDisk adds u to the "quota_disk" field.
-func (pu *ProjectUpdate) AddQuotaDisk(u int) *ProjectUpdate {
-	pu.mutation.AddQuotaDisk(u)
+// AddQuotaDisk adds i to the "quota_disk" field.
+func (pu *ProjectUpdate) AddQuotaDisk(i int) *ProjectUpdate {
+	pu.mutation.AddQuotaDisk(i)
 	return pu
 }
 
 // SetQuotaNetwork sets the "quota_network" field.
-func (pu *ProjectUpdate) SetQuotaNetwork(u uint) *ProjectUpdate {
+func (pu *ProjectUpdate) SetQuotaNetwork(i int) *ProjectUpdate {
 	pu.mutation.ResetQuotaNetwork()
-	pu.mutation.SetQuotaNetwork(u)
+	pu.mutation.SetQuotaNetwork(i)
 	return pu
 }
 
 // SetNillableQuotaNetwork sets the "quota_network" field if the given value is not nil.
-func (pu *ProjectUpdate) SetNillableQuotaNetwork(u *uint) *ProjectUpdate {
-	if u != nil {
-		pu.SetQuotaNetwork(*u)
+func (pu *ProjectUpdate) SetNillableQuotaNetwork(i *int) *ProjectUpdate {
+	if i != nil {
+		pu.SetQuotaNetwork(*i)
 	}
 	return pu
 }
 
-// AddQuotaNetwork adds u to the "quota_network" field.
-func (pu *ProjectUpdate) AddQuotaNetwork(u int) *ProjectUpdate {
-	pu.mutation.AddQuotaNetwork(u)
+// AddQuotaNetwork adds i to the "quota_network" field.
+func (pu *ProjectUpdate) AddQuotaNetwork(i int) *ProjectUpdate {
+	pu.mutation.AddQuotaNetwork(i)
 	return pu
 }
 
 // SetQuotaRouter sets the "quota_router" field.
-func (pu *ProjectUpdate) SetQuotaRouter(u uint) *ProjectUpdate {
+func (pu *ProjectUpdate) SetQuotaRouter(i int) *ProjectUpdate {
 	pu.mutation.ResetQuotaRouter()
-	pu.mutation.SetQuotaRouter(u)
+	pu.mutation.SetQuotaRouter(i)
 	return pu
 }
 
 // SetNillableQuotaRouter sets the "quota_router" field if the given value is not nil.
-func (pu *ProjectUpdate) SetNillableQuotaRouter(u *uint) *ProjectUpdate {
-	if u != nil {
-		pu.SetQuotaRouter(*u)
+func (pu *ProjectUpdate) SetNillableQuotaRouter(i *int) *ProjectUpdate {
+	if i != nil {
+		pu.SetQuotaRouter(*i)
 	}
 	return pu
 }
 
-// AddQuotaRouter adds u to the "quota_router" field.
-func (pu *ProjectUpdate) AddQuotaRouter(u int) *ProjectUpdate {
-	pu.mutation.AddQuotaRouter(u)
+// AddQuotaRouter adds i to the "quota_router" field.
+func (pu *ProjectUpdate) AddQuotaRouter(i int) *ProjectUpdate {
+	pu.mutation.AddQuotaRouter(i)
 	return pu
 }
 
@@ -359,34 +359,34 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.SetField(project.FieldName, field.TypeString, value)
 	}
 	if value, ok := pu.mutation.QuotaCPU(); ok {
-		_spec.SetField(project.FieldQuotaCPU, field.TypeUint, value)
+		_spec.SetField(project.FieldQuotaCPU, field.TypeInt, value)
 	}
 	if value, ok := pu.mutation.AddedQuotaCPU(); ok {
-		_spec.AddField(project.FieldQuotaCPU, field.TypeUint, value)
+		_spec.AddField(project.FieldQuotaCPU, field.TypeInt, value)
 	}
 	if value, ok := pu.mutation.QuotaRAM(); ok {
-		_spec.SetField(project.FieldQuotaRAM, field.TypeUint, value)
+		_spec.SetField(project.FieldQuotaRAM, field.TypeInt, value)
 	}
 	if value, ok := pu.mutation.AddedQuotaRAM(); ok {
-		_spec.AddField(project.FieldQuotaRAM, field.TypeUint, value)
+		_spec.AddField(project.FieldQuotaRAM, field.TypeInt, value)
 	}
 	if value, ok := pu.mutation.QuotaDisk(); ok {
-		_spec.SetField(project.FieldQuotaDisk, field.TypeUint, value)
+		_spec.SetField(project.FieldQuotaDisk, field.TypeInt, value)
 	}
 	if value, ok := pu.mutation.AddedQuotaDisk(); ok {
-		_spec.AddField(project.FieldQuotaDisk, field.TypeUint, value)
+		_spec.AddField(project.FieldQuotaDisk, field.TypeInt, value)
 	}
 	if value, ok := pu.mutation.QuotaNetwork(); ok {
-		_spec.SetField(project.FieldQuotaNetwork, field.TypeUint, value)
+		_spec.SetField(project.FieldQuotaNetwork, field.TypeInt, value)
 	}
 	if value, ok := pu.mutation.AddedQuotaNetwork(); ok {
-		_spec.AddField(project.FieldQuotaNetwork, field.TypeUint, value)
+		_spec.AddField(project.FieldQuotaNetwork, field.TypeInt, value)
 	}
 	if value, ok := pu.mutation.QuotaRouter(); ok {
-		_spec.SetField(project.FieldQuotaRouter, field.TypeUint, value)
+		_spec.SetField(project.FieldQuotaRouter, field.TypeInt, value)
 	}
 	if value, ok := pu.mutation.AddedQuotaRouter(); ok {
-		_spec.AddField(project.FieldQuotaRouter, field.TypeUint, value)
+		_spec.AddField(project.FieldQuotaRouter, field.TypeInt, value)
 	}
 	if pu.mutation.MembersCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -609,107 +609,107 @@ func (puo *ProjectUpdateOne) SetNillableName(s *string) *ProjectUpdateOne {
 }
 
 // SetQuotaCPU sets the "quota_cpu" field.
-func (puo *ProjectUpdateOne) SetQuotaCPU(u uint) *ProjectUpdateOne {
+func (puo *ProjectUpdateOne) SetQuotaCPU(i int) *ProjectUpdateOne {
 	puo.mutation.ResetQuotaCPU()
-	puo.mutation.SetQuotaCPU(u)
+	puo.mutation.SetQuotaCPU(i)
 	return puo
 }
 
 // SetNillableQuotaCPU sets the "quota_cpu" field if the given value is not nil.
-func (puo *ProjectUpdateOne) SetNillableQuotaCPU(u *uint) *ProjectUpdateOne {
-	if u != nil {
-		puo.SetQuotaCPU(*u)
+func (puo *ProjectUpdateOne) SetNillableQuotaCPU(i *int) *ProjectUpdateOne {
+	if i != nil {
+		puo.SetQuotaCPU(*i)
 	}
 	return puo
 }
 
-// AddQuotaCPU adds u to the "quota_cpu" field.
-func (puo *ProjectUpdateOne) AddQuotaCPU(u int) *ProjectUpdateOne {
-	puo.mutation.AddQuotaCPU(u)
+// AddQuotaCPU adds i to the "quota_cpu" field.
+func (puo *ProjectUpdateOne) AddQuotaCPU(i int) *ProjectUpdateOne {
+	puo.mutation.AddQuotaCPU(i)
 	return puo
 }
 
 // SetQuotaRAM sets the "quota_ram" field.
-func (puo *ProjectUpdateOne) SetQuotaRAM(u uint) *ProjectUpdateOne {
+func (puo *ProjectUpdateOne) SetQuotaRAM(i int) *ProjectUpdateOne {
 	puo.mutation.ResetQuotaRAM()
-	puo.mutation.SetQuotaRAM(u)
+	puo.mutation.SetQuotaRAM(i)
 	return puo
 }
 
 // SetNillableQuotaRAM sets the "quota_ram" field if the given value is not nil.
-func (puo *ProjectUpdateOne) SetNillableQuotaRAM(u *uint) *ProjectUpdateOne {
-	if u != nil {
-		puo.SetQuotaRAM(*u)
+func (puo *ProjectUpdateOne) SetNillableQuotaRAM(i *int) *ProjectUpdateOne {
+	if i != nil {
+		puo.SetQuotaRAM(*i)
 	}
 	return puo
 }
 
-// AddQuotaRAM adds u to the "quota_ram" field.
-func (puo *ProjectUpdateOne) AddQuotaRAM(u int) *ProjectUpdateOne {
-	puo.mutation.AddQuotaRAM(u)
+// AddQuotaRAM adds i to the "quota_ram" field.
+func (puo *ProjectUpdateOne) AddQuotaRAM(i int) *ProjectUpdateOne {
+	puo.mutation.AddQuotaRAM(i)
 	return puo
 }
 
 // SetQuotaDisk sets the "quota_disk" field.
-func (puo *ProjectUpdateOne) SetQuotaDisk(u uint) *ProjectUpdateOne {
+func (puo *ProjectUpdateOne) SetQuotaDisk(i int) *ProjectUpdateOne {
 	puo.mutation.ResetQuotaDisk()
-	puo.mutation.SetQuotaDisk(u)
+	puo.mutation.SetQuotaDisk(i)
 	return puo
 }
 
 // SetNillableQuotaDisk sets the "quota_disk" field if the given value is not nil.
-func (puo *ProjectUpdateOne) SetNillableQuotaDisk(u *uint) *ProjectUpdateOne {
-	if u != nil {
-		puo.SetQuotaDisk(*u)
+func (puo *ProjectUpdateOne) SetNillableQuotaDisk(i *int) *ProjectUpdateOne {
+	if i != nil {
+		puo.SetQuotaDisk(*i)
 	}
 	return puo
 }
 
-// AddQuotaDisk adds u to the "quota_disk" field.
-func (puo *ProjectUpdateOne) AddQuotaDisk(u int) *ProjectUpdateOne {
-	puo.mutation.AddQuotaDisk(u)
+// AddQuotaDisk adds i to the "quota_disk" field.
+func (puo *ProjectUpdateOne) AddQuotaDisk(i int) *ProjectUpdateOne {
+	puo.mutation.AddQuotaDisk(i)
 	return puo
 }
 
 // SetQuotaNetwork sets the "quota_network" field.
-func (puo *ProjectUpdateOne) SetQuotaNetwork(u uint) *ProjectUpdateOne {
+func (puo *ProjectUpdateOne) SetQuotaNetwork(i int) *ProjectUpdateOne {
 	puo.mutation.ResetQuotaNetwork()
-	puo.mutation.SetQuotaNetwork(u)
+	puo.mutation.SetQuotaNetwork(i)
 	return puo
 }
 
 // SetNillableQuotaNetwork sets the "quota_network" field if the given value is not nil.
-func (puo *ProjectUpdateOne) SetNillableQuotaNetwork(u *uint) *ProjectUpdateOne {
-	if u != nil {
-		puo.SetQuotaNetwork(*u)
+func (puo *ProjectUpdateOne) SetNillableQuotaNetwork(i *int) *ProjectUpdateOne {
+	if i != nil {
+		puo.SetQuotaNetwork(*i)
 	}
 	return puo
 }
 
-// AddQuotaNetwork adds u to the "quota_network" field.
-func (puo *ProjectUpdateOne) AddQuotaNetwork(u int) *ProjectUpdateOne {
-	puo.mutation.AddQuotaNetwork(u)
+// AddQuotaNetwork adds i to the "quota_network" field.
+func (puo *ProjectUpdateOne) AddQuotaNetwork(i int) *ProjectUpdateOne {
+	puo.mutation.AddQuotaNetwork(i)
 	return puo
 }
 
 // SetQuotaRouter sets the "quota_router" field.
-func (puo *ProjectUpdateOne) SetQuotaRouter(u uint) *ProjectUpdateOne {
+func (puo *ProjectUpdateOne) SetQuotaRouter(i int) *ProjectUpdateOne {
 	puo.mutation.ResetQuotaRouter()
-	puo.mutation.SetQuotaRouter(u)
+	puo.mutation.SetQuotaRouter(i)
 	return puo
 }
 
 // SetNillableQuotaRouter sets the "quota_router" field if the given value is not nil.
-func (puo *ProjectUpdateOne) SetNillableQuotaRouter(u *uint) *ProjectUpdateOne {
-	if u != nil {
-		puo.SetQuotaRouter(*u)
+func (puo *ProjectUpdateOne) SetNillableQuotaRouter(i *int) *ProjectUpdateOne {
+	if i != nil {
+		puo.SetQuotaRouter(*i)
 	}
 	return puo
 }
 
-// AddQuotaRouter adds u to the "quota_router" field.
-func (puo *ProjectUpdateOne) AddQuotaRouter(u int) *ProjectUpdateOne {
-	puo.mutation.AddQuotaRouter(u)
+// AddQuotaRouter adds i to the "quota_router" field.
+func (puo *ProjectUpdateOne) AddQuotaRouter(i int) *ProjectUpdateOne {
+	puo.mutation.AddQuotaRouter(i)
 	return puo
 }
 
@@ -944,34 +944,34 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 		_spec.SetField(project.FieldName, field.TypeString, value)
 	}
 	if value, ok := puo.mutation.QuotaCPU(); ok {
-		_spec.SetField(project.FieldQuotaCPU, field.TypeUint, value)
+		_spec.SetField(project.FieldQuotaCPU, field.TypeInt, value)
 	}
 	if value, ok := puo.mutation.AddedQuotaCPU(); ok {
-		_spec.AddField(project.FieldQuotaCPU, field.TypeUint, value)
+		_spec.AddField(project.FieldQuotaCPU, field.TypeInt, value)
 	}
 	if value, ok := puo.mutation.QuotaRAM(); ok {
-		_spec.SetField(project.FieldQuotaRAM, field.TypeUint, value)
+		_spec.SetField(project.FieldQuotaRAM, field.TypeInt, value)
 	}
 	if value, ok := puo.mutation.AddedQuotaRAM(); ok {
-		_spec.AddField(project.FieldQuotaRAM, field.TypeUint, value)
+		_spec.AddField(project.FieldQuotaRAM, field.TypeInt, value)
 	}
 	if value, ok := puo.mutation.QuotaDisk(); ok {
-		_spec.SetField(project.FieldQuotaDisk, field.TypeUint, value)
+		_spec.SetField(project.FieldQuotaDisk, field.TypeInt, value)
 	}
 	if value, ok := puo.mutation.AddedQuotaDisk(); ok {
-		_spec.AddField(project.FieldQuotaDisk, field.TypeUint, value)
+		_spec.AddField(project.FieldQuotaDisk, field.TypeInt, value)
 	}
 	if value, ok := puo.mutation.QuotaNetwork(); ok {
-		_spec.SetField(project.FieldQuotaNetwork, field.TypeUint, value)
+		_spec.SetField(project.FieldQuotaNetwork, field.TypeInt, value)
 	}
 	if value, ok := puo.mutation.AddedQuotaNetwork(); ok {
-		_spec.AddField(project.FieldQuotaNetwork, field.TypeUint, value)
+		_spec.AddField(project.FieldQuotaNetwork, field.TypeInt, value)
 	}
 	if value, ok := puo.mutation.QuotaRouter(); ok {
-		_spec.SetField(project.FieldQuotaRouter, field.TypeUint, value)
+		_spec.SetField(project.FieldQuotaRouter, field.TypeInt, value)
 	}
 	if value, ok := puo.mutation.AddedQuotaRouter(); ok {
-		_spec.AddField(project.FieldQuotaRouter, field.TypeUint, value)
+		_spec.AddField(project.FieldQuotaRouter, field.TypeInt, value)
 	}
 	if puo.mutation.MembersCleared() {
 		edge := &sqlgraph.EdgeSpec{

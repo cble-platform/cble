@@ -12,8 +12,7 @@ import (
 	"strings"
 	"text/template"
 
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
+	"github.com/iancoleman/strcase"
 	"gopkg.in/yaml.v3"
 )
 
@@ -40,7 +39,7 @@ func findModuleRoot(dir string) (roots string) {
 }
 
 var templateFuncs = template.FuncMap{
-	"Title":   cases.Title(language.AmericanEnglish).String,
+	"Title":   strcase.ToCamel,
 	"ToUpper": strings.ToUpper,
 	"ToLower": strings.ToLower,
 	"TrimCommentPrefix": func(s string) string {

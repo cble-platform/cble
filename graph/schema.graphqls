@@ -227,6 +227,30 @@ enum Action {
   """
   permission_revoke
   """
+  List all projects (only compatible with wildcard ID *)
+  """
+  project_list
+  """
+  Create projects (only compatible with wildcard ID *)
+  """
+  project_create
+  """
+  Modify project memberships
+  """
+  project_membership
+  """
+  Create blueprints in the project
+  """
+  project_create_blueprints
+  """
+  Delete blueprints in the project
+  """
+  project_delete_blueprints
+  """
+  Deploy blueprints in the project
+  """
+  project_deploy_blueprints
+  """
   List all providers (only compatible with wildcard ID *)
   """
   provider_list
@@ -295,6 +319,28 @@ type GrantedPermission {
 
 type GrantedPermissionPage {
   permissions: [GrantedPermission!]!
+  total: Int!
+}
+
+type Project {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  name: String!
+  quotaCpu: Int!
+  quotaRam: Int!
+  quotaDisk: Int!
+  quotaNetwork: Int!
+  quotaRouter: Int!
+
+  members: [User!]!
+  groupMembers: [Group!]!
+  blueprints: [Blueprint!]!
+  deployments: [Deployment!]!
+}
+
+type ProjectPage {
+  projects: [Project!]!
   total: Int!
 }
 
@@ -368,6 +414,14 @@ type Query {
   """
   permission(id: ID!): GrantedPermission!
   """
+  List projects (requires permission `x.x.projects.*.list`)
+  """
+  projects(count: Int! = 10, offset: Int): ProjectPage!
+  """
+  Get a project (requires permission `x.x.projects.x.get`)
+  """
+  project(id: ID!): Project!
+  """
   List providers (requires permission `x.x.providers.*.list`)
   """
   providers(count: Int! = 10, offset: Int): ProviderPage!
@@ -421,6 +475,7 @@ input BlueprintInput {
   variableTypes: VarTypeMap!
 
   providerId: ID!
+  projectId: ID!
 }
 
 input DeploymentInput {

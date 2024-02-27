@@ -72,27 +72,27 @@ func Name(v string) predicate.Project {
 }
 
 // QuotaCPU applies equality check predicate on the "quota_cpu" field. It's identical to QuotaCPUEQ.
-func QuotaCPU(v uint) predicate.Project {
+func QuotaCPU(v int) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldQuotaCPU, v))
 }
 
 // QuotaRAM applies equality check predicate on the "quota_ram" field. It's identical to QuotaRAMEQ.
-func QuotaRAM(v uint) predicate.Project {
+func QuotaRAM(v int) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldQuotaRAM, v))
 }
 
 // QuotaDisk applies equality check predicate on the "quota_disk" field. It's identical to QuotaDiskEQ.
-func QuotaDisk(v uint) predicate.Project {
+func QuotaDisk(v int) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldQuotaDisk, v))
 }
 
 // QuotaNetwork applies equality check predicate on the "quota_network" field. It's identical to QuotaNetworkEQ.
-func QuotaNetwork(v uint) predicate.Project {
+func QuotaNetwork(v int) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldQuotaNetwork, v))
 }
 
 // QuotaRouter applies equality check predicate on the "quota_router" field. It's identical to QuotaRouterEQ.
-func QuotaRouter(v uint) predicate.Project {
+func QuotaRouter(v int) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldQuotaRouter, v))
 }
 
@@ -242,202 +242,202 @@ func NameContainsFold(v string) predicate.Project {
 }
 
 // QuotaCPUEQ applies the EQ predicate on the "quota_cpu" field.
-func QuotaCPUEQ(v uint) predicate.Project {
+func QuotaCPUEQ(v int) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldQuotaCPU, v))
 }
 
 // QuotaCPUNEQ applies the NEQ predicate on the "quota_cpu" field.
-func QuotaCPUNEQ(v uint) predicate.Project {
+func QuotaCPUNEQ(v int) predicate.Project {
 	return predicate.Project(sql.FieldNEQ(FieldQuotaCPU, v))
 }
 
 // QuotaCPUIn applies the In predicate on the "quota_cpu" field.
-func QuotaCPUIn(vs ...uint) predicate.Project {
+func QuotaCPUIn(vs ...int) predicate.Project {
 	return predicate.Project(sql.FieldIn(FieldQuotaCPU, vs...))
 }
 
 // QuotaCPUNotIn applies the NotIn predicate on the "quota_cpu" field.
-func QuotaCPUNotIn(vs ...uint) predicate.Project {
+func QuotaCPUNotIn(vs ...int) predicate.Project {
 	return predicate.Project(sql.FieldNotIn(FieldQuotaCPU, vs...))
 }
 
 // QuotaCPUGT applies the GT predicate on the "quota_cpu" field.
-func QuotaCPUGT(v uint) predicate.Project {
+func QuotaCPUGT(v int) predicate.Project {
 	return predicate.Project(sql.FieldGT(FieldQuotaCPU, v))
 }
 
 // QuotaCPUGTE applies the GTE predicate on the "quota_cpu" field.
-func QuotaCPUGTE(v uint) predicate.Project {
+func QuotaCPUGTE(v int) predicate.Project {
 	return predicate.Project(sql.FieldGTE(FieldQuotaCPU, v))
 }
 
 // QuotaCPULT applies the LT predicate on the "quota_cpu" field.
-func QuotaCPULT(v uint) predicate.Project {
+func QuotaCPULT(v int) predicate.Project {
 	return predicate.Project(sql.FieldLT(FieldQuotaCPU, v))
 }
 
 // QuotaCPULTE applies the LTE predicate on the "quota_cpu" field.
-func QuotaCPULTE(v uint) predicate.Project {
+func QuotaCPULTE(v int) predicate.Project {
 	return predicate.Project(sql.FieldLTE(FieldQuotaCPU, v))
 }
 
 // QuotaRAMEQ applies the EQ predicate on the "quota_ram" field.
-func QuotaRAMEQ(v uint) predicate.Project {
+func QuotaRAMEQ(v int) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldQuotaRAM, v))
 }
 
 // QuotaRAMNEQ applies the NEQ predicate on the "quota_ram" field.
-func QuotaRAMNEQ(v uint) predicate.Project {
+func QuotaRAMNEQ(v int) predicate.Project {
 	return predicate.Project(sql.FieldNEQ(FieldQuotaRAM, v))
 }
 
 // QuotaRAMIn applies the In predicate on the "quota_ram" field.
-func QuotaRAMIn(vs ...uint) predicate.Project {
+func QuotaRAMIn(vs ...int) predicate.Project {
 	return predicate.Project(sql.FieldIn(FieldQuotaRAM, vs...))
 }
 
 // QuotaRAMNotIn applies the NotIn predicate on the "quota_ram" field.
-func QuotaRAMNotIn(vs ...uint) predicate.Project {
+func QuotaRAMNotIn(vs ...int) predicate.Project {
 	return predicate.Project(sql.FieldNotIn(FieldQuotaRAM, vs...))
 }
 
 // QuotaRAMGT applies the GT predicate on the "quota_ram" field.
-func QuotaRAMGT(v uint) predicate.Project {
+func QuotaRAMGT(v int) predicate.Project {
 	return predicate.Project(sql.FieldGT(FieldQuotaRAM, v))
 }
 
 // QuotaRAMGTE applies the GTE predicate on the "quota_ram" field.
-func QuotaRAMGTE(v uint) predicate.Project {
+func QuotaRAMGTE(v int) predicate.Project {
 	return predicate.Project(sql.FieldGTE(FieldQuotaRAM, v))
 }
 
 // QuotaRAMLT applies the LT predicate on the "quota_ram" field.
-func QuotaRAMLT(v uint) predicate.Project {
+func QuotaRAMLT(v int) predicate.Project {
 	return predicate.Project(sql.FieldLT(FieldQuotaRAM, v))
 }
 
 // QuotaRAMLTE applies the LTE predicate on the "quota_ram" field.
-func QuotaRAMLTE(v uint) predicate.Project {
+func QuotaRAMLTE(v int) predicate.Project {
 	return predicate.Project(sql.FieldLTE(FieldQuotaRAM, v))
 }
 
 // QuotaDiskEQ applies the EQ predicate on the "quota_disk" field.
-func QuotaDiskEQ(v uint) predicate.Project {
+func QuotaDiskEQ(v int) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldQuotaDisk, v))
 }
 
 // QuotaDiskNEQ applies the NEQ predicate on the "quota_disk" field.
-func QuotaDiskNEQ(v uint) predicate.Project {
+func QuotaDiskNEQ(v int) predicate.Project {
 	return predicate.Project(sql.FieldNEQ(FieldQuotaDisk, v))
 }
 
 // QuotaDiskIn applies the In predicate on the "quota_disk" field.
-func QuotaDiskIn(vs ...uint) predicate.Project {
+func QuotaDiskIn(vs ...int) predicate.Project {
 	return predicate.Project(sql.FieldIn(FieldQuotaDisk, vs...))
 }
 
 // QuotaDiskNotIn applies the NotIn predicate on the "quota_disk" field.
-func QuotaDiskNotIn(vs ...uint) predicate.Project {
+func QuotaDiskNotIn(vs ...int) predicate.Project {
 	return predicate.Project(sql.FieldNotIn(FieldQuotaDisk, vs...))
 }
 
 // QuotaDiskGT applies the GT predicate on the "quota_disk" field.
-func QuotaDiskGT(v uint) predicate.Project {
+func QuotaDiskGT(v int) predicate.Project {
 	return predicate.Project(sql.FieldGT(FieldQuotaDisk, v))
 }
 
 // QuotaDiskGTE applies the GTE predicate on the "quota_disk" field.
-func QuotaDiskGTE(v uint) predicate.Project {
+func QuotaDiskGTE(v int) predicate.Project {
 	return predicate.Project(sql.FieldGTE(FieldQuotaDisk, v))
 }
 
 // QuotaDiskLT applies the LT predicate on the "quota_disk" field.
-func QuotaDiskLT(v uint) predicate.Project {
+func QuotaDiskLT(v int) predicate.Project {
 	return predicate.Project(sql.FieldLT(FieldQuotaDisk, v))
 }
 
 // QuotaDiskLTE applies the LTE predicate on the "quota_disk" field.
-func QuotaDiskLTE(v uint) predicate.Project {
+func QuotaDiskLTE(v int) predicate.Project {
 	return predicate.Project(sql.FieldLTE(FieldQuotaDisk, v))
 }
 
 // QuotaNetworkEQ applies the EQ predicate on the "quota_network" field.
-func QuotaNetworkEQ(v uint) predicate.Project {
+func QuotaNetworkEQ(v int) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldQuotaNetwork, v))
 }
 
 // QuotaNetworkNEQ applies the NEQ predicate on the "quota_network" field.
-func QuotaNetworkNEQ(v uint) predicate.Project {
+func QuotaNetworkNEQ(v int) predicate.Project {
 	return predicate.Project(sql.FieldNEQ(FieldQuotaNetwork, v))
 }
 
 // QuotaNetworkIn applies the In predicate on the "quota_network" field.
-func QuotaNetworkIn(vs ...uint) predicate.Project {
+func QuotaNetworkIn(vs ...int) predicate.Project {
 	return predicate.Project(sql.FieldIn(FieldQuotaNetwork, vs...))
 }
 
 // QuotaNetworkNotIn applies the NotIn predicate on the "quota_network" field.
-func QuotaNetworkNotIn(vs ...uint) predicate.Project {
+func QuotaNetworkNotIn(vs ...int) predicate.Project {
 	return predicate.Project(sql.FieldNotIn(FieldQuotaNetwork, vs...))
 }
 
 // QuotaNetworkGT applies the GT predicate on the "quota_network" field.
-func QuotaNetworkGT(v uint) predicate.Project {
+func QuotaNetworkGT(v int) predicate.Project {
 	return predicate.Project(sql.FieldGT(FieldQuotaNetwork, v))
 }
 
 // QuotaNetworkGTE applies the GTE predicate on the "quota_network" field.
-func QuotaNetworkGTE(v uint) predicate.Project {
+func QuotaNetworkGTE(v int) predicate.Project {
 	return predicate.Project(sql.FieldGTE(FieldQuotaNetwork, v))
 }
 
 // QuotaNetworkLT applies the LT predicate on the "quota_network" field.
-func QuotaNetworkLT(v uint) predicate.Project {
+func QuotaNetworkLT(v int) predicate.Project {
 	return predicate.Project(sql.FieldLT(FieldQuotaNetwork, v))
 }
 
 // QuotaNetworkLTE applies the LTE predicate on the "quota_network" field.
-func QuotaNetworkLTE(v uint) predicate.Project {
+func QuotaNetworkLTE(v int) predicate.Project {
 	return predicate.Project(sql.FieldLTE(FieldQuotaNetwork, v))
 }
 
 // QuotaRouterEQ applies the EQ predicate on the "quota_router" field.
-func QuotaRouterEQ(v uint) predicate.Project {
+func QuotaRouterEQ(v int) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldQuotaRouter, v))
 }
 
 // QuotaRouterNEQ applies the NEQ predicate on the "quota_router" field.
-func QuotaRouterNEQ(v uint) predicate.Project {
+func QuotaRouterNEQ(v int) predicate.Project {
 	return predicate.Project(sql.FieldNEQ(FieldQuotaRouter, v))
 }
 
 // QuotaRouterIn applies the In predicate on the "quota_router" field.
-func QuotaRouterIn(vs ...uint) predicate.Project {
+func QuotaRouterIn(vs ...int) predicate.Project {
 	return predicate.Project(sql.FieldIn(FieldQuotaRouter, vs...))
 }
 
 // QuotaRouterNotIn applies the NotIn predicate on the "quota_router" field.
-func QuotaRouterNotIn(vs ...uint) predicate.Project {
+func QuotaRouterNotIn(vs ...int) predicate.Project {
 	return predicate.Project(sql.FieldNotIn(FieldQuotaRouter, vs...))
 }
 
 // QuotaRouterGT applies the GT predicate on the "quota_router" field.
-func QuotaRouterGT(v uint) predicate.Project {
+func QuotaRouterGT(v int) predicate.Project {
 	return predicate.Project(sql.FieldGT(FieldQuotaRouter, v))
 }
 
 // QuotaRouterGTE applies the GTE predicate on the "quota_router" field.
-func QuotaRouterGTE(v uint) predicate.Project {
+func QuotaRouterGTE(v int) predicate.Project {
 	return predicate.Project(sql.FieldGTE(FieldQuotaRouter, v))
 }
 
 // QuotaRouterLT applies the LT predicate on the "quota_router" field.
-func QuotaRouterLT(v uint) predicate.Project {
+func QuotaRouterLT(v int) predicate.Project {
 	return predicate.Project(sql.FieldLT(FieldQuotaRouter, v))
 }
 
 // QuotaRouterLTE applies the LTE predicate on the "quota_router" field.
-func QuotaRouterLTE(v uint) predicate.Project {
+func QuotaRouterLTE(v int) predicate.Project {
 	return predicate.Project(sql.FieldLTE(FieldQuotaRouter, v))
 }
 

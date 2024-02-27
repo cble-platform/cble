@@ -60,32 +60,32 @@ func (pc *ProjectCreate) SetName(s string) *ProjectCreate {
 }
 
 // SetQuotaCPU sets the "quota_cpu" field.
-func (pc *ProjectCreate) SetQuotaCPU(u uint) *ProjectCreate {
-	pc.mutation.SetQuotaCPU(u)
+func (pc *ProjectCreate) SetQuotaCPU(i int) *ProjectCreate {
+	pc.mutation.SetQuotaCPU(i)
 	return pc
 }
 
 // SetQuotaRAM sets the "quota_ram" field.
-func (pc *ProjectCreate) SetQuotaRAM(u uint) *ProjectCreate {
-	pc.mutation.SetQuotaRAM(u)
+func (pc *ProjectCreate) SetQuotaRAM(i int) *ProjectCreate {
+	pc.mutation.SetQuotaRAM(i)
 	return pc
 }
 
 // SetQuotaDisk sets the "quota_disk" field.
-func (pc *ProjectCreate) SetQuotaDisk(u uint) *ProjectCreate {
-	pc.mutation.SetQuotaDisk(u)
+func (pc *ProjectCreate) SetQuotaDisk(i int) *ProjectCreate {
+	pc.mutation.SetQuotaDisk(i)
 	return pc
 }
 
 // SetQuotaNetwork sets the "quota_network" field.
-func (pc *ProjectCreate) SetQuotaNetwork(u uint) *ProjectCreate {
-	pc.mutation.SetQuotaNetwork(u)
+func (pc *ProjectCreate) SetQuotaNetwork(i int) *ProjectCreate {
+	pc.mutation.SetQuotaNetwork(i)
 	return pc
 }
 
 // SetQuotaRouter sets the "quota_router" field.
-func (pc *ProjectCreate) SetQuotaRouter(u uint) *ProjectCreate {
-	pc.mutation.SetQuotaRouter(u)
+func (pc *ProjectCreate) SetQuotaRouter(i int) *ProjectCreate {
+	pc.mutation.SetQuotaRouter(i)
 	return pc
 }
 
@@ -286,23 +286,23 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 		_node.Name = value
 	}
 	if value, ok := pc.mutation.QuotaCPU(); ok {
-		_spec.SetField(project.FieldQuotaCPU, field.TypeUint, value)
+		_spec.SetField(project.FieldQuotaCPU, field.TypeInt, value)
 		_node.QuotaCPU = value
 	}
 	if value, ok := pc.mutation.QuotaRAM(); ok {
-		_spec.SetField(project.FieldQuotaRAM, field.TypeUint, value)
+		_spec.SetField(project.FieldQuotaRAM, field.TypeInt, value)
 		_node.QuotaRAM = value
 	}
 	if value, ok := pc.mutation.QuotaDisk(); ok {
-		_spec.SetField(project.FieldQuotaDisk, field.TypeUint, value)
+		_spec.SetField(project.FieldQuotaDisk, field.TypeInt, value)
 		_node.QuotaDisk = value
 	}
 	if value, ok := pc.mutation.QuotaNetwork(); ok {
-		_spec.SetField(project.FieldQuotaNetwork, field.TypeUint, value)
+		_spec.SetField(project.FieldQuotaNetwork, field.TypeInt, value)
 		_node.QuotaNetwork = value
 	}
 	if value, ok := pc.mutation.QuotaRouter(); ok {
-		_spec.SetField(project.FieldQuotaRouter, field.TypeUint, value)
+		_spec.SetField(project.FieldQuotaRouter, field.TypeInt, value)
 		_node.QuotaRouter = value
 	}
 	if nodes := pc.mutation.MembersIDs(); len(nodes) > 0 {
