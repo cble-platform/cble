@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/cble-platform/cble-backend/auth"
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/ent/group"
 	"github.com/cble-platform/cble-backend/ent/groupmembership"
@@ -12,9 +13,16 @@ import (
 	"github.com/cble-platform/cble-backend/ent/project"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
-func HasMinimumProjectRole(ctx context.Context, client *ent.Client, entUser *ent.User, projectId uuid.UUID, role membership.Role) (bool, error) {
+func CurrentUserHasMinimumProjectRole(ctx context.Context, client *ent.Client, projectId uuid.UUID, role membership.Role) (bool, error) {
+	// Get the current authenticated user
+	currentUser, err := auth.ForContext(ctx)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to get user from context: %v", err)
+	}
+
 	var groupRolePredicate predicate.GroupMembership
 	if role == membership.RoleAdmin {
 		// Admin or up
@@ -47,7 +55,7 @@ func HasMinimumProjectRole(ctx context.Context, client *ent.Client, entUser *ent
 	hasGroupRole, err := client.GroupMembership.Query().Where(
 		groupmembership.HasProjectWith(project.ID(projectId)),
 		groupmembership.HasGroupWith(
-			group.HasUsersWith(user.ID(entUser.ID)),
+			group.HasUsersWith(user.ID(currentUser.ID)),
 		),
 		groupRolePredicate,
 	).Exist(ctx)
@@ -91,7 +99,7 @@ func HasMinimumProjectRole(ctx context.Context, client *ent.Client, entUser *ent
 	hasRole, err := client.Membership.Query().Where(
 		membership.HasProjectWith(project.ID(projectId)),
 		membership.HasUserWith(
-			user.ID(entUser.ID),
+			user.ID(currentUser.ID),
 		),
 		rolePredicate,
 	).Exist(ctx)

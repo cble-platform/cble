@@ -44,25 +44,17 @@ enum Action {
 	"""
   project_create
 	"""
+	Update a given project
+	"""
+  project_update
+	"""
+	Delete a given project
+	"""
+  project_delete
+	"""
 	Modify project memberships
 	"""
   project_update_membership
-	"""
-	Create blueprints in the project
-	"""
-  project_create_blueprints
-	"""
-	Update blueprints in the project
-	"""
-  project_update_blueprints
-	"""
-	Delete blueprints in the project
-	"""
-  project_delete_blueprints
-	"""
-	Deploy blueprints in the project
-	"""
-  project_deploy_blueprints
 	"""
 	List all providers (only compatible with wildcard ID *)
 	"""

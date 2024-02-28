@@ -48,16 +48,12 @@ const (
 	ActionProjectList PermissionAction = "project_list"
 	// Create projects (only compatible with wildcard ID *)
 	ActionProjectCreate PermissionAction = "project_create"
+	// Update a given project
+	ActionProjectUpdate PermissionAction = "project_update"
+	// Delete a given project
+	ActionProjectDelete PermissionAction = "project_delete"
 	// Modify project memberships
 	ActionProjectUpdateMembership PermissionAction = "project_update_membership"
-	// Create blueprints in the project
-	ActionProjectCreateBlueprints PermissionAction = "project_create_blueprints"
-	// Update blueprints in the project
-	ActionProjectUpdateBlueprints PermissionAction = "project_update_blueprints"
-	// Delete blueprints in the project
-	ActionProjectDeleteBlueprints PermissionAction = "project_delete_blueprints"
-	// Deploy blueprints in the project
-	ActionProjectDeployBlueprints PermissionAction = "project_deploy_blueprints"
 	// -----------------------------------------------------------------
 	// Provider
 	// -----------------------------------------------------------------
@@ -125,11 +121,9 @@ var actionMap = map[string]map[string]PermissionAction{
 	"project": {
 		"list":              ActionProjectList,
 		"create":            ActionProjectCreate,
+		"update":            ActionProjectUpdate,
+		"delete":            ActionProjectDelete,
 		"update_membership": ActionProjectUpdateMembership,
-		"create_blueprints": ActionProjectCreateBlueprints,
-		"update_blueprints": ActionProjectUpdateBlueprints,
-		"delete_blueprints": ActionProjectDeleteBlueprints,
-		"deploy_blueprints": ActionProjectDeployBlueprints,
 	},
 	// Provider
 	"provider": {
@@ -176,11 +170,9 @@ func (PermissionAction) Values() (kinds []string) {
 		ActionPermissionRevoke,
 		ActionProjectList,
 		ActionProjectCreate,
+		ActionProjectUpdate,
+		ActionProjectDelete,
 		ActionProjectUpdateMembership,
-		ActionProjectCreateBlueprints,
-		ActionProjectUpdateBlueprints,
-		ActionProjectDeleteBlueprints,
-		ActionProjectDeployBlueprints,
 		ActionProviderList,
 		ActionProviderCreate,
 		ActionProviderGet,

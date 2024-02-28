@@ -120,7 +120,7 @@ var (
 		{Name: "subject_id", Type: field.TypeUUID},
 		{Name: "object_type", Type: field.TypeEnum, Enums: []string{"blueprint", "deployment", "group", "permission", "project", "provider", "user"}},
 		{Name: "object_id", Type: field.TypeUUID},
-		{Name: "action", Type: field.TypeEnum, Enums: []string{"group_list", "group_create", "group_get", "group_update", "group_delete", "permission_list", "permission_get", "permission_grant", "permission_revoke", "project_list", "project_create", "project_update_membership", "project_create_blueprints", "project_update_blueprints", "project_delete_blueprints", "project_deploy_blueprints", "provider_list", "provider_create", "provider_get", "provider_update", "provider_delete", "provider_load", "provider_unload", "provider_configure", "user_list", "user_create", "user_get", "user_update", "user_delete", "unknown"}},
+		{Name: "action", Type: field.TypeEnum, Enums: []string{"group_list", "group_create", "group_get", "group_update", "group_delete", "permission_list", "permission_get", "permission_grant", "permission_revoke", "project_list", "project_create", "project_update", "project_delete", "project_update_membership", "provider_list", "provider_create", "provider_get", "provider_update", "provider_delete", "provider_load", "provider_unload", "provider_configure", "user_list", "user_create", "user_get", "user_update", "user_delete", "unknown"}},
 		{Name: "granted_permission_user", Type: field.TypeUUID, Nullable: true},
 		{Name: "granted_permission_group", Type: field.TypeUUID, Nullable: true},
 	}

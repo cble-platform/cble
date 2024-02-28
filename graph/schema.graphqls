@@ -285,7 +285,7 @@ type Query {
   """
   List deployments (requires permission `x.x.deployments.*.list`)
   """
-  deployments(projectFilter: [ID!], count: Int! = 10, offset: Int): DeploymentPage!
+  deployments(includeExpiredAndDestroyed: Boolean! = false, projectFilter: [ID!], count: Int! = 10, offset: Int): DeploymentPage!
   """
   Get a deployment (requires permission `x.x.deployments.x.get`)
   """
@@ -303,6 +303,10 @@ type Query {
   Search groups
   """
   searchGroups(search: String!, count: Int! = 10, offset: Int): GroupPage!
+  """
+  Search projects (requires `Developer` or more)
+  """
+  searchProjects(search: String!, count: Int! = 10, offset: Int): ProjectPage!
 }
 
 input BlueprintInput {
@@ -317,6 +321,40 @@ input BlueprintInput {
 
 input DeploymentInput {
   name: String!
+}
+
+input ProjectInput {
+  name: String!
+  """
+  Maximum number of CPU cores in the project (set to -1 for unlimited)
+  """
+  quotaCpu: Int
+  """
+  Maximum MiB of RAM in the project (set to -1 for unlimited)
+  """
+  quotaRam: Int
+  """
+  Maximum MiB of Disk in the project (set to -1 for unlimited)
+  """
+  quotaDisk: Int
+  """
+  Maximum number of networks in the project (set to -1 for unlimited)
+  """
+  quotaNetwork: Int
+  """
+  Maximum number of routers in the project (set to -1 for unlimited)
+  """
+  quotaRouter: Int
+}
+
+input MembershipInput {
+  userID: ID!
+  role: MembershipRole!
+}
+
+input GroupMembershipInput {
+  groupID: ID!
+  role: GroupMembershipRole!
 }
 
 input ProviderInput {
@@ -344,19 +382,14 @@ enum PowerState {
 }
 
 type Mutation {
-  ##################
-  # AUTHENTICATION #
-  ##################
+  ########
+  # USER #
+  ########
 
   """
   Change current user's password
   """
   selfChangePassword(currentPassword: String!, newPassword: String!): Boolean!
-
-  ########
-  # CRUD #
-  ########
-
   """
   Create a user (requires permission `x.x.users.*.create`)
   """
@@ -369,6 +402,11 @@ type Mutation {
   Delete a user (requires permission `x.x.users.x.delete`)
   """
   deleteUser(id: ID!): Boolean!
+
+  #########
+  # GROUP #
+  #########
+
   """
   Create a group (requires permission `x.x.group.x.create`)
   """
@@ -381,6 +419,11 @@ type Mutation {
   Delete a group (requires permission `x.x.group.x.delete`)
   """
   deleteGroup(id: ID!): Boolean!
+
+  ##############
+  # PERMISSION #
+  ##############
+
   """
   Grant a permission (requires permission `x.x.permission.*.grant`)
   """
@@ -389,6 +432,11 @@ type Mutation {
   Revoke a permission (requires permission `x.x.permission.*.revoke`)
   """
   revokePermission(subjectType: SubjectType!, subjectID: ID!, objectType: ObjectType!, objectID: ID, action: Action!): Boolean!
+
+  ############
+  # PROVIDER #
+  ############
+
   """
   Create a provider (requires permission `x.x.providers.*.create`)
   """
@@ -402,27 +450,6 @@ type Mutation {
   """
   deleteProvider(id: ID!): Boolean!
   """
-  Create a blueprint (requires permission `x.x.blueprints.*.create`)
-  """
-  createBlueprint(input: BlueprintInput!): Blueprint!
-  """
-  Update a blueprint (requires permission `x.x.blueprints.x.update`)
-  """
-  updateBlueprint(id: ID!, input: BlueprintInput!): Blueprint!
-  """
-  Delete a blueprint (requires permission `x.x.blueprints.x.delete`)
-  """
-  deleteBlueprint(id: ID!): Boolean!
-  """
-  Update a deployment (requires permission `x.x.deployments.x.update`)
-  """
-  updateDeployment(id: ID!, input: DeploymentInput!): Deployment!
-
-  #############
-  # PROVIDERS #
-  #############
-
-  """
   Load a provider to connect it to CBLE (requires permission `x.x.providers.x.load`)
   """
   loadProvider(id: ID!): Provider!
@@ -435,28 +462,70 @@ type Mutation {
   """
   configureProvider(id: ID!): Provider!
 
-  # ##############
-  # # DEPLOYMENT #
-  # ##############
+  ###########
+  # PROJECT #
+  ###########
 
   """
-  Deploy a blueprint (requires permission `x.x.blueprints.x.deploy`)
+  Create a project (requires the permission `x.x.project.*.create`)
+  """
+  createProject(input: ProjectInput!): Project!
+  """
+  Update a project (requires the permission `x.x.project.x.update`)
+  """
+  updateProject(id: ID!, input: ProjectInput!): Project!
+  """
+  Delete a project (requires the permission `x.x.project.x.delete`)
+  """
+  deleteProject(id: ID!): Boolean!
+  """
+  Update membership to project (requires the permission `x.x.project.x.update_membership`)
+  """
+  updateMembership(id: ID!, users: [MembershipInput!]!, groups: [GroupMembershipInput!]!): Project!
+
+  #############
+  # BLUEPRINT #
+  #############
+
+  """
+  Create a blueprint (requires `Developer` role on project)
+  """
+  createBlueprint(input: BlueprintInput!): Blueprint!
+  """
+  Update a blueprint (requires `Developer` role on project)
+  """
+  updateBlueprint(id: ID!, input: BlueprintInput!): Blueprint!
+  """
+  Delete a blueprint (requires `Developer` role on project)
+  """
+  deleteBlueprint(id: ID!): Boolean!
+
+  ##############
+  # DEPLOYMENT #
+  ##############
+
+  """
+  Deploy a blueprint (requires `Deployer` role on project)
   """
   deployBlueprint(blueprintId: ID!, projectId: ID!, templateVars: StrMap!): Deployment!
   """
-  Destroy a deployment (requires permission `x.x.deployments.x.destroy`)
+  Update a deployment (requires `Deployer` role on project)
   """
-  destroyDeployment(id: ID!): Deployment!
+  updateDeployment(id: ID!, input: DeploymentInput!): Deployment!
   """
-  Redeploy nodes within a deployment (requires permission `x.x.deployments.x.redeploy`)
+  Redeploy nodes within a deployment (requires `Deployer` role on project)
   """
   redeployDeployment(id: ID!, nodeIds: [ID!]!): Deployment!
   """
-  Control the power state of a deployment node
+  Destroy a deployment (requires `Deployer` role on project)
+  """
+  destroyDeployment(id: ID!): Deployment!
+  """
+  Control the power state of a deployment node (requires `Viewer` role on project)
   """
   deploymentNodePower(id: ID!, state: PowerState!): Boolean!
   """
-  Control the power state of a deployment
+  Control the power state of a deployment (requires `Viewer` role on project)
   """
   deploymentPower(id: ID!, state: PowerState!): Boolean!
   # """

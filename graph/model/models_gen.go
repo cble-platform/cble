@@ -9,6 +9,8 @@ import (
 
 	"github.com/cble-platform/cble-backend/engine/models"
 	"github.com/cble-platform/cble-backend/ent"
+	"github.com/cble-platform/cble-backend/ent/groupmembership"
+	"github.com/cble-platform/cble-backend/ent/membership"
 	"github.com/google/uuid"
 )
 
@@ -44,9 +46,33 @@ type GroupInput struct {
 	Name string `json:"name"`
 }
 
+type GroupMembershipInput struct {
+	GroupID uuid.UUID            `json:"groupID"`
+	Role    groupmembership.Role `json:"role"`
+}
+
 type GroupPage struct {
 	Groups []*ent.Group `json:"groups"`
 	Total  int          `json:"total"`
+}
+
+type MembershipInput struct {
+	UserID uuid.UUID       `json:"userID"`
+	Role   membership.Role `json:"role"`
+}
+
+type ProjectInput struct {
+	Name string `json:"name"`
+	// Maximum number of CPU cores in the project (set to -1 for unlimited)
+	QuotaCPU *int `json:"quotaCpu,omitempty"`
+	// Maximum MiB of RAM in the project (set to -1 for unlimited)
+	QuotaRAM *int `json:"quotaRam,omitempty"`
+	// Maximum MiB of Disk in the project (set to -1 for unlimited)
+	QuotaDisk *int `json:"quotaDisk,omitempty"`
+	// Maximum number of networks in the project (set to -1 for unlimited)
+	QuotaNetwork *int `json:"quotaNetwork,omitempty"`
+	// Maximum number of routers in the project (set to -1 for unlimited)
+	QuotaRouter *int `json:"quotaRouter,omitempty"`
 }
 
 type ProjectPage struct {

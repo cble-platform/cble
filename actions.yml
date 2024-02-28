@@ -1,11 +1,9 @@
 project:
   - list # List all projects (only compatible with wildcard ID *)
   - create # Create projects (only compatible with wildcard ID *)
+  - update # Update a given project
+  - delete # Delete a given project
   - update_membership # Modify project memberships
-  - create_blueprints # Create blueprints in the project
-  - update_blueprints # Update blueprints in the project
-  - delete_blueprints # Delete blueprints in the project
-  - deploy_blueprints # Deploy blueprints in the project
 group:
   - list # List all groups (only compatible with wildcard ID *)
   - create # Create groups

@@ -21,6 +21,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/deploymentnode"
 	"github.com/cble-platform/cble-backend/ent/grantedpermission"
 	"github.com/cble-platform/cble-backend/ent/group"
+	"github.com/cble-platform/cble-backend/ent/groupmembership"
 	"github.com/cble-platform/cble-backend/ent/membership"
 	"github.com/cble-platform/cble-backend/ent/project"
 	"github.com/cble-platform/cble-backend/ent/resource"
@@ -356,163 +357,6 @@ func (r *mutationResolver) DeleteProvider(ctx context.Context, id uuid.UUID) (bo
 	return true, nil
 }
 
-// Create a blueprint (requires permission `x.x.blueprints.*.create`)
-func (r *mutationResolver) CreateBlueprint(ctx context.Context, input model.BlueprintInput) (*ent.Blueprint, error) {
-	// Check if current user has permission
-	if hasPerm, err := permission.CurrentUserHasProjectCreateBlueprints(ctx, r.ent, input.ProjectID); err != nil || !hasPerm {
-		return nil, auth.PERMISSION_DENIED_GQL_ERROR
-	}
-
-	// Get the edge objects
-	entProvider, err := r.ent.Provider.Get(ctx, input.ProviderID)
-	if err != nil {
-		return nil, gqlerror.Errorf("failed to query provider by ID: %v", err)
-	}
-	entProject, err := r.ent.Project.Get(ctx, input.ProjectID)
-	if err != nil {
-		return nil, gqlerror.Errorf("failed to query project by ID: %v", err)
-	}
-
-	// Create a transactional client
-	tx, err := r.ent.Tx(ctx)
-	if err != nil {
-		return nil, gqlerror.Errorf("failed to create transactional client: %v", err)
-	}
-
-	// Create the blueprint
-	entBlueprint, err := tx.Blueprint.Create().
-		SetName(input.Name).
-		SetDescription(input.Description).
-		SetBlueprintTemplate([]byte(input.BlueprintTemplate)).
-		// SetVariableTypes(varTypes).
-		SetVariableTypes(input.VariableTypes).
-		SetProvider(entProvider).
-		SetProject(entProject).
-		Save(ctx)
-	if err != nil {
-		tx.Rollback()
-		return nil, gqlerror.Errorf("failed to create blueprint: %v", err)
-	}
-
-	// Load all of the blueprint resources
-	err = engine.LoadResources(ctx, tx.Client(), r.cbleServer, entBlueprint)
-	if err != nil {
-		tx.Rollback()
-		return nil, gqlerror.Errorf("failed to load resource: %v", err)
-	}
-
-	// Commit the transaction
-	err = tx.Commit()
-	if err != nil {
-		tx.Rollback()
-		return nil, gqlerror.Errorf("failed to commit transaction: %v", err)
-	}
-
-	return entBlueprint.Unwrap(), nil
-}
-
-// Update a blueprint (requires permission `x.x.blueprints.x.update`)
-func (r *mutationResolver) UpdateBlueprint(ctx context.Context, id uuid.UUID, input model.BlueprintInput) (*ent.Blueprint, error) {
-	// Check if current user has permission
-	if hasPerm, err := permission.CurrentUserHasProjectUpdateBlueprints(ctx, r.ent, input.ProjectID); err != nil || !hasPerm {
-		return nil, auth.PERMISSION_DENIED_GQL_ERROR
-	}
-
-	// Create a transactional client
-	tx, err := r.ent.Tx(ctx)
-	if err != nil {
-		return nil, gqlerror.Errorf("failed to create transactional client: %v", err)
-	}
-
-	// Get the object from ENT
-	entBlueprint, err := tx.Blueprint.Get(ctx, id)
-	if err != nil {
-		return nil, gqlerror.Errorf("failed to query blueprint: %v", err)
-	}
-
-	// Get the edge objects
-	entProvider, err := tx.Provider.Get(ctx, input.ProviderID)
-	if err != nil {
-		return nil, gqlerror.Errorf("failed to query provider by ID: %v", err)
-	}
-
-	// Update the blueprint
-	entBlueprint, err = entBlueprint.Update().
-		SetName(input.Name).
-		SetDescription(input.Description).
-		SetBlueprintTemplate([]byte(input.BlueprintTemplate)).
-		SetVariableTypes(input.VariableTypes).
-		SetProvider(entProvider).
-		Save(ctx)
-	if err != nil {
-		return nil, gqlerror.Errorf("failed to update blueprint: %v", err)
-	}
-
-	// Load all of the blueprint resources
-	err = engine.LoadResources(ctx, tx.Client(), r.cbleServer, entBlueprint)
-	if err != nil {
-		tx.Rollback()
-		return nil, gqlerror.Errorf("failed to load resource: %v", err)
-	}
-
-	// Commit the transaction
-	err = tx.Commit()
-	if err != nil {
-		tx.Rollback()
-		return nil, gqlerror.Errorf("failed to commit transaction: %v", err)
-	}
-
-	return entBlueprint.Unwrap(), nil
-}
-
-// Delete a blueprint (requires permission `x.x.blueprints.x.delete`)
-func (r *mutationResolver) DeleteBlueprint(ctx context.Context, id uuid.UUID) (bool, error) {
-	// Get the project through blueprint ID
-	entProject, err := r.ent.Blueprint.Query().Where(blueprint.ID(id)).QueryProject().Only(ctx)
-	if err != nil {
-		return false, fmt.Errorf("failed to query deployment: %v", err)
-	}
-
-	// Check if current user has permission
-	if hasPerm, err := permission.CurrentUserHasProjectDeleteBlueprints(ctx, r.ent, entProject.ID); err != nil || !hasPerm {
-		return false, auth.PERMISSION_DENIED_GQL_ERROR
-	}
-
-	// Delete the blueprint
-	err = r.ent.Blueprint.DeleteOneID(id).Exec(ctx)
-	if err != nil {
-		return false, gqlerror.Errorf("failed to delete blueprint: %v", err)
-	}
-
-	return true, nil
-}
-
-// Update a deployment (requires permission `x.x.deployments.x.update`)
-func (r *mutationResolver) UpdateDeployment(ctx context.Context, id uuid.UUID, input model.DeploymentInput) (*ent.Deployment, error) {
-	// Get the current authenticated user
-	currentUser, err := auth.ForContext(ctx)
-	if err != nil {
-		return nil, gqlerror.Errorf("failed to get user from context: %v", err)
-	}
-
-	// Get the project through blueprint ID
-	entProject, err := r.ent.Blueprint.Query().Where(blueprint.ID(id)).QueryProject().Only(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query deployment: %v", err)
-	}
-
-	// Check the user has permission to update deployments in project
-	hasDeployerRole, err := HasMinimumProjectRole(ctx, r.ent, currentUser, entProject.ID, membership.RoleDeployer)
-	if err != nil {
-		return nil, gqlerror.Errorf("failed to check user project role: %v", err)
-	}
-	if !hasDeployerRole {
-		return nil, gqlerror.Errorf("user does not have permission to deploy blueprints to this project")
-	}
-
-	return r.ent.Deployment.UpdateOneID(id).SetName(input.Name).Save(ctx)
-}
-
 // Load a provider to connect it to CBLE (requires permission `x.x.providers.x.load`)
 func (r *mutationResolver) LoadProvider(ctx context.Context, id uuid.UUID) (*ent.Provider, error) {
 	// Check if current user has permission
@@ -583,7 +427,310 @@ func (r *mutationResolver) ConfigureProvider(ctx context.Context, id uuid.UUID) 
 	return entProvider, nil
 }
 
-// Deploy a blueprint (requires permission `x.x.blueprints.x.deploy`)
+// Create a project (requires the permission `x.x.project.*.create`)
+func (r *mutationResolver) CreateProject(ctx context.Context, input model.ProjectInput) (*ent.Project, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasProjectCreate(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	q := r.ent.Project.Create().
+		SetName(input.Name)
+
+	// Set optional quotas with default from config
+	if input.QuotaCPU != nil {
+		q = q.SetQuotaCPU(*input.QuotaCPU)
+	} else {
+		q = q.SetQuotaCPU(r.cbleConfig.ProjectDefaults.QuotaCPU)
+	}
+	if input.QuotaRAM != nil {
+		q = q.SetQuotaRAM(*input.QuotaRAM)
+	} else {
+		q = q.SetQuotaRAM(r.cbleConfig.ProjectDefaults.QuotaRAM)
+	}
+	if input.QuotaDisk != nil {
+		q = q.SetQuotaDisk(*input.QuotaDisk)
+	} else {
+		q = q.SetQuotaDisk(r.cbleConfig.ProjectDefaults.QuotaDisk)
+	}
+	if input.QuotaNetwork != nil {
+		q = q.SetQuotaNetwork(*input.QuotaNetwork)
+	} else {
+		q = q.SetQuotaNetwork(r.cbleConfig.ProjectDefaults.QuotaNetwork)
+	}
+	if input.QuotaRouter != nil {
+		q = q.SetQuotaRouter(*input.QuotaRouter)
+	} else {
+		q = q.SetQuotaRouter(r.cbleConfig.ProjectDefaults.QuotaRouter)
+	}
+
+	entProject, err := q.Save(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to create project: %v", err)
+	}
+
+	return entProject, nil
+}
+
+// Update a project (requires the permission `x.x.project.x.update`)
+func (r *mutationResolver) UpdateProject(ctx context.Context, id uuid.UUID, input model.ProjectInput) (*ent.Project, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasProjectUpdate(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	q := r.ent.Project.UpdateOneID(id).
+		SetName(input.Name)
+
+	// Set optional quotas with default from config
+	if input.QuotaCPU != nil {
+		q = q.SetQuotaCPU(*input.QuotaCPU)
+	} else {
+		q = q.SetQuotaCPU(r.cbleConfig.ProjectDefaults.QuotaCPU)
+	}
+	if input.QuotaRAM != nil {
+		q = q.SetQuotaRAM(*input.QuotaRAM)
+	} else {
+		q = q.SetQuotaRAM(r.cbleConfig.ProjectDefaults.QuotaRAM)
+	}
+	if input.QuotaDisk != nil {
+		q = q.SetQuotaDisk(*input.QuotaDisk)
+	} else {
+		q = q.SetQuotaDisk(r.cbleConfig.ProjectDefaults.QuotaDisk)
+	}
+	if input.QuotaNetwork != nil {
+		q = q.SetQuotaNetwork(*input.QuotaNetwork)
+	} else {
+		q = q.SetQuotaNetwork(r.cbleConfig.ProjectDefaults.QuotaNetwork)
+	}
+	if input.QuotaRouter != nil {
+		q = q.SetQuotaRouter(*input.QuotaRouter)
+	} else {
+		q = q.SetQuotaRouter(r.cbleConfig.ProjectDefaults.QuotaRouter)
+	}
+
+	entProject, err := q.Save(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to update project: %v", err)
+	}
+
+	return entProject, nil
+}
+
+// Delete a project (requires the permission `x.x.project.x.delete`)
+func (r *mutationResolver) DeleteProject(ctx context.Context, id uuid.UUID) (bool, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasProjectDelete(ctx, r.ent, id); err != nil || !hasPerm {
+		return false, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	// Delete the project
+	err := r.ent.Project.DeleteOneID(id).Exec(ctx)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to delete project: %v", err)
+	}
+
+	return true, nil
+}
+
+// Update membership to project (requires the permission `x.x.project.x.update_membership`)
+func (r *mutationResolver) UpdateMembership(ctx context.Context, id uuid.UUID, users []*model.MembershipInput, groups []*model.GroupMembershipInput) (*ent.Project, error) {
+	// Check if current user has permission
+	if hasPerm, err := permission.CurrentUserHasProjectUpdateMembership(ctx, r.ent, id); err != nil || !hasPerm {
+		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	}
+
+	tx, err := r.ent.Tx(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to create transactional client: %v", err)
+	}
+
+	// Clear all memberships
+	entProject, err := tx.Project.UpdateOneID(id).ClearMemberships().ClearGroupMemberships().Save(ctx)
+	if err != nil {
+		tx.Rollback()
+		return nil, gqlerror.Errorf("failed to clear memberships: %v", err)
+	}
+
+	// Add back user memberships
+	for _, userMembership := range users {
+		err = tx.Membership.Create().SetProject(entProject).
+			SetUserID(userMembership.UserID).
+			SetRole(userMembership.Role).Exec(ctx)
+		if err != nil {
+			tx.Rollback()
+			return nil, gqlerror.Errorf("failed to add membership for user %s: %v", userMembership.UserID, err)
+		}
+	}
+	// Add back group memberships
+	for _, groupMembership := range groups {
+		err = tx.GroupMembership.Create().SetProject(entProject).
+			SetGroupID(groupMembership.GroupID).
+			SetRole(groupMembership.Role).Exec(ctx)
+		if err != nil {
+			tx.Rollback()
+			return nil, gqlerror.Errorf("failed to add membership for group %s: %v", groupMembership.GroupID, err)
+		}
+	}
+
+	// Commit the transaction
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return nil, gqlerror.Errorf("failed to commit transaction: %v", err)
+	}
+
+	return entProject.Unwrap(), nil
+}
+
+// Create a blueprint (requires `Developer` role on project)
+func (r *mutationResolver) CreateBlueprint(ctx context.Context, input model.BlueprintInput) (*ent.Blueprint, error) {
+	// Get the edge objects
+	entProvider, err := r.ent.Provider.Get(ctx, input.ProviderID)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query provider by ID: %v", err)
+	}
+	entProject, err := r.ent.Project.Get(ctx, input.ProjectID)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query project by ID: %v", err)
+	}
+
+	// Check the user has developer role or higher
+	hasDeveloperRole, err := CurrentUserHasMinimumProjectRole(ctx, r.ent, entProject.ID, membership.RoleDeveloper)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to check user project role: %v", err)
+	}
+	if !hasDeveloperRole {
+		return nil, gqlerror.Errorf("user does not have permission to view deployments in this project")
+	}
+
+	// Create a transactional client
+	tx, err := r.ent.Tx(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to create transactional client: %v", err)
+	}
+
+	// Create the blueprint
+	entBlueprint, err := tx.Blueprint.Create().
+		SetName(input.Name).
+		SetDescription(input.Description).
+		SetBlueprintTemplate([]byte(input.BlueprintTemplate)).
+		// SetVariableTypes(varTypes).
+		SetVariableTypes(input.VariableTypes).
+		SetProvider(entProvider).
+		SetProject(entProject).
+		Save(ctx)
+	if err != nil {
+		tx.Rollback()
+		return nil, gqlerror.Errorf("failed to create blueprint: %v", err)
+	}
+
+	// Load all of the blueprint resources
+	err = engine.LoadResources(ctx, tx.Client(), r.cbleServer, entBlueprint)
+	if err != nil {
+		tx.Rollback()
+		return nil, gqlerror.Errorf("failed to load resource: %v", err)
+	}
+
+	// Commit the transaction
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return nil, gqlerror.Errorf("failed to commit transaction: %v", err)
+	}
+
+	return entBlueprint.Unwrap(), nil
+}
+
+// Update a blueprint (requires `Developer` role on project)
+func (r *mutationResolver) UpdateBlueprint(ctx context.Context, id uuid.UUID, input model.BlueprintInput) (*ent.Blueprint, error) {
+	// Create a transactional client
+	tx, err := r.ent.Tx(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to create transactional client: %v", err)
+	}
+
+	// Get the object from ENT
+	entBlueprint, err := tx.Blueprint.Get(ctx, id)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query blueprint: %v", err)
+	}
+
+	// Get the edge objects
+	entProvider, err := tx.Provider.Get(ctx, input.ProviderID)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query provider by ID: %v", err)
+	}
+	entProject, err := entBlueprint.QueryProject().Only(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query project from blueprint: %v", err)
+	}
+
+	// Check the user has developer role or higher
+	hasDeveloperRole, err := CurrentUserHasMinimumProjectRole(ctx, r.ent, entProject.ID, membership.RoleDeveloper)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to check user project role: %v", err)
+	}
+	if !hasDeveloperRole {
+		return nil, gqlerror.Errorf("user does not have permission to view deployments in this project")
+	}
+
+	// Update the blueprint
+	entBlueprint, err = entBlueprint.Update().
+		SetName(input.Name).
+		SetDescription(input.Description).
+		SetBlueprintTemplate([]byte(input.BlueprintTemplate)).
+		SetVariableTypes(input.VariableTypes).
+		SetProvider(entProvider).
+		Save(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to update blueprint: %v", err)
+	}
+
+	// Load all of the blueprint resources
+	err = engine.LoadResources(ctx, tx.Client(), r.cbleServer, entBlueprint)
+	if err != nil {
+		tx.Rollback()
+		return nil, gqlerror.Errorf("failed to load resource: %v", err)
+	}
+
+	// Commit the transaction
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return nil, gqlerror.Errorf("failed to commit transaction: %v", err)
+	}
+
+	return entBlueprint.Unwrap(), nil
+}
+
+// Delete a blueprint (requires `Developer` role on project)
+func (r *mutationResolver) DeleteBlueprint(ctx context.Context, id uuid.UUID) (bool, error) {
+	// Get the project through blueprint ID
+	entProject, err := r.ent.Blueprint.Query().Where(blueprint.ID(id)).QueryProject().Only(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to query deployment: %v", err)
+	}
+
+	// Check the user has developer role or higher
+	hasDeveloperRole, err := CurrentUserHasMinimumProjectRole(ctx, r.ent, entProject.ID, membership.RoleDeveloper)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to check user project role: %v", err)
+	}
+	if !hasDeveloperRole {
+		return false, gqlerror.Errorf("user does not have permission to view deployments in this project")
+	}
+
+	// Delete the blueprint
+	err = r.ent.Blueprint.DeleteOneID(id).Exec(ctx)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to delete blueprint: %v", err)
+	}
+
+	return true, nil
+}
+
+// Deploy a blueprint (requires `Deployer` role on project)
 func (r *mutationResolver) DeployBlueprint(ctx context.Context, blueprintID uuid.UUID, projectID uuid.UUID, templateVars map[string]string) (*ent.Deployment, error) {
 	// Get the current authenticated user
 	currentUser, err := auth.ForContext(ctx)
@@ -597,8 +744,8 @@ func (r *mutationResolver) DeployBlueprint(ctx context.Context, blueprintID uuid
 		return nil, gqlerror.Errorf("failed to query blueprint: %v", err)
 	}
 
-	// Check the user has permission to deploy into project
-	hasDeployerRole, err := HasMinimumProjectRole(ctx, r.ent, currentUser, projectID, membership.RoleDeployer)
+	// Check the user has deployer role or higher
+	hasDeployerRole, err := CurrentUserHasMinimumProjectRole(ctx, r.ent, projectID, membership.RoleDeployer)
 	if err != nil {
 		return nil, gqlerror.Errorf("failed to check user project role: %v", err)
 	}
@@ -649,62 +796,36 @@ func (r *mutationResolver) DeployBlueprint(ctx context.Context, blueprintID uuid
 	return entDeployment, nil
 }
 
-// Destroy a deployment (requires permission `x.x.deployments.x.destroy`)
-func (r *mutationResolver) DestroyDeployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error) {
-	// Get the current authenticated user
-	currentUser, err := auth.ForContext(ctx)
-	if err != nil {
-		return nil, gqlerror.Errorf("failed to get user from context: %v", err)
-	}
-
-	// Get the deployment by ID
-	entDeployment, err := r.ent.Deployment.Query().Where(deployment.ID(id)).WithProject().Only(ctx)
+// Update a deployment (requires `Deployer` role on project)
+func (r *mutationResolver) UpdateDeployment(ctx context.Context, id uuid.UUID, input model.DeploymentInput) (*ent.Deployment, error) {
+	// Get the project through blueprint ID
+	entProject, err := r.ent.Blueprint.Query().Where(blueprint.ID(id)).QueryProject().Only(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query deployment: %v", err)
 	}
 
-	// Check the user has permission to deploy into project
-	hasDeployerRole, err := HasMinimumProjectRole(ctx, r.ent, currentUser, entDeployment.Edges.Project.ID, membership.RoleDeployer)
+	// Check the user has deployer role or higher
+	hasDeployerRole, err := CurrentUserHasMinimumProjectRole(ctx, r.ent, entProject.ID, membership.RoleDeployer)
 	if err != nil {
 		return nil, gqlerror.Errorf("failed to check user project role: %v", err)
 	}
 	if !hasDeployerRole {
-		return nil, gqlerror.Errorf("user does not have permission to destroy blueprints to this project")
+		return nil, gqlerror.Errorf("user does not have permission to deploy blueprints to this project")
 	}
 
-	// Get the provider from deployment
-	entProvider, err := entDeployment.QueryBlueprint().QueryProvider().Only(ctx)
-	if err != nil {
-		return nil, gqlerror.Errorf("failed to query provider from deployment: %v", err)
-	}
-
-	// Check the provider is loaded
-	if !entProvider.IsLoaded {
-		return nil, gqlerror.Errorf("provider is not loaded")
-	}
-
-	// Spawn destruction routine
-	go engine.StartDestroy(r.ent, r.cbleServer, entDeployment)
-
-	return entDeployment, nil
+	return r.ent.Deployment.UpdateOneID(id).SetName(input.Name).Save(ctx)
 }
 
-// Redeploy nodes within a deployment (requires permission `x.x.deployments.x.redeploy`)
+// Redeploy nodes within a deployment (requires `Deployer` role on project)
 func (r *mutationResolver) RedeployDeployment(ctx context.Context, id uuid.UUID, nodeIds []uuid.UUID) (*ent.Deployment, error) {
-	// Get the current authenticated user
-	currentUser, err := auth.ForContext(ctx)
-	if err != nil {
-		return nil, gqlerror.Errorf("failed to get user from context: %v", err)
-	}
-
 	// Get the deployment by ID
 	entDeployment, err := r.ent.Deployment.Query().Where(deployment.ID(id)).WithProject().Only(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query deployment: %v", err)
 	}
 
-	// Check the user has permission to deploy into project
-	hasDeployerRole, err := HasMinimumProjectRole(ctx, r.ent, currentUser, entDeployment.Edges.Project.ID, membership.RoleDeployer)
+	// Check the user has deployer role or higher
+	hasDeployerRole, err := CurrentUserHasMinimumProjectRole(ctx, r.ent, entDeployment.Edges.Project.ID, membership.RoleDeployer)
 	if err != nil {
 		return nil, gqlerror.Errorf("failed to check user project role: %v", err)
 	}
@@ -729,14 +850,42 @@ func (r *mutationResolver) RedeployDeployment(ctx context.Context, id uuid.UUID,
 	return entDeployment, nil
 }
 
-// DeploymentNodePower is the resolver for the deploymentNodePower field.
-func (r *mutationResolver) DeploymentNodePower(ctx context.Context, id uuid.UUID, state pgrpc.PowerState) (bool, error) {
-	// Get the current authenticated user
-	currentUser, err := auth.ForContext(ctx)
+// Destroy a deployment (requires `Deployer` role on project)
+func (r *mutationResolver) DestroyDeployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error) {
+	// Get the deployment by ID
+	entDeployment, err := r.ent.Deployment.Query().Where(deployment.ID(id)).WithProject().Only(ctx)
 	if err != nil {
-		return false, gqlerror.Errorf("failed to get user from context: %v", err)
+		return nil, fmt.Errorf("failed to query deployment: %v", err)
 	}
 
+	// Check the user has deployer role or higher
+	hasDeployerRole, err := CurrentUserHasMinimumProjectRole(ctx, r.ent, entDeployment.Edges.Project.ID, membership.RoleDeployer)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to check user project role: %v", err)
+	}
+	if !hasDeployerRole {
+		return nil, gqlerror.Errorf("user does not have permission to destroy blueprints to this project")
+	}
+
+	// Get the provider from deployment
+	entProvider, err := entDeployment.QueryBlueprint().QueryProvider().Only(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query provider from deployment: %v", err)
+	}
+
+	// Check the provider is loaded
+	if !entProvider.IsLoaded {
+		return nil, gqlerror.Errorf("provider is not loaded")
+	}
+
+	// Spawn destruction routine
+	go engine.StartDestroy(r.ent, r.cbleServer, entDeployment)
+
+	return entDeployment, nil
+}
+
+// Control the power state of a deployment node (requires `Viewer` role on project)
+func (r *mutationResolver) DeploymentNodePower(ctx context.Context, id uuid.UUID, state pgrpc.PowerState) (bool, error) {
 	// Get the deployment node by ID
 	entDeploymentNode, err := r.ent.DeploymentNode.Get(ctx, id)
 	if err != nil {
@@ -749,8 +898,8 @@ func (r *mutationResolver) DeploymentNodePower(ctx context.Context, id uuid.UUID
 		return false, gqlerror.Errorf("failed to query deployment: %v", err)
 	}
 
-	// Check the user has permission to deploy into project
-	hasViewerRole, err := HasMinimumProjectRole(ctx, r.ent, currentUser, entDeployment.Edges.Project.ID, membership.RoleViewer)
+	// Check the user has viewer role or higher
+	hasViewerRole, err := CurrentUserHasMinimumProjectRole(ctx, r.ent, entDeployment.Edges.Project.ID, membership.RoleViewer)
 	if err != nil {
 		return false, gqlerror.Errorf("failed to check user project role: %v", err)
 	}
@@ -784,22 +933,16 @@ func (r *mutationResolver) DeploymentNodePower(ctx context.Context, id uuid.UUID
 	return true, nil
 }
 
-// DeploymentPower is the resolver for the deploymentPower field.
+// Control the power state of a deployment (requires `Viewer` role on project)
 func (r *mutationResolver) DeploymentPower(ctx context.Context, id uuid.UUID, state pgrpc.PowerState) (bool, error) {
-	// Get the current authenticated user
-	currentUser, err := auth.ForContext(ctx)
-	if err != nil {
-		return false, gqlerror.Errorf("failed to get user from context: %v", err)
-	}
-
 	// Get the deployment by ID
 	entDeployment, err := r.ent.Deployment.Query().Where(deployment.ID(id)).WithProject().Only(ctx)
 	if err != nil {
 		return false, fmt.Errorf("failed to query deployment: %v", err)
 	}
 
-	// Check the user has permission to deploy into project
-	hasViewerRole, err := HasMinimumProjectRole(ctx, r.ent, currentUser, entDeployment.Edges.Project.ID, membership.RoleViewer)
+	// Check the user has viewer role or higher
+	hasViewerRole, err := CurrentUserHasMinimumProjectRole(ctx, r.ent, entDeployment.Edges.Project.ID, membership.RoleViewer)
 	if err != nil {
 		return false, gqlerror.Errorf("failed to check user project role: %v", err)
 	}
@@ -1184,7 +1327,7 @@ func (r *queryResolver) Blueprint(ctx context.Context, id uuid.UUID) (*ent.Bluep
 }
 
 // List deployments (requires permission `x.x.deployments.*.list`)
-func (r *queryResolver) Deployments(ctx context.Context, projectFilter []uuid.UUID, count int, offset *int) (*model.DeploymentPage, error) {
+func (r *queryResolver) Deployments(ctx context.Context, includeExpiredAndDestroyed bool, projectFilter []uuid.UUID, count int, offset *int) (*model.DeploymentPage, error) {
 	// Get the current user
 	currentUser, err := auth.ForContext(ctx)
 	if err != nil {
@@ -1298,6 +1441,61 @@ func (r *queryResolver) SearchGroups(ctx context.Context, search string, count i
 	return &model.GroupPage{
 		Groups: entGroups,
 		Total:  entGroupCount,
+	}, nil
+}
+
+// Search projects (requires `Developer` or more)
+func (r *queryResolver) SearchProjects(ctx context.Context, search string, count int, offset *int) (*model.ProjectPage, error) {
+	// Get the current authenticated user
+	currentUser, err := auth.ForContext(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to get user from context: %v", err)
+	}
+
+	// Get all group ID's the current user is a part of
+	groupIds, err := currentUser.QueryGroups().IDs(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query user groups: %v", err)
+	}
+
+	q := r.ent.Project.Query().Where(
+		project.Or(
+			IDFuzzySearch(search),
+			project.NameContainsFold(search),
+		),
+		project.Or(
+			// Direct user membership
+			project.HasMembershipsWith(
+				membership.HasUserWith(user.ID(currentUser.ID)),
+				membership.RoleIn(
+					membership.RoleAdmin,
+					membership.RoleDeveloper,
+				),
+			),
+			// Group membership
+			project.HasGroupMembershipsWith(
+				groupmembership.HasGroupWith(group.IDIn(groupIds...)),
+				groupmembership.RoleIn(
+					groupmembership.RoleAdmin,
+					groupmembership.RoleDeveloper,
+				),
+			),
+		),
+	).Limit(count)
+	if offset != nil {
+		q = q.Offset(*offset)
+	}
+	entProjects, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entProjectCount, err := q.Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &model.ProjectPage{
+		Projects: entProjects,
+		Total:    entProjectCount,
 	}, nil
 }
 

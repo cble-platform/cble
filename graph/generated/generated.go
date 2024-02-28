@@ -163,10 +163,12 @@ type ComplexityRoot struct {
 		ConfigureProvider   func(childComplexity int, id uuid.UUID) int
 		CreateBlueprint     func(childComplexity int, input model.BlueprintInput) int
 		CreateGroup         func(childComplexity int, input model.GroupInput) int
+		CreateProject       func(childComplexity int, input model.ProjectInput) int
 		CreateProvider      func(childComplexity int, input model.ProviderInput) int
 		CreateUser          func(childComplexity int, input model.UserInput) int
 		DeleteBlueprint     func(childComplexity int, id uuid.UUID) int
 		DeleteGroup         func(childComplexity int, id uuid.UUID) int
+		DeleteProject       func(childComplexity int, id uuid.UUID) int
 		DeleteProvider      func(childComplexity int, id uuid.UUID) int
 		DeleteUser          func(childComplexity int, id uuid.UUID) int
 		DeployBlueprint     func(childComplexity int, blueprintID uuid.UUID, projectID uuid.UUID, templateVars map[string]string) int
@@ -182,6 +184,8 @@ type ComplexityRoot struct {
 		UpdateBlueprint     func(childComplexity int, id uuid.UUID, input model.BlueprintInput) int
 		UpdateDeployment    func(childComplexity int, id uuid.UUID, input model.DeploymentInput) int
 		UpdateGroup         func(childComplexity int, id uuid.UUID, input model.GroupInput) int
+		UpdateMembership    func(childComplexity int, id uuid.UUID, users []*model.MembershipInput, groups []*model.GroupMembershipInput) int
+		UpdateProject       func(childComplexity int, id uuid.UUID, input model.ProjectInput) int
 		UpdateProvider      func(childComplexity int, id uuid.UUID, input model.ProviderInput) int
 		UpdateUser          func(childComplexity int, id uuid.UUID, input model.UserInput) int
 	}
@@ -228,7 +232,7 @@ type ComplexityRoot struct {
 		Blueprint       func(childComplexity int, id uuid.UUID) int
 		Blueprints      func(childComplexity int, projectFilter []uuid.UUID, count int, offset *int) int
 		Deployment      func(childComplexity int, id uuid.UUID) int
-		Deployments     func(childComplexity int, projectFilter []uuid.UUID, count int, offset *int) int
+		Deployments     func(childComplexity int, includeExpiredAndDestroyed bool, projectFilter []uuid.UUID, count int, offset *int) int
 		Group           func(childComplexity int, id uuid.UUID) int
 		Groups          func(childComplexity int, count int, offset *int) int
 		Me              func(childComplexity int) int
@@ -240,6 +244,7 @@ type ComplexityRoot struct {
 		Provider        func(childComplexity int, id uuid.UUID) int
 		Providers       func(childComplexity int, count int, offset *int) int
 		SearchGroups    func(childComplexity int, search string, count int, offset *int) int
+		SearchProjects  func(childComplexity int, search string, count int, offset *int) int
 		SearchUsers     func(childComplexity int, search string, count int, offset *int) int
 		User            func(childComplexity int, id uuid.UUID) int
 		Users           func(childComplexity int, count int, offset *int) int
@@ -331,16 +336,20 @@ type MutationResolver interface {
 	CreateProvider(ctx context.Context, input model.ProviderInput) (*ent.Provider, error)
 	UpdateProvider(ctx context.Context, id uuid.UUID, input model.ProviderInput) (*ent.Provider, error)
 	DeleteProvider(ctx context.Context, id uuid.UUID) (bool, error)
-	CreateBlueprint(ctx context.Context, input model.BlueprintInput) (*ent.Blueprint, error)
-	UpdateBlueprint(ctx context.Context, id uuid.UUID, input model.BlueprintInput) (*ent.Blueprint, error)
-	DeleteBlueprint(ctx context.Context, id uuid.UUID) (bool, error)
-	UpdateDeployment(ctx context.Context, id uuid.UUID, input model.DeploymentInput) (*ent.Deployment, error)
 	LoadProvider(ctx context.Context, id uuid.UUID) (*ent.Provider, error)
 	UnloadProvider(ctx context.Context, id uuid.UUID) (*ent.Provider, error)
 	ConfigureProvider(ctx context.Context, id uuid.UUID) (*ent.Provider, error)
+	CreateProject(ctx context.Context, input model.ProjectInput) (*ent.Project, error)
+	UpdateProject(ctx context.Context, id uuid.UUID, input model.ProjectInput) (*ent.Project, error)
+	DeleteProject(ctx context.Context, id uuid.UUID) (bool, error)
+	UpdateMembership(ctx context.Context, id uuid.UUID, users []*model.MembershipInput, groups []*model.GroupMembershipInput) (*ent.Project, error)
+	CreateBlueprint(ctx context.Context, input model.BlueprintInput) (*ent.Blueprint, error)
+	UpdateBlueprint(ctx context.Context, id uuid.UUID, input model.BlueprintInput) (*ent.Blueprint, error)
+	DeleteBlueprint(ctx context.Context, id uuid.UUID) (bool, error)
 	DeployBlueprint(ctx context.Context, blueprintID uuid.UUID, projectID uuid.UUID, templateVars map[string]string) (*ent.Deployment, error)
-	DestroyDeployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error)
+	UpdateDeployment(ctx context.Context, id uuid.UUID, input model.DeploymentInput) (*ent.Deployment, error)
 	RedeployDeployment(ctx context.Context, id uuid.UUID, nodeIds []uuid.UUID) (*ent.Deployment, error)
+	DestroyDeployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error)
 	DeploymentNodePower(ctx context.Context, id uuid.UUID, state provider.PowerState) (bool, error)
 	DeploymentPower(ctx context.Context, id uuid.UUID, state provider.PowerState) (bool, error)
 }
@@ -370,10 +379,11 @@ type QueryResolver interface {
 	Provider(ctx context.Context, id uuid.UUID) (*ent.Provider, error)
 	Blueprints(ctx context.Context, projectFilter []uuid.UUID, count int, offset *int) (*model.BlueprintPage, error)
 	Blueprint(ctx context.Context, id uuid.UUID) (*ent.Blueprint, error)
-	Deployments(ctx context.Context, projectFilter []uuid.UUID, count int, offset *int) (*model.DeploymentPage, error)
+	Deployments(ctx context.Context, includeExpiredAndDestroyed bool, projectFilter []uuid.UUID, count int, offset *int) (*model.DeploymentPage, error)
 	Deployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error)
 	SearchUsers(ctx context.Context, search string, count int, offset *int) (*model.UserPage, error)
 	SearchGroups(ctx context.Context, search string, count int, offset *int) (*model.GroupPage, error)
+	SearchProjects(ctx context.Context, search string, count int, offset *int) (*model.ProjectPage, error)
 }
 type ResourceResolver interface {
 	Type(ctx context.Context, obj *ent.Resource) (model.ResourceType, error)
@@ -863,6 +873,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateGroup(childComplexity, args["input"].(model.GroupInput)), true
 
+	case "Mutation.createProject":
+		if e.complexity.Mutation.CreateProject == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createProject_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateProject(childComplexity, args["input"].(model.ProjectInput)), true
+
 	case "Mutation.createProvider":
 		if e.complexity.Mutation.CreateProvider == nil {
 			break
@@ -910,6 +932,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.DeleteGroup(childComplexity, args["id"].(uuid.UUID)), true
+
+	case "Mutation.deleteProject":
+		if e.complexity.Mutation.DeleteProject == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteProject_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteProject(childComplexity, args["id"].(uuid.UUID)), true
 
 	case "Mutation.deleteProvider":
 		if e.complexity.Mutation.DeleteProvider == nil {
@@ -1090,6 +1124,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UpdateGroup(childComplexity, args["id"].(uuid.UUID), args["input"].(model.GroupInput)), true
+
+	case "Mutation.updateMembership":
+		if e.complexity.Mutation.UpdateMembership == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateMembership_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateMembership(childComplexity, args["id"].(uuid.UUID), args["users"].([]*model.MembershipInput), args["groups"].([]*model.GroupMembershipInput)), true
+
+	case "Mutation.updateProject":
+		if e.complexity.Mutation.UpdateProject == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateProject_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateProject(childComplexity, args["id"].(uuid.UUID), args["input"].(model.ProjectInput)), true
 
 	case "Mutation.updateProvider":
 		if e.complexity.Mutation.UpdateProvider == nil {
@@ -1343,7 +1401,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Deployments(childComplexity, args["projectFilter"].([]uuid.UUID), args["count"].(int), args["offset"].(*int)), true
+		return e.complexity.Query.Deployments(childComplexity, args["includeExpiredAndDestroyed"].(bool), args["projectFilter"].([]uuid.UUID), args["count"].(int), args["offset"].(*int)), true
 
 	case "Query.group":
 		if e.complexity.Query.Group == nil {
@@ -1471,6 +1529,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.SearchGroups(childComplexity, args["search"].(string), args["count"].(int), args["offset"].(*int)), true
+
+	case "Query.searchProjects":
+		if e.complexity.Query.SearchProjects == nil {
+			break
+		}
+
+		args, err := ec.field_Query_searchProjects_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.SearchProjects(childComplexity, args["search"].(string), args["count"].(int), args["offset"].(*int)), true
 
 	case "Query.searchUsers":
 		if e.complexity.Query.SearchUsers == nil {
@@ -1687,6 +1757,9 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputBlueprintInput,
 		ec.unmarshalInputDeploymentInput,
 		ec.unmarshalInputGroupInput,
+		ec.unmarshalInputGroupMembershipInput,
+		ec.unmarshalInputMembershipInput,
+		ec.unmarshalInputProjectInput,
 		ec.unmarshalInputProviderInput,
 		ec.unmarshalInputUserInput,
 	)
@@ -1832,25 +1905,17 @@ var sources = []*ast.Source{
 	"""
   project_create
 	"""
+	Update a given project
+	"""
+  project_update
+	"""
+	Delete a given project
+	"""
+  project_delete
+	"""
 	Modify project memberships
 	"""
   project_update_membership
-	"""
-	Create blueprints in the project
-	"""
-  project_create_blueprints
-	"""
-	Update blueprints in the project
-	"""
-  project_update_blueprints
-	"""
-	Delete blueprints in the project
-	"""
-  project_delete_blueprints
-	"""
-	Deploy blueprints in the project
-	"""
-  project_deploy_blueprints
 	"""
 	List all providers (only compatible with wildcard ID *)
 	"""
@@ -2192,7 +2257,7 @@ type Query {
   """
   List deployments (requires permission ` + "`" + `x.x.deployments.*.list` + "`" + `)
   """
-  deployments(projectFilter: [ID!], count: Int! = 10, offset: Int): DeploymentPage!
+  deployments(includeExpiredAndDestroyed: Boolean! = false, projectFilter: [ID!], count: Int! = 10, offset: Int): DeploymentPage!
   """
   Get a deployment (requires permission ` + "`" + `x.x.deployments.x.get` + "`" + `)
   """
@@ -2210,6 +2275,10 @@ type Query {
   Search groups
   """
   searchGroups(search: String!, count: Int! = 10, offset: Int): GroupPage!
+  """
+  Search groups
+  """
+  searchProjects(search: String!, count: Int! = 10, offset: Int): ProjectPage!
 }
 
 input BlueprintInput {
@@ -2224,6 +2293,40 @@ input BlueprintInput {
 
 input DeploymentInput {
   name: String!
+}
+
+input ProjectInput {
+  name: String!
+  """
+  Maximum number of CPU cores in the project (set to -1 for unlimited)
+  """
+  quotaCpu: Int
+  """
+  Maximum MiB of RAM in the project (set to -1 for unlimited)
+  """
+  quotaRam: Int
+  """
+  Maximum MiB of Disk in the project (set to -1 for unlimited)
+  """
+  quotaDisk: Int
+  """
+  Maximum number of networks in the project (set to -1 for unlimited)
+  """
+  quotaNetwork: Int
+  """
+  Maximum number of routers in the project (set to -1 for unlimited)
+  """
+  quotaRouter: Int
+}
+
+input MembershipInput {
+  userID: ID!
+  role: MembershipRole!
+}
+
+input GroupMembershipInput {
+  groupID: ID!
+  role: GroupMembershipRole!
 }
 
 input ProviderInput {
@@ -2251,19 +2354,14 @@ enum PowerState {
 }
 
 type Mutation {
-  ##################
-  # AUTHENTICATION #
-  ##################
+  ########
+  # USER #
+  ########
 
   """
   Change current user's password
   """
   selfChangePassword(currentPassword: String!, newPassword: String!): Boolean!
-
-  ########
-  # CRUD #
-  ########
-
   """
   Create a user (requires permission ` + "`" + `x.x.users.*.create` + "`" + `)
   """
@@ -2276,6 +2374,11 @@ type Mutation {
   Delete a user (requires permission ` + "`" + `x.x.users.x.delete` + "`" + `)
   """
   deleteUser(id: ID!): Boolean!
+
+  #########
+  # GROUP #
+  #########
+
   """
   Create a group (requires permission ` + "`" + `x.x.group.x.create` + "`" + `)
   """
@@ -2288,6 +2391,11 @@ type Mutation {
   Delete a group (requires permission ` + "`" + `x.x.group.x.delete` + "`" + `)
   """
   deleteGroup(id: ID!): Boolean!
+
+  ##############
+  # PERMISSION #
+  ##############
+
   """
   Grant a permission (requires permission ` + "`" + `x.x.permission.*.grant` + "`" + `)
   """
@@ -2296,6 +2404,11 @@ type Mutation {
   Revoke a permission (requires permission ` + "`" + `x.x.permission.*.revoke` + "`" + `)
   """
   revokePermission(subjectType: SubjectType!, subjectID: ID!, objectType: ObjectType!, objectID: ID, action: Action!): Boolean!
+
+  ############
+  # PROVIDER #
+  ############
+
   """
   Create a provider (requires permission ` + "`" + `x.x.providers.*.create` + "`" + `)
   """
@@ -2309,27 +2422,6 @@ type Mutation {
   """
   deleteProvider(id: ID!): Boolean!
   """
-  Create a blueprint (requires permission ` + "`" + `x.x.blueprints.*.create` + "`" + `)
-  """
-  createBlueprint(input: BlueprintInput!): Blueprint!
-  """
-  Update a blueprint (requires permission ` + "`" + `x.x.blueprints.x.update` + "`" + `)
-  """
-  updateBlueprint(id: ID!, input: BlueprintInput!): Blueprint!
-  """
-  Delete a blueprint (requires permission ` + "`" + `x.x.blueprints.x.delete` + "`" + `)
-  """
-  deleteBlueprint(id: ID!): Boolean!
-  """
-  Update a deployment (requires permission ` + "`" + `x.x.deployments.x.update` + "`" + `)
-  """
-  updateDeployment(id: ID!, input: DeploymentInput!): Deployment!
-
-  #############
-  # PROVIDERS #
-  #############
-
-  """
   Load a provider to connect it to CBLE (requires permission ` + "`" + `x.x.providers.x.load` + "`" + `)
   """
   loadProvider(id: ID!): Provider!
@@ -2342,28 +2434,70 @@ type Mutation {
   """
   configureProvider(id: ID!): Provider!
 
-  # ##############
-  # # DEPLOYMENT #
-  # ##############
+  ###########
+  # PROJECT #
+  ###########
 
   """
-  Deploy a blueprint (requires permission ` + "`" + `x.x.blueprints.x.deploy` + "`" + `)
+  Create a project (requires the permission ` + "`" + `x.x.project.*.create` + "`" + `)
+  """
+  createProject(input: ProjectInput!): Project!
+  """
+  Update a project (requires the permission ` + "`" + `x.x.project.x.update` + "`" + `)
+  """
+  updateProject(id: ID!, input: ProjectInput!): Project!
+  """
+  Delete a project (requires the permission ` + "`" + `x.x.project.x.delete` + "`" + `)
+  """
+  deleteProject(id: ID!): Boolean!
+  """
+  Update membership to project (requires the permission ` + "`" + `x.x.project.x.update_membership` + "`" + `)
+  """
+  updateMembership(id: ID!, users: [MembershipInput!]!, groups: [GroupMembershipInput!]!): Project!
+
+  #############
+  # BLUEPRINT #
+  #############
+
+  """
+  Create a blueprint (requires ` + "`" + `Developer` + "`" + ` role on project)
+  """
+  createBlueprint(input: BlueprintInput!): Blueprint!
+  """
+  Update a blueprint (requires ` + "`" + `Developer` + "`" + ` role on project)
+  """
+  updateBlueprint(id: ID!, input: BlueprintInput!): Blueprint!
+  """
+  Delete a blueprint (requires ` + "`" + `Developer` + "`" + ` role on project)
+  """
+  deleteBlueprint(id: ID!): Boolean!
+
+  ##############
+  # DEPLOYMENT #
+  ##############
+
+  """
+  Deploy a blueprint (requires ` + "`" + `Deployer` + "`" + ` role on project)
   """
   deployBlueprint(blueprintId: ID!, projectId: ID!, templateVars: StrMap!): Deployment!
   """
-  Destroy a deployment (requires permission ` + "`" + `x.x.deployments.x.destroy` + "`" + `)
+  Update a deployment (requires ` + "`" + `Deployer` + "`" + ` role on project)
   """
-  destroyDeployment(id: ID!): Deployment!
+  updateDeployment(id: ID!, input: DeploymentInput!): Deployment!
   """
-  Redeploy nodes within a deployment (requires permission ` + "`" + `x.x.deployments.x.redeploy` + "`" + `)
+  Redeploy nodes within a deployment (requires ` + "`" + `Deployer` + "`" + ` role on project)
   """
   redeployDeployment(id: ID!, nodeIds: [ID!]!): Deployment!
   """
-  Control the power state of a deployment node
+  Destroy a deployment (requires ` + "`" + `Deployer` + "`" + ` role on project)
+  """
+  destroyDeployment(id: ID!): Deployment!
+  """
+  Control the power state of a deployment node (requires ` + "`" + `Viewer` + "`" + ` role on project)
   """
   deploymentNodePower(id: ID!, state: PowerState!): Boolean!
   """
-  Control the power state of a deployment
+  Control the power state of a deployment (requires ` + "`" + `Viewer` + "`" + ` role on project)
   """
   deploymentPower(id: ID!, state: PowerState!): Boolean!
   # """
@@ -2424,6 +2558,21 @@ func (ec *executionContext) field_Mutation_createGroup_args(ctx context.Context,
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_createProject_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.ProjectInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNProjectInput2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐProjectInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_createProvider_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2470,6 +2619,21 @@ func (ec *executionContext) field_Mutation_deleteBlueprint_args(ctx context.Cont
 }
 
 func (ec *executionContext) field_Mutation_deleteGroup_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uuid.UUID
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteProject_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 uuid.UUID
@@ -2862,6 +3026,63 @@ func (ec *executionContext) field_Mutation_updateGroup_args(ctx context.Context,
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_updateMembership_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uuid.UUID
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 []*model.MembershipInput
+	if tmp, ok := rawArgs["users"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("users"))
+		arg1, err = ec.unmarshalNMembershipInput2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐMembershipInputᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["users"] = arg1
+	var arg2 []*model.GroupMembershipInput
+	if tmp, ok := rawArgs["groups"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("groups"))
+		arg2, err = ec.unmarshalNGroupMembershipInput2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐGroupMembershipInputᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["groups"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateProject_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uuid.UUID
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 model.ProjectInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg1, err = ec.unmarshalNProjectInput2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐProjectInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_updateProvider_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2991,33 +3212,42 @@ func (ec *executionContext) field_Query_deployment_args(ctx context.Context, raw
 func (ec *executionContext) field_Query_deployments_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 []uuid.UUID
+	var arg0 bool
+	if tmp, ok := rawArgs["includeExpiredAndDestroyed"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeExpiredAndDestroyed"))
+		arg0, err = ec.unmarshalNBoolean2bool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["includeExpiredAndDestroyed"] = arg0
+	var arg1 []uuid.UUID
 	if tmp, ok := rawArgs["projectFilter"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectFilter"))
-		arg0, err = ec.unmarshalOID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, tmp)
+		arg1, err = ec.unmarshalOID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["projectFilter"] = arg0
-	var arg1 int
+	args["projectFilter"] = arg1
+	var arg2 int
 	if tmp, ok := rawArgs["count"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("count"))
-		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		arg2, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["count"] = arg1
-	var arg2 *int
+	args["count"] = arg2
+	var arg3 *int
 	if tmp, ok := rawArgs["offset"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
-		arg2, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		arg3, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["offset"] = arg2
+	args["offset"] = arg3
 	return args, nil
 }
 
@@ -3211,6 +3441,39 @@ func (ec *executionContext) field_Query_providers_args(ctx context.Context, rawA
 }
 
 func (ec *executionContext) field_Query_searchGroups_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["search"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("search"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["search"] = arg0
+	var arg1 int
+	if tmp, ok := rawArgs["count"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("count"))
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["count"] = arg1
+	var arg2 *int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg2, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_searchProjects_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -7175,294 +7438,6 @@ func (ec *executionContext) fieldContext_Mutation_deleteProvider(ctx context.Con
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_createBlueprint(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_createBlueprint(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateBlueprint(rctx, fc.Args["input"].(model.BlueprintInput))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*ent.Blueprint)
-	fc.Result = res
-	return ec.marshalNBlueprint2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐBlueprint(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_createBlueprint(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Blueprint_id(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Blueprint_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_Blueprint_updatedAt(ctx, field)
-			case "name":
-				return ec.fieldContext_Blueprint_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Blueprint_description(ctx, field)
-			case "blueprintTemplate":
-				return ec.fieldContext_Blueprint_blueprintTemplate(ctx, field)
-			case "variableTypes":
-				return ec.fieldContext_Blueprint_variableTypes(ctx, field)
-			case "provider":
-				return ec.fieldContext_Blueprint_provider(ctx, field)
-			case "resources":
-				return ec.fieldContext_Blueprint_resources(ctx, field)
-			case "deployments":
-				return ec.fieldContext_Blueprint_deployments(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Blueprint", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_createBlueprint_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_updateBlueprint(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_updateBlueprint(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateBlueprint(rctx, fc.Args["id"].(uuid.UUID), fc.Args["input"].(model.BlueprintInput))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*ent.Blueprint)
-	fc.Result = res
-	return ec.marshalNBlueprint2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐBlueprint(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_updateBlueprint(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Blueprint_id(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Blueprint_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_Blueprint_updatedAt(ctx, field)
-			case "name":
-				return ec.fieldContext_Blueprint_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Blueprint_description(ctx, field)
-			case "blueprintTemplate":
-				return ec.fieldContext_Blueprint_blueprintTemplate(ctx, field)
-			case "variableTypes":
-				return ec.fieldContext_Blueprint_variableTypes(ctx, field)
-			case "provider":
-				return ec.fieldContext_Blueprint_provider(ctx, field)
-			case "resources":
-				return ec.fieldContext_Blueprint_resources(ctx, field)
-			case "deployments":
-				return ec.fieldContext_Blueprint_deployments(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Blueprint", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_updateBlueprint_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_deleteBlueprint(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_deleteBlueprint(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().DeleteBlueprint(rctx, fc.Args["id"].(uuid.UUID))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_deleteBlueprint(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_deleteBlueprint_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_updateDeployment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_updateDeployment(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateDeployment(rctx, fc.Args["id"].(uuid.UUID), fc.Args["input"].(model.DeploymentInput))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*ent.Deployment)
-	fc.Result = res
-	return ec.marshalNDeployment2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeployment(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_updateDeployment(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Deployment_id(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Deployment_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_Deployment_updatedAt(ctx, field)
-			case "name":
-				return ec.fieldContext_Deployment_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Deployment_description(ctx, field)
-			case "state":
-				return ec.fieldContext_Deployment_state(ctx, field)
-			case "templateVars":
-				return ec.fieldContext_Deployment_templateVars(ctx, field)
-			case "expiresAt":
-				return ec.fieldContext_Deployment_expiresAt(ctx, field)
-			case "blueprint":
-				return ec.fieldContext_Deployment_blueprint(ctx, field)
-			case "deploymentNodes":
-				return ec.fieldContext_Deployment_deploymentNodes(ctx, field)
-			case "requester":
-				return ec.fieldContext_Deployment_requester(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Deployment", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_updateDeployment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Mutation_loadProvider(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_loadProvider(ctx, field)
 	if err != nil {
@@ -7688,6 +7663,519 @@ func (ec *executionContext) fieldContext_Mutation_configureProvider(ctx context.
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_createProject(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createProject(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateProject(rctx, fc.Args["input"].(model.ProjectInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Project)
+	fc.Result = res
+	return ec.marshalNProject2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐProject(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createProject(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Project_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Project_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Project_updatedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_Project_name(ctx, field)
+			case "quotaCpu":
+				return ec.fieldContext_Project_quotaCpu(ctx, field)
+			case "quotaRam":
+				return ec.fieldContext_Project_quotaRam(ctx, field)
+			case "quotaDisk":
+				return ec.fieldContext_Project_quotaDisk(ctx, field)
+			case "quotaNetwork":
+				return ec.fieldContext_Project_quotaNetwork(ctx, field)
+			case "quotaRouter":
+				return ec.fieldContext_Project_quotaRouter(ctx, field)
+			case "memberships":
+				return ec.fieldContext_Project_memberships(ctx, field)
+			case "groupMemberships":
+				return ec.fieldContext_Project_groupMemberships(ctx, field)
+			case "blueprints":
+				return ec.fieldContext_Project_blueprints(ctx, field)
+			case "deployments":
+				return ec.fieldContext_Project_deployments(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createProject_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateProject(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateProject(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateProject(rctx, fc.Args["id"].(uuid.UUID), fc.Args["input"].(model.ProjectInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Project)
+	fc.Result = res
+	return ec.marshalNProject2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐProject(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateProject(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Project_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Project_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Project_updatedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_Project_name(ctx, field)
+			case "quotaCpu":
+				return ec.fieldContext_Project_quotaCpu(ctx, field)
+			case "quotaRam":
+				return ec.fieldContext_Project_quotaRam(ctx, field)
+			case "quotaDisk":
+				return ec.fieldContext_Project_quotaDisk(ctx, field)
+			case "quotaNetwork":
+				return ec.fieldContext_Project_quotaNetwork(ctx, field)
+			case "quotaRouter":
+				return ec.fieldContext_Project_quotaRouter(ctx, field)
+			case "memberships":
+				return ec.fieldContext_Project_memberships(ctx, field)
+			case "groupMemberships":
+				return ec.fieldContext_Project_groupMemberships(ctx, field)
+			case "blueprints":
+				return ec.fieldContext_Project_blueprints(ctx, field)
+			case "deployments":
+				return ec.fieldContext_Project_deployments(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateProject_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteProject(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deleteProject(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteProject(rctx, fc.Args["id"].(uuid.UUID))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteProject(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteProject_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateMembership(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateMembership(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateMembership(rctx, fc.Args["id"].(uuid.UUID), fc.Args["users"].([]*model.MembershipInput), fc.Args["groups"].([]*model.GroupMembershipInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Project)
+	fc.Result = res
+	return ec.marshalNProject2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐProject(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateMembership(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Project_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Project_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Project_updatedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_Project_name(ctx, field)
+			case "quotaCpu":
+				return ec.fieldContext_Project_quotaCpu(ctx, field)
+			case "quotaRam":
+				return ec.fieldContext_Project_quotaRam(ctx, field)
+			case "quotaDisk":
+				return ec.fieldContext_Project_quotaDisk(ctx, field)
+			case "quotaNetwork":
+				return ec.fieldContext_Project_quotaNetwork(ctx, field)
+			case "quotaRouter":
+				return ec.fieldContext_Project_quotaRouter(ctx, field)
+			case "memberships":
+				return ec.fieldContext_Project_memberships(ctx, field)
+			case "groupMemberships":
+				return ec.fieldContext_Project_groupMemberships(ctx, field)
+			case "blueprints":
+				return ec.fieldContext_Project_blueprints(ctx, field)
+			case "deployments":
+				return ec.fieldContext_Project_deployments(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateMembership_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_createBlueprint(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createBlueprint(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateBlueprint(rctx, fc.Args["input"].(model.BlueprintInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Blueprint)
+	fc.Result = res
+	return ec.marshalNBlueprint2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐBlueprint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createBlueprint(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Blueprint_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Blueprint_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Blueprint_updatedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_Blueprint_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Blueprint_description(ctx, field)
+			case "blueprintTemplate":
+				return ec.fieldContext_Blueprint_blueprintTemplate(ctx, field)
+			case "variableTypes":
+				return ec.fieldContext_Blueprint_variableTypes(ctx, field)
+			case "provider":
+				return ec.fieldContext_Blueprint_provider(ctx, field)
+			case "resources":
+				return ec.fieldContext_Blueprint_resources(ctx, field)
+			case "deployments":
+				return ec.fieldContext_Blueprint_deployments(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Blueprint", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createBlueprint_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateBlueprint(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateBlueprint(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateBlueprint(rctx, fc.Args["id"].(uuid.UUID), fc.Args["input"].(model.BlueprintInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Blueprint)
+	fc.Result = res
+	return ec.marshalNBlueprint2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐBlueprint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateBlueprint(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Blueprint_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Blueprint_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Blueprint_updatedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_Blueprint_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Blueprint_description(ctx, field)
+			case "blueprintTemplate":
+				return ec.fieldContext_Blueprint_blueprintTemplate(ctx, field)
+			case "variableTypes":
+				return ec.fieldContext_Blueprint_variableTypes(ctx, field)
+			case "provider":
+				return ec.fieldContext_Blueprint_provider(ctx, field)
+			case "resources":
+				return ec.fieldContext_Blueprint_resources(ctx, field)
+			case "deployments":
+				return ec.fieldContext_Blueprint_deployments(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Blueprint", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateBlueprint_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteBlueprint(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deleteBlueprint(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteBlueprint(rctx, fc.Args["id"].(uuid.UUID))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteBlueprint(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteBlueprint_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_deployBlueprint(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_deployBlueprint(ctx, field)
 	if err != nil {
@@ -7767,8 +8255,8 @@ func (ec *executionContext) fieldContext_Mutation_deployBlueprint(ctx context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_destroyDeployment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_destroyDeployment(ctx, field)
+func (ec *executionContext) _Mutation_updateDeployment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateDeployment(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -7781,7 +8269,7 @@ func (ec *executionContext) _Mutation_destroyDeployment(ctx context.Context, fie
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().DestroyDeployment(rctx, fc.Args["id"].(uuid.UUID))
+		return ec.resolvers.Mutation().UpdateDeployment(rctx, fc.Args["id"].(uuid.UUID), fc.Args["input"].(model.DeploymentInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7798,7 +8286,7 @@ func (ec *executionContext) _Mutation_destroyDeployment(ctx context.Context, fie
 	return ec.marshalNDeployment2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeployment(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_destroyDeployment(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_updateDeployment(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -7839,7 +8327,7 @@ func (ec *executionContext) fieldContext_Mutation_destroyDeployment(ctx context.
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_destroyDeployment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_updateDeployment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -7919,6 +8407,85 @@ func (ec *executionContext) fieldContext_Mutation_redeployDeployment(ctx context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_redeployDeployment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_destroyDeployment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_destroyDeployment(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DestroyDeployment(rctx, fc.Args["id"].(uuid.UUID))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Deployment)
+	fc.Result = res
+	return ec.marshalNDeployment2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐDeployment(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_destroyDeployment(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Deployment_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Deployment_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Deployment_updatedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_Deployment_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Deployment_description(ctx, field)
+			case "state":
+				return ec.fieldContext_Deployment_state(ctx, field)
+			case "templateVars":
+				return ec.fieldContext_Deployment_templateVars(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_Deployment_expiresAt(ctx, field)
+			case "blueprint":
+				return ec.fieldContext_Deployment_blueprint(ctx, field)
+			case "deploymentNodes":
+				return ec.fieldContext_Deployment_deploymentNodes(ctx, field)
+			case "requester":
+				return ec.fieldContext_Deployment_requester(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Deployment", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_destroyDeployment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -10263,7 +10830,7 @@ func (ec *executionContext) _Query_deployments(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Deployments(rctx, fc.Args["projectFilter"].([]uuid.UUID), fc.Args["count"].(int), fc.Args["offset"].(*int))
+		return ec.resolvers.Query().Deployments(rctx, fc.Args["includeExpiredAndDestroyed"].(bool), fc.Args["projectFilter"].([]uuid.UUID), fc.Args["count"].(int), fc.Args["offset"].(*int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10505,6 +11072,67 @@ func (ec *executionContext) fieldContext_Query_searchGroups(ctx context.Context,
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_searchGroups_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_searchProjects(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_searchProjects(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().SearchProjects(rctx, fc.Args["search"].(string), fc.Args["count"].(int), fc.Args["offset"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.ProjectPage)
+	fc.Result = res
+	return ec.marshalNProjectPage2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐProjectPage(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_searchProjects(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "projects":
+				return ec.fieldContext_ProjectPage_projects(ctx, field)
+			case "total":
+				return ec.fieldContext_ProjectPage_total(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ProjectPage", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_searchProjects_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -13717,6 +14345,136 @@ func (ec *executionContext) unmarshalInputGroupInput(ctx context.Context, obj in
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputGroupMembershipInput(ctx context.Context, obj interface{}) (model.GroupMembershipInput, error) {
+	var it model.GroupMembershipInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"groupID", "role"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "groupID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("groupID"))
+			data, err := ec.unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GroupID = data
+		case "role":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("role"))
+			data, err := ec.unmarshalNGroupMembershipRole2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚋgroupmembershipᚐRole(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Role = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputMembershipInput(ctx context.Context, obj interface{}) (model.MembershipInput, error) {
+	var it model.MembershipInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"userID", "role"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "userID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
+			data, err := ec.unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UserID = data
+		case "role":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("role"))
+			data, err := ec.unmarshalNMembershipRole2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚋmembershipᚐRole(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Role = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputProjectInput(ctx context.Context, obj interface{}) (model.ProjectInput, error) {
+	var it model.ProjectInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "quotaCpu", "quotaRam", "quotaDisk", "quotaNetwork", "quotaRouter"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "quotaCpu":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("quotaCpu"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.QuotaCPU = data
+		case "quotaRam":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("quotaRam"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.QuotaRAM = data
+		case "quotaDisk":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("quotaDisk"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.QuotaDisk = data
+		case "quotaNetwork":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("quotaNetwork"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.QuotaNetwork = data
+		case "quotaRouter":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("quotaRouter"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.QuotaRouter = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputProviderInput(ctx context.Context, obj interface{}) (model.ProviderInput, error) {
 	var it model.ProviderInput
 	asMap := map[string]interface{}{}
@@ -15181,34 +15939,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "createBlueprint":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_createBlueprint(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "updateBlueprint":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_updateBlueprint(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "deleteBlueprint":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_deleteBlueprint(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "updateDeployment":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_updateDeployment(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "loadProvider":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_loadProvider(ctx, field)
@@ -15230,6 +15960,55 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "createProject":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createProject(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateProject":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateProject(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteProject":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteProject(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateMembership":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateMembership(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createBlueprint":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createBlueprint(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateBlueprint":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateBlueprint(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteBlueprint":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteBlueprint(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "deployBlueprint":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deployBlueprint(ctx, field)
@@ -15237,9 +16016,9 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "destroyDeployment":
+		case "updateDeployment":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_destroyDeployment(ctx, field)
+				return ec._Mutation_updateDeployment(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -15247,6 +16026,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "redeployDeployment":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_redeployDeployment(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "destroyDeployment":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_destroyDeployment(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -16140,6 +16926,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_searchGroups(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "searchProjects":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_searchProjects(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -17505,6 +18313,28 @@ func (ec *executionContext) marshalNGroupMembership2ᚖgithubᚗcomᚋcbleᚑpla
 	return ec._GroupMembership(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNGroupMembershipInput2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐGroupMembershipInputᚄ(ctx context.Context, v interface{}) ([]*model.GroupMembershipInput, error) {
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*model.GroupMembershipInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNGroupMembershipInput2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐGroupMembershipInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNGroupMembershipInput2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐGroupMembershipInput(ctx context.Context, v interface{}) (*model.GroupMembershipInput, error) {
+	res, err := ec.unmarshalInputGroupMembershipInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNGroupMembershipRole2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚋgroupmembershipᚐRole(ctx context.Context, v interface{}) (groupmembership.Role, error) {
 	tmp, err := graphql.UnmarshalString(v)
 	res := groupmembership.Role(tmp)
@@ -17651,6 +18481,28 @@ func (ec *executionContext) marshalNMembership2ᚖgithubᚗcomᚋcbleᚑplatform
 	return ec._Membership(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNMembershipInput2ᚕᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐMembershipInputᚄ(ctx context.Context, v interface{}) ([]*model.MembershipInput, error) {
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*model.MembershipInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNMembershipInput2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐMembershipInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNMembershipInput2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐMembershipInput(ctx context.Context, v interface{}) (*model.MembershipInput, error) {
+	res, err := ec.unmarshalInputMembershipInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNMembershipRole2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚋmembershipᚐRole(ctx context.Context, v interface{}) (membership.Role, error) {
 	tmp, err := graphql.UnmarshalString(v)
 	res := membership.Role(tmp)
@@ -17754,6 +18606,11 @@ func (ec *executionContext) marshalNProject2ᚖgithubᚗcomᚋcbleᚑplatformᚋ
 		return graphql.Null
 	}
 	return ec._Project(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNProjectInput2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐProjectInput(ctx context.Context, v interface{}) (model.ProjectInput, error) {
+	res, err := ec.unmarshalInputProjectInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNProjectPage2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐProjectPage(ctx context.Context, sel ast.SelectionSet, v model.ProjectPage) graphql.Marshaler {
