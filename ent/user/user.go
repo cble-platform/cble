@@ -50,7 +50,7 @@ const (
 	// DeploymentsColumn is the table column denoting the deployments relation/edge.
 	DeploymentsColumn = "deployment_requester"
 	// ProjectsTable is the table that holds the projects relation/edge. The primary key declared below.
-	ProjectsTable = "project_members"
+	ProjectsTable = "memberships"
 	// ProjectsInverseTable is the table name for the Project entity.
 	// It exists in this package in order to avoid circular dependency with the "project" package.
 	ProjectsInverseTable = "projects"

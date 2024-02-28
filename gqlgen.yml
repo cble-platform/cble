@@ -1,5 +1,6 @@
 # Where are all the schema files located? globs are supported eg  src/**/*.graphqls
 schema:
+  - permission/actions/actions_gen.graphqls
   - graph/*.graphqls
 
 # Where should the generated server code go?
@@ -87,3 +88,9 @@ models:
   ResourceFeatures:
     model:
       - github.com/cble-platform/cble-provider-grpc/pkg/provider.Features
+  MembershipRole:
+    model:
+      - github.com/cble-platform/cble-backend/ent/membership.Role
+  GroupMembershipRole:
+    model:
+      - github.com/cble-platform/cble-backend/ent/groupmembership.Role

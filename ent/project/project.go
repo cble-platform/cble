@@ -39,15 +39,19 @@ const (
 	EdgeBlueprints = "blueprints"
 	// EdgeDeployments holds the string denoting the deployments edge name in mutations.
 	EdgeDeployments = "deployments"
+	// EdgeMemberships holds the string denoting the memberships edge name in mutations.
+	EdgeMemberships = "memberships"
+	// EdgeGroupMemberships holds the string denoting the group_memberships edge name in mutations.
+	EdgeGroupMemberships = "group_memberships"
 	// Table holds the table name of the project in the database.
 	Table = "projects"
 	// MembersTable is the table that holds the members relation/edge. The primary key declared below.
-	MembersTable = "project_members"
+	MembersTable = "memberships"
 	// MembersInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
 	MembersInverseTable = "users"
 	// GroupMembersTable is the table that holds the group_members relation/edge. The primary key declared below.
-	GroupMembersTable = "project_group_members"
+	GroupMembersTable = "group_memberships"
 	// GroupMembersInverseTable is the table name for the Group entity.
 	// It exists in this package in order to avoid circular dependency with the "group" package.
 	GroupMembersInverseTable = "groups"
@@ -65,6 +69,20 @@ const (
 	DeploymentsInverseTable = "deployments"
 	// DeploymentsColumn is the table column denoting the deployments relation/edge.
 	DeploymentsColumn = "deployment_project"
+	// MembershipsTable is the table that holds the memberships relation/edge.
+	MembershipsTable = "memberships"
+	// MembershipsInverseTable is the table name for the Membership entity.
+	// It exists in this package in order to avoid circular dependency with the "membership" package.
+	MembershipsInverseTable = "memberships"
+	// MembershipsColumn is the table column denoting the memberships relation/edge.
+	MembershipsColumn = "project_id"
+	// GroupMembershipsTable is the table that holds the group_memberships relation/edge.
+	GroupMembershipsTable = "group_memberships"
+	// GroupMembershipsInverseTable is the table name for the GroupMembership entity.
+	// It exists in this package in order to avoid circular dependency with the "groupmembership" package.
+	GroupMembershipsInverseTable = "group_memberships"
+	// GroupMembershipsColumn is the table column denoting the group_memberships relation/edge.
+	GroupMembershipsColumn = "project_id"
 )
 
 // Columns holds all SQL columns for project fields.
@@ -213,6 +231,34 @@ func ByDeployments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newDeploymentsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByMembershipsCount orders the results by memberships count.
+func ByMembershipsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newMembershipsStep(), opts...)
+	}
+}
+
+// ByMemberships orders the results by memberships terms.
+func ByMemberships(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newMembershipsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByGroupMembershipsCount orders the results by group_memberships count.
+func ByGroupMembershipsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGroupMembershipsStep(), opts...)
+	}
+}
+
+// ByGroupMemberships orders the results by group_memberships terms.
+func ByGroupMemberships(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGroupMembershipsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newMembersStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -239,5 +285,19 @@ func newDeploymentsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(DeploymentsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, true, DeploymentsTable, DeploymentsColumn),
+	)
+}
+func newMembershipsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(MembershipsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, MembershipsTable, MembershipsColumn),
+	)
+}
+func newGroupMembershipsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GroupMembershipsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, GroupMembershipsTable, GroupMembershipsColumn),
 	)
 }

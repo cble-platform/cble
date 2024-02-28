@@ -120,7 +120,7 @@ var (
 		{Name: "subject_id", Type: field.TypeUUID},
 		{Name: "object_type", Type: field.TypeEnum, Enums: []string{"blueprint", "deployment", "group", "permission", "project", "provider", "user"}},
 		{Name: "object_id", Type: field.TypeUUID},
-		{Name: "action", Type: field.TypeEnum, Enums: []string{"blueprint_list", "blueprint_create", "blueprint_get", "blueprint_update", "blueprint_delete", "blueprint_deploy", "deployment_list", "deployment_get", "deployment_update", "deployment_delete", "deployment_destroy", "deployment_redeploy", "deployment_power", "deployment_console", "group_list", "group_create", "group_get", "group_update", "group_delete", "permission_list", "permission_get", "permission_grant", "permission_revoke", "project_list", "project_create", "project_update_membership", "project_create_blueprints", "project_update_blueprints", "project_delete_blueprints", "project_deploy_blueprints", "provider_list", "provider_create", "provider_get", "provider_update", "provider_delete", "provider_load", "provider_unload", "provider_configure", "user_list", "user_create", "user_get", "user_update", "user_delete", "unknown"}},
+		{Name: "action", Type: field.TypeEnum, Enums: []string{"group_list", "group_create", "group_get", "group_update", "group_delete", "permission_list", "permission_get", "permission_grant", "permission_revoke", "project_list", "project_create", "project_update_membership", "project_create_blueprints", "project_update_blueprints", "project_delete_blueprints", "project_deploy_blueprints", "provider_list", "provider_create", "provider_get", "provider_update", "provider_delete", "provider_load", "provider_unload", "provider_configure", "user_list", "user_create", "user_get", "user_update", "user_delete", "unknown"}},
 		{Name: "granted_permission_user", Type: field.TypeUUID, Nullable: true},
 		{Name: "granted_permission_group", Type: field.TypeUUID, Nullable: true},
 	}
@@ -163,6 +163,78 @@ var (
 		Name:       "groups",
 		Columns:    GroupsColumns,
 		PrimaryKey: []*schema.Column{GroupsColumns[0]},
+	}
+	// GroupMembershipsColumns holds the columns for the "group_memberships" table.
+	GroupMembershipsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "role", Type: field.TypeEnum, Enums: []string{"viewer", "deployer", "developer", "admin"}, Default: "deployer"},
+		{Name: "project_id", Type: field.TypeUUID},
+		{Name: "group_id", Type: field.TypeUUID},
+	}
+	// GroupMembershipsTable holds the schema information for the "group_memberships" table.
+	GroupMembershipsTable = &schema.Table{
+		Name:       "group_memberships",
+		Columns:    GroupMembershipsColumns,
+		PrimaryKey: []*schema.Column{GroupMembershipsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "group_memberships_projects_project",
+				Columns:    []*schema.Column{GroupMembershipsColumns[4]},
+				RefColumns: []*schema.Column{ProjectsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "group_memberships_groups_group",
+				Columns:    []*schema.Column{GroupMembershipsColumns[5]},
+				RefColumns: []*schema.Column{GroupsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "groupmembership_project_id_group_id",
+				Unique:  true,
+				Columns: []*schema.Column{GroupMembershipsColumns[4], GroupMembershipsColumns[5]},
+			},
+		},
+	}
+	// MembershipsColumns holds the columns for the "memberships" table.
+	MembershipsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "role", Type: field.TypeEnum, Enums: []string{"viewer", "deployer", "developer", "admin"}, Default: "deployer"},
+		{Name: "project_id", Type: field.TypeUUID},
+		{Name: "user_id", Type: field.TypeUUID},
+	}
+	// MembershipsTable holds the schema information for the "memberships" table.
+	MembershipsTable = &schema.Table{
+		Name:       "memberships",
+		Columns:    MembershipsColumns,
+		PrimaryKey: []*schema.Column{MembershipsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "memberships_projects_project",
+				Columns:    []*schema.Column{MembershipsColumns[4]},
+				RefColumns: []*schema.Column{ProjectsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "memberships_users_user",
+				Columns:    []*schema.Column{MembershipsColumns[5]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "membership_project_id_user_id",
+				Unique:  true,
+				Columns: []*schema.Column{MembershipsColumns[4], MembershipsColumns[5]},
+			},
+		},
 	}
 	// ProjectsColumns holds the columns for the "projects" table.
 	ProjectsColumns = []*schema.Column{
@@ -268,56 +340,6 @@ var (
 			},
 		},
 	}
-	// ProjectMembersColumns holds the columns for the "project_members" table.
-	ProjectMembersColumns = []*schema.Column{
-		{Name: "project_id", Type: field.TypeUUID},
-		{Name: "user_id", Type: field.TypeUUID},
-	}
-	// ProjectMembersTable holds the schema information for the "project_members" table.
-	ProjectMembersTable = &schema.Table{
-		Name:       "project_members",
-		Columns:    ProjectMembersColumns,
-		PrimaryKey: []*schema.Column{ProjectMembersColumns[0], ProjectMembersColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "project_members_project_id",
-				Columns:    []*schema.Column{ProjectMembersColumns[0]},
-				RefColumns: []*schema.Column{ProjectsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "project_members_user_id",
-				Columns:    []*schema.Column{ProjectMembersColumns[1]},
-				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-	}
-	// ProjectGroupMembersColumns holds the columns for the "project_group_members" table.
-	ProjectGroupMembersColumns = []*schema.Column{
-		{Name: "project_id", Type: field.TypeUUID},
-		{Name: "group_id", Type: field.TypeUUID},
-	}
-	// ProjectGroupMembersTable holds the schema information for the "project_group_members" table.
-	ProjectGroupMembersTable = &schema.Table{
-		Name:       "project_group_members",
-		Columns:    ProjectGroupMembersColumns,
-		PrimaryKey: []*schema.Column{ProjectGroupMembersColumns[0], ProjectGroupMembersColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "project_group_members_project_id",
-				Columns:    []*schema.Column{ProjectGroupMembersColumns[0]},
-				RefColumns: []*schema.Column{ProjectsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "project_group_members_group_id",
-				Columns:    []*schema.Column{ProjectGroupMembersColumns[1]},
-				RefColumns: []*schema.Column{GroupsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-	}
 	// ResourceRequiredByColumns holds the columns for the "resource_required_by" table.
 	ResourceRequiredByColumns = []*schema.Column{
 		{Name: "resource_id", Type: field.TypeUUID},
@@ -375,13 +397,13 @@ var (
 		DeploymentNodesTable,
 		GrantedPermissionsTable,
 		GroupsTable,
+		GroupMembershipsTable,
+		MembershipsTable,
 		ProjectsTable,
 		ProvidersTable,
 		ResourcesTable,
 		UsersTable,
 		DeploymentNodeNextNodesTable,
-		ProjectMembersTable,
-		ProjectGroupMembersTable,
 		ResourceRequiredByTable,
 		UserGroupsTable,
 	}
@@ -397,13 +419,13 @@ func init() {
 	DeploymentNodesTable.ForeignKeys[1].RefTable = ResourcesTable
 	GrantedPermissionsTable.ForeignKeys[0].RefTable = UsersTable
 	GrantedPermissionsTable.ForeignKeys[1].RefTable = GroupsTable
+	GroupMembershipsTable.ForeignKeys[0].RefTable = ProjectsTable
+	GroupMembershipsTable.ForeignKeys[1].RefTable = GroupsTable
+	MembershipsTable.ForeignKeys[0].RefTable = ProjectsTable
+	MembershipsTable.ForeignKeys[1].RefTable = UsersTable
 	ResourcesTable.ForeignKeys[0].RefTable = BlueprintsTable
 	DeploymentNodeNextNodesTable.ForeignKeys[0].RefTable = DeploymentNodesTable
 	DeploymentNodeNextNodesTable.ForeignKeys[1].RefTable = DeploymentNodesTable
-	ProjectMembersTable.ForeignKeys[0].RefTable = ProjectsTable
-	ProjectMembersTable.ForeignKeys[1].RefTable = UsersTable
-	ProjectGroupMembersTable.ForeignKeys[0].RefTable = ProjectsTable
-	ProjectGroupMembersTable.ForeignKeys[1].RefTable = GroupsTable
 	ResourceRequiredByTable.ForeignKeys[0].RefTable = ResourcesTable
 	ResourceRequiredByTable.ForeignKeys[1].RefTable = ResourcesTable
 	UserGroupsTable.ForeignKeys[0].RefTable = UsersTable

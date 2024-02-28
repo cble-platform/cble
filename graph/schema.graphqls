@@ -3,6 +3,8 @@ scalar Map
 scalar StrMap
 scalar VarTypeMap
 scalar UUID
+scalar MembershipRole
+scalar GroupMembershipRole
 
 # directive @hasPermission(objectType: ObjectType!, action: Action!) on FIELD_DEFINITION
 
@@ -133,177 +135,6 @@ enum ObjectType {
   user
 }
 
-enum Action {
-  """
-  List all blueprints (only compatible with wildcard ID *)
-  """
-  blueprint_list
-  """
-  Create blueprints (only compatible with wildcard ID *)
-  """
-  blueprint_create
-  """
-  Get a given blueprint
-  """
-  blueprint_get
-  """
-  Update a given blueprint
-  """
-  blueprint_update
-  """
-  Delete a given blueprint
-  """
-  blueprint_delete
-  """
-  Deploy a given blueprint
-  """
-  blueprint_deploy
-  """
-  List all deployments (only compatible with wildcard ID *)
-  """
-  deployment_list
-  """
-  Get a given deployment
-  """
-  deployment_get
-  """
-  Update a given deployment
-  """
-  deployment_update
-  """
-  Delete a given deployment
-  """
-  deployment_delete
-  """
-  Destroy a given deployment
-  """
-  deployment_destroy
-  """
-  Redeploy a given deployment
-  """
-  deployment_redeploy
-  """
-  Control the power state of resources in a given deployment
-  """
-  deployment_power
-  """
-  Get the console of resources in a given deployment
-  """
-  deployment_console
-  """
-  List all groups (only compatible with wildcard ID *)
-  """
-  group_list
-  """
-  Create groups
-  """
-  group_create
-  """
-  Get a given group
-  """
-  group_get
-  """
-  Update a given group
-  """
-  group_update
-  """
-  Delete a given group
-  """
-  group_delete
-  """
-  List all permissions (only compatible with wildcard ID *)
-  """
-  permission_list
-  """
-  Get a given permission
-  """
-  permission_get
-  """
-  Grant permissions (only compatible with wildcard ID *)
-  """
-  permission_grant
-  """
-  Revoke permissions (only compatible with wildcard ID *)
-  """
-  permission_revoke
-  """
-  List all projects (only compatible with wildcard ID *)
-  """
-  project_list
-  """
-  Create projects (only compatible with wildcard ID *)
-  """
-  project_create
-  """
-  Modify project memberships
-  """
-  project_membership
-  """
-  Create blueprints in the project
-  """
-  project_create_blueprints
-  """
-  Delete blueprints in the project
-  """
-  project_delete_blueprints
-  """
-  Deploy blueprints in the project
-  """
-  project_deploy_blueprints
-  """
-  List all providers (only compatible with wildcard ID *)
-  """
-  provider_list
-  """
-  Create providers
-  """
-  provider_create
-  """
-  Get a given provider
-  """
-  provider_get
-  """
-  Update a given provider
-  """
-  provider_update
-  """
-  Delete a given provider
-  """
-  provider_delete
-  """
-  Load a given provider
-  """
-  provider_load
-  """
-  Unload a given provider
-  """
-  provider_unload
-  """
-  Configure a given provider
-  """
-  provider_configure
-  """
-  List all users (only compatible with wildcard ID *)
-  """
-  user_list
-  """
-  Create users
-  """
-  user_create
-  """
-  Get a given user
-  """
-  user_get
-  """
-  Update a given user
-  """
-  user_update
-  """
-  Delete a given user
-  """
-  user_delete
-}
-
 type GrantedPermission {
   id: ID!
   createdAt: Time!
@@ -322,6 +153,20 @@ type GrantedPermissionPage {
   total: Int!
 }
 
+type Membership {
+  id: ID!
+  project: Project!
+  user: User!
+  role: MembershipRole!
+}
+
+type GroupMembership {
+  id: ID!
+  project: Project!
+  group: Group!
+  role: GroupMembershipRole!
+}
+
 type Project {
   id: ID!
   createdAt: Time!
@@ -333,8 +178,8 @@ type Project {
   quotaNetwork: Int!
   quotaRouter: Int!
 
-  members: [User!]!
-  groupMembers: [Group!]!
+  memberships: [Membership!]!
+  groupMemberships: [GroupMembership!]!
   blueprints: [Blueprint!]!
   deployments: [Deployment!]!
 }
@@ -430,25 +275,17 @@ type Query {
   """
   provider(id: ID!): Provider!
   """
-  List blueprints (requires permission `x.x.blueprints.*.list`)
+  List all blueprints from users projects
   """
-  blueprints(count: Int! = 10, offset: Int): BlueprintPage!
+  blueprints(projectFilter: [ID!], count: Int! = 10, offset: Int): BlueprintPage!
   """
-  List all blueprints user has `blueprint.x.deploy` permission for
-  """
-  deployableBlueprints(count: Int! = 10, offset: Int): BlueprintPage!
-  """
-  Get a blueprint (requires permission `x.x.blueprints.x.get`)
+  Get a blueprint
   """
   blueprint(id: ID!): Blueprint!
   """
   List deployments (requires permission `x.x.deployments.*.list`)
   """
-  deployments(count: Int! = 10, offset: Int): DeploymentPage!
-  """
-  List deployments user is the requester of
-  """
-  myDeployments(includeExpiredAndDestroyed: Boolean! = false, count: Int! = 10, offset: Int): DeploymentPage!
+  deployments(projectFilter: [ID!], count: Int! = 10, offset: Int): DeploymentPage!
   """
   Get a deployment (requires permission `x.x.deployments.x.get`)
   """
@@ -605,7 +442,7 @@ type Mutation {
   """
   Deploy a blueprint (requires permission `x.x.blueprints.x.deploy`)
   """
-  deployBlueprint(id: ID!, templateVars: StrMap!): Deployment!
+  deployBlueprint(blueprintId: ID!, projectId: ID!, templateVars: StrMap!): Deployment!
   """
   Destroy a deployment (requires permission `x.x.deployments.x.destroy`)
   """

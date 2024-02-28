@@ -13,6 +13,8 @@ import (
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/group"
+	"github.com/cble-platform/cble-backend/ent/groupmembership"
+	"github.com/cble-platform/cble-backend/ent/membership"
 	"github.com/cble-platform/cble-backend/ent/project"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
@@ -161,6 +163,36 @@ func (pc *ProjectCreate) AddDeployments(d ...*Deployment) *ProjectCreate {
 		ids[i] = d[i].ID
 	}
 	return pc.AddDeploymentIDs(ids...)
+}
+
+// AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
+func (pc *ProjectCreate) AddMembershipIDs(ids ...uuid.UUID) *ProjectCreate {
+	pc.mutation.AddMembershipIDs(ids...)
+	return pc
+}
+
+// AddMemberships adds the "memberships" edges to the Membership entity.
+func (pc *ProjectCreate) AddMemberships(m ...*Membership) *ProjectCreate {
+	ids := make([]uuid.UUID, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return pc.AddMembershipIDs(ids...)
+}
+
+// AddGroupMembershipIDs adds the "group_memberships" edge to the GroupMembership entity by IDs.
+func (pc *ProjectCreate) AddGroupMembershipIDs(ids ...uuid.UUID) *ProjectCreate {
+	pc.mutation.AddGroupMembershipIDs(ids...)
+	return pc
+}
+
+// AddGroupMemberships adds the "group_memberships" edges to the GroupMembership entity.
+func (pc *ProjectCreate) AddGroupMemberships(g ...*GroupMembership) *ProjectCreate {
+	ids := make([]uuid.UUID, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return pc.AddGroupMembershipIDs(ids...)
 }
 
 // Mutation returns the ProjectMutation object of the builder.
@@ -319,6 +351,13 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		createE := &MembershipCreate{config: pc.config, mutation: newMembershipMutation(pc.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
+		if specE.ID.Value != nil {
+			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := pc.mutation.GroupMembersIDs(); len(nodes) > 0 {
@@ -334,6 +373,13 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		createE := &GroupMembershipCreate{config: pc.config, mutation: newGroupMembershipMutation(pc.config, OpCreate)}
+		createE.defaults()
+		_, specE := createE.createSpec()
+		edge.Target.Fields = specE.Fields
+		if specE.ID.Value != nil {
+			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
@@ -362,6 +408,38 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(deployment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.MembershipsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   project.MembershipsTable,
+			Columns: []string{project.MembershipsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.GroupMembershipsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   project.GroupMembershipsTable,
+			Columns: []string{project.GroupMembershipsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(groupmembership.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -21,6 +21,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/deploymentnode"
 	"github.com/cble-platform/cble-backend/ent/grantedpermission"
 	"github.com/cble-platform/cble-backend/ent/group"
+	"github.com/cble-platform/cble-backend/ent/membership"
 	"github.com/cble-platform/cble-backend/ent/project"
 	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/cble-platform/cble-backend/ent/user"
@@ -111,6 +112,26 @@ func (r *grantedPermissionResolver) DisplayString(ctx context.Context, obj *ent.
 // Users is the resolver for the users field.
 func (r *groupResolver) Users(ctx context.Context, obj *ent.Group) ([]*ent.User, error) {
 	return obj.QueryUsers().All(ctx)
+}
+
+// Project is the resolver for the project field.
+func (r *groupMembershipResolver) Project(ctx context.Context, obj *ent.GroupMembership) (*ent.Project, error) {
+	return obj.QueryProject().Only(ctx)
+}
+
+// Group is the resolver for the group field.
+func (r *groupMembershipResolver) Group(ctx context.Context, obj *ent.GroupMembership) (*ent.Group, error) {
+	return obj.QueryGroup().Only(ctx)
+}
+
+// Project is the resolver for the project field.
+func (r *membershipResolver) Project(ctx context.Context, obj *ent.Membership) (*ent.Project, error) {
+	return obj.QueryProject().Only(ctx)
+}
+
+// User is the resolver for the user field.
+func (r *membershipResolver) User(ctx context.Context, obj *ent.Membership) (*ent.User, error) {
+	return obj.QueryUser().Only(ctx)
 }
 
 // Change current user's password
@@ -338,7 +359,7 @@ func (r *mutationResolver) DeleteProvider(ctx context.Context, id uuid.UUID) (bo
 // Create a blueprint (requires permission `x.x.blueprints.*.create`)
 func (r *mutationResolver) CreateBlueprint(ctx context.Context, input model.BlueprintInput) (*ent.Blueprint, error) {
 	// Check if current user has permission
-	if hasPerm, err := permission.CurrentUserHasBlueprintCreate(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
+	if hasPerm, err := permission.CurrentUserHasProjectCreateBlueprints(ctx, r.ent, input.ProjectID); err != nil || !hasPerm {
 		return nil, auth.PERMISSION_DENIED_GQL_ERROR
 	}
 
@@ -393,7 +414,7 @@ func (r *mutationResolver) CreateBlueprint(ctx context.Context, input model.Blue
 // Update a blueprint (requires permission `x.x.blueprints.x.update`)
 func (r *mutationResolver) UpdateBlueprint(ctx context.Context, id uuid.UUID, input model.BlueprintInput) (*ent.Blueprint, error) {
 	// Check if current user has permission
-	if hasPerm, err := permission.CurrentUserHasBlueprintUpdate(ctx, r.ent, id); err != nil || !hasPerm {
+	if hasPerm, err := permission.CurrentUserHasProjectUpdateBlueprints(ctx, r.ent, input.ProjectID); err != nil || !hasPerm {
 		return nil, auth.PERMISSION_DENIED_GQL_ERROR
 	}
 
@@ -446,13 +467,19 @@ func (r *mutationResolver) UpdateBlueprint(ctx context.Context, id uuid.UUID, in
 
 // Delete a blueprint (requires permission `x.x.blueprints.x.delete`)
 func (r *mutationResolver) DeleteBlueprint(ctx context.Context, id uuid.UUID) (bool, error) {
+	// Get the project through blueprint ID
+	entProject, err := r.ent.Blueprint.Query().Where(blueprint.ID(id)).QueryProject().Only(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to query deployment: %v", err)
+	}
+
 	// Check if current user has permission
-	if hasPerm, err := permission.CurrentUserHasBlueprintDelete(ctx, r.ent, id); err != nil || !hasPerm {
+	if hasPerm, err := permission.CurrentUserHasProjectDeleteBlueprints(ctx, r.ent, entProject.ID); err != nil || !hasPerm {
 		return false, auth.PERMISSION_DENIED_GQL_ERROR
 	}
 
 	// Delete the blueprint
-	err := r.ent.Blueprint.DeleteOneID(id).Exec(ctx)
+	err = r.ent.Blueprint.DeleteOneID(id).Exec(ctx)
 	if err != nil {
 		return false, gqlerror.Errorf("failed to delete blueprint: %v", err)
 	}
@@ -462,9 +489,25 @@ func (r *mutationResolver) DeleteBlueprint(ctx context.Context, id uuid.UUID) (b
 
 // Update a deployment (requires permission `x.x.deployments.x.update`)
 func (r *mutationResolver) UpdateDeployment(ctx context.Context, id uuid.UUID, input model.DeploymentInput) (*ent.Deployment, error) {
-	// Check if current user has permission
-	if hasPerm, err := permission.CurrentUserHasDeploymentUpdate(ctx, r.ent, id); err != nil || !hasPerm {
-		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	// Get the current authenticated user
+	currentUser, err := auth.ForContext(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to get user from context: %v", err)
+	}
+
+	// Get the project through blueprint ID
+	entProject, err := r.ent.Blueprint.Query().Where(blueprint.ID(id)).QueryProject().Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query deployment: %v", err)
+	}
+
+	// Check the user has permission to update deployments in project
+	hasDeployerRole, err := HasMinimumProjectRole(ctx, r.ent, currentUser, entProject.ID, membership.RoleDeployer)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to check user project role: %v", err)
+	}
+	if !hasDeployerRole {
+		return nil, gqlerror.Errorf("user does not have permission to deploy blueprints to this project")
 	}
 
 	return r.ent.Deployment.UpdateOneID(id).SetName(input.Name).Save(ctx)
@@ -541,12 +584,7 @@ func (r *mutationResolver) ConfigureProvider(ctx context.Context, id uuid.UUID) 
 }
 
 // Deploy a blueprint (requires permission `x.x.blueprints.x.deploy`)
-func (r *mutationResolver) DeployBlueprint(ctx context.Context, id uuid.UUID, templateVars map[string]string) (*ent.Deployment, error) {
-	// Check if current user has permission
-	if hasPerm, err := permission.CurrentUserHasBlueprintDeploy(ctx, r.ent, id); err != nil || !hasPerm {
-		return nil, auth.PERMISSION_DENIED_GQL_ERROR
-	}
-
+func (r *mutationResolver) DeployBlueprint(ctx context.Context, blueprintID uuid.UUID, projectID uuid.UUID, templateVars map[string]string) (*ent.Deployment, error) {
 	// Get the current authenticated user
 	currentUser, err := auth.ForContext(ctx)
 	if err != nil {
@@ -554,9 +592,18 @@ func (r *mutationResolver) DeployBlueprint(ctx context.Context, id uuid.UUID, te
 	}
 
 	// Get the blueprint by ID
-	entBlueprint, err := r.ent.Blueprint.Get(ctx, id)
+	entBlueprint, err := r.ent.Blueprint.Get(ctx, blueprintID)
 	if err != nil {
 		return nil, gqlerror.Errorf("failed to query blueprint: %v", err)
+	}
+
+	// Check the user has permission to deploy into project
+	hasDeployerRole, err := HasMinimumProjectRole(ctx, r.ent, currentUser, projectID, membership.RoleDeployer)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to check user project role: %v", err)
+	}
+	if !hasDeployerRole {
+		return nil, gqlerror.Errorf("user does not have permission to deploy blueprints to this project")
 	}
 
 	// Get the provider from blueprint
@@ -604,15 +651,25 @@ func (r *mutationResolver) DeployBlueprint(ctx context.Context, id uuid.UUID, te
 
 // Destroy a deployment (requires permission `x.x.deployments.x.destroy`)
 func (r *mutationResolver) DestroyDeployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error) {
-	// Check if current user has permission
-	if hasPerm, err := permission.CurrentUserHasDeploymentDestroy(ctx, r.ent, id); err != nil || !hasPerm {
-		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	// Get the current authenticated user
+	currentUser, err := auth.ForContext(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to get user from context: %v", err)
 	}
 
 	// Get the deployment by ID
-	entDeployment, err := r.ent.Deployment.Get(ctx, id)
+	entDeployment, err := r.ent.Deployment.Query().Where(deployment.ID(id)).WithProject().Only(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query deployment: %v", err)
+	}
+
+	// Check the user has permission to deploy into project
+	hasDeployerRole, err := HasMinimumProjectRole(ctx, r.ent, currentUser, entDeployment.Edges.Project.ID, membership.RoleDeployer)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to check user project role: %v", err)
+	}
+	if !hasDeployerRole {
+		return nil, gqlerror.Errorf("user does not have permission to destroy blueprints to this project")
 	}
 
 	// Get the provider from deployment
@@ -634,15 +691,25 @@ func (r *mutationResolver) DestroyDeployment(ctx context.Context, id uuid.UUID) 
 
 // Redeploy nodes within a deployment (requires permission `x.x.deployments.x.redeploy`)
 func (r *mutationResolver) RedeployDeployment(ctx context.Context, id uuid.UUID, nodeIds []uuid.UUID) (*ent.Deployment, error) {
-	// Check if current user has permission
-	if hasPerm, err := permission.CurrentUserHasDeploymentRedeploy(ctx, r.ent, id); err != nil || !hasPerm {
-		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	// Get the current authenticated user
+	currentUser, err := auth.ForContext(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to get user from context: %v", err)
 	}
 
 	// Get the deployment by ID
-	entDeployment, err := r.ent.Deployment.Get(ctx, id)
+	entDeployment, err := r.ent.Deployment.Query().Where(deployment.ID(id)).WithProject().Only(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query deployment: %v", err)
+	}
+
+	// Check the user has permission to deploy into project
+	hasDeployerRole, err := HasMinimumProjectRole(ctx, r.ent, currentUser, entDeployment.Edges.Project.ID, membership.RoleDeployer)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to check user project role: %v", err)
+	}
+	if !hasDeployerRole {
+		return nil, gqlerror.Errorf("user does not have permission to redeploy blueprints to this project")
 	}
 
 	// Get the provider from deployment
@@ -664,6 +731,12 @@ func (r *mutationResolver) RedeployDeployment(ctx context.Context, id uuid.UUID,
 
 // DeploymentNodePower is the resolver for the deploymentNodePower field.
 func (r *mutationResolver) DeploymentNodePower(ctx context.Context, id uuid.UUID, state pgrpc.PowerState) (bool, error) {
+	// Get the current authenticated user
+	currentUser, err := auth.ForContext(ctx)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to get user from context: %v", err)
+	}
+
 	// Get the deployment node by ID
 	entDeploymentNode, err := r.ent.DeploymentNode.Get(ctx, id)
 	if err != nil {
@@ -671,14 +744,18 @@ func (r *mutationResolver) DeploymentNodePower(ctx context.Context, id uuid.UUID
 	}
 
 	// Get the deployment to check permission
-	entDeployment, err := entDeploymentNode.QueryDeployment().Only(ctx)
+	entDeployment, err := entDeploymentNode.QueryDeployment().WithProject().Only(ctx)
 	if err != nil {
 		return false, gqlerror.Errorf("failed to query deployment: %v", err)
 	}
 
-	// Check if current user has permission
-	if hasPerm, err := permission.CurrentUserHasDeploymentPower(ctx, r.ent, entDeployment.ID); err != nil || !hasPerm {
-		return false, auth.PERMISSION_DENIED_GQL_ERROR
+	// Check the user has permission to deploy into project
+	hasViewerRole, err := HasMinimumProjectRole(ctx, r.ent, currentUser, entDeployment.Edges.Project.ID, membership.RoleViewer)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to check user project role: %v", err)
+	}
+	if !hasViewerRole {
+		return false, gqlerror.Errorf("user does not have permission to view deployments in this project")
 	}
 
 	// Get the provider
@@ -709,16 +786,27 @@ func (r *mutationResolver) DeploymentNodePower(ctx context.Context, id uuid.UUID
 
 // DeploymentPower is the resolver for the deploymentPower field.
 func (r *mutationResolver) DeploymentPower(ctx context.Context, id uuid.UUID, state pgrpc.PowerState) (bool, error) {
-	// Check if current user has permission
-	if hasPerm, err := permission.CurrentUserHasDeploymentPower(ctx, r.ent, id); err != nil || !hasPerm {
-		return false, auth.PERMISSION_DENIED_GQL_ERROR
+	// Get the current authenticated user
+	currentUser, err := auth.ForContext(ctx)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to get user from context: %v", err)
 	}
 
 	// Get the deployment by ID
-	entDeployment, err := r.ent.Deployment.Get(ctx, id)
+	entDeployment, err := r.ent.Deployment.Query().Where(deployment.ID(id)).WithProject().Only(ctx)
 	if err != nil {
-		return false, gqlerror.Errorf("failed to query deployment: %v", err)
+		return false, fmt.Errorf("failed to query deployment: %v", err)
 	}
+
+	// Check the user has permission to deploy into project
+	hasViewerRole, err := HasMinimumProjectRole(ctx, r.ent, currentUser, entDeployment.Edges.Project.ID, membership.RoleViewer)
+	if err != nil {
+		return false, gqlerror.Errorf("failed to check user project role: %v", err)
+	}
+	if !hasViewerRole {
+		return false, gqlerror.Errorf("user does not have permission to view deployments in this project")
+	}
+
 	// Get the provider
 	entProvider, err := entDeployment.QueryBlueprint().QueryProvider().Only(ctx)
 	if err != nil {
@@ -783,39 +871,14 @@ func (r *mutationResolver) DeploymentPower(ctx context.Context, id uuid.UUID, st
 	return true, nil
 }
 
-// QuotaCPU is the resolver for the quotaCpu field.
-func (r *projectResolver) QuotaCPU(ctx context.Context, obj *ent.Project) (int, error) {
-	panic(fmt.Errorf("not implemented: QuotaCPU - quotaCpu"))
+// Memberships is the resolver for the memberships field.
+func (r *projectResolver) Memberships(ctx context.Context, obj *ent.Project) ([]*ent.Membership, error) {
+	return obj.QueryMemberships().All(ctx)
 }
 
-// QuotaRAM is the resolver for the quotaRam field.
-func (r *projectResolver) QuotaRAM(ctx context.Context, obj *ent.Project) (int, error) {
-	panic(fmt.Errorf("not implemented: QuotaRAM - quotaRam"))
-}
-
-// QuotaDisk is the resolver for the quotaDisk field.
-func (r *projectResolver) QuotaDisk(ctx context.Context, obj *ent.Project) (int, error) {
-	panic(fmt.Errorf("not implemented: QuotaDisk - quotaDisk"))
-}
-
-// QuotaNetwork is the resolver for the quotaNetwork field.
-func (r *projectResolver) QuotaNetwork(ctx context.Context, obj *ent.Project) (int, error) {
-	panic(fmt.Errorf("not implemented: QuotaNetwork - quotaNetwork"))
-}
-
-// QuotaRouter is the resolver for the quotaRouter field.
-func (r *projectResolver) QuotaRouter(ctx context.Context, obj *ent.Project) (int, error) {
-	panic(fmt.Errorf("not implemented: QuotaRouter - quotaRouter"))
-}
-
-// Members is the resolver for the members field.
-func (r *projectResolver) Members(ctx context.Context, obj *ent.Project) ([]*ent.User, error) {
-	return obj.QueryMembers().All(ctx)
-}
-
-// GroupMembers is the resolver for the groupMembers field.
-func (r *projectResolver) GroupMembers(ctx context.Context, obj *ent.Project) ([]*ent.Group, error) {
-	return obj.QueryGroupMembers().All(ctx)
+// GroupMemberships is the resolver for the groupMemberships field.
+func (r *projectResolver) GroupMemberships(ctx context.Context, obj *ent.Project) ([]*ent.GroupMembership, error) {
+	return obj.QueryGroupMemberships().All(ctx)
 }
 
 // Blueprints is the resolver for the blueprints field.
@@ -1067,86 +1130,26 @@ func (r *queryResolver) Provider(ctx context.Context, id uuid.UUID) (*ent.Provid
 }
 
 // List blueprints (requires permission `x.x.blueprints.*.list`)
-func (r *queryResolver) Blueprints(ctx context.Context, count int, offset *int) (*model.BlueprintPage, error) {
-	// Check if current user has permission
-	if hasPerm, err := permission.CurrentUserHasBlueprintList(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
-		return nil, auth.PERMISSION_DENIED_GQL_ERROR
-	}
-
-	q := r.ent.Blueprint.Query().Limit(count)
-	if offset != nil {
-		q = q.Offset(*offset)
-	}
-	entBlueprints, err := q.All(ctx)
-	if err != nil {
-		return nil, err
-	}
-	entBlueprintCount, err := r.ent.Blueprint.Query().Count(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return &model.BlueprintPage{
-		Blueprints: entBlueprints,
-		Total:      entBlueprintCount,
-	}, nil
-}
-
-// List all blueprints user has `blueprint.x.deploy` permission for
-func (r *queryResolver) DeployableBlueprints(ctx context.Context, count int, offset *int) (*model.BlueprintPage, error) {
-	// Check if user has permission to deploy all blueprints
-	if hasPerm, err := permission.CurrentUserHasBlueprintDeploy(ctx, r.ent, uuid.Nil); err != nil {
-		return nil, auth.PERMISSION_DENIED_GQL_ERROR
-	} else if hasPerm {
-		q := r.ent.Blueprint.Query().Limit(count)
-		if offset != nil {
-			q = q.Offset(*offset)
-		}
-		entBlueprints, err := q.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		entBlueprintCount, err := r.ent.Blueprint.Query().Count(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return &model.BlueprintPage{
-			Blueprints: entBlueprints,
-			Total:      entBlueprintCount,
-		}, nil
-	}
-
-	// Get the current logged in user
+func (r *queryResolver) Blueprints(ctx context.Context, projectFilter []uuid.UUID, count int, offset *int) (*model.BlueprintPage, error) {
+	// Get the current user
 	currentUser, err := auth.ForContext(ctx)
 	if err != nil {
 		return nil, auth.AUTH_REQUIRED_GQL_ERROR
 	}
-	entGroupIDs, err := currentUser.QueryGroups().IDs(ctx)
-	if err != nil {
-		return nil, gqlerror.Errorf("failed to get user group IDs: %v", err)
+
+	// Base query on all of current user's projects
+	baseQ := r.ent.Project.Query().Where(
+		project.HasMembersWith(user.IDEQ(currentUser.ID)),
+		project.HasGroupMembersWith(group.HasUsersWith(user.IDEQ(currentUser.ID))),
+	)
+	// Filter on project ID if requested
+	if len(projectFilter) > 0 {
+		baseQ = baseQ.Where(
+			project.IDIn(projectFilter...),
+		)
 	}
-
-	var entBlueprintIDs []uuid.UUID
-
-	err = r.ent.GrantedPermission.Query().Where(
-		grantedpermission.Or(
-			grantedpermission.And(
-				grantedpermission.SubjectTypeEQ(grantedpermission.SubjectTypeUser),
-				grantedpermission.SubjectIDEQ(currentUser.ID),
-			),
-			grantedpermission.And(
-				grantedpermission.SubjectTypeEQ(grantedpermission.SubjectTypeGroup),
-				grantedpermission.SubjectIDIn(entGroupIDs...),
-			),
-		),
-		grantedpermission.ObjectTypeEQ(grantedpermission.ObjectTypeBlueprint),
-	).Select(grantedpermission.FieldObjectID).Scan(ctx, &entBlueprintIDs)
-	if err != nil {
-		return nil, gqlerror.Errorf("failed to scan blueprint IDs from permissions: %v", err)
-	}
-
-	q := r.ent.Blueprint.Query().
-		Where(blueprint.IDIn(entBlueprintIDs...)).
-		Limit(count)
+	// Query blueprints from projects
+	q := baseQ.QueryBlueprints().Limit(count)
 	if offset != nil {
 		q = q.Offset(*offset)
 	}
@@ -1154,7 +1157,7 @@ func (r *queryResolver) DeployableBlueprints(ctx context.Context, count int, off
 	if err != nil {
 		return nil, err
 	}
-	entBlueprintCount, err := r.ent.Blueprint.Query().Where(blueprint.IDIn(entBlueprintIDs...)).Count(ctx)
+	entBlueprintCount, err := baseQ.QueryBlueprints().Count(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -1166,22 +1169,41 @@ func (r *queryResolver) DeployableBlueprints(ctx context.Context, count int, off
 
 // Get a blueprint (requires permission `x.x.blueprints.x.get`)
 func (r *queryResolver) Blueprint(ctx context.Context, id uuid.UUID) (*ent.Blueprint, error) {
-	// Check if current user has permission
-	if hasPerm, err := permission.CurrentUserHasBlueprintGet(ctx, r.ent, id); err != nil || !hasPerm {
-		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	// Get the current user
+	currentUser, err := auth.ForContext(ctx)
+	if err != nil {
+		return nil, auth.AUTH_REQUIRED_GQL_ERROR
 	}
 
-	return r.ent.Blueprint.Get(ctx, id)
+	return r.ent.Project.Query().Where(
+		project.HasMembersWith(user.IDEQ(currentUser.ID)),
+		project.HasGroupMembersWith(group.HasUsersWith(user.IDEQ(currentUser.ID))),
+	).QueryBlueprints().Where(
+		blueprint.IDEQ(id),
+	).Only(ctx)
 }
 
 // List deployments (requires permission `x.x.deployments.*.list`)
-func (r *queryResolver) Deployments(ctx context.Context, count int, offset *int) (*model.DeploymentPage, error) {
-	// Check if current user has permission
-	if hasPerm, err := permission.CurrentUserHasDeploymentList(ctx, r.ent, uuid.Nil); err != nil || !hasPerm {
-		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+func (r *queryResolver) Deployments(ctx context.Context, projectFilter []uuid.UUID, count int, offset *int) (*model.DeploymentPage, error) {
+	// Get the current user
+	currentUser, err := auth.ForContext(ctx)
+	if err != nil {
+		return nil, auth.AUTH_REQUIRED_GQL_ERROR
 	}
 
-	q := r.ent.Deployment.Query().Limit(count)
+	// Base query on all of current user's projects
+	baseQ := r.ent.Project.Query().Where(
+		project.HasMembersWith(user.IDEQ(currentUser.ID)),
+		project.HasGroupMembersWith(group.HasUsersWith(user.IDEQ(currentUser.ID))),
+	)
+	// Filter on project ID if requested
+	if len(projectFilter) > 0 {
+		baseQ = baseQ.Where(
+			project.IDIn(projectFilter...),
+		)
+	}
+	// Query deployments from projects
+	q := baseQ.QueryDeployments().Limit(count)
 	if offset != nil {
 		q = q.Offset(*offset)
 	}
@@ -1199,56 +1221,31 @@ func (r *queryResolver) Deployments(ctx context.Context, count int, offset *int)
 	}, nil
 }
 
-// MyDeployments is the resolver for the myDeployments field.
-func (r *queryResolver) MyDeployments(ctx context.Context, includeExpiredAndDestroyed bool, count int, offset *int) (*model.DeploymentPage, error) {
-	// Get the current authenticated user
-	currentUser, err := auth.ForContext(ctx)
-	if err != nil {
-		return nil, gqlerror.Errorf("failed to get user from context: %v", err)
-	}
-
-	// Query all deployments where current user is requester of the deployment
-	q := r.ent.Deployment.Query().Where(
-		deployment.HasRequesterWith(user.IDEQ(currentUser.ID)), // Where current user is requester
-	).
-		Limit(count).
-		Order(ent.Desc(deployment.FieldCreatedAt)) // Order by creation date newest to oldest
-	// Exclude expired and destroyed deployments by default
-	if !includeExpiredAndDestroyed {
-		q = q.Where(deployment.ExpiresAtGTE(time.Now()), deployment.StateNEQ(deployment.StateDestroyed))
-	}
-	if offset != nil {
-		q = q.Offset(*offset)
-	}
-	entDeployments, err := q.All(ctx)
-	if err != nil {
-		return nil, err
-	}
-	entDeploymentCount, err := r.ent.Deployment.Query().Where(
-		deployment.HasRequesterWith(user.IDEQ(currentUser.ID)), // Where current user is requester
-	).Count(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return &model.DeploymentPage{
-		Deployments: entDeployments,
-		Total:       entDeploymentCount,
-	}, nil
-}
-
 // Get a deployment (requires permission `x.x.deployments.x.get`)
 func (r *queryResolver) Deployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error) {
-	// Check if current user has permission
-	if hasPerm, err := permission.CurrentUserHasDeploymentGet(ctx, r.ent, id); err != nil || !hasPerm {
-		return nil, auth.PERMISSION_DENIED_GQL_ERROR
+	// Get the current user
+	currentUser, err := auth.ForContext(ctx)
+	if err != nil {
+		return nil, auth.AUTH_REQUIRED_GQL_ERROR
+	}
+
+	entDeployment, err := r.ent.Project.Query().Where(
+		project.HasMembersWith(user.IDEQ(currentUser.ID)),
+		project.HasGroupMembersWith(group.HasUsersWith(user.IDEQ(currentUser.ID))),
+	).QueryDeployments().Where(
+		deployment.IDEQ(id),
+	).Only(ctx)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to query deployment: %v", err)
 	}
 
 	// Set the last access time
-	if err := r.ent.Deployment.UpdateOneID(id).SetLastAccessed(time.Now()).Exec(ctx); err != nil {
+	entDeployment, err = entDeployment.Update().SetLastAccessed(time.Now()).Save(ctx)
+	if err != nil {
 		return nil, gqlerror.Errorf("failed to update last access time: %v", err)
 	}
 
-	return r.ent.Deployment.Get(ctx, id)
+	return entDeployment, nil
 }
 
 // SearchUsers is the resolver for the searchUsers field.
@@ -1362,6 +1359,14 @@ func (r *Resolver) GrantedPermission() generated.GrantedPermissionResolver {
 // Group returns generated.GroupResolver implementation.
 func (r *Resolver) Group() generated.GroupResolver { return &groupResolver{r} }
 
+// GroupMembership returns generated.GroupMembershipResolver implementation.
+func (r *Resolver) GroupMembership() generated.GroupMembershipResolver {
+	return &groupMembershipResolver{r}
+}
+
+// Membership returns generated.MembershipResolver implementation.
+func (r *Resolver) Membership() generated.MembershipResolver { return &membershipResolver{r} }
+
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
@@ -1385,6 +1390,8 @@ type deploymentResolver struct{ *Resolver }
 type deploymentNodeResolver struct{ *Resolver }
 type grantedPermissionResolver struct{ *Resolver }
 type groupResolver struct{ *Resolver }
+type groupMembershipResolver struct{ *Resolver }
+type membershipResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type projectResolver struct{ *Resolver }
 type providerResolver struct{ *Resolver }

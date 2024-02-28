@@ -16,6 +16,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+var templatesToExecute = map[string]string{
+	"actions_gen.graphqls.tmpl": "actions/actions_gen.graphqls",
+	"actions_gen.go.tmpl":       "actions/actions_gen.go",
+	"permissions_gen.go.tmpl":   "permissions_gen.go",
+}
+
 // see Go source code:
 // https://github.com/golang/go/blob/f57ebed35132d02e5cf016f324853217fb545e91/src/cmd/go/internal/modload/init.go#L1283
 func findModuleRoot(dir string) (roots string) {
@@ -67,71 +73,47 @@ func main() {
 		panic(fmt.Errorf("failed to unmarshal actions.yml file: %v", err))
 	}
 
-	// Parse in the actions_gen template file
-	actionsTemplatePath := path.Join(cwd, "generate", "actions_gen.go.tmpl")
-	t, err := template.New("actions_gen.go.tmpl").Funcs(templateFuncs).ParseFiles(actionsTemplatePath)
-	if err != nil {
-		panic(fmt.Errorf("failed to parse generate/actions_gen.go.tmpl: %v", err))
-	}
+	for templatePath, outputPath := range templatesToExecute {
+		// Parse in the template file
+		templateName := path.Base(templatePath)
+		templateAbsPath := path.Join(cwd, "generate", templatePath)
+		t, err := template.New(templateName).Funcs(templateFuncs).ParseFiles(templateAbsPath)
+		if err != nil {
+			panic(fmt.Errorf("failed to parse %s: %v", templatePath, err))
+		}
 
-	// Execute the template into memory
-	var actionsOutputBuffer bytes.Buffer
-	err = t.Execute(&actionsOutputBuffer, actionsMap)
-	if err != nil {
-		panic(fmt.Errorf("failed to execute actions template: %v", err))
-	}
+		// Execute the template into memory
+		var outputBuffer bytes.Buffer
+		err = t.Execute(&outputBuffer, actionsMap)
+		if err != nil {
+			panic(fmt.Errorf("failed to execute template: %v", err))
+		}
 
-	// Format the output before writing to file
-	actionsOutputBytes, err := format.Source(actionsOutputBuffer.Bytes())
-	if err != nil {
-		panic(fmt.Errorf("failed to execute gofmt on output: %v", err))
-	}
+		var outputBytes []byte
+		// If go file, format the output before writing to file
+		if path.Ext(outputPath) == ".go" {
+			outputBytes, err = format.Source(outputBuffer.Bytes())
+			if err != nil {
+				panic(fmt.Errorf("failed to execute gofmt on output: %v", err))
+			}
+		} else {
+			outputBytes = outputBuffer.Bytes()
+		}
 
-	// Create the output file (or truncate it)
-	actionsOutputPath := path.Join(cwd, "actions", "actions_gen.go")
-	actionsOutputFile, err := os.Create(actionsOutputPath)
-	if err != nil {
-		panic(fmt.Errorf("failed to create output file actions_gen.go: %v", err))
-	}
-	defer actionsOutputFile.Close()
+		// Create the output file (or truncate it)
+		outputAbsPath := path.Join(cwd, outputPath)
+		outputFile, err := os.Create(outputAbsPath)
+		if err != nil {
+			panic(fmt.Errorf("failed to create output file %s: %v", outputPath, err))
+		}
 
-	// Write the output
-	_, err = actionsOutputFile.Write(actionsOutputBytes)
-	if err != nil {
-		panic(fmt.Errorf("failed to write output to actions_gen.go: %v", err))
-	}
+		// Write the output
+		_, err = outputFile.Write(outputBytes)
+		if err != nil {
+			panic(fmt.Errorf("failed to write output to %s: %v", outputPath, err))
+		}
 
-	// Parse in the permissions_gen template file
-	permissionsTemplatePath := path.Join(cwd, "generate", "permissions_gen.go.tmpl")
-	t, err = template.New("permissions_gen.go.tmpl").Funcs(templateFuncs).ParseFiles(permissionsTemplatePath)
-	if err != nil {
-		panic(fmt.Errorf("failed to parse generate/permissions_gen.go.tmpl: %v", err))
-	}
-
-	// Execute the template into memory
-	var permissionsOutputBuffer bytes.Buffer
-	err = t.Execute(&permissionsOutputBuffer, actionsMap)
-	if err != nil {
-		panic(fmt.Errorf("failed to execute permissions template: %v", err))
-	}
-
-	// Format the output before writing to file
-	permissionsOutputBytes, err := format.Source(permissionsOutputBuffer.Bytes())
-	if err != nil {
-		panic(fmt.Errorf("failed to execute gofmt on output: %v", err))
-	}
-
-	// Create the output file (or truncate it)
-	permissionsOutputPath := path.Join(cwd, "permissions_gen.go")
-	permissionsOutputFile, err := os.Create(permissionsOutputPath)
-	if err != nil {
-		panic(fmt.Errorf("failed to create output file permissions_gen.go: %v", err))
-	}
-	defer actionsOutputFile.Close()
-
-	// Write the output
-	_, err = permissionsOutputFile.Write(permissionsOutputBytes)
-	if err != nil {
-		panic(fmt.Errorf("failed to write output to permissions_gen.go: %v", err))
+		// Close the output file
+		outputFile.Close()
 	}
 }

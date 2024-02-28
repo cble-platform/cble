@@ -50,9 +50,13 @@ type ProjectEdges struct {
 	Blueprints []*Blueprint `json:"blueprints,omitempty"`
 	// Deployments which belong to this project
 	Deployments []*Deployment `json:"deployments,omitempty"`
+	// Memberships holds the value of the memberships edge.
+	Memberships []*Membership `json:"memberships,omitempty"`
+	// GroupMemberships holds the value of the group_memberships edge.
+	GroupMemberships []*GroupMembership `json:"group_memberships,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [6]bool
 }
 
 // MembersOrErr returns the Members value or an error if the edge
@@ -89,6 +93,24 @@ func (e ProjectEdges) DeploymentsOrErr() ([]*Deployment, error) {
 		return e.Deployments, nil
 	}
 	return nil, &NotLoadedError{edge: "deployments"}
+}
+
+// MembershipsOrErr returns the Memberships value or an error if the edge
+// was not loaded in eager-loading.
+func (e ProjectEdges) MembershipsOrErr() ([]*Membership, error) {
+	if e.loadedTypes[4] {
+		return e.Memberships, nil
+	}
+	return nil, &NotLoadedError{edge: "memberships"}
+}
+
+// GroupMembershipsOrErr returns the GroupMemberships value or an error if the edge
+// was not loaded in eager-loading.
+func (e ProjectEdges) GroupMembershipsOrErr() ([]*GroupMembership, error) {
+	if e.loadedTypes[5] {
+		return e.GroupMemberships, nil
+	}
+	return nil, &NotLoadedError{edge: "group_memberships"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -204,6 +226,16 @@ func (pr *Project) QueryBlueprints() *BlueprintQuery {
 // QueryDeployments queries the "deployments" edge of the Project entity.
 func (pr *Project) QueryDeployments() *DeploymentQuery {
 	return NewProjectClient(pr.config).QueryDeployments(pr)
+}
+
+// QueryMemberships queries the "memberships" edge of the Project entity.
+func (pr *Project) QueryMemberships() *MembershipQuery {
+	return NewProjectClient(pr.config).QueryMemberships(pr)
+}
+
+// QueryGroupMemberships queries the "group_memberships" edge of the Project entity.
+func (pr *Project) QueryGroupMemberships() *GroupMembershipQuery {
+	return NewProjectClient(pr.config).QueryGroupMemberships(pr)
 }
 
 // Update returns a builder for updating this Project.

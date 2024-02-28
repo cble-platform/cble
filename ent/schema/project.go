@@ -38,8 +38,10 @@ func (Project) Fields() []ent.Field {
 func (Project) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("members", User.Type).
+			Through("memberships", Membership.Type).
 			Comment("Users who have access to this project"),
 		edge.To("group_members", Group.Type).
+			Through("group_memberships", GroupMembership.Type).
 			Comment("Groups who have access to this project"),
 		edge.From("blueprints", Blueprint.Type).
 			Ref("project").

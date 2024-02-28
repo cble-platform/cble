@@ -33,7 +33,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "user" package.
 	UsersInverseTable = "users"
 	// ProjectsTable is the table that holds the projects relation/edge. The primary key declared below.
-	ProjectsTable = "project_group_members"
+	ProjectsTable = "group_memberships"
 	// ProjectsInverseTable is the table name for the Project entity.
 	// It exists in this package in order to avoid circular dependency with the "project" package.
 	ProjectsInverseTable = "projects"

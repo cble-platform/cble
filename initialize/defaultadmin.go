@@ -8,6 +8,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/ent/grantedpermission"
 	"github.com/cble-platform/cble-backend/ent/group"
+	"github.com/cble-platform/cble-backend/ent/groupmembership"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/cble-platform/cble-backend/permission"
 	"github.com/google/uuid"
@@ -26,10 +27,28 @@ func InitDefaultAdminUserGroup(ctx context.Context, client *ent.Client, cbleConf
 		// If it doesn't exist, make it
 		cbleAdminGroup, err = client.Group.Create().
 			SetName(cbleConfig.Initialization.AdminGroup).
-			AddProjects(defaultProject).
 			Save(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to create default admin group: %v", err)
+		}
+	}
+
+	// Assign this group as admin on the default project
+	isDefaultProjectMember, err := client.GroupMembership.Query().Where(
+		groupmembership.ProjectID(defaultProject.ID),
+		groupmembership.GroupID(cbleAdminGroup.ID),
+	).Exist(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to query default project group membership: %v", err)
+	}
+	if !isDefaultProjectMember {
+		// Create the membership if not exists
+		err = client.GroupMembership.Create().
+			SetProject(defaultProject).
+			SetGroup(cbleAdminGroup).
+			Exec(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to create default project membership for default admin group: %v", err)
 		}
 	}
 

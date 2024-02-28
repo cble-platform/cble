@@ -22,6 +22,10 @@ type Tx struct {
 	GrantedPermission *GrantedPermissionClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
+	// GroupMembership is the client for interacting with the GroupMembership builders.
+	GroupMembership *GroupMembershipClient
+	// Membership is the client for interacting with the Membership builders.
+	Membership *MembershipClient
 	// Project is the client for interacting with the Project builders.
 	Project *ProjectClient
 	// Provider is the client for interacting with the Provider builders.
@@ -166,6 +170,8 @@ func (tx *Tx) init() {
 	tx.DeploymentNode = NewDeploymentNodeClient(tx.config)
 	tx.GrantedPermission = NewGrantedPermissionClient(tx.config)
 	tx.Group = NewGroupClient(tx.config)
+	tx.GroupMembership = NewGroupMembershipClient(tx.config)
+	tx.Membership = NewMembershipClient(tx.config)
 	tx.Project = NewProjectClient(tx.config)
 	tx.Provider = NewProviderClient(tx.config)
 	tx.Resource = NewResourceClient(tx.config)

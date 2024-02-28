@@ -13,22 +13,6 @@ import (
 
 type PermissionAction string
 
-// The following is an enum for use in the GraphQL Schema
-/*
-enum Action {
-{{- range $target, $actions := . }}
-{{- range $actions.Content }}
-	{{- if ne .LineComment "" }}
-	"""
-	{{ .LineComment | TrimCommentPrefix }}
-	"""
-	{{- end }}
-  {{ $target -}}_{{- .Value }}
-{{- end }}
-{{- end }}
-}
-*/
-
 const (
   {{- range $target, $actions := . }}
 	// -----------------------------------------------------------------

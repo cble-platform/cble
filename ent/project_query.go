@@ -14,6 +14,8 @@ import (
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/group"
+	"github.com/cble-platform/cble-backend/ent/groupmembership"
+	"github.com/cble-platform/cble-backend/ent/membership"
 	"github.com/cble-platform/cble-backend/ent/predicate"
 	"github.com/cble-platform/cble-backend/ent/project"
 	"github.com/cble-platform/cble-backend/ent/user"
@@ -23,14 +25,16 @@ import (
 // ProjectQuery is the builder for querying Project entities.
 type ProjectQuery struct {
 	config
-	ctx              *QueryContext
-	order            []project.OrderOption
-	inters           []Interceptor
-	predicates       []predicate.Project
-	withMembers      *UserQuery
-	withGroupMembers *GroupQuery
-	withBlueprints   *BlueprintQuery
-	withDeployments  *DeploymentQuery
+	ctx                  *QueryContext
+	order                []project.OrderOption
+	inters               []Interceptor
+	predicates           []predicate.Project
+	withMembers          *UserQuery
+	withGroupMembers     *GroupQuery
+	withBlueprints       *BlueprintQuery
+	withDeployments      *DeploymentQuery
+	withMemberships      *MembershipQuery
+	withGroupMemberships *GroupMembershipQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -148,6 +152,50 @@ func (pq *ProjectQuery) QueryDeployments() *DeploymentQuery {
 			sqlgraph.From(project.Table, project.FieldID, selector),
 			sqlgraph.To(deployment.Table, deployment.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, project.DeploymentsTable, project.DeploymentsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryMemberships chains the current query on the "memberships" edge.
+func (pq *ProjectQuery) QueryMemberships() *MembershipQuery {
+	query := (&MembershipClient{config: pq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(project.Table, project.FieldID, selector),
+			sqlgraph.To(membership.Table, membership.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, project.MembershipsTable, project.MembershipsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryGroupMemberships chains the current query on the "group_memberships" edge.
+func (pq *ProjectQuery) QueryGroupMemberships() *GroupMembershipQuery {
+	query := (&GroupMembershipClient{config: pq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(project.Table, project.FieldID, selector),
+			sqlgraph.To(groupmembership.Table, groupmembership.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, project.GroupMembershipsTable, project.GroupMembershipsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -342,15 +390,17 @@ func (pq *ProjectQuery) Clone() *ProjectQuery {
 		return nil
 	}
 	return &ProjectQuery{
-		config:           pq.config,
-		ctx:              pq.ctx.Clone(),
-		order:            append([]project.OrderOption{}, pq.order...),
-		inters:           append([]Interceptor{}, pq.inters...),
-		predicates:       append([]predicate.Project{}, pq.predicates...),
-		withMembers:      pq.withMembers.Clone(),
-		withGroupMembers: pq.withGroupMembers.Clone(),
-		withBlueprints:   pq.withBlueprints.Clone(),
-		withDeployments:  pq.withDeployments.Clone(),
+		config:               pq.config,
+		ctx:                  pq.ctx.Clone(),
+		order:                append([]project.OrderOption{}, pq.order...),
+		inters:               append([]Interceptor{}, pq.inters...),
+		predicates:           append([]predicate.Project{}, pq.predicates...),
+		withMembers:          pq.withMembers.Clone(),
+		withGroupMembers:     pq.withGroupMembers.Clone(),
+		withBlueprints:       pq.withBlueprints.Clone(),
+		withDeployments:      pq.withDeployments.Clone(),
+		withMemberships:      pq.withMemberships.Clone(),
+		withGroupMemberships: pq.withGroupMemberships.Clone(),
 		// clone intermediate query.
 		sql:  pq.sql.Clone(),
 		path: pq.path,
@@ -398,6 +448,28 @@ func (pq *ProjectQuery) WithDeployments(opts ...func(*DeploymentQuery)) *Project
 		opt(query)
 	}
 	pq.withDeployments = query
+	return pq
+}
+
+// WithMemberships tells the query-builder to eager-load the nodes that are connected to
+// the "memberships" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *ProjectQuery) WithMemberships(opts ...func(*MembershipQuery)) *ProjectQuery {
+	query := (&MembershipClient{config: pq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withMemberships = query
+	return pq
+}
+
+// WithGroupMemberships tells the query-builder to eager-load the nodes that are connected to
+// the "group_memberships" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *ProjectQuery) WithGroupMemberships(opts ...func(*GroupMembershipQuery)) *ProjectQuery {
+	query := (&GroupMembershipClient{config: pq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withGroupMemberships = query
 	return pq
 }
 
@@ -479,11 +551,13 @@ func (pq *ProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Proj
 	var (
 		nodes       = []*Project{}
 		_spec       = pq.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [6]bool{
 			pq.withMembers != nil,
 			pq.withGroupMembers != nil,
 			pq.withBlueprints != nil,
 			pq.withDeployments != nil,
+			pq.withMemberships != nil,
+			pq.withGroupMemberships != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -529,6 +603,20 @@ func (pq *ProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Proj
 		if err := pq.loadDeployments(ctx, query, nodes,
 			func(n *Project) { n.Edges.Deployments = []*Deployment{} },
 			func(n *Project, e *Deployment) { n.Edges.Deployments = append(n.Edges.Deployments, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := pq.withMemberships; query != nil {
+		if err := pq.loadMemberships(ctx, query, nodes,
+			func(n *Project) { n.Edges.Memberships = []*Membership{} },
+			func(n *Project, e *Membership) { n.Edges.Memberships = append(n.Edges.Memberships, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := pq.withGroupMemberships; query != nil {
+		if err := pq.loadGroupMemberships(ctx, query, nodes,
+			func(n *Project) { n.Edges.GroupMemberships = []*GroupMembership{} },
+			func(n *Project, e *GroupMembership) { n.Edges.GroupMemberships = append(n.Edges.GroupMemberships, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -714,6 +802,66 @@ func (pq *ProjectQuery) loadDeployments(ctx context.Context, query *DeploymentQu
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "deployment_project" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (pq *ProjectQuery) loadMemberships(ctx context.Context, query *MembershipQuery, nodes []*Project, init func(*Project), assign func(*Project, *Membership)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Project)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(membership.FieldProjectID)
+	}
+	query.Where(predicate.Membership(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(project.MembershipsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ProjectID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "project_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (pq *ProjectQuery) loadGroupMemberships(ctx context.Context, query *GroupMembershipQuery, nodes []*Project, init func(*Project), assign func(*Project, *GroupMembership)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Project)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(groupmembership.FieldProjectID)
+	}
+	query.Where(predicate.GroupMembership(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(project.GroupMembershipsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ProjectID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "project_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}
