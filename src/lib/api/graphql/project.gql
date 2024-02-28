@@ -1,0 +1,61 @@
+fragment ProjectFragment on Project {
+  id
+  createdAt
+  updatedAt
+  name
+  quotaCpu
+  quotaRam
+  quotaDisk
+  quotaNetwork
+  quotaRouter
+}
+
+query Projects($count: Int! = 10, $offset: Int) {
+  projects(count: $count, offset: $offset) {
+    projects {
+      ...ProjectFragment
+    }
+    total
+  }
+}
+
+query Project($id: ID!) {
+  project(id: $id) {
+    ...ProjectFragment
+  }
+}
+
+query SearchProject($search: String!) {
+  searchProjects(search: $search, count: 5) {
+    projects {
+      ...ProjectFragment
+    }
+    total
+  }
+}
+
+mutation CreateProject($input: ProjectInput!) {
+  createProject(input: $input) {
+    ...ProjectFragment
+  }
+}
+
+mutation UpdateProject($id: ID!, $input: ProjectInput!) {
+  updateProject(id: $id, input: $input) {
+    ...ProjectFragment
+  }
+}
+
+mutation DeleteProject($id: ID!) {
+  deleteProject(id: $id)
+}
+
+mutation UpdateProjectMembership(
+  $id: ID!
+  $users: [MembershipInput!]!
+  $groups: [GroupMembershipInput!]!
+) {
+  updateMembership(id: $id, users: $users, groups: $groups) {
+    ...ProjectFragment
+  }
+}

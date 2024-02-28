@@ -20,11 +20,6 @@ query ListPermissions($count: Int! = 10, $offset: Int) {
 }
 
 query NavPermissions {
-  listBlueprints: meHasPermission(
-    objectType: blueprint
-    objectID: null
-    action: blueprint_list
-  )
   listProviders: meHasPermission(
     objectType: provider
     objectID: null

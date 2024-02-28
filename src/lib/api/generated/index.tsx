@@ -15,7 +15,9 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean; }
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
+  GroupMembershipRole: { input: any; output: any; }
   Map: { input: any; output: any; }
+  MembershipRole: { input: any; output: any; }
   StrMap: { input: any; output: any; }
   Time: { input: any; output: any; }
   UUID: { input: any; output: any; }
@@ -23,34 +25,6 @@ export type Scalars = {
 };
 
 export enum Action {
-  /** Create blueprints (only compatible with wildcard ID *) */
-  BlueprintCreate = 'blueprint_create',
-  /** Delete a given blueprint */
-  BlueprintDelete = 'blueprint_delete',
-  /** Deploy a given blueprint */
-  BlueprintDeploy = 'blueprint_deploy',
-  /** Get a given blueprint */
-  BlueprintGet = 'blueprint_get',
-  /** List all blueprints (only compatible with wildcard ID *) */
-  BlueprintList = 'blueprint_list',
-  /** Update a given blueprint */
-  BlueprintUpdate = 'blueprint_update',
-  /** Get the console of resources in a given deployment */
-  DeploymentConsole = 'deployment_console',
-  /** Delete a given deployment */
-  DeploymentDelete = 'deployment_delete',
-  /** Destroy a given deployment */
-  DeploymentDestroy = 'deployment_destroy',
-  /** Get a given deployment */
-  DeploymentGet = 'deployment_get',
-  /** List all deployments (only compatible with wildcard ID *) */
-  DeploymentList = 'deployment_list',
-  /** Control the power state of resources in a given deployment */
-  DeploymentPower = 'deployment_power',
-  /** Redeploy a given deployment */
-  DeploymentRedeploy = 'deployment_redeploy',
-  /** Update a given deployment */
-  DeploymentUpdate = 'deployment_update',
   /** Create groups */
   GroupCreate = 'group_create',
   /** Delete a given group */
@@ -69,6 +43,16 @@ export enum Action {
   PermissionList = 'permission_list',
   /** Revoke permissions (only compatible with wildcard ID *) */
   PermissionRevoke = 'permission_revoke',
+  /** Create projects (only compatible with wildcard ID *) */
+  ProjectCreate = 'project_create',
+  /** Delete a given project */
+  ProjectDelete = 'project_delete',
+  /** List all projects (only compatible with wildcard ID *) */
+  ProjectList = 'project_list',
+  /** Update a given project */
+  ProjectUpdate = 'project_update',
+  /** Modify project memberships */
+  ProjectUpdateMembership = 'project_update_membership',
   /** Configure a given provider */
   ProviderConfigure = 'provider_configure',
   /** Create providers */
@@ -105,6 +89,7 @@ export type Blueprint = {
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
+  project: Project;
   provider: Provider;
   resources: Array<Resource>;
   updatedAt: Scalars['Time']['output'];
@@ -115,6 +100,7 @@ export type BlueprintInput = {
   blueprintTemplate: Scalars['String']['input'];
   description: Scalars['String']['input'];
   name: Scalars['String']['input'];
+  projectId: Scalars['ID']['input'];
   providerId: Scalars['ID']['input'];
   variableTypes: Scalars['VarTypeMap']['input'];
 };
@@ -217,45 +203,75 @@ export type GroupInput = {
   name: Scalars['String']['input'];
 };
 
+export type GroupMembership = {
+  __typename?: 'GroupMembership';
+  group: Group;
+  id: Scalars['ID']['output'];
+  project: Project;
+  role: Scalars['GroupMembershipRole']['output'];
+};
+
+export type GroupMembershipInput = {
+  groupID: Scalars['ID']['input'];
+  role: Scalars['GroupMembershipRole']['input'];
+};
+
 export type GroupPage = {
   __typename?: 'GroupPage';
   groups: Array<Group>;
   total: Scalars['Int']['output'];
 };
 
+export type Membership = {
+  __typename?: 'Membership';
+  id: Scalars['ID']['output'];
+  project: Project;
+  role: Scalars['MembershipRole']['output'];
+  user: User;
+};
+
+export type MembershipInput = {
+  role: Scalars['MembershipRole']['input'];
+  userID: Scalars['ID']['input'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   /** Applies the stored configuration to the provider (requires permission `x.x.providers.x.configure`) */
   configureProvider: Provider;
-  /** Create a blueprint (requires permission `x.x.blueprints.*.create`) */
+  /** Create a blueprint (requires `Developer` role on project) */
   createBlueprint: Blueprint;
   /** Create a group (requires permission `x.x.group.x.create`) */
   createGroup: Group;
+  /** Create a project (requires the permission `x.x.project.*.create`) */
+  createProject: Project;
   /** Create a provider (requires permission `x.x.providers.*.create`) */
   createProvider: Provider;
   /** Create a user (requires permission `x.x.users.*.create`) */
   createUser: User;
-  /** Delete a blueprint (requires permission `x.x.blueprints.x.delete`) */
+  /** Delete a blueprint (requires `Developer` role on project) */
   deleteBlueprint: Scalars['Boolean']['output'];
   /** Delete a group (requires permission `x.x.group.x.delete`) */
   deleteGroup: Scalars['Boolean']['output'];
+  /** Delete a project (requires the permission `x.x.project.x.delete`) */
+  deleteProject: Scalars['Boolean']['output'];
   /** Delete a provider (requires permission `x.x.providers.x.delete`) */
   deleteProvider: Scalars['Boolean']['output'];
   /** Delete a user (requires permission `x.x.users.x.delete`) */
   deleteUser: Scalars['Boolean']['output'];
-  /** Deploy a blueprint (requires permission `x.x.blueprints.x.deploy`) */
+  /** Deploy a blueprint (requires `Deployer` role on project) */
   deployBlueprint: Deployment;
-  /** Control the power state of a deployment node */
+  /** Control the power state of a deployment node (requires `Viewer` role on project) */
   deploymentNodePower: Scalars['Boolean']['output'];
-  /** Control the power state of a deployment */
+  /** Control the power state of a deployment (requires `Viewer` role on project) */
   deploymentPower: Scalars['Boolean']['output'];
-  /** Destroy a deployment (requires permission `x.x.deployments.x.destroy`) */
+  /** Destroy a deployment (requires `Deployer` role on project) */
   destroyDeployment: Deployment;
   /** Grant a permission (requires permission `x.x.permission.*.grant`) */
   grantPermission: GrantedPermission;
   /** Load a provider to connect it to CBLE (requires permission `x.x.providers.x.load`) */
   loadProvider: Provider;
-  /** Redeploy nodes within a deployment (requires permission `x.x.deployments.x.redeploy`) */
+  /** Redeploy nodes within a deployment (requires `Deployer` role on project) */
   redeployDeployment: Deployment;
   /** Revoke a permission (requires permission `x.x.permission.*.revoke`) */
   revokePermission: Scalars['Boolean']['output'];
@@ -263,12 +279,16 @@ export type Mutation = {
   selfChangePassword: Scalars['Boolean']['output'];
   /** Unload a provider to disconnect it from CBLE (requires permission `x.x.providers.x.unload`) */
   unloadProvider: Provider;
-  /** Update a blueprint (requires permission `x.x.blueprints.x.update`) */
+  /** Update a blueprint (requires `Developer` role on project) */
   updateBlueprint: Blueprint;
-  /** Update a deployment (requires permission `x.x.deployments.x.update`) */
+  /** Update a deployment (requires `Deployer` role on project) */
   updateDeployment: Deployment;
   /** Update a group (requires permission `x.x.group.x.update`) */
   updateGroup: Group;
+  /** Update membership to project (requires the permission `x.x.project.x.update_membership`) */
+  updateMembership: Project;
+  /** Update a project (requires the permission `x.x.project.x.update`) */
+  updateProject: Project;
   /** Update a provider (requires permission `x.x.providers.x.update`) */
   updateProvider: Provider;
   /** Update a user (requires permission `x.x.users.x.update`) */
@@ -288,6 +308,11 @@ export type MutationCreateBlueprintArgs = {
 
 export type MutationCreateGroupArgs = {
   input: GroupInput;
+};
+
+
+export type MutationCreateProjectArgs = {
+  input: ProjectInput;
 };
 
 
@@ -311,6 +336,11 @@ export type MutationDeleteGroupArgs = {
 };
 
 
+export type MutationDeleteProjectArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationDeleteProviderArgs = {
   id: Scalars['ID']['input'];
 };
@@ -322,7 +352,8 @@ export type MutationDeleteUserArgs = {
 
 
 export type MutationDeployBlueprintArgs = {
-  id: Scalars['ID']['input'];
+  blueprintId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
   templateVars: Scalars['StrMap']['input'];
 };
 
@@ -402,6 +433,19 @@ export type MutationUpdateGroupArgs = {
 };
 
 
+export type MutationUpdateMembershipArgs = {
+  groups: Array<GroupMembershipInput>;
+  id: Scalars['ID']['input'];
+  users: Array<MembershipInput>;
+};
+
+
+export type MutationUpdateProjectArgs = {
+  id: Scalars['ID']['input'];
+  input: ProjectInput;
+};
+
+
 export type MutationUpdateProviderArgs = {
   id: Scalars['ID']['input'];
   input: ProviderInput;
@@ -427,6 +471,43 @@ export enum PowerState {
   On = 'on',
   Reset = 'reset'
 }
+
+export type Project = {
+  __typename?: 'Project';
+  blueprints: Array<Blueprint>;
+  createdAt: Scalars['Time']['output'];
+  deployments: Array<Deployment>;
+  groupMemberships: Array<GroupMembership>;
+  id: Scalars['ID']['output'];
+  memberships: Array<Membership>;
+  name: Scalars['String']['output'];
+  quotaCpu: Scalars['Int']['output'];
+  quotaDisk: Scalars['Int']['output'];
+  quotaNetwork: Scalars['Int']['output'];
+  quotaRam: Scalars['Int']['output'];
+  quotaRouter: Scalars['Int']['output'];
+  updatedAt: Scalars['Time']['output'];
+};
+
+export type ProjectInput = {
+  name: Scalars['String']['input'];
+  /** Maximum number of CPU cores in the project (set to -1 for unlimited) */
+  quotaCpu?: InputMaybe<Scalars['Int']['input']>;
+  /** Maximum MiB of Disk in the project (set to -1 for unlimited) */
+  quotaDisk?: InputMaybe<Scalars['Int']['input']>;
+  /** Maximum number of networks in the project (set to -1 for unlimited) */
+  quotaNetwork?: InputMaybe<Scalars['Int']['input']>;
+  /** Maximum MiB of RAM in the project (set to -1 for unlimited) */
+  quotaRam?: InputMaybe<Scalars['Int']['input']>;
+  /** Maximum number of routers in the project (set to -1 for unlimited) */
+  quotaRouter?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type ProjectPage = {
+  __typename?: 'ProjectPage';
+  projects: Array<Project>;
+  total: Scalars['Int']['output'];
+};
 
 export type Provider = {
   __typename?: 'Provider';
@@ -456,12 +537,10 @@ export type ProviderPage = {
 
 export type Query = {
   __typename?: 'Query';
-  /** Get a blueprint (requires permission `x.x.blueprints.x.get`) */
+  /** Get a blueprint */
   blueprint: Blueprint;
-  /** List blueprints (requires permission `x.x.blueprints.*.list`) */
+  /** List all blueprints from users projects */
   blueprints: BlueprintPage;
-  /** List all blueprints user has `blueprint.x.deploy` permission for */
-  deployableBlueprints: BlueprintPage;
   /** Get a deployment (requires permission `x.x.deployments.x.get`) */
   deployment: Deployment;
   /** List deployments (requires permission `x.x.deployments.*.list`) */
@@ -474,18 +553,22 @@ export type Query = {
   me: User;
   /** Retrieves if the current user has a given permission */
   meHasPermission: Scalars['Boolean']['output'];
-  /** List deployments user is the requester of */
-  myDeployments: DeploymentPage;
   /** Get a permission (requires permission `x.x.permission.x.get`) */
   permission: GrantedPermission;
   /** List permissions (requires permission `x.x.permission.*.list`) */
   permissions: GrantedPermissionPage;
+  /** Get a project (requires permission `x.x.projects.x.get`) */
+  project: Project;
+  /** List projects (requires permission `x.x.projects.*.list`) */
+  projects: ProjectPage;
   /** Get a provider (requires permission `x.x.providers.x.get`) */
   provider: Provider;
   /** List providers (requires permission `x.x.providers.*.list`) */
   providers: ProviderPage;
   /** Search groups */
   searchGroups: GroupPage;
+  /** Search projects (requires `Developer` or more) */
+  searchProjects: ProjectPage;
   /** Search users */
   searchUsers: UserPage;
   /** Get a user (requires permission `x.x.users.x.get`) */
@@ -503,12 +586,7 @@ export type QueryBlueprintArgs = {
 export type QueryBlueprintsArgs = {
   count?: Scalars['Int']['input'];
   offset?: InputMaybe<Scalars['Int']['input']>;
-};
-
-
-export type QueryDeployableBlueprintsArgs = {
-  count?: Scalars['Int']['input'];
-  offset?: InputMaybe<Scalars['Int']['input']>;
+  projectFilter?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
 
@@ -519,7 +597,9 @@ export type QueryDeploymentArgs = {
 
 export type QueryDeploymentsArgs = {
   count?: Scalars['Int']['input'];
+  includeExpiredAndDestroyed?: Scalars['Boolean']['input'];
   offset?: InputMaybe<Scalars['Int']['input']>;
+  projectFilter?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
 
@@ -541,19 +621,23 @@ export type QueryMeHasPermissionArgs = {
 };
 
 
-export type QueryMyDeploymentsArgs = {
-  count?: Scalars['Int']['input'];
-  includeExpiredAndDestroyed?: Scalars['Boolean']['input'];
-  offset?: InputMaybe<Scalars['Int']['input']>;
-};
-
-
 export type QueryPermissionArgs = {
   id: Scalars['ID']['input'];
 };
 
 
 export type QueryPermissionsArgs = {
+  count?: Scalars['Int']['input'];
+  offset?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryProjectArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryProjectsArgs = {
   count?: Scalars['Int']['input'];
   offset?: InputMaybe<Scalars['Int']['input']>;
 };
@@ -571,6 +655,13 @@ export type QueryProvidersArgs = {
 
 
 export type QuerySearchGroupsArgs = {
+  count?: Scalars['Int']['input'];
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  search: Scalars['String']['input'];
+};
+
+
+export type QuerySearchProjectsArgs = {
   count?: Scalars['Int']['input'];
   offset?: InputMaybe<Scalars['Int']['input']>;
   search: Scalars['String']['input'];
@@ -651,28 +742,28 @@ export type UserPage = {
   users: Array<User>;
 };
 
-export type BlueprintFragementFragment = { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> };
+export type BlueprintFragementFragment = { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, project: { __typename?: 'Project', id: string, name: string }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> };
 
 export type ResourceFragmentFragment = { __typename?: 'Resource', id: string, createdAt: any, updatedAt: any, key: string, object: string, features: { __typename?: 'ResourceFeatures', power: boolean, console: boolean } };
 
 export type BlueprintsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type BlueprintsQuery = { __typename?: 'Query', deployableBlueprints: { __typename?: 'BlueprintPage', total: number, blueprints: Array<{ __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }> } };
+export type BlueprintsQuery = { __typename?: 'Query', blueprints: { __typename?: 'BlueprintPage', total: number, blueprints: Array<{ __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, project: { __typename?: 'Project', id: string, name: string }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }> } };
 
 export type GetBlueprintQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetBlueprintQuery = { __typename?: 'Query', blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
+export type GetBlueprintQuery = { __typename?: 'Query', blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, project: { __typename?: 'Project', id: string, name: string }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
 
 export type CreateBlueprintMutationVariables = Exact<{
   input: BlueprintInput;
 }>;
 
 
-export type CreateBlueprintMutation = { __typename?: 'Mutation', createBlueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
+export type CreateBlueprintMutation = { __typename?: 'Mutation', createBlueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, project: { __typename?: 'Project', id: string, name: string }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
 
 export type UpdateBlueprintMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -680,10 +771,11 @@ export type UpdateBlueprintMutationVariables = Exact<{
 }>;
 
 
-export type UpdateBlueprintMutation = { __typename?: 'Mutation', updateBlueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
+export type UpdateBlueprintMutation = { __typename?: 'Mutation', updateBlueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, project: { __typename?: 'Project', id: string, name: string }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
 
 export type DeployBlueprintMutationVariables = Exact<{
-  id: Scalars['ID']['input'];
+  blueprintId: Scalars['ID']['input'];
+  projectId: Scalars['ID']['input'];
   templateVars: Scalars['StrMap']['input'];
 }>;
 
@@ -699,14 +791,14 @@ export type ListMyDeploymentsQueryVariables = Exact<{
 }>;
 
 
-export type ListMyDeploymentsQuery = { __typename?: 'Query', myDeployments: { __typename?: 'DeploymentPage', total: number, deployments: Array<{ __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, description: string, state: DeploymentState, templateVars: any, expiresAt: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } }> } };
+export type ListMyDeploymentsQuery = { __typename?: 'Query', deployments: { __typename?: 'DeploymentPage', total: number, deployments: Array<{ __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, description: string, state: DeploymentState, templateVars: any, expiresAt: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, project: { __typename?: 'Project', id: string, name: string }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } }> } };
 
 export type GetDeploymentQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetDeploymentQuery = { __typename?: 'Query', deployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, description: string, state: DeploymentState, templateVars: any, expiresAt: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string }, deploymentNodes: Array<{ __typename?: 'DeploymentNode', id: string, createdAt: any, updatedAt: any, state: DeploymentNodeState, vars?: any | null, resource: { __typename?: 'Resource', id: string, createdAt: any, updatedAt: any, key: string, object: string, features: { __typename?: 'ResourceFeatures', power: boolean, console: boolean } }, nextNodes: Array<{ __typename?: 'DeploymentNode', id: string }> }> } };
+export type GetDeploymentQuery = { __typename?: 'Query', deployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, description: string, state: DeploymentState, templateVars: any, expiresAt: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, project: { __typename?: 'Project', id: string, name: string }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string }, deploymentNodes: Array<{ __typename?: 'DeploymentNode', id: string, createdAt: any, updatedAt: any, state: DeploymentNodeState, vars?: any | null, resource: { __typename?: 'Resource', id: string, createdAt: any, updatedAt: any, key: string, object: string, features: { __typename?: 'ResourceFeatures', power: boolean, console: boolean } }, nextNodes: Array<{ __typename?: 'DeploymentNode', id: string }> }> } };
 
 export type UpdateDeploymentMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -766,7 +858,7 @@ export type ListPermissionsQuery = { __typename?: 'Query', permissions: { __type
 export type NavPermissionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type NavPermissionsQuery = { __typename?: 'Query', listBlueprints: boolean, listProviders: boolean, listPermissions: boolean };
+export type NavPermissionsQuery = { __typename?: 'Query', listProviders: boolean, listPermissions: boolean };
 
 export type GrantPermissionMutationVariables = Exact<{
   subjectType: SubjectType;
@@ -789,6 +881,61 @@ export type RevokePermissionMutationVariables = Exact<{
 
 
 export type RevokePermissionMutation = { __typename?: 'Mutation', revokePermission: boolean };
+
+export type ProjectFragmentFragment = { __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, quotaRam: number, quotaDisk: number, quotaNetwork: number, quotaRouter: number };
+
+export type ProjectsQueryVariables = Exact<{
+  count?: Scalars['Int']['input'];
+  offset?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type ProjectsQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectPage', total: number, projects: Array<{ __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, quotaRam: number, quotaDisk: number, quotaNetwork: number, quotaRouter: number }> } };
+
+export type ProjectQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ProjectQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, quotaRam: number, quotaDisk: number, quotaNetwork: number, quotaRouter: number } };
+
+export type SearchProjectQueryVariables = Exact<{
+  search: Scalars['String']['input'];
+}>;
+
+
+export type SearchProjectQuery = { __typename?: 'Query', searchProjects: { __typename?: 'ProjectPage', total: number, projects: Array<{ __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, quotaRam: number, quotaDisk: number, quotaNetwork: number, quotaRouter: number }> } };
+
+export type CreateProjectMutationVariables = Exact<{
+  input: ProjectInput;
+}>;
+
+
+export type CreateProjectMutation = { __typename?: 'Mutation', createProject: { __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, quotaRam: number, quotaDisk: number, quotaNetwork: number, quotaRouter: number } };
+
+export type UpdateProjectMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: ProjectInput;
+}>;
+
+
+export type UpdateProjectMutation = { __typename?: 'Mutation', updateProject: { __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, quotaRam: number, quotaDisk: number, quotaNetwork: number, quotaRouter: number } };
+
+export type DeleteProjectMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteProjectMutation = { __typename?: 'Mutation', deleteProject: boolean };
+
+export type UpdateProjectMembershipMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  users: Array<MembershipInput> | MembershipInput;
+  groups: Array<GroupMembershipInput> | GroupMembershipInput;
+}>;
+
+
+export type UpdateProjectMembershipMutation = { __typename?: 'Mutation', updateMembership: { __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, quotaRam: number, quotaDisk: number, quotaNetwork: number, quotaRouter: number } };
 
 export type ProviderFragmentFragment = { __typename?: 'Provider', id: string, createdAt: any, updatedAt: any, displayName: string, configBytes: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean };
 
@@ -882,6 +1029,10 @@ export const BlueprintFragementFragmentDoc = gql`
     displayName
     isLoaded
   }
+  project {
+    id
+    name
+  }
   deployments {
     id
   }
@@ -948,6 +1099,19 @@ export const PermissionFieldsFragmentDoc = gql`
   displayString
 }
     `;
+export const ProjectFragmentFragmentDoc = gql`
+    fragment ProjectFragment on Project {
+  id
+  createdAt
+  updatedAt
+  name
+  quotaCpu
+  quotaRam
+  quotaDisk
+  quotaNetwork
+  quotaRouter
+}
+    `;
 export const ProviderFragmentFragmentDoc = gql`
     fragment ProviderFragment on Provider {
   id
@@ -973,7 +1137,7 @@ export const UserFragmentFragmentDoc = gql`
     `;
 export const BlueprintsDocument = gql`
     query Blueprints {
-  deployableBlueprints {
+  blueprints {
     blueprints {
       ...BlueprintFragement
     }
@@ -1121,8 +1285,12 @@ export type UpdateBlueprintMutationHookResult = ReturnType<typeof useUpdateBluep
 export type UpdateBlueprintMutationResult = Apollo.MutationResult<UpdateBlueprintMutation>;
 export type UpdateBlueprintMutationOptions = Apollo.BaseMutationOptions<UpdateBlueprintMutation, UpdateBlueprintMutationVariables>;
 export const DeployBlueprintDocument = gql`
-    mutation DeployBlueprint($id: ID!, $templateVars: StrMap!) {
-  deployBlueprint(id: $id, templateVars: $templateVars) {
+    mutation DeployBlueprint($blueprintId: ID!, $projectId: ID!, $templateVars: StrMap!) {
+  deployBlueprint(
+    blueprintId: $blueprintId
+    projectId: $projectId
+    templateVars: $templateVars
+  ) {
     ...DeploymentFragment
   }
 }
@@ -1142,7 +1310,8 @@ export type DeployBlueprintMutationFn = Apollo.MutationFunction<DeployBlueprintM
  * @example
  * const [deployBlueprintMutation, { data, loading, error }] = useDeployBlueprintMutation({
  *   variables: {
- *      id: // value for 'id'
+ *      blueprintId: // value for 'blueprintId'
+ *      projectId: // value for 'projectId'
  *      templateVars: // value for 'templateVars'
  *   },
  * });
@@ -1156,7 +1325,7 @@ export type DeployBlueprintMutationResult = Apollo.MutationResult<DeployBlueprin
 export type DeployBlueprintMutationOptions = Apollo.BaseMutationOptions<DeployBlueprintMutation, DeployBlueprintMutationVariables>;
 export const ListMyDeploymentsDocument = gql`
     query ListMyDeployments($includeExpiredAndDestroyed: Boolean = false) {
-  myDeployments(includeExpiredAndDestroyed: $includeExpiredAndDestroyed) {
+  deployments(includeExpiredAndDestroyed: $includeExpiredAndDestroyed) {
     deployments {
       ...DeploymentFragment
       blueprint {
@@ -1518,11 +1687,6 @@ export type ListPermissionsSuspenseQueryHookResult = ReturnType<typeof useListPe
 export type ListPermissionsQueryResult = Apollo.QueryResult<ListPermissionsQuery, ListPermissionsQueryVariables>;
 export const NavPermissionsDocument = gql`
     query NavPermissions {
-  listBlueprints: meHasPermission(
-    objectType: blueprint
-    objectID: null
-    action: blueprint_list
-  )
   listProviders: meHasPermission(
     objectType: provider
     objectID: null
@@ -1652,6 +1816,266 @@ export function useRevokePermissionMutation(baseOptions?: Apollo.MutationHookOpt
 export type RevokePermissionMutationHookResult = ReturnType<typeof useRevokePermissionMutation>;
 export type RevokePermissionMutationResult = Apollo.MutationResult<RevokePermissionMutation>;
 export type RevokePermissionMutationOptions = Apollo.BaseMutationOptions<RevokePermissionMutation, RevokePermissionMutationVariables>;
+export const ProjectsDocument = gql`
+    query Projects($count: Int! = 10, $offset: Int) {
+  projects(count: $count, offset: $offset) {
+    projects {
+      ...ProjectFragment
+    }
+    total
+  }
+}
+    ${ProjectFragmentFragmentDoc}`;
+
+/**
+ * __useProjectsQuery__
+ *
+ * To run a query within a React component, call `useProjectsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useProjectsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useProjectsQuery({
+ *   variables: {
+ *      count: // value for 'count'
+ *      offset: // value for 'offset'
+ *   },
+ * });
+ */
+export function useProjectsQuery(baseOptions?: Apollo.QueryHookOptions<ProjectsQuery, ProjectsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<ProjectsQuery, ProjectsQueryVariables>(ProjectsDocument, options);
+      }
+export function useProjectsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ProjectsQuery, ProjectsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<ProjectsQuery, ProjectsQueryVariables>(ProjectsDocument, options);
+        }
+export function useProjectsSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<ProjectsQuery, ProjectsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<ProjectsQuery, ProjectsQueryVariables>(ProjectsDocument, options);
+        }
+export type ProjectsQueryHookResult = ReturnType<typeof useProjectsQuery>;
+export type ProjectsLazyQueryHookResult = ReturnType<typeof useProjectsLazyQuery>;
+export type ProjectsSuspenseQueryHookResult = ReturnType<typeof useProjectsSuspenseQuery>;
+export type ProjectsQueryResult = Apollo.QueryResult<ProjectsQuery, ProjectsQueryVariables>;
+export const ProjectDocument = gql`
+    query Project($id: ID!) {
+  project(id: $id) {
+    ...ProjectFragment
+  }
+}
+    ${ProjectFragmentFragmentDoc}`;
+
+/**
+ * __useProjectQuery__
+ *
+ * To run a query within a React component, call `useProjectQuery` and pass it any options that fit your needs.
+ * When your component renders, `useProjectQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useProjectQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useProjectQuery(baseOptions: Apollo.QueryHookOptions<ProjectQuery, ProjectQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<ProjectQuery, ProjectQueryVariables>(ProjectDocument, options);
+      }
+export function useProjectLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<ProjectQuery, ProjectQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<ProjectQuery, ProjectQueryVariables>(ProjectDocument, options);
+        }
+export function useProjectSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<ProjectQuery, ProjectQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<ProjectQuery, ProjectQueryVariables>(ProjectDocument, options);
+        }
+export type ProjectQueryHookResult = ReturnType<typeof useProjectQuery>;
+export type ProjectLazyQueryHookResult = ReturnType<typeof useProjectLazyQuery>;
+export type ProjectSuspenseQueryHookResult = ReturnType<typeof useProjectSuspenseQuery>;
+export type ProjectQueryResult = Apollo.QueryResult<ProjectQuery, ProjectQueryVariables>;
+export const SearchProjectDocument = gql`
+    query SearchProject($search: String!) {
+  searchProjects(search: $search, count: 5) {
+    projects {
+      ...ProjectFragment
+    }
+    total
+  }
+}
+    ${ProjectFragmentFragmentDoc}`;
+
+/**
+ * __useSearchProjectQuery__
+ *
+ * To run a query within a React component, call `useSearchProjectQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSearchProjectQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSearchProjectQuery({
+ *   variables: {
+ *      search: // value for 'search'
+ *   },
+ * });
+ */
+export function useSearchProjectQuery(baseOptions: Apollo.QueryHookOptions<SearchProjectQuery, SearchProjectQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<SearchProjectQuery, SearchProjectQueryVariables>(SearchProjectDocument, options);
+      }
+export function useSearchProjectLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<SearchProjectQuery, SearchProjectQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<SearchProjectQuery, SearchProjectQueryVariables>(SearchProjectDocument, options);
+        }
+export function useSearchProjectSuspenseQuery(baseOptions?: Apollo.SuspenseQueryHookOptions<SearchProjectQuery, SearchProjectQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<SearchProjectQuery, SearchProjectQueryVariables>(SearchProjectDocument, options);
+        }
+export type SearchProjectQueryHookResult = ReturnType<typeof useSearchProjectQuery>;
+export type SearchProjectLazyQueryHookResult = ReturnType<typeof useSearchProjectLazyQuery>;
+export type SearchProjectSuspenseQueryHookResult = ReturnType<typeof useSearchProjectSuspenseQuery>;
+export type SearchProjectQueryResult = Apollo.QueryResult<SearchProjectQuery, SearchProjectQueryVariables>;
+export const CreateProjectDocument = gql`
+    mutation CreateProject($input: ProjectInput!) {
+  createProject(input: $input) {
+    ...ProjectFragment
+  }
+}
+    ${ProjectFragmentFragmentDoc}`;
+export type CreateProjectMutationFn = Apollo.MutationFunction<CreateProjectMutation, CreateProjectMutationVariables>;
+
+/**
+ * __useCreateProjectMutation__
+ *
+ * To run a mutation, you first call `useCreateProjectMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateProjectMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createProjectMutation, { data, loading, error }] = useCreateProjectMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateProjectMutation(baseOptions?: Apollo.MutationHookOptions<CreateProjectMutation, CreateProjectMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateProjectMutation, CreateProjectMutationVariables>(CreateProjectDocument, options);
+      }
+export type CreateProjectMutationHookResult = ReturnType<typeof useCreateProjectMutation>;
+export type CreateProjectMutationResult = Apollo.MutationResult<CreateProjectMutation>;
+export type CreateProjectMutationOptions = Apollo.BaseMutationOptions<CreateProjectMutation, CreateProjectMutationVariables>;
+export const UpdateProjectDocument = gql`
+    mutation UpdateProject($id: ID!, $input: ProjectInput!) {
+  updateProject(id: $id, input: $input) {
+    ...ProjectFragment
+  }
+}
+    ${ProjectFragmentFragmentDoc}`;
+export type UpdateProjectMutationFn = Apollo.MutationFunction<UpdateProjectMutation, UpdateProjectMutationVariables>;
+
+/**
+ * __useUpdateProjectMutation__
+ *
+ * To run a mutation, you first call `useUpdateProjectMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateProjectMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateProjectMutation, { data, loading, error }] = useUpdateProjectMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateProjectMutation(baseOptions?: Apollo.MutationHookOptions<UpdateProjectMutation, UpdateProjectMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdateProjectMutation, UpdateProjectMutationVariables>(UpdateProjectDocument, options);
+      }
+export type UpdateProjectMutationHookResult = ReturnType<typeof useUpdateProjectMutation>;
+export type UpdateProjectMutationResult = Apollo.MutationResult<UpdateProjectMutation>;
+export type UpdateProjectMutationOptions = Apollo.BaseMutationOptions<UpdateProjectMutation, UpdateProjectMutationVariables>;
+export const DeleteProjectDocument = gql`
+    mutation DeleteProject($id: ID!) {
+  deleteProject(id: $id)
+}
+    `;
+export type DeleteProjectMutationFn = Apollo.MutationFunction<DeleteProjectMutation, DeleteProjectMutationVariables>;
+
+/**
+ * __useDeleteProjectMutation__
+ *
+ * To run a mutation, you first call `useDeleteProjectMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteProjectMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteProjectMutation, { data, loading, error }] = useDeleteProjectMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteProjectMutation(baseOptions?: Apollo.MutationHookOptions<DeleteProjectMutation, DeleteProjectMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<DeleteProjectMutation, DeleteProjectMutationVariables>(DeleteProjectDocument, options);
+      }
+export type DeleteProjectMutationHookResult = ReturnType<typeof useDeleteProjectMutation>;
+export type DeleteProjectMutationResult = Apollo.MutationResult<DeleteProjectMutation>;
+export type DeleteProjectMutationOptions = Apollo.BaseMutationOptions<DeleteProjectMutation, DeleteProjectMutationVariables>;
+export const UpdateProjectMembershipDocument = gql`
+    mutation UpdateProjectMembership($id: ID!, $users: [MembershipInput!]!, $groups: [GroupMembershipInput!]!) {
+  updateMembership(id: $id, users: $users, groups: $groups) {
+    ...ProjectFragment
+  }
+}
+    ${ProjectFragmentFragmentDoc}`;
+export type UpdateProjectMembershipMutationFn = Apollo.MutationFunction<UpdateProjectMembershipMutation, UpdateProjectMembershipMutationVariables>;
+
+/**
+ * __useUpdateProjectMembershipMutation__
+ *
+ * To run a mutation, you first call `useUpdateProjectMembershipMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateProjectMembershipMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateProjectMembershipMutation, { data, loading, error }] = useUpdateProjectMembershipMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      users: // value for 'users'
+ *      groups: // value for 'groups'
+ *   },
+ * });
+ */
+export function useUpdateProjectMembershipMutation(baseOptions?: Apollo.MutationHookOptions<UpdateProjectMembershipMutation, UpdateProjectMembershipMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdateProjectMembershipMutation, UpdateProjectMembershipMutationVariables>(UpdateProjectMembershipDocument, options);
+      }
+export type UpdateProjectMembershipMutationHookResult = ReturnType<typeof useUpdateProjectMembershipMutation>;
+export type UpdateProjectMembershipMutationResult = Apollo.MutationResult<UpdateProjectMembershipMutation>;
+export type UpdateProjectMembershipMutationOptions = Apollo.BaseMutationOptions<UpdateProjectMembershipMutation, UpdateProjectMembershipMutationVariables>;
 export const ListProvidersDocument = gql`
     query ListProviders {
   providers {

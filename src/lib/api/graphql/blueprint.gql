@@ -11,6 +11,10 @@ fragment BlueprintFragement on Blueprint {
     displayName
     isLoaded
   }
+  project {
+    id
+    name
+  }
   deployments {
     id
   }
@@ -29,7 +33,7 @@ fragment ResourceFragment on Resource {
 }
 
 query Blueprints {
-  deployableBlueprints {
+  blueprints {
     blueprints {
       ...BlueprintFragement
     }
@@ -55,8 +59,16 @@ mutation UpdateBlueprint($id: ID!, $input: BlueprintInput!) {
   }
 }
 
-mutation DeployBlueprint($id: ID!, $templateVars: StrMap!) {
-  deployBlueprint(id: $id, templateVars: $templateVars) {
+mutation DeployBlueprint(
+  $blueprintId: ID!
+  $projectId: ID!
+  $templateVars: StrMap!
+) {
+  deployBlueprint(
+    blueprintId: $blueprintId
+    projectId: $projectId
+    templateVars: $templateVars
+  ) {
     ...DeploymentFragment
   }
 }
