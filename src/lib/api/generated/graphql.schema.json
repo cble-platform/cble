@@ -4301,7 +4301,7 @@
           },
           {
             "name": "projects",
-            "description": "List projects (requires permission `x.x.projects.*.list`)",
+            "description": "List projects user is a member of (or all if has permission `x.x.projects.*.list`)",
             "args": [
               {
                 "name": "count",
@@ -4316,6 +4316,18 @@
                   }
                 },
                 "defaultValue": "10",
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "minRole",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "MembershipRole",
+                  "ofType": null
+                },
+                "defaultValue": null,
                 "isDeprecated": false,
                 "deprecationReason": null
               },
@@ -4500,6 +4512,18 @@
                   }
                 },
                 "defaultValue": "10",
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "minRole",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "MembershipRole",
+                  "ofType": null
+                },
+                "defaultValue": null,
                 "isDeprecated": false,
                 "deprecationReason": null
               },

@@ -227,6 +227,10 @@ type UserPage {
 }
 
 type Query {
+  ######
+  # ME #
+  ######
+
   """
   Get current user
   """
@@ -239,6 +243,11 @@ type Query {
     objectID: ID
     action: Action!
   ): Boolean!
+
+  ########
+  # USER #
+  ########
+
   """
   List users (requires permission `x.x.users.*.list`)
   """
@@ -247,6 +256,11 @@ type Query {
   Get a user (requires permission `x.x.users.x.get`)
   """
   user(id: ID!): User!
+
+  #########
+  # GROUP #
+  #########
+
   """
   List groups (requires permission `x.x.groups.*.list`)
   """
@@ -255,6 +269,11 @@ type Query {
   Get a group (requires permission `x.x.groups.x.get`)
   """
   group(id: ID!): Group!
+
+  ##############
+  # PERMISSION #
+  ##############
+
   """
   List permissions (requires permission `x.x.permission.*.list`)
   """
@@ -263,14 +282,24 @@ type Query {
   Get a permission (requires permission `x.x.permission.x.get`)
   """
   permission(id: ID!): GrantedPermission!
+
+  ###########
+  # PROJECT #
+  ###########
+
   """
-  List projects (requires permission `x.x.projects.*.list`)
+  List projects user is a member of (or all if has permission `x.x.projects.*.list`)
   """
-  projects(count: Int! = 10, offset: Int): ProjectPage!
+  projects(count: Int! = 10, offset: Int, minRole: MembershipRole): ProjectPage!
   """
   Get a project (requires permission `x.x.projects.x.get`)
   """
   project(id: ID!): Project!
+
+  ############
+  # PROVIDER #
+  ############
+
   """
   List providers (requires permission `x.x.providers.*.list`)
   """
@@ -279,6 +308,11 @@ type Query {
   Get a provider (requires permission `x.x.providers.x.get`)
   """
   provider(id: ID!): Provider!
+
+  #############
+  # BLUEPRINT #
+  #############
+
   """
   List all blueprints from users projects
   """
@@ -291,6 +325,11 @@ type Query {
   Get a blueprint
   """
   blueprint(id: ID!): Blueprint!
+
+  ##############
+  # DEPLOYMENT #
+  ##############
+
   """
   List deployments (requires permission `x.x.deployments.*.list`)
   """
@@ -320,7 +359,12 @@ type Query {
   """
   Search projects (requires `Developer` or more)
   """
-  searchProjects(search: String!, count: Int! = 10, offset: Int): ProjectPage!
+  searchProjects(
+    search: String!
+    count: Int! = 10
+    offset: Int
+    minRole: MembershipRole
+  ): ProjectPage!
 }
 
 input BlueprintInput {

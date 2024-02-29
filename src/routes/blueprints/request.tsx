@@ -1,24 +1,21 @@
 import {
-  Autocomplete,
   Box,
-  CircularProgress,
   Container,
   Divider,
   Stack,
   TextField,
   Typography,
 } from '@mui/material'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
-  SearchProjectQuery,
   useDeployBlueprintMutation,
   useGetBlueprintLazyQuery,
-  useSearchProjectLazyQuery,
 } from '../../lib/api/generated'
 import { Send } from '@mui/icons-material'
 import { useSnackbar } from 'notistack'
 import ContainerFab from '../../components/container-fab'
+import ProjectAutocomplete from '@/components/project-autocomplete'
 
 export default function RequestBlueprint() {
   const { id } = useParams()
@@ -40,20 +37,6 @@ export default function RequestBlueprint() {
   const [templateVars, setTemplateVars] = useState<
     readonly { name: string; value: string | number }[]
   >([])
-  // Project Autocomplete
-  const [
-    searchProjects,
-    {
-      data: searchProjectsData,
-      error: searchProjectsError,
-      loading: searchProjectsLoading,
-    },
-  ] = useSearchProjectLazyQuery()
-  const [projectsSearchVal, setProjectsSearchVal] = useState<string>('')
-  const [projectOptions, setProjectOptions] = useState<
-    readonly SearchProjectQuery['searchProjects']['projects'][number][]
-  >([])
-  const [projectOpen, setProjectOpen] = useState<boolean>(false)
   const [
     deployBlueprint,
     {
@@ -121,23 +104,6 @@ export default function RequestBlueprint() {
     }
   }, [deployBlueprintData])
 
-  // Query for project autocomplete
-  useEffect(() => {
-    searchProjects({ variables: { search: projectsSearchVal } })
-  }, [projectsSearchVal])
-
-  // Set autocomplete values
-  useEffect(() => {
-    if (searchProjectsData?.searchProjects.projects)
-      setProjectOptions(searchProjectsData.searchProjects.projects)
-  }, [searchProjectsData])
-
-  const selectedProject = useMemo(() => {
-    if (deployInput.projectId)
-      return projectOptions.find((p) => p.id === deployInput.projectId)
-    return null
-  }, [projectOptions, deployInput])
-
   return (
     <Container
       sx={{ display: 'flex', flexDirection: 'column', height: '100%', py: 2 }}
@@ -154,61 +120,17 @@ export default function RequestBlueprint() {
           {blueprintData?.blueprint.description}
         </Typography>
         <Typography variant="h6">Project</Typography>
-        <Autocomplete
-          fullWidth
-          disablePortal
-          autoComplete
-          clearOnEscape
-          clearOnBlur={false}
-          filterOptions={(x) => x}
-          open={projectOpen}
-          onOpen={() => {
-            setProjectOpen(true)
-          }}
-          onClose={() => {
-            setProjectOpen(false)
-          }}
-          loading={searchProjectsLoading}
-          options={projectOptions}
-          getOptionLabel={(option) => option.name}
+
+        <ProjectAutocomplete
+          minRole="deployer"
           sx={{ flex: '1 1' }}
-          isOptionEqualToValue={(option, val) =>
-            val === undefined || option.id === val.id
+          onChange={(val) =>
+            setDeployInput((prev) => ({ ...prev, projectId: val || '' }))
           }
-          value={selectedProject}
-          onChange={(_, val) => {
-            setDeployInput((prev) => ({ ...prev, projectId: val?.id ?? '' }))
-          }}
-          onInputChange={(_, val) => setProjectsSearchVal(val)}
-          inputValue={projectsSearchVal}
-          renderOption={(props, option) => (
-            <li {...props} key={option.id}>
-              <Typography>{option.name}</Typography>
-            </li>
-          )}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Project"
-              InputProps={{
-                ...params.InputProps,
-                endAdornment: (
-                  <>
-                    {searchProjectsLoading ? (
-                      <CircularProgress color="inherit" size={20} />
-                    ) : null}
-                    {params.InputProps.endAdornment}
-                  </>
-                ),
-              }}
-              error={deployInput.projectId === ''}
-              helperText={
-                deployInput.projectId === ''
-                  ? 'A project is required'
-                  : undefined
-              }
-            />
-          )}
+          error={deployInput.projectId === ''}
+          helperText={
+            deployInput.projectId === '' ? 'A project is required' : undefined
+          }
         />
         <Typography variant="h6">Variables</Typography>
         {templateVars.map((variable, i) => (

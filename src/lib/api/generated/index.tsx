@@ -559,7 +559,7 @@ export type Query = {
   permissions: GrantedPermissionPage;
   /** Get a project (requires permission `x.x.projects.x.get`) */
   project: Project;
-  /** List projects (requires permission `x.x.projects.*.list`) */
+  /** List projects user is a member of (or all if has permission `x.x.projects.*.list`) */
   projects: ProjectPage;
   /** Get a provider (requires permission `x.x.providers.x.get`) */
   provider: Provider;
@@ -639,6 +639,7 @@ export type QueryProjectArgs = {
 
 export type QueryProjectsArgs = {
   count?: Scalars['Int']['input'];
+  minRole?: InputMaybe<Scalars['MembershipRole']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
 };
 
@@ -663,6 +664,7 @@ export type QuerySearchGroupsArgs = {
 
 export type QuerySearchProjectsArgs = {
   count?: Scalars['Int']['input'];
+  minRole?: InputMaybe<Scalars['MembershipRole']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
   search: Scalars['String']['input'];
 };
@@ -887,6 +889,7 @@ export type ProjectFragmentFragment = { __typename?: 'Project', id: string, crea
 export type ProjectsQueryVariables = Exact<{
   count?: Scalars['Int']['input'];
   offset?: InputMaybe<Scalars['Int']['input']>;
+  minRole?: InputMaybe<Scalars['MembershipRole']['input']>;
 }>;
 
 
@@ -901,6 +904,7 @@ export type ProjectQuery = { __typename?: 'Query', project: { __typename?: 'Proj
 
 export type SearchProjectQueryVariables = Exact<{
   search: Scalars['String']['input'];
+  minRole?: InputMaybe<Scalars['MembershipRole']['input']>;
 }>;
 
 
@@ -1817,8 +1821,8 @@ export type RevokePermissionMutationHookResult = ReturnType<typeof useRevokePerm
 export type RevokePermissionMutationResult = Apollo.MutationResult<RevokePermissionMutation>;
 export type RevokePermissionMutationOptions = Apollo.BaseMutationOptions<RevokePermissionMutation, RevokePermissionMutationVariables>;
 export const ProjectsDocument = gql`
-    query Projects($count: Int! = 10, $offset: Int) {
-  projects(count: $count, offset: $offset) {
+    query Projects($count: Int! = 10, $offset: Int, $minRole: MembershipRole = "admin") {
+  projects(count: $count, offset: $offset, minRole: $minRole) {
     projects {
       ...ProjectFragment
     }
@@ -1841,6 +1845,7 @@ export const ProjectsDocument = gql`
  *   variables: {
  *      count: // value for 'count'
  *      offset: // value for 'offset'
+ *      minRole: // value for 'minRole'
  *   },
  * });
  */
@@ -1901,8 +1906,8 @@ export type ProjectLazyQueryHookResult = ReturnType<typeof useProjectLazyQuery>;
 export type ProjectSuspenseQueryHookResult = ReturnType<typeof useProjectSuspenseQuery>;
 export type ProjectQueryResult = Apollo.QueryResult<ProjectQuery, ProjectQueryVariables>;
 export const SearchProjectDocument = gql`
-    query SearchProject($search: String!) {
-  searchProjects(search: $search, count: 5) {
+    query SearchProject($search: String!, $minRole: MembershipRole = "admin") {
+  searchProjects(search: $search, count: 5, minRole: $minRole) {
     projects {
       ...ProjectFragment
     }
@@ -1924,6 +1929,7 @@ export const SearchProjectDocument = gql`
  * const { data, loading, error } = useSearchProjectQuery({
  *   variables: {
  *      search: // value for 'search'
+ *      minRole: // value for 'minRole'
  *   },
  * });
  */

@@ -9,7 +9,6 @@ import {
   TextField,
   Autocomplete,
   LinearProgress,
-  CircularProgress,
   Stack,
   FormControl,
   InputLabel,
@@ -36,6 +35,7 @@ import { Add, AutoFixHigh, Circle, Delete, Save } from '@mui/icons-material'
 import { LoadingButton } from '@mui/lab'
 import { useSnackbar } from 'notistack'
 import { useNavigate, useParams } from 'react-router-dom'
+import ProjectAutocomplete from '@/components/project-autocomplete'
 
 export default function BlueprintForm({
   action,
@@ -275,7 +275,14 @@ export default function BlueprintForm({
           }
           sx={{ flex: '1 1' }}
         ></TextField>
-        <Autocomplete
+        <ProjectAutocomplete
+          minRole="developer"
+          sx={{ flex: '1 1' }}
+          onChange={(val) =>
+            setBlueprint((prev) => ({ ...prev, projectId: val || '' }))
+          }
+        />
+        {/* <Autocomplete
           fullWidth
           disablePortal
           autoComplete
@@ -324,7 +331,7 @@ export default function BlueprintForm({
               }}
             />
           )}
-        />
+        /> */}
         <Autocomplete
           disablePortal
           autoComplete
