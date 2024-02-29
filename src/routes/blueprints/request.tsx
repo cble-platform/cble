@@ -1,11 +1,21 @@
-import { Box, Container, Divider, Typography } from '@mui/material'
-import { useEffect } from 'react'
+import {
+  Autocomplete,
+  Box,
+  CircularProgress,
+  Container,
+  Divider,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
+  SearchProjectQuery,
   useDeployBlueprintMutation,
   useGetBlueprintLazyQuery,
+  useSearchProjectLazyQuery,
 } from '../../lib/api/generated'
-import { MuiMarkdown } from 'mui-markdown'
 import { Send } from '@mui/icons-material'
 import { useSnackbar } from 'notistack'
 import ContainerFab from '../../components/container-fab'
@@ -17,6 +27,33 @@ export default function RequestBlueprint() {
     getBlueprint,
     { data: blueprintData, error: blueprintError, loading: blueprintLoading },
   ] = useGetBlueprintLazyQuery()
+  const [deployInput, setDeployInput] = useState<{
+    blueprintId: string
+    projectId: string
+    templateVars: Record<string, string | number>
+  }>({
+    blueprintId: id ?? '',
+    projectId: '',
+    templateVars: {},
+  })
+  // Template Variables
+  const [templateVars, setTemplateVars] = useState<
+    readonly { name: string; value: string | number }[]
+  >([])
+  // Project Autocomplete
+  const [
+    searchProjects,
+    {
+      data: searchProjectsData,
+      error: searchProjectsError,
+      loading: searchProjectsLoading,
+    },
+  ] = useSearchProjectLazyQuery()
+  const [projectsSearchVal, setProjectsSearchVal] = useState<string>('')
+  const [projectOptions, setProjectOptions] = useState<
+    readonly SearchProjectQuery['searchProjects']['projects'][number][]
+  >([])
+  const [projectOpen, setProjectOpen] = useState<boolean>(false)
   const [
     deployBlueprint,
     {
@@ -26,6 +63,36 @@ export default function RequestBlueprint() {
     },
   ] = useDeployBlueprintMutation()
   const { enqueueSnackbar } = useSnackbar()
+
+  // Pre-load values into the variables
+  useEffect(() => {
+    if (blueprintData?.blueprint.variableTypes)
+      setTemplateVars(() =>
+        Object.keys(
+          blueprintData.blueprint.variableTypes as Record<
+            string,
+            string | number
+          >
+        ).map((name) => ({
+          name,
+          value: blueprintData.blueprint.variableTypes[name] === 'INT' ? 0 : '',
+        }))
+      )
+  }, [blueprintData])
+
+  // Update the input with new template vars
+  useEffect(() => {
+    setDeployInput((prev) => {
+      const newTemplateVars = {} as Record<string, string | number>
+      templateVars.forEach((v) => {
+        newTemplateVars[v.name] = v.value
+      })
+      return {
+        ...prev,
+        templateVars: newTemplateVars,
+      }
+    })
+  }, [templateVars])
 
   useEffect(() => {
     // Isn't loading, isn't already loaded, isn't errored, and has id
@@ -54,17 +121,124 @@ export default function RequestBlueprint() {
     }
   }, [deployBlueprintData])
 
+  // Query for project autocomplete
+  useEffect(() => {
+    searchProjects({ variables: { search: projectsSearchVal } })
+  }, [projectsSearchVal])
+
+  // Set autocomplete values
+  useEffect(() => {
+    if (searchProjectsData?.searchProjects.projects)
+      setProjectOptions(searchProjectsData.searchProjects.projects)
+  }, [searchProjectsData])
+
+  const selectedProject = useMemo(() => {
+    if (deployInput.projectId)
+      return projectOptions.find((p) => p.id === deployInput.projectId)
+    return null
+  }, [projectOptions, deployInput])
+
   return (
     <Container
       sx={{ display: 'flex', flexDirection: 'column', height: '100%', py: 2 }}
     >
       <Box sx={{ width: '100%', display: 'flex', alignItems: 'center' }}>
         <Typography variant="h4">
-          Request {blueprintData?.blueprint.name}
+          Request "{blueprintData?.blueprint.name}"
         </Typography>
       </Box>
       <Divider sx={{ width: '100%', my: 2 }} />
-      <MuiMarkdown>{blueprintData?.blueprint.description}</MuiMarkdown>
+      <Stack spacing={2}>
+        <Typography variant="h6">Description</Typography>
+        <Typography variant="body1">
+          {blueprintData?.blueprint.description}
+        </Typography>
+        <Typography variant="h6">Project</Typography>
+        <Autocomplete
+          fullWidth
+          disablePortal
+          autoComplete
+          clearOnEscape
+          clearOnBlur={false}
+          filterOptions={(x) => x}
+          open={projectOpen}
+          onOpen={() => {
+            setProjectOpen(true)
+          }}
+          onClose={() => {
+            setProjectOpen(false)
+          }}
+          loading={searchProjectsLoading}
+          options={projectOptions}
+          getOptionLabel={(option) => option.name}
+          sx={{ flex: '1 1' }}
+          isOptionEqualToValue={(option, val) =>
+            val === undefined || option.id === val.id
+          }
+          value={selectedProject}
+          onChange={(_, val) => {
+            setDeployInput((prev) => ({ ...prev, projectId: val?.id ?? '' }))
+          }}
+          onInputChange={(_, val) => setProjectsSearchVal(val)}
+          inputValue={projectsSearchVal}
+          renderOption={(props, option) => (
+            <li {...props} key={option.id}>
+              <Typography>{option.name}</Typography>
+            </li>
+          )}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Project"
+              InputProps={{
+                ...params.InputProps,
+                endAdornment: (
+                  <>
+                    {searchProjectsLoading ? (
+                      <CircularProgress color="inherit" size={20} />
+                    ) : null}
+                    {params.InputProps.endAdornment}
+                  </>
+                ),
+              }}
+              error={deployInput.projectId === ''}
+              helperText={
+                deployInput.projectId === ''
+                  ? 'A project is required'
+                  : undefined
+              }
+            />
+          )}
+        />
+        <Typography variant="h6">Variables</Typography>
+        {templateVars.map((variable, i) => (
+          <TextField
+            key={`var_${variable.name}_${i}`}
+            label={variable.name}
+            variant="outlined"
+            type={
+              blueprintData?.blueprint.variableTypes[variable.name] === 'INT'
+                ? 'number'
+                : 'text'
+            }
+            value={variable.value}
+            onChange={(e) => {
+              setTemplateVars((prev) => {
+                const newVars = [...prev]
+                newVars[i].value = e.target.value
+                return newVars
+              })
+            }}
+            focused={variable.value === '' || variable.value === 0}
+            color={
+              variable.value === '' || variable.value === 0
+                ? 'warning'
+                : undefined
+            }
+            error={variable.value === '' || variable.value === 0}
+          />
+        ))}
+      </Stack>
       <ContainerFab
         color="primary"
         variant="extended"
@@ -72,14 +246,13 @@ export default function RequestBlueprint() {
         onClick={() => {
           if (id)
             deployBlueprint({
-              variables: {
-                id,
-                templateVars: {},
-              },
+              variables: deployInput,
             }).catch(console.error)
         }}
         disabled={
-          !id ||
+          !deployInput.blueprintId ||
+          !deployInput.projectId ||
+          !deployInput.templateVars ||
           deployBlueprintLoading ||
           deployBlueprintData != null ||
           deployBlueprintError != null

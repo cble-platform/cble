@@ -298,7 +298,6 @@ export default function BlueprintForm({
           }
           value={selectedProject}
           onChange={(_, val) => {
-            console.log(val)
             setBlueprint((prev) => ({ ...prev, projectId: val?.id ?? '' }))
           }}
           onInputChange={(_, val) => setProjectsSearchVal(val)}
