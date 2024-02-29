@@ -12,12 +12,7 @@ import {
   IconButton,
   LinearProgress,
 } from '@mui/material'
-import {
-  Action,
-  ObjectType,
-  useBlueprintsQuery,
-  useMeHasPermissionQuery,
-} from '../../lib/api/generated'
+import { useBlueprintsQuery } from '../../lib/api/generated'
 import { useEffect } from 'react'
 import { MuiMarkdown, getOverrides } from 'mui-markdown'
 import { useSnackbar } from 'notistack'
@@ -69,13 +64,13 @@ export default function Blueprints() {
     error: blueprintsError,
     loading: blueprintsLoading,
   } = useBlueprintsQuery()
-  const { data: createPermData } = useMeHasPermissionQuery({
-    variables: {
-      objectType: ObjectType.Blueprint,
-      objectID: null,
-      action: Action.BlueprintCreate,
-    },
-  })
+  // const { data: createPermData } = useMeHasPermissionQuery({
+  //   variables: {
+  //     objectType: ObjectType.Blueprint,
+  //     objectID: null,
+  //     action: Action.BlueprintCreate,
+  //   },
+  // })
   const { enqueueSnackbar } = useSnackbar()
 
   useEffect(() => {
@@ -96,11 +91,9 @@ export default function Blueprints() {
         }}
       >
         <Typography variant="h4">Blueprints</Typography>
-        {createPermData?.meHasPermission && (
-          <Button href="/blueprints/create" variant="contained" color="primary">
-            Create
-          </Button>
-        )}
+        <Button href="/blueprints/create" variant="contained" color="primary">
+          Create
+        </Button>
       </Box>
       <Divider sx={{ my: 3 }} />
       <Grid container spacing={2}>
@@ -109,7 +102,7 @@ export default function Blueprints() {
             <LinearProgress />
           </Grid>
         )}
-        {blueprintsData?.deployableBlueprints.blueprints.map((blueprint) => (
+        {blueprintsData?.blueprints.blueprints.map((blueprint) => (
           <Grid item xs={3} key={blueprint.id}>
             <Card sx={{ height: '100%' }}>
               <CardContent>

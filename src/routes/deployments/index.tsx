@@ -43,7 +43,7 @@ function daysBetween(
 }
 
 function generateCreatedMessage(
-  deployment: ListMyDeploymentsQuery['myDeployments']['deployments'][number]
+  deployment: ListMyDeploymentsQuery['deployments']['deployments'][number]
 ): string {
   const createdDaysDiff = daysBetween(
     new Date(deployment.createdAt as string),
@@ -57,7 +57,7 @@ function generateCreatedMessage(
 }
 
 function generateExpiryMessage(
-  deployment: ListMyDeploymentsQuery['myDeployments']['deployments'][number]
+  deployment: ListMyDeploymentsQuery['deployments']['deployments'][number]
 ): string {
   const expiresDaysDiff = daysBetween(
     new Date(deployment.expiresAt as string),
@@ -184,7 +184,7 @@ export default function Deployments() {
             <LinearProgress />
           </Grid>
         )}
-        {listMyDeploymentsData?.myDeployments.deployments.map((deployment) => {
+        {listMyDeploymentsData?.deployments.deployments.map((deployment) => {
           const createdDaysDiff = daysBetween(
             new Date(deployment.createdAt as string),
             Date.now()
