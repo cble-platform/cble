@@ -50,6 +50,11 @@ func (r *blueprintResolver) Provider(ctx context.Context, obj *ent.Blueprint) (*
 	return entProvider, err
 }
 
+// Project is the resolver for the project field.
+func (r *blueprintResolver) Project(ctx context.Context, obj *ent.Blueprint) (*ent.Project, error) {
+	return obj.QueryProject().Only(ctx)
+}
+
 // Resources is the resolver for the resources field.
 func (r *blueprintResolver) Resources(ctx context.Context, obj *ent.Blueprint) ([]*ent.Resource, error) {
 	return obj.QueryResources().All(ctx)
@@ -1173,7 +1178,7 @@ func (r *queryResolver) Permission(ctx context.Context, id uuid.UUID) (*ent.Gran
 }
 
 // Projects is the resolver for the projects field.
-func (r *queryResolver) Projects(ctx context.Context, count int, offset *int) (*model.ProjectPage, error) {
+func (r *queryResolver) Projects(ctx context.Context, count int, offset *int, minRole *membership.Role) (*model.ProjectPage, error) {
 	// Get the current user
 	currentUser, err := auth.ForContext(ctx)
 	if err != nil {
@@ -1207,10 +1212,46 @@ func (r *queryResolver) Projects(ctx context.Context, count int, offset *int) (*
 		}, nil
 	}
 
+	membershipRoles := []membership.Role{membership.RoleAdmin, membership.RoleDeveloper, membership.RoleDeployer, membership.RoleViewer}
+	groupMembershipRoles := []groupmembership.Role{groupmembership.RoleAdmin, groupmembership.RoleDeveloper, groupmembership.RoleDeployer, groupmembership.RoleViewer}
+	if minRole != nil {
+		// Only allow projects with admin
+		if *minRole == membership.RoleAdmin {
+			membershipRoles = membershipRoles[:1]
+			groupMembershipRoles = groupMembershipRoles[:1]
+		}
+		if *minRole == membership.RoleDeveloper {
+			membershipRoles = membershipRoles[:2]
+			groupMembershipRoles = groupMembershipRoles[:2]
+		}
+		if *minRole == membership.RoleDeployer {
+			membershipRoles = membershipRoles[:3]
+			groupMembershipRoles = groupMembershipRoles[:3]
+		}
+		if *minRole == membership.RoleViewer {
+			membershipRoles = membershipRoles[:4]
+			groupMembershipRoles = groupMembershipRoles[:4]
+		}
+	}
+
 	// If not, only list projects the current user is a member of
 	q := r.ent.Project.Query().Where(
-		project.HasMembersWith(user.IDEQ(currentUser.ID)),
-		project.HasGroupMembersWith(group.HasUsersWith(user.IDEQ(currentUser.ID))),
+		project.Or(
+			// Direct user membership
+			project.HasMembershipsWith(
+				membership.HasUserWith(user.ID(currentUser.ID)),
+				membership.RoleIn(
+					membershipRoles...,
+				),
+			),
+			// Group membership
+			project.HasGroupMembershipsWith(
+				groupmembership.HasGroupWith(group.HasUsersWith(user.ID(currentUser.ID))),
+				groupmembership.RoleIn(
+					groupMembershipRoles...,
+				),
+			),
+		),
 	).Limit(count)
 	if offset != nil {
 		q = q.Offset(*offset)
@@ -1281,18 +1322,38 @@ func (r *queryResolver) Blueprints(ctx context.Context, projectFilter []uuid.UUI
 	}
 
 	// Base query on all of current user's projects
-	baseQ := r.ent.Project.Query().Where(
-		project.HasMembersWith(user.IDEQ(currentUser.ID)),
-		project.HasGroupMembersWith(group.HasUsersWith(user.IDEQ(currentUser.ID))),
+	baseQ := r.ent.Blueprint.Query().Where(
+		blueprint.HasProjectWith(
+			project.Or(
+				// Direct user membership
+				project.HasMembershipsWith(
+					membership.HasUserWith(user.ID(currentUser.ID)),
+					membership.RoleIn(
+						membership.RoleAdmin,
+						membership.RoleDeveloper,
+						membership.RoleDeployer,
+					),
+				),
+				// Group membership
+				project.HasGroupMembershipsWith(
+					groupmembership.HasGroupWith(group.HasUsersWith(user.ID(currentUser.ID))),
+					groupmembership.RoleIn(
+						groupmembership.RoleAdmin,
+						groupmembership.RoleDeveloper,
+						groupmembership.RoleDeployer,
+					),
+				),
+			),
+		),
 	)
 	// Filter on project ID if requested
 	if len(projectFilter) > 0 {
 		baseQ = baseQ.Where(
-			project.IDIn(projectFilter...),
+			blueprint.HasProjectWith(project.IDIn(projectFilter...)),
 		)
 	}
 	// Query blueprints from projects
-	q := baseQ.QueryBlueprints().Limit(count)
+	q := baseQ.Limit(count)
 	if offset != nil {
 		q = q.Offset(*offset)
 	}
@@ -1300,7 +1361,7 @@ func (r *queryResolver) Blueprints(ctx context.Context, projectFilter []uuid.UUI
 	if err != nil {
 		return nil, err
 	}
-	entBlueprintCount, err := baseQ.QueryBlueprints().Count(ctx)
+	entBlueprintCount, err := baseQ.Count(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -1318,11 +1379,30 @@ func (r *queryResolver) Blueprint(ctx context.Context, id uuid.UUID) (*ent.Bluep
 		return nil, auth.AUTH_REQUIRED_GQL_ERROR
 	}
 
-	return r.ent.Project.Query().Where(
-		project.HasMembersWith(user.IDEQ(currentUser.ID)),
-		project.HasGroupMembersWith(group.HasUsersWith(user.IDEQ(currentUser.ID))),
-	).QueryBlueprints().Where(
-		blueprint.IDEQ(id),
+	return r.ent.Blueprint.Query().Where(
+		blueprint.ID(id),
+		blueprint.HasProjectWith(
+			project.Or(
+				// Direct user membership
+				project.HasMembershipsWith(
+					membership.HasUserWith(user.ID(currentUser.ID)),
+					membership.RoleIn(
+						membership.RoleAdmin,
+						membership.RoleDeveloper,
+						membership.RoleDeployer,
+					),
+				),
+				// Group membership
+				project.HasGroupMembershipsWith(
+					groupmembership.HasGroupWith(group.HasUsersWith(user.ID(currentUser.ID))),
+					groupmembership.RoleIn(
+						groupmembership.RoleAdmin,
+						groupmembership.RoleDeveloper,
+						groupmembership.RoleDeployer,
+					),
+				),
+			),
+		),
 	).Only(ctx)
 }
 
@@ -1335,26 +1415,57 @@ func (r *queryResolver) Deployments(ctx context.Context, includeExpiredAndDestro
 	}
 
 	// Base query on all of current user's projects
-	baseQ := r.ent.Project.Query().Where(
-		project.HasMembersWith(user.IDEQ(currentUser.ID)),
-		project.HasGroupMembersWith(group.HasUsersWith(user.IDEQ(currentUser.ID))),
+	baseQ := r.ent.Deployment.Query().Where(
+		deployment.HasProjectWith(
+			project.Or(
+				// Direct user membership
+				project.HasMembershipsWith(
+					membership.HasUserWith(user.ID(currentUser.ID)),
+					membership.RoleIn(
+						membership.RoleAdmin,
+						membership.RoleDeveloper,
+						membership.RoleDeployer,
+						membership.RoleViewer,
+					),
+				),
+				// Group membership
+				project.HasGroupMembershipsWith(
+					groupmembership.HasGroupWith(group.HasUsersWith(user.ID(currentUser.ID))),
+					groupmembership.RoleIn(
+						groupmembership.RoleAdmin,
+						groupmembership.RoleDeveloper,
+						groupmembership.RoleDeployer,
+						groupmembership.RoleViewer,
+					),
+				),
+			),
+		),
 	)
 	// Filter on project ID if requested
 	if len(projectFilter) > 0 {
 		baseQ = baseQ.Where(
-			project.IDIn(projectFilter...),
+			deployment.HasProjectWith(
+				project.IDIn(projectFilter...),
+			),
+		)
+	}
+	// Filter on expired and destroyed if not requested
+	if !includeExpiredAndDestroyed {
+		baseQ = baseQ.Where(
+			deployment.ExpiresAtGTE(time.Now()),
+			deployment.StateNEQ(deployment.StateDestroyed),
 		)
 	}
 	// Query deployments from projects
-	q := baseQ.QueryDeployments().Limit(count)
+	q := baseQ.Limit(count)
 	if offset != nil {
 		q = q.Offset(*offset)
 	}
-	entDeployments, err := q.All(ctx)
+	entDeployments, err := q.Order(ent.Desc(deployment.FieldCreatedAt)).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	entDeploymentCount, err := r.ent.Deployment.Query().Count(ctx)
+	entDeploymentCount, err := baseQ.Count(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -1372,11 +1483,30 @@ func (r *queryResolver) Deployment(ctx context.Context, id uuid.UUID) (*ent.Depl
 		return nil, auth.AUTH_REQUIRED_GQL_ERROR
 	}
 
-	entDeployment, err := r.ent.Project.Query().Where(
-		project.HasMembersWith(user.IDEQ(currentUser.ID)),
-		project.HasGroupMembersWith(group.HasUsersWith(user.IDEQ(currentUser.ID))),
-	).QueryDeployments().Where(
-		deployment.IDEQ(id),
+	entDeployment, err := r.ent.Deployment.Query().Where(
+		deployment.ID(id),
+		deployment.HasProjectWith(
+			project.Or(
+				// Direct user membership
+				project.HasMembershipsWith(
+					membership.HasUserWith(user.ID(currentUser.ID)),
+					membership.RoleIn(
+						membership.RoleAdmin,
+						membership.RoleDeveloper,
+						membership.RoleDeployer,
+					),
+				),
+				// Group membership
+				project.HasGroupMembershipsWith(
+					groupmembership.HasGroupWith(group.HasUsersWith(user.ID(currentUser.ID))),
+					groupmembership.RoleIn(
+						groupmembership.RoleAdmin,
+						groupmembership.RoleDeveloper,
+						groupmembership.RoleDeployer,
+					),
+				),
+			),
+		),
 	).Only(ctx)
 	if err != nil {
 		return nil, gqlerror.Errorf("failed to query deployment: %v", err)
@@ -1445,17 +1575,33 @@ func (r *queryResolver) SearchGroups(ctx context.Context, search string, count i
 }
 
 // Search projects (requires `Developer` or more)
-func (r *queryResolver) SearchProjects(ctx context.Context, search string, count int, offset *int) (*model.ProjectPage, error) {
+func (r *queryResolver) SearchProjects(ctx context.Context, search string, count int, offset *int, minRole *membership.Role) (*model.ProjectPage, error) {
 	// Get the current authenticated user
 	currentUser, err := auth.ForContext(ctx)
 	if err != nil {
 		return nil, gqlerror.Errorf("failed to get user from context: %v", err)
 	}
 
-	// Get all group ID's the current user is a part of
-	groupIds, err := currentUser.QueryGroups().IDs(ctx)
-	if err != nil {
-		return nil, gqlerror.Errorf("failed to query user groups: %v", err)
+	membershipRoles := []membership.Role{membership.RoleAdmin, membership.RoleDeveloper, membership.RoleDeployer, membership.RoleViewer}
+	groupMembershipRoles := []groupmembership.Role{groupmembership.RoleAdmin, groupmembership.RoleDeveloper, groupmembership.RoleDeployer, groupmembership.RoleViewer}
+	if minRole != nil {
+		// Only allow projects with admin
+		if *minRole == membership.RoleAdmin {
+			membershipRoles = membershipRoles[:1]
+			groupMembershipRoles = groupMembershipRoles[:1]
+		}
+		if *minRole == membership.RoleDeveloper {
+			membershipRoles = membershipRoles[:2]
+			groupMembershipRoles = groupMembershipRoles[:2]
+		}
+		if *minRole == membership.RoleDeployer {
+			membershipRoles = membershipRoles[:3]
+			groupMembershipRoles = groupMembershipRoles[:3]
+		}
+		if *minRole == membership.RoleViewer {
+			membershipRoles = membershipRoles[:4]
+			groupMembershipRoles = groupMembershipRoles[:4]
+		}
 	}
 
 	q := r.ent.Project.Query().Where(
@@ -1468,16 +1614,14 @@ func (r *queryResolver) SearchProjects(ctx context.Context, search string, count
 			project.HasMembershipsWith(
 				membership.HasUserWith(user.ID(currentUser.ID)),
 				membership.RoleIn(
-					membership.RoleAdmin,
-					membership.RoleDeveloper,
+					membershipRoles...,
 				),
 			),
 			// Group membership
 			project.HasGroupMembershipsWith(
-				groupmembership.HasGroupWith(group.IDIn(groupIds...)),
+				groupmembership.HasGroupWith(group.HasUsersWith(user.ID(currentUser.ID))),
 				groupmembership.RoleIn(
-					groupmembership.RoleAdmin,
-					groupmembership.RoleDeveloper,
+					groupMembershipRoles...,
 				),
 			),
 		),

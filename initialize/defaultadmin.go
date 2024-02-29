@@ -46,6 +46,7 @@ func InitDefaultAdminUserGroup(ctx context.Context, client *ent.Client, cbleConf
 		err = client.GroupMembership.Create().
 			SetProject(defaultProject).
 			SetGroup(cbleAdminGroup).
+			SetRole(groupmembership.RoleAdmin).
 			Exec(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to create default project membership for default admin group: %v", err)

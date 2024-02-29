@@ -73,6 +73,7 @@ type ComplexityRoot struct {
 		Description       func(childComplexity int) int
 		ID                func(childComplexity int) int
 		Name              func(childComplexity int) int
+		Project           func(childComplexity int) int
 		Provider          func(childComplexity int) int
 		Resources         func(childComplexity int) int
 		UpdatedAt         func(childComplexity int) int
@@ -240,11 +241,11 @@ type ComplexityRoot struct {
 		Permission      func(childComplexity int, id uuid.UUID) int
 		Permissions     func(childComplexity int, count int, offset *int) int
 		Project         func(childComplexity int, id uuid.UUID) int
-		Projects        func(childComplexity int, count int, offset *int) int
+		Projects        func(childComplexity int, count int, offset *int, minRole *membership.Role) int
 		Provider        func(childComplexity int, id uuid.UUID) int
 		Providers       func(childComplexity int, count int, offset *int) int
 		SearchGroups    func(childComplexity int, search string, count int, offset *int) int
-		SearchProjects  func(childComplexity int, search string, count int, offset *int) int
+		SearchProjects  func(childComplexity int, search string, count int, offset *int, minRole *membership.Role) int
 		SearchUsers     func(childComplexity int, search string, count int, offset *int) int
 		User            func(childComplexity int, id uuid.UUID) int
 		Users           func(childComplexity int, count int, offset *int) int
@@ -291,6 +292,7 @@ type BlueprintResolver interface {
 	BlueprintTemplate(ctx context.Context, obj *ent.Blueprint) (string, error)
 
 	Provider(ctx context.Context, obj *ent.Blueprint) (*ent.Provider, error)
+	Project(ctx context.Context, obj *ent.Blueprint) (*ent.Project, error)
 	Resources(ctx context.Context, obj *ent.Blueprint) ([]*ent.Resource, error)
 	Deployments(ctx context.Context, obj *ent.Blueprint) ([]*ent.Deployment, error)
 }
@@ -373,7 +375,7 @@ type QueryResolver interface {
 	Group(ctx context.Context, id uuid.UUID) (*ent.Group, error)
 	Permissions(ctx context.Context, count int, offset *int) (*model.GrantedPermissionPage, error)
 	Permission(ctx context.Context, id uuid.UUID) (*ent.GrantedPermission, error)
-	Projects(ctx context.Context, count int, offset *int) (*model.ProjectPage, error)
+	Projects(ctx context.Context, count int, offset *int, minRole *membership.Role) (*model.ProjectPage, error)
 	Project(ctx context.Context, id uuid.UUID) (*ent.Project, error)
 	Providers(ctx context.Context, count int, offset *int) (*model.ProviderPage, error)
 	Provider(ctx context.Context, id uuid.UUID) (*ent.Provider, error)
@@ -383,7 +385,7 @@ type QueryResolver interface {
 	Deployment(ctx context.Context, id uuid.UUID) (*ent.Deployment, error)
 	SearchUsers(ctx context.Context, search string, count int, offset *int) (*model.UserPage, error)
 	SearchGroups(ctx context.Context, search string, count int, offset *int) (*model.GroupPage, error)
-	SearchProjects(ctx context.Context, search string, count int, offset *int) (*model.ProjectPage, error)
+	SearchProjects(ctx context.Context, search string, count int, offset *int, minRole *membership.Role) (*model.ProjectPage, error)
 }
 type ResourceResolver interface {
 	Type(ctx context.Context, obj *ent.Resource) (model.ResourceType, error)
@@ -458,6 +460,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Blueprint.Name(childComplexity), true
+
+	case "Blueprint.project":
+		if e.complexity.Blueprint.Project == nil {
+			break
+		}
+
+		return e.complexity.Blueprint.Project(childComplexity), true
 
 	case "Blueprint.provider":
 		if e.complexity.Blueprint.Provider == nil {
@@ -1492,7 +1501,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Projects(childComplexity, args["count"].(int), args["offset"].(*int)), true
+		return e.complexity.Query.Projects(childComplexity, args["count"].(int), args["offset"].(*int), args["minRole"].(*membership.Role)), true
 
 	case "Query.provider":
 		if e.complexity.Query.Provider == nil {
@@ -1540,7 +1549,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.SearchProjects(childComplexity, args["search"].(string), args["count"].(int), args["offset"].(*int)), true
+		return e.complexity.Query.SearchProjects(childComplexity, args["search"].(string), args["count"].(int), args["offset"].(*int), args["minRole"].(*membership.Role)), true
 
 	case "Query.searchUsers":
 		if e.complexity.Query.SearchUsers == nil {
@@ -1990,6 +1999,7 @@ type Blueprint {
   variableTypes: VarTypeMap!
 
   provider: Provider!
+  project: Project!
   resources: [Resource!]!
   deployments: [Deployment]!
 }
@@ -2198,6 +2208,10 @@ type UserPage {
 }
 
 type Query {
+  ######
+  # ME #
+  ######
+
   """
   Get current user
   """
@@ -2206,6 +2220,11 @@ type Query {
   Retrieves if the current user has a given permission
   """
   meHasPermission(objectType: ObjectType!, objectID: ID, action: Action!): Boolean!
+
+  ########
+  # USER #
+  ########
+
   """
   List users (requires permission ` + "`" + `x.x.users.*.list` + "`" + `)
   """
@@ -2214,6 +2233,11 @@ type Query {
   Get a user (requires permission ` + "`" + `x.x.users.x.get` + "`" + `)
   """
   user(id: ID!): User!
+
+  #########
+  # GROUP #
+  #########
+
   """
   List groups (requires permission ` + "`" + `x.x.groups.*.list` + "`" + `)
   """
@@ -2222,6 +2246,11 @@ type Query {
   Get a group (requires permission ` + "`" + `x.x.groups.x.get` + "`" + `)
   """
   group(id: ID!): Group!
+
+  ##############
+  # PERMISSION #
+  ##############
+
   """
   List permissions (requires permission ` + "`" + `x.x.permission.*.list` + "`" + `)
   """
@@ -2230,14 +2259,24 @@ type Query {
   Get a permission (requires permission ` + "`" + `x.x.permission.x.get` + "`" + `)
   """
   permission(id: ID!): GrantedPermission!
+
+  ###########
+  # PROJECT #
+  ###########
+
   """
-  List projects (requires permission ` + "`" + `x.x.projects.*.list` + "`" + `)
+  List projects user is a member of (or all if has permission ` + "`" + `x.x.projects.*.list` + "`" + `)
   """
-  projects(count: Int! = 10, offset: Int): ProjectPage!
+  projects(count: Int! = 10, offset: Int, minRole: MembershipRole): ProjectPage!
   """
   Get a project (requires permission ` + "`" + `x.x.projects.x.get` + "`" + `)
   """
   project(id: ID!): Project!
+
+  ############
+  # PROVIDER #
+  ############
+
   """
   List providers (requires permission ` + "`" + `x.x.providers.*.list` + "`" + `)
   """
@@ -2246,6 +2285,11 @@ type Query {
   Get a provider (requires permission ` + "`" + `x.x.providers.x.get` + "`" + `)
   """
   provider(id: ID!): Provider!
+
+  #############
+  # BLUEPRINT #
+  #############
+
   """
   List all blueprints from users projects
   """
@@ -2254,6 +2298,11 @@ type Query {
   Get a blueprint
   """
   blueprint(id: ID!): Blueprint!
+
+  ##############
+  # DEPLOYMENT #
+  ##############
+
   """
   List deployments (requires permission ` + "`" + `x.x.deployments.*.list` + "`" + `)
   """
@@ -2276,9 +2325,9 @@ type Query {
   """
   searchGroups(search: String!, count: Int! = 10, offset: Int): GroupPage!
   """
-  Search groups
+  Search projects (requires ` + "`" + `Developer` + "`" + ` or more)
   """
-  searchProjects(search: String!, count: Int! = 10, offset: Int): ProjectPage!
+  searchProjects(search: String!, count: Int! = 10, offset: Int, minRole: MembershipRole): ProjectPage!
 }
 
 input BlueprintInput {
@@ -3398,6 +3447,15 @@ func (ec *executionContext) field_Query_projects_args(ctx context.Context, rawAr
 		}
 	}
 	args["offset"] = arg1
+	var arg2 *membership.Role
+	if tmp, ok := rawArgs["minRole"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("minRole"))
+		arg2, err = ec.unmarshalOMembershipRole2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚋmembershipᚐRole(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["minRole"] = arg2
 	return args, nil
 }
 
@@ -3503,6 +3561,15 @@ func (ec *executionContext) field_Query_searchProjects_args(ctx context.Context,
 		}
 	}
 	args["offset"] = arg2
+	var arg3 *membership.Role
+	if tmp, ok := rawArgs["minRole"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("minRole"))
+		arg3, err = ec.unmarshalOMembershipRole2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚋmembershipᚐRole(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["minRole"] = arg3
 	return args, nil
 }
 
@@ -3988,6 +4055,78 @@ func (ec *executionContext) fieldContext_Blueprint_provider(ctx context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _Blueprint_project(ctx context.Context, field graphql.CollectedField, obj *ent.Blueprint) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Blueprint_project(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Blueprint().Project(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Project)
+	fc.Result = res
+	return ec.marshalNProject2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐProject(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Blueprint_project(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Blueprint",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Project_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Project_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Project_updatedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_Project_name(ctx, field)
+			case "quotaCpu":
+				return ec.fieldContext_Project_quotaCpu(ctx, field)
+			case "quotaRam":
+				return ec.fieldContext_Project_quotaRam(ctx, field)
+			case "quotaDisk":
+				return ec.fieldContext_Project_quotaDisk(ctx, field)
+			case "quotaNetwork":
+				return ec.fieldContext_Project_quotaNetwork(ctx, field)
+			case "quotaRouter":
+				return ec.fieldContext_Project_quotaRouter(ctx, field)
+			case "memberships":
+				return ec.fieldContext_Project_memberships(ctx, field)
+			case "groupMemberships":
+				return ec.fieldContext_Project_groupMemberships(ctx, field)
+			case "blueprints":
+				return ec.fieldContext_Project_blueprints(ctx, field)
+			case "deployments":
+				return ec.fieldContext_Project_deployments(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Blueprint_resources(ctx context.Context, field graphql.CollectedField, obj *ent.Blueprint) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Blueprint_resources(ctx, field)
 	if err != nil {
@@ -4179,6 +4318,8 @@ func (ec *executionContext) fieldContext_BlueprintPage_blueprints(ctx context.Co
 				return ec.fieldContext_Blueprint_variableTypes(ctx, field)
 			case "provider":
 				return ec.fieldContext_Blueprint_provider(ctx, field)
+			case "project":
+				return ec.fieldContext_Blueprint_project(ctx, field)
 			case "resources":
 				return ec.fieldContext_Blueprint_resources(ctx, field)
 			case "deployments":
@@ -4641,6 +4782,8 @@ func (ec *executionContext) fieldContext_Deployment_blueprint(ctx context.Contex
 				return ec.fieldContext_Blueprint_variableTypes(ctx, field)
 			case "provider":
 				return ec.fieldContext_Blueprint_provider(ctx, field)
+			case "project":
+				return ec.fieldContext_Blueprint_project(ctx, field)
 			case "resources":
 				return ec.fieldContext_Blueprint_resources(ctx, field)
 			case "deployments":
@@ -8022,6 +8165,8 @@ func (ec *executionContext) fieldContext_Mutation_createBlueprint(ctx context.Co
 				return ec.fieldContext_Blueprint_variableTypes(ctx, field)
 			case "provider":
 				return ec.fieldContext_Blueprint_provider(ctx, field)
+			case "project":
+				return ec.fieldContext_Blueprint_project(ctx, field)
 			case "resources":
 				return ec.fieldContext_Blueprint_resources(ctx, field)
 			case "deployments":
@@ -8099,6 +8244,8 @@ func (ec *executionContext) fieldContext_Mutation_updateBlueprint(ctx context.Co
 				return ec.fieldContext_Blueprint_variableTypes(ctx, field)
 			case "provider":
 				return ec.fieldContext_Blueprint_provider(ctx, field)
+			case "project":
+				return ec.fieldContext_Blueprint_project(ctx, field)
 			case "resources":
 				return ec.fieldContext_Blueprint_resources(ctx, field)
 			case "deployments":
@@ -9161,6 +9308,8 @@ func (ec *executionContext) fieldContext_Project_blueprints(ctx context.Context,
 				return ec.fieldContext_Blueprint_variableTypes(ctx, field)
 			case "provider":
 				return ec.fieldContext_Blueprint_provider(ctx, field)
+			case "project":
+				return ec.fieldContext_Blueprint_project(ctx, field)
 			case "resources":
 				return ec.fieldContext_Blueprint_resources(ctx, field)
 			case "deployments":
@@ -9760,6 +9909,8 @@ func (ec *executionContext) fieldContext_Provider_blueprints(ctx context.Context
 				return ec.fieldContext_Blueprint_variableTypes(ctx, field)
 			case "provider":
 				return ec.fieldContext_Blueprint_provider(ctx, field)
+			case "project":
+				return ec.fieldContext_Blueprint_project(ctx, field)
 			case "resources":
 				return ec.fieldContext_Blueprint_resources(ctx, field)
 			case "deployments":
@@ -10412,7 +10563,7 @@ func (ec *executionContext) _Query_projects(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Projects(rctx, fc.Args["count"].(int), fc.Args["offset"].(*int))
+		return ec.resolvers.Query().Projects(rctx, fc.Args["count"].(int), fc.Args["offset"].(*int), fc.Args["minRole"].(*membership.Role))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10794,6 +10945,8 @@ func (ec *executionContext) fieldContext_Query_blueprint(ctx context.Context, fi
 				return ec.fieldContext_Blueprint_variableTypes(ctx, field)
 			case "provider":
 				return ec.fieldContext_Blueprint_provider(ctx, field)
+			case "project":
+				return ec.fieldContext_Blueprint_project(ctx, field)
 			case "resources":
 				return ec.fieldContext_Blueprint_resources(ctx, field)
 			case "deployments":
@@ -11092,7 +11245,7 @@ func (ec *executionContext) _Query_searchProjects(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().SearchProjects(rctx, fc.Args["search"].(string), fc.Args["count"].(int), fc.Args["offset"].(*int))
+		return ec.resolvers.Query().SearchProjects(rctx, fc.Args["search"].(string), fc.Args["count"].(int), fc.Args["offset"].(*int), fc.Args["minRole"].(*membership.Role))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -11681,6 +11834,8 @@ func (ec *executionContext) fieldContext_Resource_blueprint(ctx context.Context,
 				return ec.fieldContext_Blueprint_variableTypes(ctx, field)
 			case "provider":
 				return ec.fieldContext_Blueprint_provider(ctx, field)
+			case "project":
+				return ec.fieldContext_Blueprint_project(ctx, field)
 			case "resources":
 				return ec.fieldContext_Blueprint_resources(ctx, field)
 			case "deployments":
@@ -14666,6 +14821,42 @@ func (ec *executionContext) _Blueprint(ctx context.Context, sel ast.SelectionSet
 					}
 				}()
 				res = ec._Blueprint_provider(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "project":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Blueprint_project(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -19349,6 +19540,23 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 		return graphql.Null
 	}
 	res := graphql.MarshalInt(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOMembershipRole2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚋmembershipᚐRole(ctx context.Context, v interface{}) (*membership.Role, error) {
+	if v == nil {
+		return nil, nil
+	}
+	tmp, err := graphql.UnmarshalString(v)
+	res := membership.Role(tmp)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOMembershipRole2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚋmembershipᚐRole(ctx context.Context, sel ast.SelectionSet, v *membership.Role) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalString(string(*v))
 	return res
 }
 
