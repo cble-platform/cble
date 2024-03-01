@@ -21,6 +21,7 @@ export type Scalars = {
   StrMap: { input: any; output: any; }
   Time: { input: any; output: any; }
   UUID: { input: any; output: any; }
+  Uint: { input: any; output: any; }
   VarTypeMap: { input: any; output: any; }
 };
 
@@ -488,6 +489,11 @@ export type Project = {
   quotaRam: Scalars['Int']['output'];
   quotaRouter: Scalars['Int']['output'];
   updatedAt: Scalars['Time']['output'];
+  usageCpu: Scalars['Int']['output'];
+  usageDisk: Scalars['Int']['output'];
+  usageNetwork: Scalars['Int']['output'];
+  usageRam: Scalars['Int']['output'];
+  usageRouter: Scalars['Int']['output'];
 };
 
 export type ProjectInput = {
@@ -697,6 +703,7 @@ export type Resource = {
   id: Scalars['ID']['output'];
   key: Scalars['String']['output'];
   object: Scalars['String']['output'];
+  quotaRequirements: ResourceQuotaRequirements;
   requiredBy: Array<Resource>;
   resourceType: Scalars['String']['output'];
   type: ResourceType;
@@ -707,6 +714,15 @@ export type ResourceFeatures = {
   __typename?: 'ResourceFeatures';
   console: Scalars['Boolean']['output'];
   power: Scalars['Boolean']['output'];
+};
+
+export type ResourceQuotaRequirements = {
+  __typename?: 'ResourceQuotaRequirements';
+  cpu: Scalars['Uint']['output'];
+  disk: Scalars['Uint']['output'];
+  network: Scalars['Uint']['output'];
+  ram: Scalars['Uint']['output'];
+  router: Scalars['Uint']['output'];
 };
 
 export enum ResourceType {
@@ -745,28 +761,30 @@ export type UserPage = {
   users: Array<User>;
 };
 
-export type BlueprintFragementFragment = { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, project: { __typename?: 'Project', id: string, name: string }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> };
+export type BlueprintFragementFragment = { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any };
+
+export type BlueprintEdgesFragmentFragment = { __typename?: 'Blueprint', provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, project: { __typename?: 'Project', id: string, name: string, quotaCpu: number, quotaRam: number, quotaDisk: number, quotaNetwork: number, quotaRouter: number }, deployments: Array<{ __typename?: 'Deployment', id: string } | null>, resources: Array<{ __typename?: 'Resource', id: string, type: ResourceType, key: string, resourceType: string, features: { __typename?: 'ResourceFeatures', power: boolean, console: boolean }, quotaRequirements: { __typename?: 'ResourceQuotaRequirements', cpu: any, ram: any, disk: any, router: any, network: any } }> };
 
 export type ResourceFragmentFragment = { __typename?: 'Resource', id: string, createdAt: any, updatedAt: any, key: string, object: string, features: { __typename?: 'ResourceFeatures', power: boolean, console: boolean } };
 
 export type BlueprintsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type BlueprintsQuery = { __typename?: 'Query', blueprints: { __typename?: 'BlueprintPage', total: number, blueprints: Array<{ __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, project: { __typename?: 'Project', id: string, name: string }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }> } };
+export type BlueprintsQuery = { __typename?: 'Query', blueprints: { __typename?: 'BlueprintPage', total: number, blueprints: Array<{ __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any }> } };
 
 export type GetBlueprintQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetBlueprintQuery = { __typename?: 'Query', blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, project: { __typename?: 'Project', id: string, name: string }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
+export type GetBlueprintQuery = { __typename?: 'Query', blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, project: { __typename?: 'Project', id: string, name: string, quotaCpu: number, quotaRam: number, quotaDisk: number, quotaNetwork: number, quotaRouter: number }, deployments: Array<{ __typename?: 'Deployment', id: string } | null>, resources: Array<{ __typename?: 'Resource', id: string, type: ResourceType, key: string, resourceType: string, features: { __typename?: 'ResourceFeatures', power: boolean, console: boolean }, quotaRequirements: { __typename?: 'ResourceQuotaRequirements', cpu: any, ram: any, disk: any, router: any, network: any } }> } };
 
 export type CreateBlueprintMutationVariables = Exact<{
   input: BlueprintInput;
 }>;
 
 
-export type CreateBlueprintMutation = { __typename?: 'Mutation', createBlueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, project: { __typename?: 'Project', id: string, name: string }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
+export type CreateBlueprintMutation = { __typename?: 'Mutation', createBlueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any } };
 
 export type UpdateBlueprintMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -774,7 +792,7 @@ export type UpdateBlueprintMutationVariables = Exact<{
 }>;
 
 
-export type UpdateBlueprintMutation = { __typename?: 'Mutation', updateBlueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, project: { __typename?: 'Project', id: string, name: string }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> } };
+export type UpdateBlueprintMutation = { __typename?: 'Mutation', updateBlueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any } };
 
 export type DeployBlueprintMutationVariables = Exact<{
   blueprintId: Scalars['ID']['input'];
@@ -795,14 +813,14 @@ export type ListMyDeploymentsQueryVariables = Exact<{
 }>;
 
 
-export type ListMyDeploymentsQuery = { __typename?: 'Query', deployments: { __typename?: 'DeploymentPage', total: number, deployments: Array<{ __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, description: string, state: DeploymentState, templateVars: any, expiresAt: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, project: { __typename?: 'Project', id: string, name: string }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string }, project: { __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, quotaRam: number, quotaDisk: number, quotaNetwork: number, quotaRouter: number } }> } };
+export type ListMyDeploymentsQuery = { __typename?: 'Query', deployments: { __typename?: 'DeploymentPage', total: number, deployments: Array<{ __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, description: string, state: DeploymentState, templateVars: any, expiresAt: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string }, project: { __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, usageCpu: number, quotaRam: number, usageRam: number, quotaDisk: number, usageDisk: number, quotaNetwork: number, usageNetwork: number, quotaRouter: number, usageRouter: number } }> } };
 
 export type GetDeploymentQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetDeploymentQuery = { __typename?: 'Query', deployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, description: string, state: DeploymentState, templateVars: any, expiresAt: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, project: { __typename?: 'Project', id: string, name: string }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string }, deploymentNodes: Array<{ __typename?: 'DeploymentNode', id: string, createdAt: any, updatedAt: any, state: DeploymentNodeState, vars?: any | null, resource: { __typename?: 'Resource', id: string, createdAt: any, updatedAt: any, key: string, object: string, features: { __typename?: 'ResourceFeatures', power: boolean, console: boolean } }, nextNodes: Array<{ __typename?: 'DeploymentNode', id: string }> }> } };
+export type GetDeploymentQuery = { __typename?: 'Query', deployment: { __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, description: string, state: DeploymentState, templateVars: any, expiresAt: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string }, deploymentNodes: Array<{ __typename?: 'DeploymentNode', id: string, createdAt: any, updatedAt: any, state: DeploymentNodeState, vars?: any | null, resource: { __typename?: 'Resource', id: string, createdAt: any, updatedAt: any, key: string, object: string, features: { __typename?: 'ResourceFeatures', power: boolean, console: boolean } }, nextNodes: Array<{ __typename?: 'DeploymentNode', id: string }> }> } };
 
 export type UpdateDeploymentMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -886,7 +904,7 @@ export type RevokePermissionMutationVariables = Exact<{
 
 export type RevokePermissionMutation = { __typename?: 'Mutation', revokePermission: boolean };
 
-export type ProjectFragmentFragment = { __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, quotaRam: number, quotaDisk: number, quotaNetwork: number, quotaRouter: number };
+export type ProjectFragmentFragment = { __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, usageCpu: number, quotaRam: number, usageRam: number, quotaDisk: number, usageDisk: number, quotaNetwork: number, usageNetwork: number, quotaRouter: number, usageRouter: number };
 
 export type ProjectsQueryVariables = Exact<{
   count?: Scalars['Int']['input'];
@@ -895,14 +913,14 @@ export type ProjectsQueryVariables = Exact<{
 }>;
 
 
-export type ProjectsQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectPage', total: number, projects: Array<{ __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, quotaRam: number, quotaDisk: number, quotaNetwork: number, quotaRouter: number }> } };
+export type ProjectsQuery = { __typename?: 'Query', projects: { __typename?: 'ProjectPage', total: number, projects: Array<{ __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, usageCpu: number, quotaRam: number, usageRam: number, quotaDisk: number, usageDisk: number, quotaNetwork: number, usageNetwork: number, quotaRouter: number, usageRouter: number }> } };
 
 export type ProjectQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type ProjectQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, quotaRam: number, quotaDisk: number, quotaNetwork: number, quotaRouter: number } };
+export type ProjectQuery = { __typename?: 'Query', project: { __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, usageCpu: number, quotaRam: number, usageRam: number, quotaDisk: number, usageDisk: number, quotaNetwork: number, usageNetwork: number, quotaRouter: number, usageRouter: number } };
 
 export type SearchProjectQueryVariables = Exact<{
   search: Scalars['String']['input'];
@@ -910,14 +928,14 @@ export type SearchProjectQueryVariables = Exact<{
 }>;
 
 
-export type SearchProjectQuery = { __typename?: 'Query', searchProjects: { __typename?: 'ProjectPage', total: number, projects: Array<{ __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, quotaRam: number, quotaDisk: number, quotaNetwork: number, quotaRouter: number }> } };
+export type SearchProjectQuery = { __typename?: 'Query', searchProjects: { __typename?: 'ProjectPage', total: number, projects: Array<{ __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, usageCpu: number, quotaRam: number, usageRam: number, quotaDisk: number, usageDisk: number, quotaNetwork: number, usageNetwork: number, quotaRouter: number, usageRouter: number }> } };
 
 export type CreateProjectMutationVariables = Exact<{
   input: ProjectInput;
 }>;
 
 
-export type CreateProjectMutation = { __typename?: 'Mutation', createProject: { __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, quotaRam: number, quotaDisk: number, quotaNetwork: number, quotaRouter: number } };
+export type CreateProjectMutation = { __typename?: 'Mutation', createProject: { __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, usageCpu: number, quotaRam: number, usageRam: number, quotaDisk: number, usageDisk: number, quotaNetwork: number, usageNetwork: number, quotaRouter: number, usageRouter: number } };
 
 export type UpdateProjectMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -925,7 +943,7 @@ export type UpdateProjectMutationVariables = Exact<{
 }>;
 
 
-export type UpdateProjectMutation = { __typename?: 'Mutation', updateProject: { __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, quotaRam: number, quotaDisk: number, quotaNetwork: number, quotaRouter: number } };
+export type UpdateProjectMutation = { __typename?: 'Mutation', updateProject: { __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, usageCpu: number, quotaRam: number, usageRam: number, quotaDisk: number, usageDisk: number, quotaNetwork: number, usageNetwork: number, quotaRouter: number, usageRouter: number } };
 
 export type DeleteProjectMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -941,7 +959,7 @@ export type UpdateProjectMembershipMutationVariables = Exact<{
 }>;
 
 
-export type UpdateProjectMembershipMutation = { __typename?: 'Mutation', updateMembership: { __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, quotaRam: number, quotaDisk: number, quotaNetwork: number, quotaRouter: number } };
+export type UpdateProjectMembershipMutation = { __typename?: 'Mutation', updateMembership: { __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, usageCpu: number, quotaRam: number, usageRam: number, quotaDisk: number, usageDisk: number, quotaNetwork: number, usageNetwork: number, quotaRouter: number, usageRouter: number } };
 
 export type ProviderFragmentFragment = { __typename?: 'Provider', id: string, createdAt: any, updatedAt: any, displayName: string, configBytes: string, providerGitUrl: string, providerVersion: string, isLoaded: boolean };
 
@@ -1030,6 +1048,10 @@ export const BlueprintFragementFragmentDoc = gql`
   description
   blueprintTemplate
   variableTypes
+}
+    `;
+export const BlueprintEdgesFragmentFragmentDoc = gql`
+    fragment BlueprintEdgesFragment on Blueprint {
   provider {
     id
     displayName
@@ -1038,9 +1060,31 @@ export const BlueprintFragementFragmentDoc = gql`
   project {
     id
     name
+    quotaCpu
+    quotaRam
+    quotaDisk
+    quotaNetwork
+    quotaRouter
   }
   deployments {
     id
+  }
+  resources {
+    id
+    type
+    key
+    resourceType
+    features {
+      power
+      console
+    }
+    quotaRequirements {
+      cpu
+      ram
+      disk
+      router
+      network
+    }
   }
 }
     `;
@@ -1112,10 +1156,15 @@ export const ProjectFragmentFragmentDoc = gql`
   updatedAt
   name
   quotaCpu
+  usageCpu
   quotaRam
+  usageRam
   quotaDisk
+  usageDisk
   quotaNetwork
+  usageNetwork
   quotaRouter
+  usageRouter
 }
     `;
 export const ProviderFragmentFragmentDoc = gql`
@@ -1187,9 +1236,11 @@ export const GetBlueprintDocument = gql`
     query GetBlueprint($id: ID!) {
   blueprint(id: $id) {
     ...BlueprintFragement
+    ...BlueprintEdgesFragment
   }
 }
-    ${BlueprintFragementFragmentDoc}`;
+    ${BlueprintFragementFragmentDoc}
+${BlueprintEdgesFragmentFragmentDoc}`;
 
 /**
  * __useGetBlueprintQuery__

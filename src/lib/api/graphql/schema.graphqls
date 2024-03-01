@@ -5,6 +5,7 @@ scalar VarTypeMap
 scalar UUID
 scalar MembershipRole
 scalar GroupMembershipRole
+scalar Uint
 
 # directive @hasPermission(objectType: ObjectType!, action: Action!) on FIELD_DEFINITION
 
@@ -38,6 +39,14 @@ type ResourceFeatures {
   console: Boolean!
 }
 
+type ResourceQuotaRequirements {
+  cpu: Uint!
+  ram: Uint!
+  disk: Uint!
+  router: Uint!
+  network: Uint!
+}
+
 type Resource {
   id: ID!
   createdAt: Time!
@@ -46,6 +55,7 @@ type Resource {
   key: String!
   resourceType: String!
   features: ResourceFeatures!
+  quotaRequirements: ResourceQuotaRequirements!
   object: String!
 
   blueprint: Blueprint!
@@ -175,10 +185,15 @@ type Project {
   updatedAt: Time!
   name: String!
   quotaCpu: Int!
+  usageCpu: Int!
   quotaRam: Int!
+  usageRam: Int!
   quotaDisk: Int!
+  usageDisk: Int!
   quotaNetwork: Int!
+  usageNetwork: Int!
   quotaRouter: Int!
+  usageRouter: Int!
 
   memberships: [Membership!]!
   groupMemberships: [GroupMembership!]!

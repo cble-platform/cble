@@ -186,7 +186,9 @@ export default function Deployments() {
           label="Filter by Project"
           minRole="viewer"
           multiple
-          onChange={(val) => setProjectFilter(val?.length ? val : null)}
+          onChange={(val) =>
+            setProjectFilter(val?.length ? val.map((v) => v.id) : null)
+          }
           sx={{ maxWidth: 300 }}
         />
       </Stack>

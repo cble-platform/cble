@@ -23,20 +23,21 @@ interface CommonProjectAutocompleteProps {
 interface MultipleProjectAutocompleteProps
   extends CommonProjectAutocompleteProps {
   multiple: true
-  onChange: (projectIds: string[] | null) => void
+  onChange: (projectIds: ProjectAutocompleteOption[] | null) => void
 }
 
 interface SingleProjectAutocompleteProps
   extends CommonProjectAutocompleteProps {
   multiple?: false
-  onChange: (projectId: string | null) => void
+  onChange: (projectId: ProjectAutocompleteOption | null) => void
 }
 
 type ProjectAutocompleteProps =
   | SingleProjectAutocompleteProps
   | MultipleProjectAutocompleteProps
 
-type OptionType = SearchProjectQuery['searchProjects']['projects'][number]
+export type ProjectAutocompleteOption =
+  SearchProjectQuery['searchProjects']['projects'][number]
 
 export default function ProjectAutocomplete({
   minRole,
@@ -49,9 +50,9 @@ export default function ProjectAutocomplete({
 }: ProjectAutocompleteProps) {
   const [projectsSearchVal, setProjectsSearchVal] = useState<string>('')
   const [projectOpen, setProjectOpen] = useState<boolean>(false)
-  const [projectOptions, setProjectOptions] = useState<readonly OptionType[]>(
-    []
-  )
+  const [projectOptions, setProjectOptions] = useState<
+    readonly ProjectAutocompleteOption[]
+  >([])
   const [
     searchProjects,
     {
@@ -72,9 +73,11 @@ export default function ProjectAutocomplete({
       setProjectOptions(searchProjectsData.searchProjects.projects)
   }, [searchProjectsData])
 
-  const handleChange = (val: OptionType | OptionType[] | null) => {
-    if (multiple) onChange((val as OptionType[])?.map((v) => v.id))
-    else onChange((val as OptionType)?.id)
+  const handleChange = (
+    val: ProjectAutocompleteOption | ProjectAutocompleteOption[] | null
+  ) => {
+    if (multiple) onChange(val as ProjectAutocompleteOption[])
+    else onChange(val as ProjectAutocompleteOption)
   }
 
   return (

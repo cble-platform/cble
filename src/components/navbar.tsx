@@ -95,6 +95,17 @@ export default function Navbar({
             >
               Deployments
             </Button>
+            <Button
+              href="/projects"
+              sx={{
+                my: 2,
+                color: 'white',
+                display: 'block',
+                textAlign: 'center',
+              }}
+            >
+              Projects
+            </Button>
             {navPermissions?.listProviders && (
               <Button
                 href="/providers"

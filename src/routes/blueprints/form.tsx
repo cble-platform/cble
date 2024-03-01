@@ -279,7 +279,7 @@ export default function BlueprintForm({
           minRole="developer"
           sx={{ flex: '1 1' }}
           onChange={(val) =>
-            setBlueprint((prev) => ({ ...prev, projectId: val || '' }))
+            setBlueprint((prev) => ({ ...prev, projectId: val?.id || '' }))
           }
         />
         {/* <Autocomplete

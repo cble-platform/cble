@@ -6,6 +6,9 @@ fragment BlueprintFragement on Blueprint {
   description
   blueprintTemplate
   variableTypes
+}
+
+fragment BlueprintEdgesFragment on Blueprint {
   provider {
     id
     displayName
@@ -14,9 +17,31 @@ fragment BlueprintFragement on Blueprint {
   project {
     id
     name
+    quotaCpu
+    quotaRam
+    quotaDisk
+    quotaNetwork
+    quotaRouter
   }
   deployments {
     id
+  }
+  resources {
+    id
+    type
+    key
+    resourceType
+    features {
+      power
+      console
+    }
+    quotaRequirements {
+      cpu
+      ram
+      disk
+      router
+      network
+    }
   }
 }
 
@@ -44,6 +69,7 @@ query Blueprints {
 query GetBlueprint($id: ID!) {
   blueprint(id: $id) {
     ...BlueprintFragement
+    ...BlueprintEdgesFragment
   }
 }
 
