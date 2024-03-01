@@ -206,6 +206,11 @@ type ComplexityRoot struct {
 		QuotaRAM         func(childComplexity int) int
 		QuotaRouter      func(childComplexity int) int
 		UpdatedAt        func(childComplexity int) int
+		UsageCPU         func(childComplexity int) int
+		UsageDisk        func(childComplexity int) int
+		UsageNetwork     func(childComplexity int) int
+		UsageRAM         func(childComplexity int) int
+		UsageRouter      func(childComplexity int) int
 	}
 
 	ProjectPage struct {
@@ -253,22 +258,31 @@ type ComplexityRoot struct {
 	}
 
 	Resource struct {
-		Blueprint    func(childComplexity int) int
-		CreatedAt    func(childComplexity int) int
-		DependsOn    func(childComplexity int) int
-		Features     func(childComplexity int) int
-		ID           func(childComplexity int) int
-		Key          func(childComplexity int) int
-		Object       func(childComplexity int) int
-		RequiredBy   func(childComplexity int) int
-		ResourceType func(childComplexity int) int
-		Type         func(childComplexity int) int
-		UpdatedAt    func(childComplexity int) int
+		Blueprint         func(childComplexity int) int
+		CreatedAt         func(childComplexity int) int
+		DependsOn         func(childComplexity int) int
+		Features          func(childComplexity int) int
+		ID                func(childComplexity int) int
+		Key               func(childComplexity int) int
+		Object            func(childComplexity int) int
+		QuotaRequirements func(childComplexity int) int
+		RequiredBy        func(childComplexity int) int
+		ResourceType      func(childComplexity int) int
+		Type              func(childComplexity int) int
+		UpdatedAt         func(childComplexity int) int
 	}
 
 	ResourceFeatures struct {
 		Console func(childComplexity int) int
 		Power   func(childComplexity int) int
+	}
+
+	ResourceQuotaRequirements struct {
+		Cpu     func(childComplexity int) int
+		Disk    func(childComplexity int) int
+		Network func(childComplexity int) int
+		Ram     func(childComplexity int) int
+		Router  func(childComplexity int) int
 	}
 
 	User struct {
@@ -1282,6 +1296,41 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Project.UpdatedAt(childComplexity), true
 
+	case "Project.usageCpu":
+		if e.complexity.Project.UsageCPU == nil {
+			break
+		}
+
+		return e.complexity.Project.UsageCPU(childComplexity), true
+
+	case "Project.usageDisk":
+		if e.complexity.Project.UsageDisk == nil {
+			break
+		}
+
+		return e.complexity.Project.UsageDisk(childComplexity), true
+
+	case "Project.usageNetwork":
+		if e.complexity.Project.UsageNetwork == nil {
+			break
+		}
+
+		return e.complexity.Project.UsageNetwork(childComplexity), true
+
+	case "Project.usageRam":
+		if e.complexity.Project.UsageRAM == nil {
+			break
+		}
+
+		return e.complexity.Project.UsageRAM(childComplexity), true
+
+	case "Project.usageRouter":
+		if e.complexity.Project.UsageRouter == nil {
+			break
+		}
+
+		return e.complexity.Project.UsageRouter(childComplexity), true
+
 	case "ProjectPage.projects":
 		if e.complexity.ProjectPage.Projects == nil {
 			break
@@ -1645,6 +1694,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Resource.Object(childComplexity), true
 
+	case "Resource.quotaRequirements":
+		if e.complexity.Resource.QuotaRequirements == nil {
+			break
+		}
+
+		return e.complexity.Resource.QuotaRequirements(childComplexity), true
+
 	case "Resource.requiredBy":
 		if e.complexity.Resource.RequiredBy == nil {
 			break
@@ -1686,6 +1742,41 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ResourceFeatures.Power(childComplexity), true
+
+	case "ResourceQuotaRequirements.cpu":
+		if e.complexity.ResourceQuotaRequirements.Cpu == nil {
+			break
+		}
+
+		return e.complexity.ResourceQuotaRequirements.Cpu(childComplexity), true
+
+	case "ResourceQuotaRequirements.disk":
+		if e.complexity.ResourceQuotaRequirements.Disk == nil {
+			break
+		}
+
+		return e.complexity.ResourceQuotaRequirements.Disk(childComplexity), true
+
+	case "ResourceQuotaRequirements.network":
+		if e.complexity.ResourceQuotaRequirements.Network == nil {
+			break
+		}
+
+		return e.complexity.ResourceQuotaRequirements.Network(childComplexity), true
+
+	case "ResourceQuotaRequirements.ram":
+		if e.complexity.ResourceQuotaRequirements.Ram == nil {
+			break
+		}
+
+		return e.complexity.ResourceQuotaRequirements.Ram(childComplexity), true
+
+	case "ResourceQuotaRequirements.router":
+		if e.complexity.ResourceQuotaRequirements.Router == nil {
+			break
+		}
+
+		return e.complexity.ResourceQuotaRequirements.Router(childComplexity), true
 
 	case "User.createdAt":
 		if e.complexity.User.CreatedAt == nil {
@@ -1995,6 +2086,7 @@ scalar VarTypeMap
 scalar UUID
 scalar MembershipRole
 scalar GroupMembershipRole
+scalar Uint
 
 # directive @hasPermission(objectType: ObjectType!, action: Action!) on FIELD_DEFINITION
 
@@ -2028,6 +2120,14 @@ type ResourceFeatures {
   console: Boolean!
 }
 
+type ResourceQuotaRequirements {
+  cpu: Uint!
+  ram: Uint!
+  disk: Uint!
+  router: Uint!
+  network: Uint!
+}
+
 type Resource {
   id: ID!
   createdAt: Time!
@@ -2036,6 +2136,7 @@ type Resource {
   key: String!
   resourceType: String!
   features: ResourceFeatures!
+  quotaRequirements: ResourceQuotaRequirements!
   object: String!
 
   blueprint: Blueprint!
@@ -2165,10 +2266,15 @@ type Project {
   updatedAt: Time!
   name: String!
   quotaCpu: Int!
+  usageCpu: Int!
   quotaRam: Int!
+  usageRam: Int!
   quotaDisk: Int!
+  usageDisk: Int!
   quotaNetwork: Int!
+  usageNetwork: Int!
   quotaRouter: Int!
+  usageRouter: Int!
 
   memberships: [Membership!]!
   groupMemberships: [GroupMembership!]!
@@ -4114,14 +4220,24 @@ func (ec *executionContext) fieldContext_Blueprint_project(ctx context.Context, 
 				return ec.fieldContext_Project_name(ctx, field)
 			case "quotaCpu":
 				return ec.fieldContext_Project_quotaCpu(ctx, field)
+			case "usageCpu":
+				return ec.fieldContext_Project_usageCpu(ctx, field)
 			case "quotaRam":
 				return ec.fieldContext_Project_quotaRam(ctx, field)
+			case "usageRam":
+				return ec.fieldContext_Project_usageRam(ctx, field)
 			case "quotaDisk":
 				return ec.fieldContext_Project_quotaDisk(ctx, field)
+			case "usageDisk":
+				return ec.fieldContext_Project_usageDisk(ctx, field)
 			case "quotaNetwork":
 				return ec.fieldContext_Project_quotaNetwork(ctx, field)
+			case "usageNetwork":
+				return ec.fieldContext_Project_usageNetwork(ctx, field)
 			case "quotaRouter":
 				return ec.fieldContext_Project_quotaRouter(ctx, field)
+			case "usageRouter":
+				return ec.fieldContext_Project_usageRouter(ctx, field)
 			case "memberships":
 				return ec.fieldContext_Project_memberships(ctx, field)
 			case "groupMemberships":
@@ -4190,6 +4306,8 @@ func (ec *executionContext) fieldContext_Blueprint_resources(ctx context.Context
 				return ec.fieldContext_Resource_resourceType(ctx, field)
 			case "features":
 				return ec.fieldContext_Resource_features(ctx, field)
+			case "quotaRequirements":
+				return ec.fieldContext_Resource_quotaRequirements(ctx, field)
 			case "object":
 				return ec.fieldContext_Resource_object(ctx, field)
 			case "blueprint":
@@ -4856,14 +4974,24 @@ func (ec *executionContext) fieldContext_Deployment_project(ctx context.Context,
 				return ec.fieldContext_Project_name(ctx, field)
 			case "quotaCpu":
 				return ec.fieldContext_Project_quotaCpu(ctx, field)
+			case "usageCpu":
+				return ec.fieldContext_Project_usageCpu(ctx, field)
 			case "quotaRam":
 				return ec.fieldContext_Project_quotaRam(ctx, field)
+			case "usageRam":
+				return ec.fieldContext_Project_usageRam(ctx, field)
 			case "quotaDisk":
 				return ec.fieldContext_Project_quotaDisk(ctx, field)
+			case "usageDisk":
+				return ec.fieldContext_Project_usageDisk(ctx, field)
 			case "quotaNetwork":
 				return ec.fieldContext_Project_quotaNetwork(ctx, field)
+			case "usageNetwork":
+				return ec.fieldContext_Project_usageNetwork(ctx, field)
 			case "quotaRouter":
 				return ec.fieldContext_Project_quotaRouter(ctx, field)
+			case "usageRouter":
+				return ec.fieldContext_Project_usageRouter(ctx, field)
 			case "memberships":
 				return ec.fieldContext_Project_memberships(ctx, field)
 			case "groupMemberships":
@@ -5347,6 +5475,8 @@ func (ec *executionContext) fieldContext_DeploymentNode_resource(ctx context.Con
 				return ec.fieldContext_Resource_resourceType(ctx, field)
 			case "features":
 				return ec.fieldContext_Resource_features(ctx, field)
+			case "quotaRequirements":
+				return ec.fieldContext_Resource_quotaRequirements(ctx, field)
 			case "object":
 				return ec.fieldContext_Resource_object(ctx, field)
 			case "blueprint":
@@ -6438,14 +6568,24 @@ func (ec *executionContext) fieldContext_GroupMembership_project(ctx context.Con
 				return ec.fieldContext_Project_name(ctx, field)
 			case "quotaCpu":
 				return ec.fieldContext_Project_quotaCpu(ctx, field)
+			case "usageCpu":
+				return ec.fieldContext_Project_usageCpu(ctx, field)
 			case "quotaRam":
 				return ec.fieldContext_Project_quotaRam(ctx, field)
+			case "usageRam":
+				return ec.fieldContext_Project_usageRam(ctx, field)
 			case "quotaDisk":
 				return ec.fieldContext_Project_quotaDisk(ctx, field)
+			case "usageDisk":
+				return ec.fieldContext_Project_usageDisk(ctx, field)
 			case "quotaNetwork":
 				return ec.fieldContext_Project_quotaNetwork(ctx, field)
+			case "usageNetwork":
+				return ec.fieldContext_Project_usageNetwork(ctx, field)
 			case "quotaRouter":
 				return ec.fieldContext_Project_quotaRouter(ctx, field)
+			case "usageRouter":
+				return ec.fieldContext_Project_usageRouter(ctx, field)
 			case "memberships":
 				return ec.fieldContext_Project_memberships(ctx, field)
 			case "groupMemberships":
@@ -6754,14 +6894,24 @@ func (ec *executionContext) fieldContext_Membership_project(ctx context.Context,
 				return ec.fieldContext_Project_name(ctx, field)
 			case "quotaCpu":
 				return ec.fieldContext_Project_quotaCpu(ctx, field)
+			case "usageCpu":
+				return ec.fieldContext_Project_usageCpu(ctx, field)
 			case "quotaRam":
 				return ec.fieldContext_Project_quotaRam(ctx, field)
+			case "usageRam":
+				return ec.fieldContext_Project_usageRam(ctx, field)
 			case "quotaDisk":
 				return ec.fieldContext_Project_quotaDisk(ctx, field)
+			case "usageDisk":
+				return ec.fieldContext_Project_usageDisk(ctx, field)
 			case "quotaNetwork":
 				return ec.fieldContext_Project_quotaNetwork(ctx, field)
+			case "usageNetwork":
+				return ec.fieldContext_Project_usageNetwork(ctx, field)
 			case "quotaRouter":
 				return ec.fieldContext_Project_quotaRouter(ctx, field)
+			case "usageRouter":
+				return ec.fieldContext_Project_usageRouter(ctx, field)
 			case "memberships":
 				return ec.fieldContext_Project_memberships(ctx, field)
 			case "groupMemberships":
@@ -7943,14 +8093,24 @@ func (ec *executionContext) fieldContext_Mutation_createProject(ctx context.Cont
 				return ec.fieldContext_Project_name(ctx, field)
 			case "quotaCpu":
 				return ec.fieldContext_Project_quotaCpu(ctx, field)
+			case "usageCpu":
+				return ec.fieldContext_Project_usageCpu(ctx, field)
 			case "quotaRam":
 				return ec.fieldContext_Project_quotaRam(ctx, field)
+			case "usageRam":
+				return ec.fieldContext_Project_usageRam(ctx, field)
 			case "quotaDisk":
 				return ec.fieldContext_Project_quotaDisk(ctx, field)
+			case "usageDisk":
+				return ec.fieldContext_Project_usageDisk(ctx, field)
 			case "quotaNetwork":
 				return ec.fieldContext_Project_quotaNetwork(ctx, field)
+			case "usageNetwork":
+				return ec.fieldContext_Project_usageNetwork(ctx, field)
 			case "quotaRouter":
 				return ec.fieldContext_Project_quotaRouter(ctx, field)
+			case "usageRouter":
+				return ec.fieldContext_Project_usageRouter(ctx, field)
 			case "memberships":
 				return ec.fieldContext_Project_memberships(ctx, field)
 			case "groupMemberships":
@@ -8026,14 +8186,24 @@ func (ec *executionContext) fieldContext_Mutation_updateProject(ctx context.Cont
 				return ec.fieldContext_Project_name(ctx, field)
 			case "quotaCpu":
 				return ec.fieldContext_Project_quotaCpu(ctx, field)
+			case "usageCpu":
+				return ec.fieldContext_Project_usageCpu(ctx, field)
 			case "quotaRam":
 				return ec.fieldContext_Project_quotaRam(ctx, field)
+			case "usageRam":
+				return ec.fieldContext_Project_usageRam(ctx, field)
 			case "quotaDisk":
 				return ec.fieldContext_Project_quotaDisk(ctx, field)
+			case "usageDisk":
+				return ec.fieldContext_Project_usageDisk(ctx, field)
 			case "quotaNetwork":
 				return ec.fieldContext_Project_quotaNetwork(ctx, field)
+			case "usageNetwork":
+				return ec.fieldContext_Project_usageNetwork(ctx, field)
 			case "quotaRouter":
 				return ec.fieldContext_Project_quotaRouter(ctx, field)
+			case "usageRouter":
+				return ec.fieldContext_Project_usageRouter(ctx, field)
 			case "memberships":
 				return ec.fieldContext_Project_memberships(ctx, field)
 			case "groupMemberships":
@@ -8164,14 +8334,24 @@ func (ec *executionContext) fieldContext_Mutation_updateMembership(ctx context.C
 				return ec.fieldContext_Project_name(ctx, field)
 			case "quotaCpu":
 				return ec.fieldContext_Project_quotaCpu(ctx, field)
+			case "usageCpu":
+				return ec.fieldContext_Project_usageCpu(ctx, field)
 			case "quotaRam":
 				return ec.fieldContext_Project_quotaRam(ctx, field)
+			case "usageRam":
+				return ec.fieldContext_Project_usageRam(ctx, field)
 			case "quotaDisk":
 				return ec.fieldContext_Project_quotaDisk(ctx, field)
+			case "usageDisk":
+				return ec.fieldContext_Project_usageDisk(ctx, field)
 			case "quotaNetwork":
 				return ec.fieldContext_Project_quotaNetwork(ctx, field)
+			case "usageNetwork":
+				return ec.fieldContext_Project_usageNetwork(ctx, field)
 			case "quotaRouter":
 				return ec.fieldContext_Project_quotaRouter(ctx, field)
+			case "usageRouter":
+				return ec.fieldContext_Project_usageRouter(ctx, field)
 			case "memberships":
 				return ec.fieldContext_Project_memberships(ctx, field)
 			case "groupMemberships":
@@ -9065,6 +9245,50 @@ func (ec *executionContext) fieldContext_Project_quotaCpu(ctx context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _Project_usageCpu(ctx context.Context, field graphql.CollectedField, obj *ent.Project) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Project_usageCpu(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UsageCPU, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Project_usageCpu(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Project_quotaRam(ctx context.Context, field graphql.CollectedField, obj *ent.Project) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Project_quotaRam(ctx, field)
 	if err != nil {
@@ -9097,6 +9321,50 @@ func (ec *executionContext) _Project_quotaRam(ctx context.Context, field graphql
 }
 
 func (ec *executionContext) fieldContext_Project_quotaRam(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Project_usageRam(ctx context.Context, field graphql.CollectedField, obj *ent.Project) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Project_usageRam(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UsageRAM, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Project_usageRam(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Project",
 		Field:      field,
@@ -9153,6 +9421,50 @@ func (ec *executionContext) fieldContext_Project_quotaDisk(ctx context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _Project_usageDisk(ctx context.Context, field graphql.CollectedField, obj *ent.Project) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Project_usageDisk(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UsageDisk, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Project_usageDisk(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Project_quotaNetwork(ctx context.Context, field graphql.CollectedField, obj *ent.Project) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Project_quotaNetwork(ctx, field)
 	if err != nil {
@@ -9197,6 +9509,50 @@ func (ec *executionContext) fieldContext_Project_quotaNetwork(ctx context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Project_usageNetwork(ctx context.Context, field graphql.CollectedField, obj *ent.Project) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Project_usageNetwork(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UsageNetwork, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Project_usageNetwork(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Project_quotaRouter(ctx context.Context, field graphql.CollectedField, obj *ent.Project) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Project_quotaRouter(ctx, field)
 	if err != nil {
@@ -9229,6 +9585,50 @@ func (ec *executionContext) _Project_quotaRouter(ctx context.Context, field grap
 }
 
 func (ec *executionContext) fieldContext_Project_quotaRouter(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Project_usageRouter(ctx context.Context, field graphql.CollectedField, obj *ent.Project) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Project_usageRouter(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UsageRouter, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Project_usageRouter(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Project",
 		Field:      field,
@@ -9536,14 +9936,24 @@ func (ec *executionContext) fieldContext_ProjectPage_projects(ctx context.Contex
 				return ec.fieldContext_Project_name(ctx, field)
 			case "quotaCpu":
 				return ec.fieldContext_Project_quotaCpu(ctx, field)
+			case "usageCpu":
+				return ec.fieldContext_Project_usageCpu(ctx, field)
 			case "quotaRam":
 				return ec.fieldContext_Project_quotaRam(ctx, field)
+			case "usageRam":
+				return ec.fieldContext_Project_usageRam(ctx, field)
 			case "quotaDisk":
 				return ec.fieldContext_Project_quotaDisk(ctx, field)
+			case "usageDisk":
+				return ec.fieldContext_Project_usageDisk(ctx, field)
 			case "quotaNetwork":
 				return ec.fieldContext_Project_quotaNetwork(ctx, field)
+			case "usageNetwork":
+				return ec.fieldContext_Project_usageNetwork(ctx, field)
 			case "quotaRouter":
 				return ec.fieldContext_Project_quotaRouter(ctx, field)
+			case "usageRouter":
+				return ec.fieldContext_Project_usageRouter(ctx, field)
 			case "memberships":
 				return ec.fieldContext_Project_memberships(ctx, field)
 			case "groupMemberships":
@@ -10757,14 +11167,24 @@ func (ec *executionContext) fieldContext_Query_project(ctx context.Context, fiel
 				return ec.fieldContext_Project_name(ctx, field)
 			case "quotaCpu":
 				return ec.fieldContext_Project_quotaCpu(ctx, field)
+			case "usageCpu":
+				return ec.fieldContext_Project_usageCpu(ctx, field)
 			case "quotaRam":
 				return ec.fieldContext_Project_quotaRam(ctx, field)
+			case "usageRam":
+				return ec.fieldContext_Project_usageRam(ctx, field)
 			case "quotaDisk":
 				return ec.fieldContext_Project_quotaDisk(ctx, field)
+			case "usageDisk":
+				return ec.fieldContext_Project_usageDisk(ctx, field)
 			case "quotaNetwork":
 				return ec.fieldContext_Project_quotaNetwork(ctx, field)
+			case "usageNetwork":
+				return ec.fieldContext_Project_usageNetwork(ctx, field)
 			case "quotaRouter":
 				return ec.fieldContext_Project_quotaRouter(ctx, field)
+			case "usageRouter":
+				return ec.fieldContext_Project_usageRouter(ctx, field)
 			case "memberships":
 				return ec.fieldContext_Project_memberships(ctx, field)
 			case "groupMemberships":
@@ -11835,6 +12255,62 @@ func (ec *executionContext) fieldContext_Resource_features(ctx context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _Resource_quotaRequirements(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Resource_quotaRequirements(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.QuotaRequirements, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(provider.QuotaRequirements)
+	fc.Result = res
+	return ec.marshalNResourceQuotaRequirements2githubᚗcomᚋcbleᚑplatformᚋcbleᚑproviderᚑgrpcᚋpkgᚋproviderᚐQuotaRequirements(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Resource_quotaRequirements(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Resource",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "cpu":
+				return ec.fieldContext_ResourceQuotaRequirements_cpu(ctx, field)
+			case "ram":
+				return ec.fieldContext_ResourceQuotaRequirements_ram(ctx, field)
+			case "disk":
+				return ec.fieldContext_ResourceQuotaRequirements_disk(ctx, field)
+			case "router":
+				return ec.fieldContext_ResourceQuotaRequirements_router(ctx, field)
+			case "network":
+				return ec.fieldContext_ResourceQuotaRequirements_network(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ResourceQuotaRequirements", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Resource_object(ctx context.Context, field graphql.CollectedField, obj *ent.Resource) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Resource_object(ctx, field)
 	if err != nil {
@@ -12000,6 +12476,8 @@ func (ec *executionContext) fieldContext_Resource_requiredBy(ctx context.Context
 				return ec.fieldContext_Resource_resourceType(ctx, field)
 			case "features":
 				return ec.fieldContext_Resource_features(ctx, field)
+			case "quotaRequirements":
+				return ec.fieldContext_Resource_quotaRequirements(ctx, field)
 			case "object":
 				return ec.fieldContext_Resource_object(ctx, field)
 			case "blueprint":
@@ -12068,6 +12546,8 @@ func (ec *executionContext) fieldContext_Resource_dependsOn(ctx context.Context,
 				return ec.fieldContext_Resource_resourceType(ctx, field)
 			case "features":
 				return ec.fieldContext_Resource_features(ctx, field)
+			case "quotaRequirements":
+				return ec.fieldContext_Resource_quotaRequirements(ctx, field)
 			case "object":
 				return ec.fieldContext_Resource_object(ctx, field)
 			case "blueprint":
@@ -12166,6 +12646,226 @@ func (ec *executionContext) fieldContext_ResourceFeatures_console(ctx context.Co
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourceQuotaRequirements_cpu(ctx context.Context, field graphql.CollectedField, obj *provider.QuotaRequirements) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourceQuotaRequirements_cpu(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cpu, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint64)
+	fc.Result = res
+	return ec.marshalNUint2uint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourceQuotaRequirements_cpu(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourceQuotaRequirements",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Uint does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourceQuotaRequirements_ram(ctx context.Context, field graphql.CollectedField, obj *provider.QuotaRequirements) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourceQuotaRequirements_ram(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Ram, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint64)
+	fc.Result = res
+	return ec.marshalNUint2uint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourceQuotaRequirements_ram(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourceQuotaRequirements",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Uint does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourceQuotaRequirements_disk(ctx context.Context, field graphql.CollectedField, obj *provider.QuotaRequirements) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourceQuotaRequirements_disk(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Disk, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint64)
+	fc.Result = res
+	return ec.marshalNUint2uint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourceQuotaRequirements_disk(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourceQuotaRequirements",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Uint does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourceQuotaRequirements_router(ctx context.Context, field graphql.CollectedField, obj *provider.QuotaRequirements) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourceQuotaRequirements_router(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Router, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint64)
+	fc.Result = res
+	return ec.marshalNUint2uint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourceQuotaRequirements_router(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourceQuotaRequirements",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Uint does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourceQuotaRequirements_network(ctx context.Context, field graphql.CollectedField, obj *provider.QuotaRequirements) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourceQuotaRequirements_network(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Network, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint64)
+	fc.Result = res
+	return ec.marshalNUint2uint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourceQuotaRequirements_network(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourceQuotaRequirements",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Uint does not have child fields")
 		},
 	}
 	return fc, nil
@@ -16439,8 +17139,18 @@ func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "usageCpu":
+			out.Values[i] = ec._Project_usageCpu(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "quotaRam":
 			out.Values[i] = ec._Project_quotaRam(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "usageRam":
+			out.Values[i] = ec._Project_usageRam(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -16449,13 +17159,28 @@ func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "usageDisk":
+			out.Values[i] = ec._Project_usageDisk(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "quotaNetwork":
 			out.Values[i] = ec._Project_quotaNetwork(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "usageNetwork":
+			out.Values[i] = ec._Project_usageNetwork(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "quotaRouter":
 			out.Values[i] = ec._Project_quotaRouter(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "usageRouter":
+			out.Values[i] = ec._Project_usageRouter(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -17397,6 +18122,11 @@ func (ec *executionContext) _Resource(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "quotaRequirements":
+			out.Values[i] = ec._Resource_quotaRequirements(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "object":
 			field := field
 
@@ -17582,6 +18312,65 @@ func (ec *executionContext) _ResourceFeatures(ctx context.Context, sel ast.Selec
 			}
 		case "console":
 			out.Values[i] = ec._ResourceFeatures_console(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var resourceQuotaRequirementsImplementors = []string{"ResourceQuotaRequirements"}
+
+func (ec *executionContext) _ResourceQuotaRequirements(ctx context.Context, sel ast.SelectionSet, obj *provider.QuotaRequirements) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, resourceQuotaRequirementsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ResourceQuotaRequirements")
+		case "cpu":
+			out.Values[i] = ec._ResourceQuotaRequirements_cpu(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ram":
+			out.Values[i] = ec._ResourceQuotaRequirements_ram(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "disk":
+			out.Values[i] = ec._ResourceQuotaRequirements_disk(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "router":
+			out.Values[i] = ec._ResourceQuotaRequirements_router(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "network":
+			out.Values[i] = ec._ResourceQuotaRequirements_network(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -19095,6 +19884,10 @@ func (ec *executionContext) marshalNResourceFeatures2githubᚗcomᚋcbleᚑplatf
 	return ec._ResourceFeatures(ctx, sel, &v)
 }
 
+func (ec *executionContext) marshalNResourceQuotaRequirements2githubᚗcomᚋcbleᚑplatformᚋcbleᚑproviderᚑgrpcᚋpkgᚋproviderᚐQuotaRequirements(ctx context.Context, sel ast.SelectionSet, v provider.QuotaRequirements) graphql.Marshaler {
+	return ec._ResourceQuotaRequirements(ctx, sel, &v)
+}
+
 func (ec *executionContext) unmarshalNResourceType2githubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋgraphᚋmodelᚐResourceType(ctx context.Context, v interface{}) (model.ResourceType, error) {
 	var res model.ResourceType
 	err := res.UnmarshalGQL(v)
@@ -19164,6 +19957,21 @@ func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v in
 
 func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel ast.SelectionSet, v time.Time) graphql.Marshaler {
 	res := graphql.MarshalTime(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNUint2uint64(ctx context.Context, v interface{}) (uint64, error) {
+	res, err := graphql.UnmarshalUint64(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUint2uint64(ctx context.Context, sel ast.SelectionSet, v uint64) graphql.Marshaler {
+	res := graphql.MarshalUint64(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")

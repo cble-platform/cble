@@ -115,6 +115,13 @@ func LoadResources(ctx context.Context, client *ent.Client, cbleServer *provider
 					Power:   resourceMetadata.Features.Power,
 					Console: resourceMetadata.Features.Console,
 				}).
+				SetQuotaRequirements(pgrpc.QuotaRequirements{
+					Cpu:     resourceMetadata.QuotaRequirements.Cpu,
+					Ram:     resourceMetadata.QuotaRequirements.Ram,
+					Disk:    resourceMetadata.QuotaRequirements.Disk,
+					Router:  resourceMetadata.QuotaRequirements.Router,
+					Network: resourceMetadata.QuotaRequirements.Network,
+				}).
 				Exec(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to update features for resource %s: %v", resourceKey, err)

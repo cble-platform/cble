@@ -23,14 +23,24 @@ const (
 	FieldName = "name"
 	// FieldQuotaCPU holds the string denoting the quota_cpu field in the database.
 	FieldQuotaCPU = "quota_cpu"
+	// FieldUsageCPU holds the string denoting the usage_cpu field in the database.
+	FieldUsageCPU = "usage_cpu"
 	// FieldQuotaRAM holds the string denoting the quota_ram field in the database.
 	FieldQuotaRAM = "quota_ram"
+	// FieldUsageRAM holds the string denoting the usage_ram field in the database.
+	FieldUsageRAM = "usage_ram"
 	// FieldQuotaDisk holds the string denoting the quota_disk field in the database.
 	FieldQuotaDisk = "quota_disk"
+	// FieldUsageDisk holds the string denoting the usage_disk field in the database.
+	FieldUsageDisk = "usage_disk"
 	// FieldQuotaNetwork holds the string denoting the quota_network field in the database.
 	FieldQuotaNetwork = "quota_network"
+	// FieldUsageNetwork holds the string denoting the usage_network field in the database.
+	FieldUsageNetwork = "usage_network"
 	// FieldQuotaRouter holds the string denoting the quota_router field in the database.
 	FieldQuotaRouter = "quota_router"
+	// FieldUsageRouter holds the string denoting the usage_router field in the database.
+	FieldUsageRouter = "usage_router"
 	// EdgeMembers holds the string denoting the members edge name in mutations.
 	EdgeMembers = "members"
 	// EdgeGroupMembers holds the string denoting the group_members edge name in mutations.
@@ -92,10 +102,15 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldName,
 	FieldQuotaCPU,
+	FieldUsageCPU,
 	FieldQuotaRAM,
+	FieldUsageRAM,
 	FieldQuotaDisk,
+	FieldUsageDisk,
 	FieldQuotaNetwork,
+	FieldUsageNetwork,
 	FieldQuotaRouter,
+	FieldUsageRouter,
 }
 
 var (
@@ -124,6 +139,16 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
+	// DefaultUsageCPU holds the default value on creation for the "usage_cpu" field.
+	DefaultUsageCPU int
+	// DefaultUsageRAM holds the default value on creation for the "usage_ram" field.
+	DefaultUsageRAM int
+	// DefaultUsageDisk holds the default value on creation for the "usage_disk" field.
+	DefaultUsageDisk int
+	// DefaultUsageNetwork holds the default value on creation for the "usage_network" field.
+	DefaultUsageNetwork int
+	// DefaultUsageRouter holds the default value on creation for the "usage_router" field.
+	DefaultUsageRouter int
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -156,9 +181,19 @@ func ByQuotaCPU(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldQuotaCPU, opts...).ToFunc()
 }
 
+// ByUsageCPU orders the results by the usage_cpu field.
+func ByUsageCPU(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUsageCPU, opts...).ToFunc()
+}
+
 // ByQuotaRAM orders the results by the quota_ram field.
 func ByQuotaRAM(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldQuotaRAM, opts...).ToFunc()
+}
+
+// ByUsageRAM orders the results by the usage_ram field.
+func ByUsageRAM(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUsageRAM, opts...).ToFunc()
 }
 
 // ByQuotaDisk orders the results by the quota_disk field.
@@ -166,14 +201,29 @@ func ByQuotaDisk(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldQuotaDisk, opts...).ToFunc()
 }
 
+// ByUsageDisk orders the results by the usage_disk field.
+func ByUsageDisk(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUsageDisk, opts...).ToFunc()
+}
+
 // ByQuotaNetwork orders the results by the quota_network field.
 func ByQuotaNetwork(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldQuotaNetwork, opts...).ToFunc()
 }
 
+// ByUsageNetwork orders the results by the usage_network field.
+func ByUsageNetwork(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUsageNetwork, opts...).ToFunc()
+}
+
 // ByQuotaRouter orders the results by the quota_router field.
 func ByQuotaRouter(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldQuotaRouter, opts...).ToFunc()
+}
+
+// ByUsageRouter orders the results by the usage_router field.
+func ByUsageRouter(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUsageRouter, opts...).ToFunc()
 }
 
 // ByMembersCount orders the results by members count.

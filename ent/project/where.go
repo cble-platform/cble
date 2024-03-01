@@ -76,9 +76,19 @@ func QuotaCPU(v int) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldQuotaCPU, v))
 }
 
+// UsageCPU applies equality check predicate on the "usage_cpu" field. It's identical to UsageCPUEQ.
+func UsageCPU(v int) predicate.Project {
+	return predicate.Project(sql.FieldEQ(FieldUsageCPU, v))
+}
+
 // QuotaRAM applies equality check predicate on the "quota_ram" field. It's identical to QuotaRAMEQ.
 func QuotaRAM(v int) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldQuotaRAM, v))
+}
+
+// UsageRAM applies equality check predicate on the "usage_ram" field. It's identical to UsageRAMEQ.
+func UsageRAM(v int) predicate.Project {
+	return predicate.Project(sql.FieldEQ(FieldUsageRAM, v))
 }
 
 // QuotaDisk applies equality check predicate on the "quota_disk" field. It's identical to QuotaDiskEQ.
@@ -86,14 +96,29 @@ func QuotaDisk(v int) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldQuotaDisk, v))
 }
 
+// UsageDisk applies equality check predicate on the "usage_disk" field. It's identical to UsageDiskEQ.
+func UsageDisk(v int) predicate.Project {
+	return predicate.Project(sql.FieldEQ(FieldUsageDisk, v))
+}
+
 // QuotaNetwork applies equality check predicate on the "quota_network" field. It's identical to QuotaNetworkEQ.
 func QuotaNetwork(v int) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldQuotaNetwork, v))
 }
 
+// UsageNetwork applies equality check predicate on the "usage_network" field. It's identical to UsageNetworkEQ.
+func UsageNetwork(v int) predicate.Project {
+	return predicate.Project(sql.FieldEQ(FieldUsageNetwork, v))
+}
+
 // QuotaRouter applies equality check predicate on the "quota_router" field. It's identical to QuotaRouterEQ.
 func QuotaRouter(v int) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldQuotaRouter, v))
+}
+
+// UsageRouter applies equality check predicate on the "usage_router" field. It's identical to UsageRouterEQ.
+func UsageRouter(v int) predicate.Project {
+	return predicate.Project(sql.FieldEQ(FieldUsageRouter, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -281,6 +306,46 @@ func QuotaCPULTE(v int) predicate.Project {
 	return predicate.Project(sql.FieldLTE(FieldQuotaCPU, v))
 }
 
+// UsageCPUEQ applies the EQ predicate on the "usage_cpu" field.
+func UsageCPUEQ(v int) predicate.Project {
+	return predicate.Project(sql.FieldEQ(FieldUsageCPU, v))
+}
+
+// UsageCPUNEQ applies the NEQ predicate on the "usage_cpu" field.
+func UsageCPUNEQ(v int) predicate.Project {
+	return predicate.Project(sql.FieldNEQ(FieldUsageCPU, v))
+}
+
+// UsageCPUIn applies the In predicate on the "usage_cpu" field.
+func UsageCPUIn(vs ...int) predicate.Project {
+	return predicate.Project(sql.FieldIn(FieldUsageCPU, vs...))
+}
+
+// UsageCPUNotIn applies the NotIn predicate on the "usage_cpu" field.
+func UsageCPUNotIn(vs ...int) predicate.Project {
+	return predicate.Project(sql.FieldNotIn(FieldUsageCPU, vs...))
+}
+
+// UsageCPUGT applies the GT predicate on the "usage_cpu" field.
+func UsageCPUGT(v int) predicate.Project {
+	return predicate.Project(sql.FieldGT(FieldUsageCPU, v))
+}
+
+// UsageCPUGTE applies the GTE predicate on the "usage_cpu" field.
+func UsageCPUGTE(v int) predicate.Project {
+	return predicate.Project(sql.FieldGTE(FieldUsageCPU, v))
+}
+
+// UsageCPULT applies the LT predicate on the "usage_cpu" field.
+func UsageCPULT(v int) predicate.Project {
+	return predicate.Project(sql.FieldLT(FieldUsageCPU, v))
+}
+
+// UsageCPULTE applies the LTE predicate on the "usage_cpu" field.
+func UsageCPULTE(v int) predicate.Project {
+	return predicate.Project(sql.FieldLTE(FieldUsageCPU, v))
+}
+
 // QuotaRAMEQ applies the EQ predicate on the "quota_ram" field.
 func QuotaRAMEQ(v int) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldQuotaRAM, v))
@@ -319,6 +384,46 @@ func QuotaRAMLT(v int) predicate.Project {
 // QuotaRAMLTE applies the LTE predicate on the "quota_ram" field.
 func QuotaRAMLTE(v int) predicate.Project {
 	return predicate.Project(sql.FieldLTE(FieldQuotaRAM, v))
+}
+
+// UsageRAMEQ applies the EQ predicate on the "usage_ram" field.
+func UsageRAMEQ(v int) predicate.Project {
+	return predicate.Project(sql.FieldEQ(FieldUsageRAM, v))
+}
+
+// UsageRAMNEQ applies the NEQ predicate on the "usage_ram" field.
+func UsageRAMNEQ(v int) predicate.Project {
+	return predicate.Project(sql.FieldNEQ(FieldUsageRAM, v))
+}
+
+// UsageRAMIn applies the In predicate on the "usage_ram" field.
+func UsageRAMIn(vs ...int) predicate.Project {
+	return predicate.Project(sql.FieldIn(FieldUsageRAM, vs...))
+}
+
+// UsageRAMNotIn applies the NotIn predicate on the "usage_ram" field.
+func UsageRAMNotIn(vs ...int) predicate.Project {
+	return predicate.Project(sql.FieldNotIn(FieldUsageRAM, vs...))
+}
+
+// UsageRAMGT applies the GT predicate on the "usage_ram" field.
+func UsageRAMGT(v int) predicate.Project {
+	return predicate.Project(sql.FieldGT(FieldUsageRAM, v))
+}
+
+// UsageRAMGTE applies the GTE predicate on the "usage_ram" field.
+func UsageRAMGTE(v int) predicate.Project {
+	return predicate.Project(sql.FieldGTE(FieldUsageRAM, v))
+}
+
+// UsageRAMLT applies the LT predicate on the "usage_ram" field.
+func UsageRAMLT(v int) predicate.Project {
+	return predicate.Project(sql.FieldLT(FieldUsageRAM, v))
+}
+
+// UsageRAMLTE applies the LTE predicate on the "usage_ram" field.
+func UsageRAMLTE(v int) predicate.Project {
+	return predicate.Project(sql.FieldLTE(FieldUsageRAM, v))
 }
 
 // QuotaDiskEQ applies the EQ predicate on the "quota_disk" field.
@@ -361,6 +466,46 @@ func QuotaDiskLTE(v int) predicate.Project {
 	return predicate.Project(sql.FieldLTE(FieldQuotaDisk, v))
 }
 
+// UsageDiskEQ applies the EQ predicate on the "usage_disk" field.
+func UsageDiskEQ(v int) predicate.Project {
+	return predicate.Project(sql.FieldEQ(FieldUsageDisk, v))
+}
+
+// UsageDiskNEQ applies the NEQ predicate on the "usage_disk" field.
+func UsageDiskNEQ(v int) predicate.Project {
+	return predicate.Project(sql.FieldNEQ(FieldUsageDisk, v))
+}
+
+// UsageDiskIn applies the In predicate on the "usage_disk" field.
+func UsageDiskIn(vs ...int) predicate.Project {
+	return predicate.Project(sql.FieldIn(FieldUsageDisk, vs...))
+}
+
+// UsageDiskNotIn applies the NotIn predicate on the "usage_disk" field.
+func UsageDiskNotIn(vs ...int) predicate.Project {
+	return predicate.Project(sql.FieldNotIn(FieldUsageDisk, vs...))
+}
+
+// UsageDiskGT applies the GT predicate on the "usage_disk" field.
+func UsageDiskGT(v int) predicate.Project {
+	return predicate.Project(sql.FieldGT(FieldUsageDisk, v))
+}
+
+// UsageDiskGTE applies the GTE predicate on the "usage_disk" field.
+func UsageDiskGTE(v int) predicate.Project {
+	return predicate.Project(sql.FieldGTE(FieldUsageDisk, v))
+}
+
+// UsageDiskLT applies the LT predicate on the "usage_disk" field.
+func UsageDiskLT(v int) predicate.Project {
+	return predicate.Project(sql.FieldLT(FieldUsageDisk, v))
+}
+
+// UsageDiskLTE applies the LTE predicate on the "usage_disk" field.
+func UsageDiskLTE(v int) predicate.Project {
+	return predicate.Project(sql.FieldLTE(FieldUsageDisk, v))
+}
+
 // QuotaNetworkEQ applies the EQ predicate on the "quota_network" field.
 func QuotaNetworkEQ(v int) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldQuotaNetwork, v))
@@ -401,6 +546,46 @@ func QuotaNetworkLTE(v int) predicate.Project {
 	return predicate.Project(sql.FieldLTE(FieldQuotaNetwork, v))
 }
 
+// UsageNetworkEQ applies the EQ predicate on the "usage_network" field.
+func UsageNetworkEQ(v int) predicate.Project {
+	return predicate.Project(sql.FieldEQ(FieldUsageNetwork, v))
+}
+
+// UsageNetworkNEQ applies the NEQ predicate on the "usage_network" field.
+func UsageNetworkNEQ(v int) predicate.Project {
+	return predicate.Project(sql.FieldNEQ(FieldUsageNetwork, v))
+}
+
+// UsageNetworkIn applies the In predicate on the "usage_network" field.
+func UsageNetworkIn(vs ...int) predicate.Project {
+	return predicate.Project(sql.FieldIn(FieldUsageNetwork, vs...))
+}
+
+// UsageNetworkNotIn applies the NotIn predicate on the "usage_network" field.
+func UsageNetworkNotIn(vs ...int) predicate.Project {
+	return predicate.Project(sql.FieldNotIn(FieldUsageNetwork, vs...))
+}
+
+// UsageNetworkGT applies the GT predicate on the "usage_network" field.
+func UsageNetworkGT(v int) predicate.Project {
+	return predicate.Project(sql.FieldGT(FieldUsageNetwork, v))
+}
+
+// UsageNetworkGTE applies the GTE predicate on the "usage_network" field.
+func UsageNetworkGTE(v int) predicate.Project {
+	return predicate.Project(sql.FieldGTE(FieldUsageNetwork, v))
+}
+
+// UsageNetworkLT applies the LT predicate on the "usage_network" field.
+func UsageNetworkLT(v int) predicate.Project {
+	return predicate.Project(sql.FieldLT(FieldUsageNetwork, v))
+}
+
+// UsageNetworkLTE applies the LTE predicate on the "usage_network" field.
+func UsageNetworkLTE(v int) predicate.Project {
+	return predicate.Project(sql.FieldLTE(FieldUsageNetwork, v))
+}
+
 // QuotaRouterEQ applies the EQ predicate on the "quota_router" field.
 func QuotaRouterEQ(v int) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldQuotaRouter, v))
@@ -439,6 +624,46 @@ func QuotaRouterLT(v int) predicate.Project {
 // QuotaRouterLTE applies the LTE predicate on the "quota_router" field.
 func QuotaRouterLTE(v int) predicate.Project {
 	return predicate.Project(sql.FieldLTE(FieldQuotaRouter, v))
+}
+
+// UsageRouterEQ applies the EQ predicate on the "usage_router" field.
+func UsageRouterEQ(v int) predicate.Project {
+	return predicate.Project(sql.FieldEQ(FieldUsageRouter, v))
+}
+
+// UsageRouterNEQ applies the NEQ predicate on the "usage_router" field.
+func UsageRouterNEQ(v int) predicate.Project {
+	return predicate.Project(sql.FieldNEQ(FieldUsageRouter, v))
+}
+
+// UsageRouterIn applies the In predicate on the "usage_router" field.
+func UsageRouterIn(vs ...int) predicate.Project {
+	return predicate.Project(sql.FieldIn(FieldUsageRouter, vs...))
+}
+
+// UsageRouterNotIn applies the NotIn predicate on the "usage_router" field.
+func UsageRouterNotIn(vs ...int) predicate.Project {
+	return predicate.Project(sql.FieldNotIn(FieldUsageRouter, vs...))
+}
+
+// UsageRouterGT applies the GT predicate on the "usage_router" field.
+func UsageRouterGT(v int) predicate.Project {
+	return predicate.Project(sql.FieldGT(FieldUsageRouter, v))
+}
+
+// UsageRouterGTE applies the GTE predicate on the "usage_router" field.
+func UsageRouterGTE(v int) predicate.Project {
+	return predicate.Project(sql.FieldGTE(FieldUsageRouter, v))
+}
+
+// UsageRouterLT applies the LT predicate on the "usage_router" field.
+func UsageRouterLT(v int) predicate.Project {
+	return predicate.Project(sql.FieldLT(FieldUsageRouter, v))
+}
+
+// UsageRouterLTE applies the LTE predicate on the "usage_router" field.
+func UsageRouterLTE(v int) predicate.Project {
+	return predicate.Project(sql.FieldLTE(FieldUsageRouter, v))
 }
 
 // HasMembers applies the HasEdge predicate on the "members" edge.

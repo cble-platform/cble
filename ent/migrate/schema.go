@@ -243,10 +243,15 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString},
 		{Name: "quota_cpu", Type: field.TypeInt},
+		{Name: "usage_cpu", Type: field.TypeInt, Default: 0},
 		{Name: "quota_ram", Type: field.TypeInt},
+		{Name: "usage_ram", Type: field.TypeInt, Default: 0},
 		{Name: "quota_disk", Type: field.TypeInt},
+		{Name: "usage_disk", Type: field.TypeInt, Default: 0},
 		{Name: "quota_network", Type: field.TypeInt},
+		{Name: "usage_network", Type: field.TypeInt, Default: 0},
 		{Name: "quota_router", Type: field.TypeInt},
+		{Name: "usage_router", Type: field.TypeInt, Default: 0},
 	}
 	// ProjectsTable holds the schema information for the "projects" table.
 	ProjectsTable = &schema.Table{

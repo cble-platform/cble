@@ -781,7 +781,7 @@ func (r *mutationResolver) DeployBlueprint(ctx context.Context, blueprintID uuid
 	}
 
 	// Create the deployment
-	entDeployment, err := engine.CreateDeployment(ctx, tx.Client(), entBlueprint, templateVars, time.Now().Add(r.cbleConfig.Deployments.LeaseTime), currentUser)
+	entDeployment, err := engine.CreateDeployment(ctx, tx.Client(), entBlueprint, projectID, templateVars, time.Now().Add(r.cbleConfig.Deployments.LeaseTime), currentUser)
 	if err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("failed to create deployment: %v", err)

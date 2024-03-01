@@ -76,6 +76,27 @@ func (pu *ProjectUpdate) AddQuotaCPU(i int) *ProjectUpdate {
 	return pu
 }
 
+// SetUsageCPU sets the "usage_cpu" field.
+func (pu *ProjectUpdate) SetUsageCPU(i int) *ProjectUpdate {
+	pu.mutation.ResetUsageCPU()
+	pu.mutation.SetUsageCPU(i)
+	return pu
+}
+
+// SetNillableUsageCPU sets the "usage_cpu" field if the given value is not nil.
+func (pu *ProjectUpdate) SetNillableUsageCPU(i *int) *ProjectUpdate {
+	if i != nil {
+		pu.SetUsageCPU(*i)
+	}
+	return pu
+}
+
+// AddUsageCPU adds i to the "usage_cpu" field.
+func (pu *ProjectUpdate) AddUsageCPU(i int) *ProjectUpdate {
+	pu.mutation.AddUsageCPU(i)
+	return pu
+}
+
 // SetQuotaRAM sets the "quota_ram" field.
 func (pu *ProjectUpdate) SetQuotaRAM(i int) *ProjectUpdate {
 	pu.mutation.ResetQuotaRAM()
@@ -94,6 +115,27 @@ func (pu *ProjectUpdate) SetNillableQuotaRAM(i *int) *ProjectUpdate {
 // AddQuotaRAM adds i to the "quota_ram" field.
 func (pu *ProjectUpdate) AddQuotaRAM(i int) *ProjectUpdate {
 	pu.mutation.AddQuotaRAM(i)
+	return pu
+}
+
+// SetUsageRAM sets the "usage_ram" field.
+func (pu *ProjectUpdate) SetUsageRAM(i int) *ProjectUpdate {
+	pu.mutation.ResetUsageRAM()
+	pu.mutation.SetUsageRAM(i)
+	return pu
+}
+
+// SetNillableUsageRAM sets the "usage_ram" field if the given value is not nil.
+func (pu *ProjectUpdate) SetNillableUsageRAM(i *int) *ProjectUpdate {
+	if i != nil {
+		pu.SetUsageRAM(*i)
+	}
+	return pu
+}
+
+// AddUsageRAM adds i to the "usage_ram" field.
+func (pu *ProjectUpdate) AddUsageRAM(i int) *ProjectUpdate {
+	pu.mutation.AddUsageRAM(i)
 	return pu
 }
 
@@ -118,6 +160,27 @@ func (pu *ProjectUpdate) AddQuotaDisk(i int) *ProjectUpdate {
 	return pu
 }
 
+// SetUsageDisk sets the "usage_disk" field.
+func (pu *ProjectUpdate) SetUsageDisk(i int) *ProjectUpdate {
+	pu.mutation.ResetUsageDisk()
+	pu.mutation.SetUsageDisk(i)
+	return pu
+}
+
+// SetNillableUsageDisk sets the "usage_disk" field if the given value is not nil.
+func (pu *ProjectUpdate) SetNillableUsageDisk(i *int) *ProjectUpdate {
+	if i != nil {
+		pu.SetUsageDisk(*i)
+	}
+	return pu
+}
+
+// AddUsageDisk adds i to the "usage_disk" field.
+func (pu *ProjectUpdate) AddUsageDisk(i int) *ProjectUpdate {
+	pu.mutation.AddUsageDisk(i)
+	return pu
+}
+
 // SetQuotaNetwork sets the "quota_network" field.
 func (pu *ProjectUpdate) SetQuotaNetwork(i int) *ProjectUpdate {
 	pu.mutation.ResetQuotaNetwork()
@@ -139,6 +202,27 @@ func (pu *ProjectUpdate) AddQuotaNetwork(i int) *ProjectUpdate {
 	return pu
 }
 
+// SetUsageNetwork sets the "usage_network" field.
+func (pu *ProjectUpdate) SetUsageNetwork(i int) *ProjectUpdate {
+	pu.mutation.ResetUsageNetwork()
+	pu.mutation.SetUsageNetwork(i)
+	return pu
+}
+
+// SetNillableUsageNetwork sets the "usage_network" field if the given value is not nil.
+func (pu *ProjectUpdate) SetNillableUsageNetwork(i *int) *ProjectUpdate {
+	if i != nil {
+		pu.SetUsageNetwork(*i)
+	}
+	return pu
+}
+
+// AddUsageNetwork adds i to the "usage_network" field.
+func (pu *ProjectUpdate) AddUsageNetwork(i int) *ProjectUpdate {
+	pu.mutation.AddUsageNetwork(i)
+	return pu
+}
+
 // SetQuotaRouter sets the "quota_router" field.
 func (pu *ProjectUpdate) SetQuotaRouter(i int) *ProjectUpdate {
 	pu.mutation.ResetQuotaRouter()
@@ -157,6 +241,27 @@ func (pu *ProjectUpdate) SetNillableQuotaRouter(i *int) *ProjectUpdate {
 // AddQuotaRouter adds i to the "quota_router" field.
 func (pu *ProjectUpdate) AddQuotaRouter(i int) *ProjectUpdate {
 	pu.mutation.AddQuotaRouter(i)
+	return pu
+}
+
+// SetUsageRouter sets the "usage_router" field.
+func (pu *ProjectUpdate) SetUsageRouter(i int) *ProjectUpdate {
+	pu.mutation.ResetUsageRouter()
+	pu.mutation.SetUsageRouter(i)
+	return pu
+}
+
+// SetNillableUsageRouter sets the "usage_router" field if the given value is not nil.
+func (pu *ProjectUpdate) SetNillableUsageRouter(i *int) *ProjectUpdate {
+	if i != nil {
+		pu.SetUsageRouter(*i)
+	}
+	return pu
+}
+
+// AddUsageRouter adds i to the "usage_router" field.
+func (pu *ProjectUpdate) AddUsageRouter(i int) *ProjectUpdate {
+	pu.mutation.AddUsageRouter(i)
 	return pu
 }
 
@@ -438,11 +543,23 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := pu.mutation.AddedQuotaCPU(); ok {
 		_spec.AddField(project.FieldQuotaCPU, field.TypeInt, value)
 	}
+	if value, ok := pu.mutation.UsageCPU(); ok {
+		_spec.SetField(project.FieldUsageCPU, field.TypeInt, value)
+	}
+	if value, ok := pu.mutation.AddedUsageCPU(); ok {
+		_spec.AddField(project.FieldUsageCPU, field.TypeInt, value)
+	}
 	if value, ok := pu.mutation.QuotaRAM(); ok {
 		_spec.SetField(project.FieldQuotaRAM, field.TypeInt, value)
 	}
 	if value, ok := pu.mutation.AddedQuotaRAM(); ok {
 		_spec.AddField(project.FieldQuotaRAM, field.TypeInt, value)
+	}
+	if value, ok := pu.mutation.UsageRAM(); ok {
+		_spec.SetField(project.FieldUsageRAM, field.TypeInt, value)
+	}
+	if value, ok := pu.mutation.AddedUsageRAM(); ok {
+		_spec.AddField(project.FieldUsageRAM, field.TypeInt, value)
 	}
 	if value, ok := pu.mutation.QuotaDisk(); ok {
 		_spec.SetField(project.FieldQuotaDisk, field.TypeInt, value)
@@ -450,17 +567,35 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := pu.mutation.AddedQuotaDisk(); ok {
 		_spec.AddField(project.FieldQuotaDisk, field.TypeInt, value)
 	}
+	if value, ok := pu.mutation.UsageDisk(); ok {
+		_spec.SetField(project.FieldUsageDisk, field.TypeInt, value)
+	}
+	if value, ok := pu.mutation.AddedUsageDisk(); ok {
+		_spec.AddField(project.FieldUsageDisk, field.TypeInt, value)
+	}
 	if value, ok := pu.mutation.QuotaNetwork(); ok {
 		_spec.SetField(project.FieldQuotaNetwork, field.TypeInt, value)
 	}
 	if value, ok := pu.mutation.AddedQuotaNetwork(); ok {
 		_spec.AddField(project.FieldQuotaNetwork, field.TypeInt, value)
 	}
+	if value, ok := pu.mutation.UsageNetwork(); ok {
+		_spec.SetField(project.FieldUsageNetwork, field.TypeInt, value)
+	}
+	if value, ok := pu.mutation.AddedUsageNetwork(); ok {
+		_spec.AddField(project.FieldUsageNetwork, field.TypeInt, value)
+	}
 	if value, ok := pu.mutation.QuotaRouter(); ok {
 		_spec.SetField(project.FieldQuotaRouter, field.TypeInt, value)
 	}
 	if value, ok := pu.mutation.AddedQuotaRouter(); ok {
 		_spec.AddField(project.FieldQuotaRouter, field.TypeInt, value)
+	}
+	if value, ok := pu.mutation.UsageRouter(); ok {
+		_spec.SetField(project.FieldUsageRouter, field.TypeInt, value)
+	}
+	if value, ok := pu.mutation.AddedUsageRouter(); ok {
+		_spec.AddField(project.FieldUsageRouter, field.TypeInt, value)
 	}
 	if pu.mutation.MembersCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -835,6 +970,27 @@ func (puo *ProjectUpdateOne) AddQuotaCPU(i int) *ProjectUpdateOne {
 	return puo
 }
 
+// SetUsageCPU sets the "usage_cpu" field.
+func (puo *ProjectUpdateOne) SetUsageCPU(i int) *ProjectUpdateOne {
+	puo.mutation.ResetUsageCPU()
+	puo.mutation.SetUsageCPU(i)
+	return puo
+}
+
+// SetNillableUsageCPU sets the "usage_cpu" field if the given value is not nil.
+func (puo *ProjectUpdateOne) SetNillableUsageCPU(i *int) *ProjectUpdateOne {
+	if i != nil {
+		puo.SetUsageCPU(*i)
+	}
+	return puo
+}
+
+// AddUsageCPU adds i to the "usage_cpu" field.
+func (puo *ProjectUpdateOne) AddUsageCPU(i int) *ProjectUpdateOne {
+	puo.mutation.AddUsageCPU(i)
+	return puo
+}
+
 // SetQuotaRAM sets the "quota_ram" field.
 func (puo *ProjectUpdateOne) SetQuotaRAM(i int) *ProjectUpdateOne {
 	puo.mutation.ResetQuotaRAM()
@@ -853,6 +1009,27 @@ func (puo *ProjectUpdateOne) SetNillableQuotaRAM(i *int) *ProjectUpdateOne {
 // AddQuotaRAM adds i to the "quota_ram" field.
 func (puo *ProjectUpdateOne) AddQuotaRAM(i int) *ProjectUpdateOne {
 	puo.mutation.AddQuotaRAM(i)
+	return puo
+}
+
+// SetUsageRAM sets the "usage_ram" field.
+func (puo *ProjectUpdateOne) SetUsageRAM(i int) *ProjectUpdateOne {
+	puo.mutation.ResetUsageRAM()
+	puo.mutation.SetUsageRAM(i)
+	return puo
+}
+
+// SetNillableUsageRAM sets the "usage_ram" field if the given value is not nil.
+func (puo *ProjectUpdateOne) SetNillableUsageRAM(i *int) *ProjectUpdateOne {
+	if i != nil {
+		puo.SetUsageRAM(*i)
+	}
+	return puo
+}
+
+// AddUsageRAM adds i to the "usage_ram" field.
+func (puo *ProjectUpdateOne) AddUsageRAM(i int) *ProjectUpdateOne {
+	puo.mutation.AddUsageRAM(i)
 	return puo
 }
 
@@ -877,6 +1054,27 @@ func (puo *ProjectUpdateOne) AddQuotaDisk(i int) *ProjectUpdateOne {
 	return puo
 }
 
+// SetUsageDisk sets the "usage_disk" field.
+func (puo *ProjectUpdateOne) SetUsageDisk(i int) *ProjectUpdateOne {
+	puo.mutation.ResetUsageDisk()
+	puo.mutation.SetUsageDisk(i)
+	return puo
+}
+
+// SetNillableUsageDisk sets the "usage_disk" field if the given value is not nil.
+func (puo *ProjectUpdateOne) SetNillableUsageDisk(i *int) *ProjectUpdateOne {
+	if i != nil {
+		puo.SetUsageDisk(*i)
+	}
+	return puo
+}
+
+// AddUsageDisk adds i to the "usage_disk" field.
+func (puo *ProjectUpdateOne) AddUsageDisk(i int) *ProjectUpdateOne {
+	puo.mutation.AddUsageDisk(i)
+	return puo
+}
+
 // SetQuotaNetwork sets the "quota_network" field.
 func (puo *ProjectUpdateOne) SetQuotaNetwork(i int) *ProjectUpdateOne {
 	puo.mutation.ResetQuotaNetwork()
@@ -898,6 +1096,27 @@ func (puo *ProjectUpdateOne) AddQuotaNetwork(i int) *ProjectUpdateOne {
 	return puo
 }
 
+// SetUsageNetwork sets the "usage_network" field.
+func (puo *ProjectUpdateOne) SetUsageNetwork(i int) *ProjectUpdateOne {
+	puo.mutation.ResetUsageNetwork()
+	puo.mutation.SetUsageNetwork(i)
+	return puo
+}
+
+// SetNillableUsageNetwork sets the "usage_network" field if the given value is not nil.
+func (puo *ProjectUpdateOne) SetNillableUsageNetwork(i *int) *ProjectUpdateOne {
+	if i != nil {
+		puo.SetUsageNetwork(*i)
+	}
+	return puo
+}
+
+// AddUsageNetwork adds i to the "usage_network" field.
+func (puo *ProjectUpdateOne) AddUsageNetwork(i int) *ProjectUpdateOne {
+	puo.mutation.AddUsageNetwork(i)
+	return puo
+}
+
 // SetQuotaRouter sets the "quota_router" field.
 func (puo *ProjectUpdateOne) SetQuotaRouter(i int) *ProjectUpdateOne {
 	puo.mutation.ResetQuotaRouter()
@@ -916,6 +1135,27 @@ func (puo *ProjectUpdateOne) SetNillableQuotaRouter(i *int) *ProjectUpdateOne {
 // AddQuotaRouter adds i to the "quota_router" field.
 func (puo *ProjectUpdateOne) AddQuotaRouter(i int) *ProjectUpdateOne {
 	puo.mutation.AddQuotaRouter(i)
+	return puo
+}
+
+// SetUsageRouter sets the "usage_router" field.
+func (puo *ProjectUpdateOne) SetUsageRouter(i int) *ProjectUpdateOne {
+	puo.mutation.ResetUsageRouter()
+	puo.mutation.SetUsageRouter(i)
+	return puo
+}
+
+// SetNillableUsageRouter sets the "usage_router" field if the given value is not nil.
+func (puo *ProjectUpdateOne) SetNillableUsageRouter(i *int) *ProjectUpdateOne {
+	if i != nil {
+		puo.SetUsageRouter(*i)
+	}
+	return puo
+}
+
+// AddUsageRouter adds i to the "usage_router" field.
+func (puo *ProjectUpdateOne) AddUsageRouter(i int) *ProjectUpdateOne {
+	puo.mutation.AddUsageRouter(i)
 	return puo
 }
 
@@ -1227,11 +1467,23 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 	if value, ok := puo.mutation.AddedQuotaCPU(); ok {
 		_spec.AddField(project.FieldQuotaCPU, field.TypeInt, value)
 	}
+	if value, ok := puo.mutation.UsageCPU(); ok {
+		_spec.SetField(project.FieldUsageCPU, field.TypeInt, value)
+	}
+	if value, ok := puo.mutation.AddedUsageCPU(); ok {
+		_spec.AddField(project.FieldUsageCPU, field.TypeInt, value)
+	}
 	if value, ok := puo.mutation.QuotaRAM(); ok {
 		_spec.SetField(project.FieldQuotaRAM, field.TypeInt, value)
 	}
 	if value, ok := puo.mutation.AddedQuotaRAM(); ok {
 		_spec.AddField(project.FieldQuotaRAM, field.TypeInt, value)
+	}
+	if value, ok := puo.mutation.UsageRAM(); ok {
+		_spec.SetField(project.FieldUsageRAM, field.TypeInt, value)
+	}
+	if value, ok := puo.mutation.AddedUsageRAM(); ok {
+		_spec.AddField(project.FieldUsageRAM, field.TypeInt, value)
 	}
 	if value, ok := puo.mutation.QuotaDisk(); ok {
 		_spec.SetField(project.FieldQuotaDisk, field.TypeInt, value)
@@ -1239,17 +1491,35 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 	if value, ok := puo.mutation.AddedQuotaDisk(); ok {
 		_spec.AddField(project.FieldQuotaDisk, field.TypeInt, value)
 	}
+	if value, ok := puo.mutation.UsageDisk(); ok {
+		_spec.SetField(project.FieldUsageDisk, field.TypeInt, value)
+	}
+	if value, ok := puo.mutation.AddedUsageDisk(); ok {
+		_spec.AddField(project.FieldUsageDisk, field.TypeInt, value)
+	}
 	if value, ok := puo.mutation.QuotaNetwork(); ok {
 		_spec.SetField(project.FieldQuotaNetwork, field.TypeInt, value)
 	}
 	if value, ok := puo.mutation.AddedQuotaNetwork(); ok {
 		_spec.AddField(project.FieldQuotaNetwork, field.TypeInt, value)
 	}
+	if value, ok := puo.mutation.UsageNetwork(); ok {
+		_spec.SetField(project.FieldUsageNetwork, field.TypeInt, value)
+	}
+	if value, ok := puo.mutation.AddedUsageNetwork(); ok {
+		_spec.AddField(project.FieldUsageNetwork, field.TypeInt, value)
+	}
 	if value, ok := puo.mutation.QuotaRouter(); ok {
 		_spec.SetField(project.FieldQuotaRouter, field.TypeInt, value)
 	}
 	if value, ok := puo.mutation.AddedQuotaRouter(); ok {
 		_spec.AddField(project.FieldQuotaRouter, field.TypeInt, value)
+	}
+	if value, ok := puo.mutation.UsageRouter(); ok {
+		_spec.SetField(project.FieldUsageRouter, field.TypeInt, value)
+	}
+	if value, ok := puo.mutation.AddedUsageRouter(); ok {
+		_spec.AddField(project.FieldUsageRouter, field.TypeInt, value)
 	}
 	if puo.mutation.MembersCleared() {
 		edge := &sqlgraph.EdgeSpec{

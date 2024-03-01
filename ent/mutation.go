@@ -5442,14 +5442,24 @@ type ProjectMutation struct {
 	name                     *string
 	quota_cpu                *int
 	addquota_cpu             *int
+	usage_cpu                *int
+	addusage_cpu             *int
 	quota_ram                *int
 	addquota_ram             *int
+	usage_ram                *int
+	addusage_ram             *int
 	quota_disk               *int
 	addquota_disk            *int
+	usage_disk               *int
+	addusage_disk            *int
 	quota_network            *int
 	addquota_network         *int
+	usage_network            *int
+	addusage_network         *int
 	quota_router             *int
 	addquota_router          *int
+	usage_router             *int
+	addusage_router          *int
 	clearedFields            map[string]struct{}
 	members                  map[uuid.UUID]struct{}
 	removedmembers           map[uuid.UUID]struct{}
@@ -5742,6 +5752,62 @@ func (m *ProjectMutation) ResetQuotaCPU() {
 	m.addquota_cpu = nil
 }
 
+// SetUsageCPU sets the "usage_cpu" field.
+func (m *ProjectMutation) SetUsageCPU(i int) {
+	m.usage_cpu = &i
+	m.addusage_cpu = nil
+}
+
+// UsageCPU returns the value of the "usage_cpu" field in the mutation.
+func (m *ProjectMutation) UsageCPU() (r int, exists bool) {
+	v := m.usage_cpu
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUsageCPU returns the old "usage_cpu" field's value of the Project entity.
+// If the Project object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectMutation) OldUsageCPU(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUsageCPU is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUsageCPU requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUsageCPU: %w", err)
+	}
+	return oldValue.UsageCPU, nil
+}
+
+// AddUsageCPU adds i to the "usage_cpu" field.
+func (m *ProjectMutation) AddUsageCPU(i int) {
+	if m.addusage_cpu != nil {
+		*m.addusage_cpu += i
+	} else {
+		m.addusage_cpu = &i
+	}
+}
+
+// AddedUsageCPU returns the value that was added to the "usage_cpu" field in this mutation.
+func (m *ProjectMutation) AddedUsageCPU() (r int, exists bool) {
+	v := m.addusage_cpu
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUsageCPU resets all changes to the "usage_cpu" field.
+func (m *ProjectMutation) ResetUsageCPU() {
+	m.usage_cpu = nil
+	m.addusage_cpu = nil
+}
+
 // SetQuotaRAM sets the "quota_ram" field.
 func (m *ProjectMutation) SetQuotaRAM(i int) {
 	m.quota_ram = &i
@@ -5796,6 +5862,62 @@ func (m *ProjectMutation) AddedQuotaRAM() (r int, exists bool) {
 func (m *ProjectMutation) ResetQuotaRAM() {
 	m.quota_ram = nil
 	m.addquota_ram = nil
+}
+
+// SetUsageRAM sets the "usage_ram" field.
+func (m *ProjectMutation) SetUsageRAM(i int) {
+	m.usage_ram = &i
+	m.addusage_ram = nil
+}
+
+// UsageRAM returns the value of the "usage_ram" field in the mutation.
+func (m *ProjectMutation) UsageRAM() (r int, exists bool) {
+	v := m.usage_ram
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUsageRAM returns the old "usage_ram" field's value of the Project entity.
+// If the Project object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectMutation) OldUsageRAM(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUsageRAM is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUsageRAM requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUsageRAM: %w", err)
+	}
+	return oldValue.UsageRAM, nil
+}
+
+// AddUsageRAM adds i to the "usage_ram" field.
+func (m *ProjectMutation) AddUsageRAM(i int) {
+	if m.addusage_ram != nil {
+		*m.addusage_ram += i
+	} else {
+		m.addusage_ram = &i
+	}
+}
+
+// AddedUsageRAM returns the value that was added to the "usage_ram" field in this mutation.
+func (m *ProjectMutation) AddedUsageRAM() (r int, exists bool) {
+	v := m.addusage_ram
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUsageRAM resets all changes to the "usage_ram" field.
+func (m *ProjectMutation) ResetUsageRAM() {
+	m.usage_ram = nil
+	m.addusage_ram = nil
 }
 
 // SetQuotaDisk sets the "quota_disk" field.
@@ -5854,6 +5976,62 @@ func (m *ProjectMutation) ResetQuotaDisk() {
 	m.addquota_disk = nil
 }
 
+// SetUsageDisk sets the "usage_disk" field.
+func (m *ProjectMutation) SetUsageDisk(i int) {
+	m.usage_disk = &i
+	m.addusage_disk = nil
+}
+
+// UsageDisk returns the value of the "usage_disk" field in the mutation.
+func (m *ProjectMutation) UsageDisk() (r int, exists bool) {
+	v := m.usage_disk
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUsageDisk returns the old "usage_disk" field's value of the Project entity.
+// If the Project object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectMutation) OldUsageDisk(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUsageDisk is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUsageDisk requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUsageDisk: %w", err)
+	}
+	return oldValue.UsageDisk, nil
+}
+
+// AddUsageDisk adds i to the "usage_disk" field.
+func (m *ProjectMutation) AddUsageDisk(i int) {
+	if m.addusage_disk != nil {
+		*m.addusage_disk += i
+	} else {
+		m.addusage_disk = &i
+	}
+}
+
+// AddedUsageDisk returns the value that was added to the "usage_disk" field in this mutation.
+func (m *ProjectMutation) AddedUsageDisk() (r int, exists bool) {
+	v := m.addusage_disk
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUsageDisk resets all changes to the "usage_disk" field.
+func (m *ProjectMutation) ResetUsageDisk() {
+	m.usage_disk = nil
+	m.addusage_disk = nil
+}
+
 // SetQuotaNetwork sets the "quota_network" field.
 func (m *ProjectMutation) SetQuotaNetwork(i int) {
 	m.quota_network = &i
@@ -5910,6 +6088,62 @@ func (m *ProjectMutation) ResetQuotaNetwork() {
 	m.addquota_network = nil
 }
 
+// SetUsageNetwork sets the "usage_network" field.
+func (m *ProjectMutation) SetUsageNetwork(i int) {
+	m.usage_network = &i
+	m.addusage_network = nil
+}
+
+// UsageNetwork returns the value of the "usage_network" field in the mutation.
+func (m *ProjectMutation) UsageNetwork() (r int, exists bool) {
+	v := m.usage_network
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUsageNetwork returns the old "usage_network" field's value of the Project entity.
+// If the Project object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectMutation) OldUsageNetwork(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUsageNetwork is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUsageNetwork requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUsageNetwork: %w", err)
+	}
+	return oldValue.UsageNetwork, nil
+}
+
+// AddUsageNetwork adds i to the "usage_network" field.
+func (m *ProjectMutation) AddUsageNetwork(i int) {
+	if m.addusage_network != nil {
+		*m.addusage_network += i
+	} else {
+		m.addusage_network = &i
+	}
+}
+
+// AddedUsageNetwork returns the value that was added to the "usage_network" field in this mutation.
+func (m *ProjectMutation) AddedUsageNetwork() (r int, exists bool) {
+	v := m.addusage_network
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUsageNetwork resets all changes to the "usage_network" field.
+func (m *ProjectMutation) ResetUsageNetwork() {
+	m.usage_network = nil
+	m.addusage_network = nil
+}
+
 // SetQuotaRouter sets the "quota_router" field.
 func (m *ProjectMutation) SetQuotaRouter(i int) {
 	m.quota_router = &i
@@ -5964,6 +6198,62 @@ func (m *ProjectMutation) AddedQuotaRouter() (r int, exists bool) {
 func (m *ProjectMutation) ResetQuotaRouter() {
 	m.quota_router = nil
 	m.addquota_router = nil
+}
+
+// SetUsageRouter sets the "usage_router" field.
+func (m *ProjectMutation) SetUsageRouter(i int) {
+	m.usage_router = &i
+	m.addusage_router = nil
+}
+
+// UsageRouter returns the value of the "usage_router" field in the mutation.
+func (m *ProjectMutation) UsageRouter() (r int, exists bool) {
+	v := m.usage_router
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUsageRouter returns the old "usage_router" field's value of the Project entity.
+// If the Project object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectMutation) OldUsageRouter(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUsageRouter is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUsageRouter requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUsageRouter: %w", err)
+	}
+	return oldValue.UsageRouter, nil
+}
+
+// AddUsageRouter adds i to the "usage_router" field.
+func (m *ProjectMutation) AddUsageRouter(i int) {
+	if m.addusage_router != nil {
+		*m.addusage_router += i
+	} else {
+		m.addusage_router = &i
+	}
+}
+
+// AddedUsageRouter returns the value that was added to the "usage_router" field in this mutation.
+func (m *ProjectMutation) AddedUsageRouter() (r int, exists bool) {
+	v := m.addusage_router
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUsageRouter resets all changes to the "usage_router" field.
+func (m *ProjectMutation) ResetUsageRouter() {
+	m.usage_router = nil
+	m.addusage_router = nil
 }
 
 // AddMemberIDs adds the "members" edge to the User entity by ids.
@@ -6324,7 +6614,7 @@ func (m *ProjectMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ProjectMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 13)
 	if m.created_at != nil {
 		fields = append(fields, project.FieldCreatedAt)
 	}
@@ -6337,17 +6627,32 @@ func (m *ProjectMutation) Fields() []string {
 	if m.quota_cpu != nil {
 		fields = append(fields, project.FieldQuotaCPU)
 	}
+	if m.usage_cpu != nil {
+		fields = append(fields, project.FieldUsageCPU)
+	}
 	if m.quota_ram != nil {
 		fields = append(fields, project.FieldQuotaRAM)
+	}
+	if m.usage_ram != nil {
+		fields = append(fields, project.FieldUsageRAM)
 	}
 	if m.quota_disk != nil {
 		fields = append(fields, project.FieldQuotaDisk)
 	}
+	if m.usage_disk != nil {
+		fields = append(fields, project.FieldUsageDisk)
+	}
 	if m.quota_network != nil {
 		fields = append(fields, project.FieldQuotaNetwork)
 	}
+	if m.usage_network != nil {
+		fields = append(fields, project.FieldUsageNetwork)
+	}
 	if m.quota_router != nil {
 		fields = append(fields, project.FieldQuotaRouter)
+	}
+	if m.usage_router != nil {
+		fields = append(fields, project.FieldUsageRouter)
 	}
 	return fields
 }
@@ -6365,14 +6670,24 @@ func (m *ProjectMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case project.FieldQuotaCPU:
 		return m.QuotaCPU()
+	case project.FieldUsageCPU:
+		return m.UsageCPU()
 	case project.FieldQuotaRAM:
 		return m.QuotaRAM()
+	case project.FieldUsageRAM:
+		return m.UsageRAM()
 	case project.FieldQuotaDisk:
 		return m.QuotaDisk()
+	case project.FieldUsageDisk:
+		return m.UsageDisk()
 	case project.FieldQuotaNetwork:
 		return m.QuotaNetwork()
+	case project.FieldUsageNetwork:
+		return m.UsageNetwork()
 	case project.FieldQuotaRouter:
 		return m.QuotaRouter()
+	case project.FieldUsageRouter:
+		return m.UsageRouter()
 	}
 	return nil, false
 }
@@ -6390,14 +6705,24 @@ func (m *ProjectMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldName(ctx)
 	case project.FieldQuotaCPU:
 		return m.OldQuotaCPU(ctx)
+	case project.FieldUsageCPU:
+		return m.OldUsageCPU(ctx)
 	case project.FieldQuotaRAM:
 		return m.OldQuotaRAM(ctx)
+	case project.FieldUsageRAM:
+		return m.OldUsageRAM(ctx)
 	case project.FieldQuotaDisk:
 		return m.OldQuotaDisk(ctx)
+	case project.FieldUsageDisk:
+		return m.OldUsageDisk(ctx)
 	case project.FieldQuotaNetwork:
 		return m.OldQuotaNetwork(ctx)
+	case project.FieldUsageNetwork:
+		return m.OldUsageNetwork(ctx)
 	case project.FieldQuotaRouter:
 		return m.OldQuotaRouter(ctx)
+	case project.FieldUsageRouter:
+		return m.OldUsageRouter(ctx)
 	}
 	return nil, fmt.Errorf("unknown Project field %s", name)
 }
@@ -6435,12 +6760,26 @@ func (m *ProjectMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetQuotaCPU(v)
 		return nil
+	case project.FieldUsageCPU:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUsageCPU(v)
+		return nil
 	case project.FieldQuotaRAM:
 		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetQuotaRAM(v)
+		return nil
+	case project.FieldUsageRAM:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUsageRAM(v)
 		return nil
 	case project.FieldQuotaDisk:
 		v, ok := value.(int)
@@ -6449,6 +6788,13 @@ func (m *ProjectMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetQuotaDisk(v)
 		return nil
+	case project.FieldUsageDisk:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUsageDisk(v)
+		return nil
 	case project.FieldQuotaNetwork:
 		v, ok := value.(int)
 		if !ok {
@@ -6456,12 +6802,26 @@ func (m *ProjectMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetQuotaNetwork(v)
 		return nil
+	case project.FieldUsageNetwork:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUsageNetwork(v)
+		return nil
 	case project.FieldQuotaRouter:
 		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetQuotaRouter(v)
+		return nil
+	case project.FieldUsageRouter:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUsageRouter(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Project field %s", name)
@@ -6474,17 +6834,32 @@ func (m *ProjectMutation) AddedFields() []string {
 	if m.addquota_cpu != nil {
 		fields = append(fields, project.FieldQuotaCPU)
 	}
+	if m.addusage_cpu != nil {
+		fields = append(fields, project.FieldUsageCPU)
+	}
 	if m.addquota_ram != nil {
 		fields = append(fields, project.FieldQuotaRAM)
+	}
+	if m.addusage_ram != nil {
+		fields = append(fields, project.FieldUsageRAM)
 	}
 	if m.addquota_disk != nil {
 		fields = append(fields, project.FieldQuotaDisk)
 	}
+	if m.addusage_disk != nil {
+		fields = append(fields, project.FieldUsageDisk)
+	}
 	if m.addquota_network != nil {
 		fields = append(fields, project.FieldQuotaNetwork)
 	}
+	if m.addusage_network != nil {
+		fields = append(fields, project.FieldUsageNetwork)
+	}
 	if m.addquota_router != nil {
 		fields = append(fields, project.FieldQuotaRouter)
+	}
+	if m.addusage_router != nil {
+		fields = append(fields, project.FieldUsageRouter)
 	}
 	return fields
 }
@@ -6496,14 +6871,24 @@ func (m *ProjectMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case project.FieldQuotaCPU:
 		return m.AddedQuotaCPU()
+	case project.FieldUsageCPU:
+		return m.AddedUsageCPU()
 	case project.FieldQuotaRAM:
 		return m.AddedQuotaRAM()
+	case project.FieldUsageRAM:
+		return m.AddedUsageRAM()
 	case project.FieldQuotaDisk:
 		return m.AddedQuotaDisk()
+	case project.FieldUsageDisk:
+		return m.AddedUsageDisk()
 	case project.FieldQuotaNetwork:
 		return m.AddedQuotaNetwork()
+	case project.FieldUsageNetwork:
+		return m.AddedUsageNetwork()
 	case project.FieldQuotaRouter:
 		return m.AddedQuotaRouter()
+	case project.FieldUsageRouter:
+		return m.AddedUsageRouter()
 	}
 	return nil, false
 }
@@ -6520,12 +6905,26 @@ func (m *ProjectMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddQuotaCPU(v)
 		return nil
+	case project.FieldUsageCPU:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUsageCPU(v)
+		return nil
 	case project.FieldQuotaRAM:
 		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddQuotaRAM(v)
+		return nil
+	case project.FieldUsageRAM:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUsageRAM(v)
 		return nil
 	case project.FieldQuotaDisk:
 		v, ok := value.(int)
@@ -6534,6 +6933,13 @@ func (m *ProjectMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddQuotaDisk(v)
 		return nil
+	case project.FieldUsageDisk:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUsageDisk(v)
+		return nil
 	case project.FieldQuotaNetwork:
 		v, ok := value.(int)
 		if !ok {
@@ -6541,12 +6947,26 @@ func (m *ProjectMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddQuotaNetwork(v)
 		return nil
+	case project.FieldUsageNetwork:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUsageNetwork(v)
+		return nil
 	case project.FieldQuotaRouter:
 		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddQuotaRouter(v)
+		return nil
+	case project.FieldUsageRouter:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUsageRouter(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Project numeric field %s", name)
@@ -6587,17 +7007,32 @@ func (m *ProjectMutation) ResetField(name string) error {
 	case project.FieldQuotaCPU:
 		m.ResetQuotaCPU()
 		return nil
+	case project.FieldUsageCPU:
+		m.ResetUsageCPU()
+		return nil
 	case project.FieldQuotaRAM:
 		m.ResetQuotaRAM()
+		return nil
+	case project.FieldUsageRAM:
+		m.ResetUsageRAM()
 		return nil
 	case project.FieldQuotaDisk:
 		m.ResetQuotaDisk()
 		return nil
+	case project.FieldUsageDisk:
+		m.ResetUsageDisk()
+		return nil
 	case project.FieldQuotaNetwork:
 		m.ResetQuotaNetwork()
 		return nil
+	case project.FieldUsageNetwork:
+		m.ResetUsageNetwork()
+		return nil
 	case project.FieldQuotaRouter:
 		m.ResetQuotaRouter()
+		return nil
+	case project.FieldUsageRouter:
+		m.ResetUsageRouter()
 		return nil
 	}
 	return fmt.Errorf("unknown Project field %s", name)

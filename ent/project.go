@@ -26,14 +26,24 @@ type Project struct {
 	Name string `json:"name,omitempty"`
 	// The quota for number of CPU cores
 	QuotaCPU int `json:"quota_cpu,omitempty"`
+	// The current usage for number of CPU cores
+	UsageCPU int `json:"usage_cpu,omitempty"`
 	// The quota for total RAM usage (MiB)
 	QuotaRAM int `json:"quota_ram,omitempty"`
+	// The current usage for total RAM usage (MiB)
+	UsageRAM int `json:"usage_ram,omitempty"`
 	// The quota for total disk usage (MiB)
 	QuotaDisk int `json:"quota_disk,omitempty"`
+	// The current usage for total disk usage (MiB)
+	UsageDisk int `json:"usage_disk,omitempty"`
 	// The quota for number of networks
 	QuotaNetwork int `json:"quota_network,omitempty"`
+	// The current usage for number of networks
+	UsageNetwork int `json:"usage_network,omitempty"`
 	// The quota for number of routers
 	QuotaRouter int `json:"quota_router,omitempty"`
+	// The current usage for number of routers
+	UsageRouter int `json:"usage_router,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ProjectQuery when eager-loading is set.
 	Edges        ProjectEdges `json:"edges"`
@@ -118,7 +128,7 @@ func (*Project) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case project.FieldQuotaCPU, project.FieldQuotaRAM, project.FieldQuotaDisk, project.FieldQuotaNetwork, project.FieldQuotaRouter:
+		case project.FieldQuotaCPU, project.FieldUsageCPU, project.FieldQuotaRAM, project.FieldUsageRAM, project.FieldQuotaDisk, project.FieldUsageDisk, project.FieldQuotaNetwork, project.FieldUsageNetwork, project.FieldQuotaRouter, project.FieldUsageRouter:
 			values[i] = new(sql.NullInt64)
 		case project.FieldName:
 			values[i] = new(sql.NullString)
@@ -171,11 +181,23 @@ func (pr *Project) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				pr.QuotaCPU = int(value.Int64)
 			}
+		case project.FieldUsageCPU:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field usage_cpu", values[i])
+			} else if value.Valid {
+				pr.UsageCPU = int(value.Int64)
+			}
 		case project.FieldQuotaRAM:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field quota_ram", values[i])
 			} else if value.Valid {
 				pr.QuotaRAM = int(value.Int64)
+			}
+		case project.FieldUsageRAM:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field usage_ram", values[i])
+			} else if value.Valid {
+				pr.UsageRAM = int(value.Int64)
 			}
 		case project.FieldQuotaDisk:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -183,17 +205,35 @@ func (pr *Project) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				pr.QuotaDisk = int(value.Int64)
 			}
+		case project.FieldUsageDisk:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field usage_disk", values[i])
+			} else if value.Valid {
+				pr.UsageDisk = int(value.Int64)
+			}
 		case project.FieldQuotaNetwork:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field quota_network", values[i])
 			} else if value.Valid {
 				pr.QuotaNetwork = int(value.Int64)
 			}
+		case project.FieldUsageNetwork:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field usage_network", values[i])
+			} else if value.Valid {
+				pr.UsageNetwork = int(value.Int64)
+			}
 		case project.FieldQuotaRouter:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field quota_router", values[i])
 			} else if value.Valid {
 				pr.QuotaRouter = int(value.Int64)
+			}
+		case project.FieldUsageRouter:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field usage_router", values[i])
+			} else if value.Valid {
+				pr.UsageRouter = int(value.Int64)
 			}
 		default:
 			pr.selectValues.Set(columns[i], values[i])
@@ -273,17 +313,32 @@ func (pr *Project) String() string {
 	builder.WriteString("quota_cpu=")
 	builder.WriteString(fmt.Sprintf("%v", pr.QuotaCPU))
 	builder.WriteString(", ")
+	builder.WriteString("usage_cpu=")
+	builder.WriteString(fmt.Sprintf("%v", pr.UsageCPU))
+	builder.WriteString(", ")
 	builder.WriteString("quota_ram=")
 	builder.WriteString(fmt.Sprintf("%v", pr.QuotaRAM))
+	builder.WriteString(", ")
+	builder.WriteString("usage_ram=")
+	builder.WriteString(fmt.Sprintf("%v", pr.UsageRAM))
 	builder.WriteString(", ")
 	builder.WriteString("quota_disk=")
 	builder.WriteString(fmt.Sprintf("%v", pr.QuotaDisk))
 	builder.WriteString(", ")
+	builder.WriteString("usage_disk=")
+	builder.WriteString(fmt.Sprintf("%v", pr.UsageDisk))
+	builder.WriteString(", ")
 	builder.WriteString("quota_network=")
 	builder.WriteString(fmt.Sprintf("%v", pr.QuotaNetwork))
 	builder.WriteString(", ")
+	builder.WriteString("usage_network=")
+	builder.WriteString(fmt.Sprintf("%v", pr.UsageNetwork))
+	builder.WriteString(", ")
 	builder.WriteString("quota_router=")
 	builder.WriteString(fmt.Sprintf("%v", pr.QuotaRouter))
+	builder.WriteString(", ")
+	builder.WriteString("usage_router=")
+	builder.WriteString(fmt.Sprintf("%v", pr.UsageRouter))
 	builder.WriteByte(')')
 	return builder.String()
 }

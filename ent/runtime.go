@@ -185,6 +185,26 @@ func init() {
 	project.DefaultUpdatedAt = projectDescUpdatedAt.Default.(func() time.Time)
 	// project.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	project.UpdateDefaultUpdatedAt = projectDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// projectDescUsageCPU is the schema descriptor for usage_cpu field.
+	projectDescUsageCPU := projectFields[3].Descriptor()
+	// project.DefaultUsageCPU holds the default value on creation for the usage_cpu field.
+	project.DefaultUsageCPU = projectDescUsageCPU.Default.(int)
+	// projectDescUsageRAM is the schema descriptor for usage_ram field.
+	projectDescUsageRAM := projectFields[5].Descriptor()
+	// project.DefaultUsageRAM holds the default value on creation for the usage_ram field.
+	project.DefaultUsageRAM = projectDescUsageRAM.Default.(int)
+	// projectDescUsageDisk is the schema descriptor for usage_disk field.
+	projectDescUsageDisk := projectFields[7].Descriptor()
+	// project.DefaultUsageDisk holds the default value on creation for the usage_disk field.
+	project.DefaultUsageDisk = projectDescUsageDisk.Default.(int)
+	// projectDescUsageNetwork is the schema descriptor for usage_network field.
+	projectDescUsageNetwork := projectFields[9].Descriptor()
+	// project.DefaultUsageNetwork holds the default value on creation for the usage_network field.
+	project.DefaultUsageNetwork = projectDescUsageNetwork.Default.(int)
+	// projectDescUsageRouter is the schema descriptor for usage_router field.
+	projectDescUsageRouter := projectFields[11].Descriptor()
+	// project.DefaultUsageRouter holds the default value on creation for the usage_router field.
+	project.DefaultUsageRouter = projectDescUsageRouter.Default.(int)
 	// projectDescID is the schema descriptor for id field.
 	projectDescID := projectFields[0].Descriptor()
 	// project.DefaultID holds the default value on creation for the id field.

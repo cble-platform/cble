@@ -67,9 +67,37 @@ func (pc *ProjectCreate) SetQuotaCPU(i int) *ProjectCreate {
 	return pc
 }
 
+// SetUsageCPU sets the "usage_cpu" field.
+func (pc *ProjectCreate) SetUsageCPU(i int) *ProjectCreate {
+	pc.mutation.SetUsageCPU(i)
+	return pc
+}
+
+// SetNillableUsageCPU sets the "usage_cpu" field if the given value is not nil.
+func (pc *ProjectCreate) SetNillableUsageCPU(i *int) *ProjectCreate {
+	if i != nil {
+		pc.SetUsageCPU(*i)
+	}
+	return pc
+}
+
 // SetQuotaRAM sets the "quota_ram" field.
 func (pc *ProjectCreate) SetQuotaRAM(i int) *ProjectCreate {
 	pc.mutation.SetQuotaRAM(i)
+	return pc
+}
+
+// SetUsageRAM sets the "usage_ram" field.
+func (pc *ProjectCreate) SetUsageRAM(i int) *ProjectCreate {
+	pc.mutation.SetUsageRAM(i)
+	return pc
+}
+
+// SetNillableUsageRAM sets the "usage_ram" field if the given value is not nil.
+func (pc *ProjectCreate) SetNillableUsageRAM(i *int) *ProjectCreate {
+	if i != nil {
+		pc.SetUsageRAM(*i)
+	}
 	return pc
 }
 
@@ -79,15 +107,57 @@ func (pc *ProjectCreate) SetQuotaDisk(i int) *ProjectCreate {
 	return pc
 }
 
+// SetUsageDisk sets the "usage_disk" field.
+func (pc *ProjectCreate) SetUsageDisk(i int) *ProjectCreate {
+	pc.mutation.SetUsageDisk(i)
+	return pc
+}
+
+// SetNillableUsageDisk sets the "usage_disk" field if the given value is not nil.
+func (pc *ProjectCreate) SetNillableUsageDisk(i *int) *ProjectCreate {
+	if i != nil {
+		pc.SetUsageDisk(*i)
+	}
+	return pc
+}
+
 // SetQuotaNetwork sets the "quota_network" field.
 func (pc *ProjectCreate) SetQuotaNetwork(i int) *ProjectCreate {
 	pc.mutation.SetQuotaNetwork(i)
 	return pc
 }
 
+// SetUsageNetwork sets the "usage_network" field.
+func (pc *ProjectCreate) SetUsageNetwork(i int) *ProjectCreate {
+	pc.mutation.SetUsageNetwork(i)
+	return pc
+}
+
+// SetNillableUsageNetwork sets the "usage_network" field if the given value is not nil.
+func (pc *ProjectCreate) SetNillableUsageNetwork(i *int) *ProjectCreate {
+	if i != nil {
+		pc.SetUsageNetwork(*i)
+	}
+	return pc
+}
+
 // SetQuotaRouter sets the "quota_router" field.
 func (pc *ProjectCreate) SetQuotaRouter(i int) *ProjectCreate {
 	pc.mutation.SetQuotaRouter(i)
+	return pc
+}
+
+// SetUsageRouter sets the "usage_router" field.
+func (pc *ProjectCreate) SetUsageRouter(i int) *ProjectCreate {
+	pc.mutation.SetUsageRouter(i)
+	return pc
+}
+
+// SetNillableUsageRouter sets the "usage_router" field if the given value is not nil.
+func (pc *ProjectCreate) SetNillableUsageRouter(i *int) *ProjectCreate {
+	if i != nil {
+		pc.SetUsageRouter(*i)
+	}
 	return pc
 }
 
@@ -238,6 +308,26 @@ func (pc *ProjectCreate) defaults() {
 		v := project.DefaultUpdatedAt()
 		pc.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := pc.mutation.UsageCPU(); !ok {
+		v := project.DefaultUsageCPU
+		pc.mutation.SetUsageCPU(v)
+	}
+	if _, ok := pc.mutation.UsageRAM(); !ok {
+		v := project.DefaultUsageRAM
+		pc.mutation.SetUsageRAM(v)
+	}
+	if _, ok := pc.mutation.UsageDisk(); !ok {
+		v := project.DefaultUsageDisk
+		pc.mutation.SetUsageDisk(v)
+	}
+	if _, ok := pc.mutation.UsageNetwork(); !ok {
+		v := project.DefaultUsageNetwork
+		pc.mutation.SetUsageNetwork(v)
+	}
+	if _, ok := pc.mutation.UsageRouter(); !ok {
+		v := project.DefaultUsageRouter
+		pc.mutation.SetUsageRouter(v)
+	}
 	if _, ok := pc.mutation.ID(); !ok {
 		v := project.DefaultID()
 		pc.mutation.SetID(v)
@@ -258,17 +348,32 @@ func (pc *ProjectCreate) check() error {
 	if _, ok := pc.mutation.QuotaCPU(); !ok {
 		return &ValidationError{Name: "quota_cpu", err: errors.New(`ent: missing required field "Project.quota_cpu"`)}
 	}
+	if _, ok := pc.mutation.UsageCPU(); !ok {
+		return &ValidationError{Name: "usage_cpu", err: errors.New(`ent: missing required field "Project.usage_cpu"`)}
+	}
 	if _, ok := pc.mutation.QuotaRAM(); !ok {
 		return &ValidationError{Name: "quota_ram", err: errors.New(`ent: missing required field "Project.quota_ram"`)}
+	}
+	if _, ok := pc.mutation.UsageRAM(); !ok {
+		return &ValidationError{Name: "usage_ram", err: errors.New(`ent: missing required field "Project.usage_ram"`)}
 	}
 	if _, ok := pc.mutation.QuotaDisk(); !ok {
 		return &ValidationError{Name: "quota_disk", err: errors.New(`ent: missing required field "Project.quota_disk"`)}
 	}
+	if _, ok := pc.mutation.UsageDisk(); !ok {
+		return &ValidationError{Name: "usage_disk", err: errors.New(`ent: missing required field "Project.usage_disk"`)}
+	}
 	if _, ok := pc.mutation.QuotaNetwork(); !ok {
 		return &ValidationError{Name: "quota_network", err: errors.New(`ent: missing required field "Project.quota_network"`)}
 	}
+	if _, ok := pc.mutation.UsageNetwork(); !ok {
+		return &ValidationError{Name: "usage_network", err: errors.New(`ent: missing required field "Project.usage_network"`)}
+	}
 	if _, ok := pc.mutation.QuotaRouter(); !ok {
 		return &ValidationError{Name: "quota_router", err: errors.New(`ent: missing required field "Project.quota_router"`)}
+	}
+	if _, ok := pc.mutation.UsageRouter(); !ok {
+		return &ValidationError{Name: "usage_router", err: errors.New(`ent: missing required field "Project.usage_router"`)}
 	}
 	return nil
 }
@@ -321,21 +426,41 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 		_spec.SetField(project.FieldQuotaCPU, field.TypeInt, value)
 		_node.QuotaCPU = value
 	}
+	if value, ok := pc.mutation.UsageCPU(); ok {
+		_spec.SetField(project.FieldUsageCPU, field.TypeInt, value)
+		_node.UsageCPU = value
+	}
 	if value, ok := pc.mutation.QuotaRAM(); ok {
 		_spec.SetField(project.FieldQuotaRAM, field.TypeInt, value)
 		_node.QuotaRAM = value
+	}
+	if value, ok := pc.mutation.UsageRAM(); ok {
+		_spec.SetField(project.FieldUsageRAM, field.TypeInt, value)
+		_node.UsageRAM = value
 	}
 	if value, ok := pc.mutation.QuotaDisk(); ok {
 		_spec.SetField(project.FieldQuotaDisk, field.TypeInt, value)
 		_node.QuotaDisk = value
 	}
+	if value, ok := pc.mutation.UsageDisk(); ok {
+		_spec.SetField(project.FieldUsageDisk, field.TypeInt, value)
+		_node.UsageDisk = value
+	}
 	if value, ok := pc.mutation.QuotaNetwork(); ok {
 		_spec.SetField(project.FieldQuotaNetwork, field.TypeInt, value)
 		_node.QuotaNetwork = value
 	}
+	if value, ok := pc.mutation.UsageNetwork(); ok {
+		_spec.SetField(project.FieldUsageNetwork, field.TypeInt, value)
+		_node.UsageNetwork = value
+	}
 	if value, ok := pc.mutation.QuotaRouter(); ok {
 		_spec.SetField(project.FieldQuotaRouter, field.TypeInt, value)
 		_node.QuotaRouter = value
+	}
+	if value, ok := pc.mutation.UsageRouter(); ok {
+		_spec.SetField(project.FieldUsageRouter, field.TypeInt, value)
+		_node.UsageRouter = value
 	}
 	if nodes := pc.mutation.MembersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

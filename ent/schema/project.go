@@ -23,14 +23,29 @@ func (Project) Fields() []ent.Field {
 			Comment("The name of the project"),
 		field.Int("quota_cpu").
 			Comment("The quota for number of CPU cores"),
+		field.Int("usage_cpu").
+			Default(0).
+			Comment("The current usage for number of CPU cores"),
 		field.Int("quota_ram").
 			Comment("The quota for total RAM usage (MiB)"),
+		field.Int("usage_ram").
+			Default(0).
+			Comment("The current usage for total RAM usage (MiB)"),
 		field.Int("quota_disk").
 			Comment("The quota for total disk usage (MiB)"),
+		field.Int("usage_disk").
+			Default(0).
+			Comment("The current usage for total disk usage (MiB)"),
 		field.Int("quota_network").
 			Comment("The quota for number of networks"),
+		field.Int("usage_network").
+			Default(0).
+			Comment("The current usage for number of networks"),
 		field.Int("quota_router").
 			Comment("The quota for number of routers"),
+		field.Int("usage_router").
+			Default(0).
+			Comment("The current usage for number of routers"),
 	}
 }
 
