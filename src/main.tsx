@@ -15,6 +15,8 @@ import { ApolloProvider } from '@apollo/client'
 import YamlWorker from './yaml.worker.js?worker'
 import { SnackbarProvider } from 'notistack'
 import { ReactFlowProvider } from 'reactflow'
+import { Box, CircularProgress } from '@mui/material'
+import Logo from './components/logo'
 
 // Pages
 const Root = lazy(() => import('./routes/root'))
@@ -29,6 +31,7 @@ const DeploymentDetails = lazy(() => import('./routes/deployments/details'))
 const Providers = lazy(() => import('./routes/providers'))
 const ProviderForm = lazy(() => import('./routes/providers/form'))
 const Permissions = lazy(() => import('./routes/permissions'))
+const Projects = lazy(() => import('./routes/projects'))
 
 window.MonacoEnvironment = {
   getWorker(_, label) {
@@ -47,7 +50,42 @@ const LazyComponent = ({
 }: {
   element: React.ReactNode
 }): React.ReactElement => {
-  return <Suspense fallback={<>Loading...</>}>{element}</Suspense>
+  return (
+    <Suspense
+      fallback={
+        <Box
+          sx={{
+            width: '100dvw',
+            height: '100dvh',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Box sx={{ position: 'relative' }}>
+            <CircularProgress size="4em" />
+            <Logo
+              sx={{
+                width: '1.5em',
+                height: '1.5em',
+                display: { xs: 'none', md: 'flex' },
+                fill: '#F76902',
+                position: 'absolute',
+                transform: 'translate(-0.75em, -0.8em)',
+                top: '50%',
+                bottom: '50%',
+                left: '50%',
+                right: '50%',
+              }}
+            />
+          </Box>
+        </Box>
+      }
+    >
+      {element}
+    </Suspense>
+  )
 }
 
 const router = createBrowserRouter([
@@ -122,6 +160,12 @@ const router = createBrowserRouter([
             path: 'edit/:id',
             element: <LazyComponent element={<ProviderForm action="edit" />} />,
           },
+        ],
+      },
+      {
+        path: 'projects',
+        children: [
+          { index: true, element: <LazyComponent element={<Projects />} /> },
         ],
       },
     ],
