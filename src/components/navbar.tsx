@@ -73,19 +73,17 @@ export default function Navbar({
           </Box>
           <AdbIcon sx={{ display: { xs: 'flex', md: 'none' }, mr: 1 }} /> */}
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
-            {navPermissions?.listBlueprints && (
-              <Button
-                href="/blueprints"
-                sx={{
-                  my: 2,
-                  color: 'white',
-                  display: 'block',
-                  textAlign: 'center',
-                }}
-              >
-                Blueprints
-              </Button>
-            )}
+            <Button
+              href="/blueprints"
+              sx={{
+                my: 2,
+                color: 'white',
+                display: 'block',
+                textAlign: 'center',
+              }}
+            >
+              Blueprints
+            </Button>
             <Button
               href="/deployments"
               sx={{
@@ -96,6 +94,17 @@ export default function Navbar({
               }}
             >
               Deployments
+            </Button>
+            <Button
+              href="/projects"
+              sx={{
+                my: 2,
+                color: 'white',
+                display: 'block',
+                textAlign: 'center',
+              }}
+            >
+              Projects
             </Button>
             {navPermissions?.listProviders && (
               <Button

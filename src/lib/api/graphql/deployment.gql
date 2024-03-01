@@ -25,8 +25,14 @@ fragment DeploymentNodeFragment on DeploymentNode {
   }
 }
 
-query ListMyDeployments($includeExpiredAndDestroyed: Boolean = false) {
-  myDeployments(includeExpiredAndDestroyed: $includeExpiredAndDestroyed) {
+query ListMyDeployments(
+  $includeExpiredAndDestroyed: Boolean = false
+  $projectFilter: [ID!]
+) {
+  deployments(
+    includeExpiredAndDestroyed: $includeExpiredAndDestroyed
+    projectFilter: $projectFilter
+  ) {
     deployments {
       ...DeploymentFragment
       blueprint {
@@ -34,6 +40,9 @@ query ListMyDeployments($includeExpiredAndDestroyed: Boolean = false) {
       }
       requester {
         ...UserFragment
+      }
+      project {
+        ...ProjectFragment
       }
     }
     total

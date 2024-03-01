@@ -9,24 +9,33 @@ import {
   TextField,
   Autocomplete,
   LinearProgress,
+  Stack,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  Button,
+  Tooltip,
 } from '@mui/material'
-import { useContext, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import {
   BlueprintInput,
   ListProvidersQuery,
+  SearchProjectQuery,
   useCreateBlueprintMutation,
   useGetBlueprintLazyQuery,
   useListProvidersQuery,
+  useSearchProjectLazyQuery,
   useUpdateBlueprintMutation,
 } from '../../lib/api/generated'
 import MonacoEditor, { useMonaco } from '@monaco-editor/react'
 import { configureMonacoYaml } from 'monaco-yaml'
 import { ThemeContext } from '../../theme'
-import { Add, AutoFixHigh, Circle, Save } from '@mui/icons-material'
-import { MuiMarkdown } from 'mui-markdown'
+import { Add, AutoFixHigh, Circle, Delete, Save } from '@mui/icons-material'
 import { LoadingButton } from '@mui/lab'
 import { useSnackbar } from 'notistack'
 import { useNavigate, useParams } from 'react-router-dom'
+import ProjectAutocomplete from '@/components/project-autocomplete'
 
 export default function BlueprintForm({
   action,
@@ -36,21 +45,41 @@ export default function BlueprintForm({
   const { id } = useParams()
   const { themePreference } = useContext(ThemeContext)
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)')
+  const { enqueueSnackbar } = useSnackbar()
+  const navigate = useNavigate()
   const [blueprint, setBlueprint] = useState<BlueprintInput>({
     name: '',
-    description: '### Untitled Blueprint',
+    description: '',
     blueprintTemplate: `version: "1.0"\n`,
     providerId: '',
     variableTypes: {},
+    projectId: '',
   })
+  const [variableTypes, setVariableTypes] = useState<
+    readonly {
+      name: string
+      type: string
+    }[]
+  >([])
   const monaco = useMonaco()
   const {
     data: providersData,
     error: providersError,
     loading: providersLoading,
   } = useListProvidersQuery()
-  const { enqueueSnackbar } = useSnackbar()
-  const navigate = useNavigate()
+  const [
+    searchProjects,
+    {
+      data: searchProjectsData,
+      error: searchProjectsError,
+      loading: searchProjectsLoading,
+    },
+  ] = useSearchProjectLazyQuery()
+  const [projectsSearchVal, setProjectsSearchVal] = useState<string>('')
+  const [projectOptions, setProjectOptions] = useState<
+    readonly SearchProjectQuery['searchProjects']['projects'][number][]
+  >([])
+  const [projectOpen, setProjectOpen] = useState<boolean>(false)
   // Create
   const [
     createBlueprint,
@@ -117,14 +146,24 @@ export default function BlueprintForm({
 
   // Once we get edit data, update local form state
   useEffect(() => {
-    if (getBlueprintData?.blueprint)
+    if (getBlueprintData?.blueprint) {
       setBlueprint({
         name: getBlueprintData.blueprint.name,
         description: getBlueprintData.blueprint.description,
         blueprintTemplate: getBlueprintData.blueprint.blueprintTemplate,
         providerId: getBlueprintData.blueprint.provider.id,
+        projectId: getBlueprintData.blueprint.project.id,
         variableTypes: getBlueprintData.blueprint.variableTypes,
       } as BlueprintInput)
+      setVariableTypes(
+        Object.keys(
+          getBlueprintData.blueprint.variableTypes as Record<string, string>
+        ).map((v) => ({
+          name: v,
+          type: getBlueprintData.blueprint.variableTypes[v],
+        }))
+      )
+    }
   }, [getBlueprintData])
 
   // Move to edit page after creation
@@ -142,6 +181,54 @@ export default function BlueprintForm({
       resetUpdateBlueprint()
     }
   }, [updateBlueprintData, enqueueSnackbar, resetUpdateBlueprint])
+
+  // Query for project autocomplete
+  useEffect(() => {
+    searchProjects({ variables: { search: projectsSearchVal } })
+  }, [projectsSearchVal])
+
+  // Set autocomplete values
+  useEffect(() => {
+    if (searchProjectsData?.searchProjects.projects)
+      setProjectOptions(searchProjectsData.searchProjects.projects)
+  }, [searchProjectsData])
+
+  // Set variable types in input object
+  useEffect(() => {
+    const vars: Record<string, string> = {}
+    variableTypes.forEach((v) => {
+      vars[v.name] = v.type
+    })
+    setBlueprint((prev) => ({
+      ...prev,
+      variableTypes: vars,
+    }))
+  }, [variableTypes])
+
+  const isVarDuplicate = useCallback(
+    (index: number) => {
+      return (
+        variableTypes.filter((v) => v.name === variableTypes[index].name)
+          .length > 1
+      )
+    },
+    [variableTypes]
+  )
+
+  const isVarUsed = useCallback(
+    (index: number) => {
+      return new RegExp(`{{ ?.${variableTypes[index].name} ?}}`, 'g').test(
+        blueprint.blueprintTemplate
+      )
+    },
+    [blueprint, variableTypes]
+  )
+
+  const selectedProject = useMemo(() => {
+    if (blueprint.projectId)
+      return projectOptions.find((p) => p.id === blueprint.projectId)
+    return null
+  }, [projectOptions, blueprint])
 
   const handlePrettify = () => {
     if (monaco)
@@ -173,12 +260,11 @@ export default function BlueprintForm({
     <Container
       sx={{ display: 'flex', flexDirection: 'column', height: '100%', py: 2 }}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        spacing={4}
       >
         <TextField
           variant="standard"
@@ -187,31 +273,64 @@ export default function BlueprintForm({
           onChange={(e) =>
             setBlueprint((prev) => ({ ...prev, name: e.target.value }))
           }
+          sx={{ flex: '1 1' }}
         ></TextField>
+        <ProjectAutocomplete
+          minRole="developer"
+          sx={{ flex: '1 1' }}
+          onChange={(val) =>
+            setBlueprint((prev) => ({ ...prev, projectId: val?.id || '' }))
+          }
+        />
         {/* <Autocomplete
+          fullWidth
           disablePortal
           autoComplete
           clearOnEscape
-          options={groupsData?.groups ?? []}
-          getOptionKey={(option: ListGroupsQuery['groups'][number]) =>
-            `${option.id}`
-          }
-          getOptionLabel={(option: ListGroupsQuery['groups'][number]) =>
-            `${option.name}`
-          }
-          sx={{ width: 300 }}
-          value={
-            (groupsData?.groups.find((g) => g.id === blueprint.parentGroupId) ||
-              null) ??
-            null
-          }
-          onChange={(_, val) => {
-            val && setBlueprint((prev) => ({ ...prev, parentGroupId: val.id }))
+          clearOnBlur={false}
+          filterOptions={(x) => x}
+          open={projectOpen}
+          onOpen={() => {
+            setProjectOpen(true)
           }}
-          renderInput={(params) => (
-            <TextField {...params} label="Parent Group" />
+          onClose={() => {
+            setProjectOpen(false)
+          }}
+          loading={searchProjectsLoading}
+          options={projectOptions}
+          getOptionLabel={(option) => option.name}
+          sx={{ flex: '1 1' }}
+          isOptionEqualToValue={(option, val) =>
+            val === undefined || option.id === val.id
+          }
+          value={selectedProject}
+          onChange={(_, val) => {
+            setBlueprint((prev) => ({ ...prev, projectId: val?.id ?? '' }))
+          }}
+          onInputChange={(_, val) => setProjectsSearchVal(val)}
+          inputValue={projectsSearchVal}
+          renderOption={(props, option) => (
+            <li {...props} key={option.id}>
+              <Typography>{option.name}</Typography>
+            </li>
           )}
-          disabled={groupsLoading || groupsError !== undefined}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Project"
+              InputProps={{
+                ...params.InputProps,
+                endAdornment: (
+                  <>
+                    {searchProjectsLoading ? (
+                      <CircularProgress color="inherit" size={20} />
+                    ) : null}
+                    {params.InputProps.endAdornment}
+                  </>
+                ),
+              }}
+            />
+          )}
         /> */}
         <Autocomplete
           disablePortal
@@ -224,7 +343,7 @@ export default function BlueprintForm({
           getOptionLabel={(
             option: ListProvidersQuery['providers']['providers'][number]
           ) => `${option.displayName} (${option.providerVersion})`}
-          sx={{ width: 300 }}
+          sx={{ flex: '1 1' }}
           value={
             (providersData?.providers.providers.find(
               (p) => p.id === blueprint.providerId
@@ -247,7 +366,7 @@ export default function BlueprintForm({
           renderInput={(params) => <TextField {...params} label="Provider" />}
           disabled={providersLoading || providersError !== undefined}
         />
-        <Box>
+        <Stack direction="row">
           <IconButton onClick={handlePrettify} sx={{ mr: 1 }} title="Prettify">
             <AutoFixHigh />
           </IconButton>
@@ -265,54 +384,116 @@ export default function BlueprintForm({
           >
             {action === 'create' ? 'Create' : 'Save'}
           </LoadingButton>
-        </Box>
-      </Box>
+        </Stack>
+      </Stack>
       <Divider sx={{ my: 2 }} />
       {getBlueprintLoading && <LinearProgress />}
       <Grid container sx={{ flexGrow: 1 }} spacing={2}>
-        <Grid item md={6}>
+        <Grid
+          item
+          md={6}
+          sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+        >
           <Typography variant="h6">Description</Typography>
-          <Box
-            sx={{
-              maxHeight: '35dvh',
-              height: '50%',
-              borderWidth: 1,
-              borderStyle: 'solid',
-              borderColor: 'primary',
-            }}
-          >
-            <MonacoEditor
-              theme={
-                themePreference === 'auto'
-                  ? prefersDarkMode
-                    ? 'vs-dark'
-                    : 'light'
-                  : themePreference === 'dark'
-                    ? 'vs-dark'
-                    : 'light'
+          <TextField
+            multiline
+            sx={{ width: '100%' }}
+            value={blueprint.description}
+            onChange={(e) =>
+              setBlueprint((prev) => ({ ...prev, description: e.target.value }))
+            }
+          />
+          <Typography variant="h6">Variables</Typography>
+          <Stack spacing={2}>
+            {variableTypes.map((variable, i) => (
+              <Stack
+                direction="row"
+                alignItems="center"
+                spacing={2}
+                key={`var_${i}`}
+              >
+                <FormControl variant="standard" sx={{ flex: '1 1' }}>
+                  <Tooltip
+                    followCursor
+                    arrow
+                    title={
+                      isVarDuplicate(i)
+                        ? `Variable ${variable.name} is already defined`
+                        : !isVarUsed(i)
+                          ? 'Variable is never used'
+                          : ''
+                    }
+                  >
+                    <TextField
+                      label="Name"
+                      variant="outlined"
+                      value={variable.name}
+                      onChange={(e) => {
+                        setVariableTypes((prev) => {
+                          const newVars = [...prev]
+                          newVars[i].name = e.target.value
+                          return newVars
+                        })
+                      }}
+                      focused={!isVarUsed(i)}
+                      color={!isVarUsed(i) ? 'warning' : 'primary'}
+                      error={isVarDuplicate(i)}
+                    />
+                  </Tooltip>
+                </FormControl>
+                <FormControl variant="outlined" sx={{ flex: '1 1' }}>
+                  <InputLabel id="Variable Type">Type</InputLabel>
+                  <Select
+                    labelId="demo-simple-select-standard-label"
+                    id="demo-simple-select-standard"
+                    value={variable.type}
+                    onChange={(e) => {
+                      setVariableTypes((prev) => {
+                        const newVars = [...prev]
+                        newVars[i].type = e.target.value
+                        return newVars
+                      })
+                    }}
+                    label="Type"
+                  >
+                    <MenuItem value="STRING">String</MenuItem>
+                    <MenuItem value="INT">Integer</MenuItem>
+                  </Select>
+                </FormControl>
+                <IconButton
+                  color="error"
+                  sx={{ marginTop: '1' }}
+                  onClick={() =>
+                    setVariableTypes((prev) => {
+                      const newVars = [...prev]
+                      newVars.splice(i, 1)
+                      return newVars
+                    })
+                  }
+                >
+                  <Delete />
+                </IconButton>
+              </Stack>
+            ))}
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() =>
+                setVariableTypes((prev) => [
+                  ...prev,
+                  { name: `var${prev.length + 1}`, type: 'STRING' },
+                ])
               }
-              language="markdown"
-              options={{
-                minimap: { enabled: false },
-                scrollBeyondLastLine: false,
-                wordWrap: 'on',
-              }}
-              value={blueprint.description}
-              onChange={(value, _) =>
-                setBlueprint((prev) => ({ ...prev, description: value ?? '' }))
-              }
-            ></MonacoEditor>
-          </Box>
-          <Divider sx={{ width: '100%', my: 2 }} />
-          <Typography variant="h6">Preview:</Typography>
-          <Box sx={{ maxHeight: '35dvh', overflowY: 'scroll' }}>
-            <MuiMarkdown>{blueprint.description}</MuiMarkdown>
-          </Box>
+            >
+              Add Variable
+            </Button>
+          </Stack>
         </Grid>
         <Grid item md={6}>
+          <Typography variant="h6">Template</Typography>
           <Box
             sx={{
-              maxHeight: 'calc(100dvh - 12rem)',
+              maxHeight: 'calc(100dvh - 14rem)',
               height: '100%',
               borderWidth: 1,
               borderStyle: 'solid',

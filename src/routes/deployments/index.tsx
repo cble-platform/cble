@@ -28,6 +28,7 @@ import { useSnackbar } from 'notistack'
 import React, { useEffect, useState } from 'react'
 import { Cancel, Edit, ExpandMore, Save } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
+import ProjectAutocomplete from '@/components/project-autocomplete'
 
 function daysBetween(
   date1: string | number | Date,
@@ -43,7 +44,7 @@ function daysBetween(
 }
 
 function generateCreatedMessage(
-  deployment: ListMyDeploymentsQuery['myDeployments']['deployments'][number]
+  deployment: ListMyDeploymentsQuery['deployments']['deployments'][number]
 ): string {
   const createdDaysDiff = daysBetween(
     new Date(deployment.createdAt as string),
@@ -57,7 +58,7 @@ function generateCreatedMessage(
 }
 
 function generateExpiryMessage(
-  deployment: ListMyDeploymentsQuery['myDeployments']['deployments'][number]
+  deployment: ListMyDeploymentsQuery['deployments']['deployments'][number]
 ): string {
   const expiresDaysDiff = daysBetween(
     new Date(deployment.expiresAt as string),
@@ -82,6 +83,7 @@ export default function Deployments() {
   const { enqueueSnackbar } = useSnackbar()
   const [includeExpiredAndDestroyed, setIncludeExpired] =
     useState<boolean>(false)
+  const [projectFilter, setProjectFilter] = useState<string[] | null>(null)
   const {
     data: listMyDeploymentsData,
     error: listMyDeploymentsError,
@@ -135,8 +137,9 @@ export default function Deployments() {
   useEffect(() => {
     refetchListMyDeployments({
       includeExpiredAndDestroyed,
+      projectFilter,
     }).catch(console.error)
-  }, [includeExpiredAndDestroyed])
+  }, [includeExpiredAndDestroyed, projectFilter])
 
   const handleMoreMenuClick = (
     id: string,
@@ -165,8 +168,10 @@ export default function Deployments() {
 
   return (
     <Container sx={{ py: 3 }}>
-      <Stack direction="row" alignContent="center" gap={4}>
-        <Typography variant="h4">Deployments</Typography>
+      <Stack direction="row" alignItems="center" gap={4}>
+        <Typography variant="h4" sx={{ mr: 'auto' }}>
+          Deployments
+        </Typography>
         <FormControlLabel
           control={
             <Checkbox
@@ -175,6 +180,16 @@ export default function Deployments() {
             />
           }
           label="Show Expired/Destroyed"
+          sx={{ m: 0 }}
+        />
+        <ProjectAutocomplete
+          label="Filter by Project"
+          minRole="viewer"
+          multiple
+          onChange={(val) =>
+            setProjectFilter(val?.length ? val.map((v) => v.id) : null)
+          }
+          sx={{ maxWidth: 300 }}
         />
       </Stack>
       <Divider sx={{ my: 3 }} />
@@ -184,7 +199,7 @@ export default function Deployments() {
             <LinearProgress />
           </Grid>
         )}
-        {listMyDeploymentsData?.myDeployments.deployments.map((deployment) => {
+        {listMyDeploymentsData?.deployments.deployments.map((deployment) => {
           const createdDaysDiff = daysBetween(
             new Date(deployment.createdAt as string),
             Date.now()
@@ -206,16 +221,7 @@ export default function Deployments() {
                         : 'auto',
                   }}
                 >
-                  <Grid
-                    container
-                    spacing={1}
-                    sx={{
-                      '& .MuiGrid-item': {
-                        display: 'flex',
-                        alignItems: 'center',
-                      },
-                    }}
-                  >
+                  <Grid container spacing={2}>
                     <Grid item xs={4}>
                       <Box
                         sx={{
@@ -285,7 +291,11 @@ export default function Deployments() {
                         )}
                       </Box>
                     </Grid>
-                    <Grid item xs={4}>
+                    <Grid
+                      item
+                      xs={4}
+                      sx={{ display: 'flex', justifyContent: 'center' }}
+                    >
                       <Typography variant="subtitle1">
                         {generateCreatedMessage(deployment)}
                       </Typography>
@@ -310,11 +320,32 @@ export default function Deployments() {
                     </Grid>
                     <Grid item xs={4}>
                       <Typography variant="body1">
-                        Owner: {deployment.requester.firstName}{' '}
+                        <Typography
+                          fontWeight="bold"
+                          component="span"
+                          sx={{ mr: 1 }}
+                        >
+                          Project:
+                        </Typography>
+                        {deployment.project.name}
+                      </Typography>
+                      <Typography variant="body1">
+                        <Typography
+                          fontWeight="bold"
+                          component="span"
+                          sx={{ mr: 1 }}
+                        >
+                          Owner:
+                        </Typography>
+                        {deployment.requester.firstName}{' '}
                         {deployment.requester.lastName}
                       </Typography>
                     </Grid>
-                    <Grid item xs={4}>
+                    <Grid
+                      item
+                      xs={4}
+                      sx={{ display: 'flex', justifyContent: 'center' }}
+                    >
                       <Typography
                         variant="body2"
                         sx={{ color: 'text.secondary' }}

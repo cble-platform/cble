@@ -6,13 +6,42 @@ fragment BlueprintFragement on Blueprint {
   description
   blueprintTemplate
   variableTypes
+}
+
+fragment BlueprintEdgesFragment on Blueprint {
   provider {
     id
     displayName
     isLoaded
   }
+  project {
+    id
+    name
+    quotaCpu
+    quotaRam
+    quotaDisk
+    quotaNetwork
+    quotaRouter
+  }
   deployments {
     id
+  }
+  resources {
+    id
+    type
+    key
+    resourceType
+    features {
+      power
+      console
+    }
+    quotaRequirements {
+      cpu
+      ram
+      disk
+      router
+      network
+    }
   }
 }
 
@@ -29,7 +58,7 @@ fragment ResourceFragment on Resource {
 }
 
 query Blueprints {
-  deployableBlueprints {
+  blueprints {
     blueprints {
       ...BlueprintFragement
     }
@@ -40,6 +69,7 @@ query Blueprints {
 query GetBlueprint($id: ID!) {
   blueprint(id: $id) {
     ...BlueprintFragement
+    ...BlueprintEdgesFragment
   }
 }
 
@@ -55,8 +85,16 @@ mutation UpdateBlueprint($id: ID!, $input: BlueprintInput!) {
   }
 }
 
-mutation DeployBlueprint($id: ID!, $templateVars: StrMap!) {
-  deployBlueprint(id: $id, templateVars: $templateVars) {
+mutation DeployBlueprint(
+  $blueprintId: ID!
+  $projectId: ID!
+  $templateVars: StrMap!
+) {
+  deployBlueprint(
+    blueprintId: $blueprintId
+    projectId: $projectId
+    templateVars: $templateVars
+  ) {
     ...DeploymentFragment
   }
 }

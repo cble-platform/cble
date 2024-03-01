@@ -2,14 +2,11 @@ import { useSnackbar } from 'notistack'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
-  Action,
   GetDeploymentQuery,
-  ObjectType,
   PowerState,
   useDeploymentNodePowerMutation,
   useDeploymentPowerMutation,
   useGetDeploymentQuery,
-  useMeHasPermissionQuery,
 } from '@/lib/api/generated'
 import {
   Container,
@@ -203,14 +200,6 @@ export default function DeploymentDetails() {
   )
   const [selectedResourceMenuItem, setSelectedResourceMenuItem] =
     useState<number>(0)
-  // Permissions
-  const { data: hasPowerPermissionData } = useMeHasPermissionQuery({
-    variables: {
-      objectType: ObjectType.Deployment,
-      objectID: id,
-      action: Action.DeploymentPower,
-    },
-  })
   // Power Mutations
   const [
     deploymentNodePower,
@@ -345,19 +334,10 @@ export default function DeploymentDetails() {
 
   return (
     <Container sx={{ py: 3 }}>
-      <Button href="/deployments" startIcon={<ChevronLeft />} sx={{ mb: 2 }}>
-        Back
-      </Button>
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <Typography variant="h4">
-          Details - {getDeploymentData?.deployment.name}
-        </Typography>
+      <Stack direction="row" justifyContent="space-between">
+        <Button href="/deployments" startIcon={<ChevronLeft />} sx={{ mb: 2 }}>
+          Back
+        </Button>
         <Button
           id="more-button"
           aria-controls={actionsMenuEl ? 'more-menu' : undefined}
@@ -377,28 +357,24 @@ export default function DeploymentDetails() {
             'aria-labelledby': 'more-button',
           }}
         >
-          {hasPowerPermissionData?.meHasPermission && (
-            <>
-              <MenuItem
-                onClick={() => handleDeploymentPower(PowerState.On)}
-                disabled={deploymentPowerLoading}
-              >
-                <ListItemIcon>
-                  <Power />
-                </ListItemIcon>
-                <ListItemText>Power On Deployment</ListItemText>
-              </MenuItem>
-              <MenuItem
-                onClick={() => handleDeploymentPower(PowerState.Off)}
-                disabled={deploymentPowerLoading}
-              >
-                <ListItemIcon>
-                  <PowerOff />
-                </ListItemIcon>
-                <ListItemText>Power Off Deployment</ListItemText>
-              </MenuItem>
-            </>
-          )}
+          <MenuItem
+            onClick={() => handleDeploymentPower(PowerState.On)}
+            disabled={deploymentPowerLoading}
+          >
+            <ListItemIcon>
+              <Power />
+            </ListItemIcon>
+            <ListItemText>Power On Deployment</ListItemText>
+          </MenuItem>
+          <MenuItem
+            onClick={() => handleDeploymentPower(PowerState.Off)}
+            disabled={deploymentPowerLoading}
+          >
+            <ListItemIcon>
+              <PowerOff />
+            </ListItemIcon>
+            <ListItemText>Power Off Deployment</ListItemText>
+          </MenuItem>
           <MenuItem
             onClick={() =>
               navigate(
@@ -412,7 +388,35 @@ export default function DeploymentDetails() {
             <ListItemText>Destroy Deployment</ListItemText>
           </MenuItem>
         </Menu>
-      </Box>
+      </Stack>
+      <Grid container sx={{ px: 1 }}>
+        <Grid item xs>
+          <Typography variant="h4">
+            Details - {getDeploymentData?.deployment.name}
+          </Typography>
+        </Grid>
+        <Grid item xs="auto">
+          <Stack spacing={1} sx={{ ml: 2, mt: 1 }}>
+            <Typography variant="h6" color="text.secondary">
+              Variables
+            </Typography>
+            {getDeploymentData?.deployment.templateVars &&
+              Object.keys(
+                getDeploymentData.deployment.templateVars as Record<
+                  string,
+                  string | number
+                >
+              ).map((varName) => (
+                <Typography variant="body1">
+                  <Typography fontWeight="bold" component="span" sx={{ mr: 2 }}>
+                    {varName}:
+                  </Typography>
+                  {getDeploymentData?.deployment.templateVars[varName]}
+                </Typography>
+              ))}
+          </Stack>
+        </Grid>
+      </Grid>
       <Divider sx={{ my: 2 }} />
       {getDeploymentLoading && <LinearProgress sx={{ my: 2 }} />}
       <Grid container spacing={2}>
