@@ -73,6 +73,7 @@ type Deployment {
   expiresAt: Time!
 
   blueprint: Blueprint!
+  project: Project!
   deploymentNodes: [DeploymentNode!]!
   requester: User!
 }

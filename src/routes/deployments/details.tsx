@@ -400,19 +400,20 @@ export default function DeploymentDetails() {
             <Typography variant="h6" color="text.secondary">
               Variables
             </Typography>
-            {Object.keys(
-              getDeploymentData?.deployment.templateVars as Record<
-                string,
-                string | number
-              >
-            ).map((varName) => (
-              <Typography variant="body1">
-                <Typography fontWeight="bold" component="span" sx={{ mr: 2 }}>
-                  {varName}:
+            {getDeploymentData?.deployment.templateVars &&
+              Object.keys(
+                getDeploymentData.deployment.templateVars as Record<
+                  string,
+                  string | number
+                >
+              ).map((varName) => (
+                <Typography variant="body1">
+                  <Typography fontWeight="bold" component="span" sx={{ mr: 2 }}>
+                    {varName}:
+                  </Typography>
+                  {getDeploymentData?.deployment.templateVars[varName]}
                 </Typography>
-                {getDeploymentData?.deployment.templateVars[varName]}
-              </Typography>
-            ))}
+              ))}
           </Stack>
         </Grid>
       </Grid>

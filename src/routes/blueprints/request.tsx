@@ -120,7 +120,6 @@ export default function RequestBlueprint() {
           {blueprintData?.blueprint.description}
         </Typography>
         <Typography variant="h6">Project</Typography>
-
         <ProjectAutocomplete
           minRole="deployer"
           sx={{ flex: '1 1' }}

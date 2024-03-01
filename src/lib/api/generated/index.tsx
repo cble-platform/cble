@@ -120,6 +120,7 @@ export type Deployment = {
   expiresAt: Scalars['Time']['output'];
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
+  project: Project;
   requester: User;
   state: DeploymentState;
   templateVars: Scalars['StrMap']['output'];
@@ -790,10 +791,11 @@ export type DeploymentNodeFragmentFragment = { __typename?: 'DeploymentNode', id
 
 export type ListMyDeploymentsQueryVariables = Exact<{
   includeExpiredAndDestroyed?: InputMaybe<Scalars['Boolean']['input']>;
+  projectFilter?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
 }>;
 
 
-export type ListMyDeploymentsQuery = { __typename?: 'Query', deployments: { __typename?: 'DeploymentPage', total: number, deployments: Array<{ __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, description: string, state: DeploymentState, templateVars: any, expiresAt: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, project: { __typename?: 'Project', id: string, name: string }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } }> } };
+export type ListMyDeploymentsQuery = { __typename?: 'Query', deployments: { __typename?: 'DeploymentPage', total: number, deployments: Array<{ __typename?: 'Deployment', id: string, createdAt: any, updatedAt: any, name: string, description: string, state: DeploymentState, templateVars: any, expiresAt: any, blueprint: { __typename?: 'Blueprint', id: string, createdAt: any, updatedAt: any, name: string, description: string, blueprintTemplate: string, variableTypes: any, provider: { __typename?: 'Provider', id: string, displayName: string, isLoaded: boolean }, project: { __typename?: 'Project', id: string, name: string }, deployments: Array<{ __typename?: 'Deployment', id: string } | null> }, requester: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string }, project: { __typename?: 'Project', id: string, createdAt: any, updatedAt: any, name: string, quotaCpu: number, quotaRam: number, quotaDisk: number, quotaNetwork: number, quotaRouter: number } }> } };
 
 export type GetDeploymentQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -1328,8 +1330,11 @@ export type DeployBlueprintMutationHookResult = ReturnType<typeof useDeployBluep
 export type DeployBlueprintMutationResult = Apollo.MutationResult<DeployBlueprintMutation>;
 export type DeployBlueprintMutationOptions = Apollo.BaseMutationOptions<DeployBlueprintMutation, DeployBlueprintMutationVariables>;
 export const ListMyDeploymentsDocument = gql`
-    query ListMyDeployments($includeExpiredAndDestroyed: Boolean = false) {
-  deployments(includeExpiredAndDestroyed: $includeExpiredAndDestroyed) {
+    query ListMyDeployments($includeExpiredAndDestroyed: Boolean = false, $projectFilter: [ID!]) {
+  deployments(
+    includeExpiredAndDestroyed: $includeExpiredAndDestroyed
+    projectFilter: $projectFilter
+  ) {
     deployments {
       ...DeploymentFragment
       blueprint {
@@ -1338,13 +1343,17 @@ export const ListMyDeploymentsDocument = gql`
       requester {
         ...UserFragment
       }
+      project {
+        ...ProjectFragment
+      }
     }
     total
   }
 }
     ${DeploymentFragmentFragmentDoc}
 ${BlueprintFragementFragmentDoc}
-${UserFragmentFragmentDoc}`;
+${UserFragmentFragmentDoc}
+${ProjectFragmentFragmentDoc}`;
 
 /**
  * __useListMyDeploymentsQuery__
@@ -1359,6 +1368,7 @@ ${UserFragmentFragmentDoc}`;
  * const { data, loading, error } = useListMyDeploymentsQuery({
  *   variables: {
  *      includeExpiredAndDestroyed: // value for 'includeExpiredAndDestroyed'
+ *      projectFilter: // value for 'projectFilter'
  *   },
  * });
  */

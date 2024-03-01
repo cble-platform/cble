@@ -4,6 +4,7 @@ import {
 } from '@/lib/api/generated'
 import {
   Autocomplete,
+  Checkbox,
   CircularProgress,
   TextField,
   Typography,
@@ -13,6 +14,7 @@ import { SxProps, Theme } from '@mui/material/styles'
 
 interface CommonProjectAutocompleteProps {
   sx?: SxProps<Theme>
+  label?: string
   error?: boolean
   helperText?: string
   minRole?: 'admin' | 'developer' | 'deployer' | 'viewer'
@@ -41,6 +43,7 @@ export default function ProjectAutocomplete({
   multiple,
   onChange,
   sx,
+  label,
   error,
   helperText,
 }: ProjectAutocompleteProps) {
@@ -98,15 +101,16 @@ export default function ProjectAutocomplete({
       onChange={(_, val) => handleChange(val)}
       onInputChange={(_, val) => setProjectsSearchVal(val)}
       inputValue={projectsSearchVal}
-      renderOption={(props, option) => (
+      renderOption={(props, option, { selected }) => (
         <li {...props} key={option.id}>
+          {multiple && <Checkbox sx={{ mr: 1 }} checked={selected} />}
           <Typography>{option.name}</Typography>
         </li>
       )}
       renderInput={(params) => (
         <TextField
           {...params}
-          label="Project"
+          label={label || 'Project'}
           InputProps={{
             ...params.InputProps,
             endAdornment: (
