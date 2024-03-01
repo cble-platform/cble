@@ -62,7 +62,7 @@ func StartDestroy(client *ent.Client, cbleServer *providers.CBLEServer, entDeplo
 	// Spawn destroyRoutine's for all root nodes
 	for _, entDeploymentNode := range entDeploymentNodes {
 		wg.Add(1)
-		go destroyRoutine(ctx, client, cbleServer, entDeploymentNode, &wg)
+		go destroyRoutine(ctx, cbleServer, entDeploymentNode, &wg)
 	}
 
 	// Wait for all routines to finish
@@ -84,9 +84,58 @@ func StartDestroy(client *ent.Client, cbleServer *providers.CBLEServer, entDeplo
 		}).Errorf("failed to update deployment state: %v", err)
 		return
 	}
+
+	// Query all of the resources
+	entResources, err := entDeployment.QueryBlueprint().QueryResources().All(ctx)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"component":    "DESTROY_ENGINE",
+			"deploymentId": entDeployment.ID,
+		}).Errorf("failed to query resources from deployment: %v", err)
+		return
+	}
+	// Query the project
+	entProject, err := entDeployment.QueryProject().Only(ctx)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"component":    "DESTROY_ENGINE",
+			"deploymentId": entDeployment.ID,
+		}).Errorf("failed to query project from deployment: %v", err)
+		return
+	}
+
+	// Subtract out the new usage level
+	newUsageCPU := entProject.UsageCPU
+	newUsageRAM := entProject.UsageRAM
+	newUsageDisk := entProject.UsageDisk
+	newUsageNetwork := entProject.UsageNetwork
+	newUsageRouter := entProject.UsageRouter
+	for _, entResource := range entResources {
+		newUsageCPU -= int(entResource.QuotaRequirements.Cpu)
+		newUsageRAM -= int(entResource.QuotaRequirements.Ram)
+		newUsageDisk -= int(entResource.QuotaRequirements.Disk)
+		newUsageNetwork -= int(entResource.QuotaRequirements.Network)
+		newUsageRouter -= int(entResource.QuotaRequirements.Router)
+	}
+
+	// Update the project quota usage
+	err = entProject.Update().
+		SetUsageCPU(newUsageCPU).
+		SetUsageRAM(newUsageRAM).
+		SetUsageDisk(newUsageDisk).
+		SetUsageNetwork(newUsageNetwork).
+		SetUsageRouter(newUsageRouter).
+		Exec(ctx)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"component":    "DESTROY_ENGINE",
+			"deploymentId": entDeployment.ID,
+		}).Errorf("failed to update project quota usage: %v", err)
+		return
+	}
 }
 
-func destroyRoutine(ctx context.Context, client *ent.Client, cbleServer *providers.CBLEServer, entDeploymentNode *ent.DeploymentNode, wg *sync.WaitGroup) {
+func destroyRoutine(ctx context.Context, cbleServer *providers.CBLEServer, entDeploymentNode *ent.DeploymentNode, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	logrus.WithFields(logrus.Fields{

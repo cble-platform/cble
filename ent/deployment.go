@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
+	"github.com/cble-platform/cble-backend/ent/project"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
 )
@@ -42,6 +43,7 @@ type Deployment struct {
 	Edges                DeploymentEdges `json:"edges"`
 	deployment_blueprint *uuid.UUID
 	deployment_requester *uuid.UUID
+	deployment_project   *uuid.UUID
 	selectValues         sql.SelectValues
 }
 
@@ -53,9 +55,11 @@ type DeploymentEdges struct {
 	DeploymentNodes []*DeploymentNode `json:"deployment_nodes,omitempty"`
 	// The user who requested this deployment
 	Requester *User `json:"requester,omitempty"`
+	// The project to contain this deployment
+	Project *Project `json:"project,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // BlueprintOrErr returns the Blueprint value or an error if the edge
@@ -93,6 +97,19 @@ func (e DeploymentEdges) RequesterOrErr() (*User, error) {
 	return nil, &NotLoadedError{edge: "requester"}
 }
 
+// ProjectOrErr returns the Project value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e DeploymentEdges) ProjectOrErr() (*Project, error) {
+	if e.loadedTypes[3] {
+		if e.Project == nil {
+			// Edge was loaded but was not found.
+			return nil, &NotFoundError{label: project.Label}
+		}
+		return e.Project, nil
+	}
+	return nil, &NotLoadedError{edge: "project"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Deployment) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -109,6 +126,8 @@ func (*Deployment) scanValues(columns []string) ([]any, error) {
 		case deployment.ForeignKeys[0]: // deployment_blueprint
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case deployment.ForeignKeys[1]: // deployment_requester
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+		case deployment.ForeignKeys[2]: // deployment_project
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
@@ -195,6 +214,13 @@ func (d *Deployment) assignValues(columns []string, values []any) error {
 				d.deployment_requester = new(uuid.UUID)
 				*d.deployment_requester = *value.S.(*uuid.UUID)
 			}
+		case deployment.ForeignKeys[2]:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field deployment_project", values[i])
+			} else if value.Valid {
+				d.deployment_project = new(uuid.UUID)
+				*d.deployment_project = *value.S.(*uuid.UUID)
+			}
 		default:
 			d.selectValues.Set(columns[i], values[i])
 		}
@@ -221,6 +247,11 @@ func (d *Deployment) QueryDeploymentNodes() *DeploymentNodeQuery {
 // QueryRequester queries the "requester" edge of the Deployment entity.
 func (d *Deployment) QueryRequester() *UserQuery {
 	return NewDeploymentClient(d.config).QueryRequester(d)
+}
+
+// QueryProject queries the "project" edge of the Deployment entity.
+func (d *Deployment) QueryProject() *ProjectQuery {
+	return NewDeploymentClient(d.config).QueryProject(d)
 }
 
 // Update returns a builder for updating this Deployment.

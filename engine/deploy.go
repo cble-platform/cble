@@ -64,7 +64,7 @@ func StartDeployment(client *ent.Client, cbleServer *providers.CBLEServer, entDe
 	// Spawn deployRoutine's for all data nodes
 	for _, deploymentNode := range entDeploymentNodes {
 		wg.Add(1)
-		go deployRoutine(ctx, client, cbleServer, deploymentNode, &wg)
+		go deployRoutine(ctx, cbleServer, deploymentNode, &wg)
 	}
 
 	// Wait for all routines to finish
@@ -90,7 +90,7 @@ func StartDeployment(client *ent.Client, cbleServer *providers.CBLEServer, entDe
 	// Spawn deployRoutine's for all resource nodes
 	for _, deploymentNode := range entDeploymentNodes {
 		wg.Add(1)
-		go deployRoutine(ctx, client, cbleServer, deploymentNode, &wg)
+		go deployRoutine(ctx, cbleServer, deploymentNode, &wg)
 	}
 
 	// Wait for all routines to finish
@@ -114,7 +114,7 @@ func StartDeployment(client *ent.Client, cbleServer *providers.CBLEServer, entDe
 	}
 }
 
-func deployRoutine(ctx context.Context, client *ent.Client, cbleServer *providers.CBLEServer, deploymentNode *ent.DeploymentNode, wg *sync.WaitGroup) {
+func deployRoutine(ctx context.Context, cbleServer *providers.CBLEServer, deploymentNode *ent.DeploymentNode, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	logrus.WithFields(logrus.Fields{

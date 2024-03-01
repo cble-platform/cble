@@ -3,6 +3,9 @@ scalar Map
 scalar StrMap
 scalar VarTypeMap
 scalar UUID
+scalar MembershipRole
+scalar GroupMembershipRole
+scalar Uint
 
 # directive @hasPermission(objectType: ObjectType!, action: Action!) on FIELD_DEFINITION
 
@@ -16,6 +19,7 @@ type Blueprint {
   variableTypes: VarTypeMap!
 
   provider: Provider!
+  project: Project!
   resources: [Resource!]!
   deployments: [Deployment]!
 }
@@ -35,6 +39,14 @@ type ResourceFeatures {
   console: Boolean!
 }
 
+type ResourceQuotaRequirements {
+  cpu: Uint!
+  ram: Uint!
+  disk: Uint!
+  router: Uint!
+  network: Uint!
+}
+
 type Resource {
   id: ID!
   createdAt: Time!
@@ -43,6 +55,7 @@ type Resource {
   key: String!
   resourceType: String!
   features: ResourceFeatures!
+  quotaRequirements: ResourceQuotaRequirements!
   object: String!
 
   blueprint: Blueprint!
@@ -70,6 +83,7 @@ type Deployment {
   expiresAt: Time!
 
   blueprint: Blueprint!
+  project: Project!
   deploymentNodes: [DeploymentNode!]!
   requester: User!
 }
@@ -133,153 +147,6 @@ enum ObjectType {
   user
 }
 
-enum Action {
-  """
-  List all blueprints (only compatible with wildcard ID *)
-  """
-  blueprint_list
-  """
-  Create blueprints (only compatible with wildcard ID *)
-  """
-  blueprint_create
-  """
-  Get a given blueprint
-  """
-  blueprint_get
-  """
-  Update a given blueprint
-  """
-  blueprint_update
-  """
-  Delete a given blueprint
-  """
-  blueprint_delete
-  """
-  Deploy a given blueprint
-  """
-  blueprint_deploy
-  """
-  List all deployments (only compatible with wildcard ID *)
-  """
-  deployment_list
-  """
-  Get a given deployment
-  """
-  deployment_get
-  """
-  Update a given deployment
-  """
-  deployment_update
-  """
-  Delete a given deployment
-  """
-  deployment_delete
-  """
-  Destroy a given deployment
-  """
-  deployment_destroy
-  """
-  Redeploy a given deployment
-  """
-  deployment_redeploy
-  """
-  Control the power state of resources in a given deployment
-  """
-  deployment_power
-  """
-  Get the console of resources in a given deployment
-  """
-  deployment_console
-  """
-  List all groups (only compatible with wildcard ID *)
-  """
-  group_list
-  """
-  Create groups
-  """
-  group_create
-  """
-  Get a given group
-  """
-  group_get
-  """
-  Update a given group
-  """
-  group_update
-  """
-  Delete a given group
-  """
-  group_delete
-  """
-  List all permissions (only compatible with wildcard ID *)
-  """
-  permission_list
-  """
-  Get a given permission
-  """
-  permission_get
-  """
-  Grant permissions (only compatible with wildcard ID *)
-  """
-  permission_grant
-  """
-  Revoke permissions (only compatible with wildcard ID *)
-  """
-  permission_revoke
-  """
-  List all providers (only compatible with wildcard ID *)
-  """
-  provider_list
-  """
-  Create providers
-  """
-  provider_create
-  """
-  Get a given provider
-  """
-  provider_get
-  """
-  Update a given provider
-  """
-  provider_update
-  """
-  Delete a given provider
-  """
-  provider_delete
-  """
-  Load a given provider
-  """
-  provider_load
-  """
-  Unload a given provider
-  """
-  provider_unload
-  """
-  Configure a given provider
-  """
-  provider_configure
-  """
-  List all users (only compatible with wildcard ID *)
-  """
-  user_list
-  """
-  Create users
-  """
-  user_create
-  """
-  Get a given user
-  """
-  user_get
-  """
-  Update a given user
-  """
-  user_update
-  """
-  Delete a given user
-  """
-  user_delete
-}
-
 type GrantedPermission {
   id: ID!
   createdAt: Time!
@@ -295,6 +162,47 @@ type GrantedPermission {
 
 type GrantedPermissionPage {
   permissions: [GrantedPermission!]!
+  total: Int!
+}
+
+type Membership {
+  id: ID!
+  project: Project!
+  user: User!
+  role: MembershipRole!
+}
+
+type GroupMembership {
+  id: ID!
+  project: Project!
+  group: Group!
+  role: GroupMembershipRole!
+}
+
+type Project {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  name: String!
+  quotaCpu: Int!
+  usageCpu: Int!
+  quotaRam: Int!
+  usageRam: Int!
+  quotaDisk: Int!
+  usageDisk: Int!
+  quotaNetwork: Int!
+  usageNetwork: Int!
+  quotaRouter: Int!
+  usageRouter: Int!
+
+  memberships: [Membership!]!
+  groupMemberships: [GroupMembership!]!
+  blueprints: [Blueprint!]!
+  deployments: [Deployment!]!
+}
+
+type ProjectPage {
+  projects: [Project!]!
   total: Int!
 }
 
@@ -335,6 +243,10 @@ type UserPage {
 }
 
 type Query {
+  ######
+  # ME #
+  ######
+
   """
   Get current user
   """
@@ -343,6 +255,11 @@ type Query {
   Retrieves if the current user has a given permission
   """
   meHasPermission(objectType: ObjectType!, objectID: ID, action: Action!): Boolean!
+
+  ########
+  # USER #
+  ########
+
   """
   List users (requires permission `x.x.users.*.list`)
   """
@@ -351,6 +268,11 @@ type Query {
   Get a user (requires permission `x.x.users.x.get`)
   """
   user(id: ID!): User!
+
+  #########
+  # GROUP #
+  #########
+
   """
   List groups (requires permission `x.x.groups.*.list`)
   """
@@ -359,6 +281,11 @@ type Query {
   Get a group (requires permission `x.x.groups.x.get`)
   """
   group(id: ID!): Group!
+
+  ##############
+  # PERMISSION #
+  ##############
+
   """
   List permissions (requires permission `x.x.permission.*.list`)
   """
@@ -367,6 +294,24 @@ type Query {
   Get a permission (requires permission `x.x.permission.x.get`)
   """
   permission(id: ID!): GrantedPermission!
+
+  ###########
+  # PROJECT #
+  ###########
+
+  """
+  List projects user is a member of (or all if has permission `x.x.projects.*.list`)
+  """
+  projects(count: Int! = 10, offset: Int, minRole: MembershipRole): ProjectPage!
+  """
+  Get a project (requires permission `x.x.projects.x.get`)
+  """
+  project(id: ID!): Project!
+
+  ############
+  # PROVIDER #
+  ############
+
   """
   List providers (requires permission `x.x.providers.*.list`)
   """
@@ -375,26 +320,28 @@ type Query {
   Get a provider (requires permission `x.x.providers.x.get`)
   """
   provider(id: ID!): Provider!
+
+  #############
+  # BLUEPRINT #
+  #############
+
   """
-  List blueprints (requires permission `x.x.blueprints.*.list`)
+  List all blueprints from users projects
   """
-  blueprints(count: Int! = 10, offset: Int): BlueprintPage!
+  blueprints(projectFilter: [ID!], count: Int! = 10, offset: Int): BlueprintPage!
   """
-  List all blueprints user has `blueprint.x.deploy` permission for
-  """
-  deployableBlueprints(count: Int! = 10, offset: Int): BlueprintPage!
-  """
-  Get a blueprint (requires permission `x.x.blueprints.x.get`)
+  Get a blueprint
   """
   blueprint(id: ID!): Blueprint!
+
+  ##############
+  # DEPLOYMENT #
+  ##############
+
   """
   List deployments (requires permission `x.x.deployments.*.list`)
   """
-  deployments(count: Int! = 10, offset: Int): DeploymentPage!
-  """
-  List deployments user is the requester of
-  """
-  myDeployments(includeExpiredAndDestroyed: Boolean! = false, count: Int! = 10, offset: Int): DeploymentPage!
+  deployments(includeExpiredAndDestroyed: Boolean! = false, projectFilter: [ID!], count: Int! = 10, offset: Int): DeploymentPage!
   """
   Get a deployment (requires permission `x.x.deployments.x.get`)
   """
@@ -412,6 +359,10 @@ type Query {
   Search groups
   """
   searchGroups(search: String!, count: Int! = 10, offset: Int): GroupPage!
+  """
+  Search projects (requires `Developer` or more)
+  """
+  searchProjects(search: String!, count: Int! = 10, offset: Int, minRole: MembershipRole): ProjectPage!
 }
 
 input BlueprintInput {
@@ -421,10 +372,45 @@ input BlueprintInput {
   variableTypes: VarTypeMap!
 
   providerId: ID!
+  projectId: ID!
 }
 
 input DeploymentInput {
   name: String!
+}
+
+input ProjectInput {
+  name: String!
+  """
+  Maximum number of CPU cores in the project (set to -1 for unlimited)
+  """
+  quotaCpu: Int
+  """
+  Maximum MiB of RAM in the project (set to -1 for unlimited)
+  """
+  quotaRam: Int
+  """
+  Maximum MiB of Disk in the project (set to -1 for unlimited)
+  """
+  quotaDisk: Int
+  """
+  Maximum number of networks in the project (set to -1 for unlimited)
+  """
+  quotaNetwork: Int
+  """
+  Maximum number of routers in the project (set to -1 for unlimited)
+  """
+  quotaRouter: Int
+}
+
+input MembershipInput {
+  userID: ID!
+  role: MembershipRole!
+}
+
+input GroupMembershipInput {
+  groupID: ID!
+  role: GroupMembershipRole!
 }
 
 input ProviderInput {
@@ -452,19 +438,14 @@ enum PowerState {
 }
 
 type Mutation {
-  ##################
-  # AUTHENTICATION #
-  ##################
+  ########
+  # USER #
+  ########
 
   """
   Change current user's password
   """
   selfChangePassword(currentPassword: String!, newPassword: String!): Boolean!
-
-  ########
-  # CRUD #
-  ########
-
   """
   Create a user (requires permission `x.x.users.*.create`)
   """
@@ -477,6 +458,11 @@ type Mutation {
   Delete a user (requires permission `x.x.users.x.delete`)
   """
   deleteUser(id: ID!): Boolean!
+
+  #########
+  # GROUP #
+  #########
+
   """
   Create a group (requires permission `x.x.group.x.create`)
   """
@@ -489,6 +475,11 @@ type Mutation {
   Delete a group (requires permission `x.x.group.x.delete`)
   """
   deleteGroup(id: ID!): Boolean!
+
+  ##############
+  # PERMISSION #
+  ##############
+
   """
   Grant a permission (requires permission `x.x.permission.*.grant`)
   """
@@ -497,6 +488,11 @@ type Mutation {
   Revoke a permission (requires permission `x.x.permission.*.revoke`)
   """
   revokePermission(subjectType: SubjectType!, subjectID: ID!, objectType: ObjectType!, objectID: ID, action: Action!): Boolean!
+
+  ############
+  # PROVIDER #
+  ############
+
   """
   Create a provider (requires permission `x.x.providers.*.create`)
   """
@@ -510,27 +506,6 @@ type Mutation {
   """
   deleteProvider(id: ID!): Boolean!
   """
-  Create a blueprint (requires permission `x.x.blueprints.*.create`)
-  """
-  createBlueprint(input: BlueprintInput!): Blueprint!
-  """
-  Update a blueprint (requires permission `x.x.blueprints.x.update`)
-  """
-  updateBlueprint(id: ID!, input: BlueprintInput!): Blueprint!
-  """
-  Delete a blueprint (requires permission `x.x.blueprints.x.delete`)
-  """
-  deleteBlueprint(id: ID!): Boolean!
-  """
-  Update a deployment (requires permission `x.x.deployments.x.update`)
-  """
-  updateDeployment(id: ID!, input: DeploymentInput!): Deployment!
-
-  #############
-  # PROVIDERS #
-  #############
-
-  """
   Load a provider to connect it to CBLE (requires permission `x.x.providers.x.load`)
   """
   loadProvider(id: ID!): Provider!
@@ -543,28 +518,70 @@ type Mutation {
   """
   configureProvider(id: ID!): Provider!
 
-  # ##############
-  # # DEPLOYMENT #
-  # ##############
+  ###########
+  # PROJECT #
+  ###########
 
   """
-  Deploy a blueprint (requires permission `x.x.blueprints.x.deploy`)
+  Create a project (requires the permission `x.x.project.*.create`)
   """
-  deployBlueprint(id: ID!, templateVars: StrMap!): Deployment!
+  createProject(input: ProjectInput!): Project!
   """
-  Destroy a deployment (requires permission `x.x.deployments.x.destroy`)
+  Update a project (requires the permission `x.x.project.x.update`)
   """
-  destroyDeployment(id: ID!): Deployment!
+  updateProject(id: ID!, input: ProjectInput!): Project!
   """
-  Redeploy nodes within a deployment (requires permission `x.x.deployments.x.redeploy`)
+  Delete a project (requires the permission `x.x.project.x.delete`)
+  """
+  deleteProject(id: ID!): Boolean!
+  """
+  Update membership to project (requires the permission `x.x.project.x.update_membership`)
+  """
+  updateMembership(id: ID!, users: [MembershipInput!]!, groups: [GroupMembershipInput!]!): Project!
+
+  #############
+  # BLUEPRINT #
+  #############
+
+  """
+  Create a blueprint (requires `Developer` role on project)
+  """
+  createBlueprint(input: BlueprintInput!): Blueprint!
+  """
+  Update a blueprint (requires `Developer` role on project)
+  """
+  updateBlueprint(id: ID!, input: BlueprintInput!): Blueprint!
+  """
+  Delete a blueprint (requires `Developer` role on project)
+  """
+  deleteBlueprint(id: ID!): Boolean!
+
+  ##############
+  # DEPLOYMENT #
+  ##############
+
+  """
+  Deploy a blueprint (requires `Deployer` role on project)
+  """
+  deployBlueprint(blueprintId: ID!, projectId: ID!, templateVars: StrMap!): Deployment!
+  """
+  Update a deployment (requires `Deployer` role on project)
+  """
+  updateDeployment(id: ID!, input: DeploymentInput!): Deployment!
+  """
+  Redeploy nodes within a deployment (requires `Deployer` role on project)
   """
   redeployDeployment(id: ID!, nodeIds: [ID!]!): Deployment!
   """
-  Control the power state of a deployment node
+  Destroy a deployment (requires `Deployer` role on project)
+  """
+  destroyDeployment(id: ID!): Deployment!
+  """
+  Control the power state of a deployment node (requires `Viewer` role on project)
   """
   deploymentNodePower(id: ID!, state: PowerState!): Boolean!
   """
-  Control the power state of a deployment
+  Control the power state of a deployment (requires `Viewer` role on project)
   """
   deploymentPower(id: ID!, state: PowerState!): Boolean!
   # """

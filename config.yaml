@@ -23,7 +23,15 @@ initialization:
     last_name: Admin
     username: cble
     password: cble
+  default_project: default
   admin_group: CBLE Administrators
 deployments:
   auto_suspend_time: 3h0m0s
   lease_time: 2160h0m0s # 90 days
+project_defaults:
+  # Set these to -1 to allow unlimited
+  quota_cpu: 10
+  quota_ram: 32768 # 32 GiB
+  quota_disk: 131072 # 128 GiB
+  quota_network: 1
+  quota_router: 1

@@ -13,6 +13,7 @@ import (
 	"github.com/cble-platform/cble-backend/engine/models"
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
+	"github.com/cble-platform/cble-backend/ent/project"
 	entprovider "github.com/cble-platform/cble-backend/ent/provider"
 	"github.com/cble-platform/cble-backend/ent/resource"
 	"github.com/google/uuid"
@@ -100,6 +101,17 @@ func (bc *BlueprintCreate) SetProviderID(id uuid.UUID) *BlueprintCreate {
 // SetProvider sets the "provider" edge to the Provider entity.
 func (bc *BlueprintCreate) SetProvider(p *Provider) *BlueprintCreate {
 	return bc.SetProviderID(p.ID)
+}
+
+// SetProjectID sets the "project" edge to the Project entity by ID.
+func (bc *BlueprintCreate) SetProjectID(id uuid.UUID) *BlueprintCreate {
+	bc.mutation.SetProjectID(id)
+	return bc
+}
+
+// SetProject sets the "project" edge to the Project entity.
+func (bc *BlueprintCreate) SetProject(p *Project) *BlueprintCreate {
+	return bc.SetProjectID(p.ID)
 }
 
 // AddResourceIDs adds the "resources" edge to the Resource entity by IDs.
@@ -204,6 +216,9 @@ func (bc *BlueprintCreate) check() error {
 	if _, ok := bc.mutation.ProviderID(); !ok {
 		return &ValidationError{Name: "provider", err: errors.New(`ent: missing required edge "Blueprint.provider"`)}
 	}
+	if _, ok := bc.mutation.ProjectID(); !ok {
+		return &ValidationError{Name: "project", err: errors.New(`ent: missing required edge "Blueprint.project"`)}
+	}
 	return nil
 }
 
@@ -278,6 +293,23 @@ func (bc *BlueprintCreate) createSpec() (*Blueprint, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.blueprint_provider = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := bc.mutation.ProjectIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   blueprint.ProjectTable,
+			Columns: []string{blueprint.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.blueprint_project = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := bc.mutation.ResourcesIDs(); len(nodes) > 0 {

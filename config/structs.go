@@ -3,13 +3,14 @@ package config
 import "time"
 
 type Config struct {
-	Debug          bool                 `yaml:"debug,omitempty"`
-	Server         ServerConfig         `yaml:"server"`
-	Database       DatabaseConfig       `yaml:"database"`
-	Initialization InitializationConfig `yaml:"initialization"`
-	Providers      ProvidersConfig      `yaml:"providers,omitempty"`
-	Auth           AuthConfig           `yaml:"auth"`
-	Deployments    DeploymentsConfig    `yaml:"deployments"`
+	Debug           bool                  `yaml:"debug,omitempty"`
+	Server          ServerConfig          `yaml:"server"`
+	Database        DatabaseConfig        `yaml:"database"`
+	Initialization  InitializationConfig  `yaml:"initialization"`
+	Providers       ProvidersConfig       `yaml:"providers,omitempty"`
+	Auth            AuthConfig            `yaml:"auth"`
+	Deployments     DeploymentsConfig     `yaml:"deployments"`
+	ProjectDefaults ProjectDefaultsConfig `yaml:"project_defaults"`
 }
 
 type ServerConfig struct {
@@ -31,8 +32,9 @@ type DatabaseConfig struct {
 }
 
 type InitializationConfig struct {
-	DefaultAdmin DefaultAdminConfig `yaml:"default_admin"`
-	AdminGroup   string             `yaml:"admin_group"`
+	DefaultAdmin   DefaultAdminConfig `yaml:"default_admin"`
+	DefaultProject string             `yaml:"default_project"`
+	AdminGroup     string             `yaml:"admin_group"`
 }
 
 type DefaultAdminConfig struct {
@@ -56,4 +58,12 @@ type AuthConfig struct {
 type DeploymentsConfig struct {
 	AutoSuspendTime time.Duration `yaml:"auto_suspend_time"`
 	LeaseTime       time.Duration `yaml:"lease_time"`
+}
+
+type ProjectDefaultsConfig struct {
+	QuotaCPU     int `yaml:"quota_cpu"`
+	QuotaRAM     int `yaml:"quota_ram"`
+	QuotaDisk    int `yaml:"quota_disk"`
+	QuotaNetwork int `yaml:"quota_network"`
+	QuotaRouter  int `yaml:"quota_router"`
 }

@@ -1,19 +1,9 @@
-blueprint:
-  - list # List all blueprints (only compatible with wildcard ID *)
-  - create # Create blueprints (only compatible with wildcard ID *)
-  - get # Get a given blueprint
-  - update # Update a given blueprint
-  - delete # Delete a given blueprint
-  - deploy # Deploy a given blueprint
-deployment:
-  - list # List all deployments (only compatible with wildcard ID *)
-  - get # Get a given deployment
-  - update # Update a given deployment
-  - delete # Delete a given deployment
-  - destroy # Destroy a given deployment
-  - redeploy # Redeploy a given deployment
-  - power # Control the power state of resources in a given deployment
-  - console # Get the console of resources in a given deployment
+project:
+  - list # List all projects (only compatible with wildcard ID *)
+  - create # Create projects (only compatible with wildcard ID *)
+  - update # Update a given project
+  - delete # Delete a given project
+  - update_membership # Modify project memberships
 group:
   - list # List all groups (only compatible with wildcard ID *)
   - create # Create groups

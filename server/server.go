@@ -1,4 +1,4 @@
-package cble
+package server
 
 import (
 	"context"
@@ -7,9 +7,7 @@ import (
 
 	"github.com/cble-platform/cble-backend/config"
 	"github.com/cble-platform/cble-backend/engine"
-	"github.com/cble-platform/cble-backend/internal/database"
-	"github.com/cble-platform/cble-backend/internal/defaultadmin"
-	"github.com/cble-platform/cble-backend/internal/webserver"
+	"github.com/cble-platform/cble-backend/initialize"
 	"github.com/cble-platform/cble-backend/providers"
 	"github.com/sirupsen/logrus"
 )
@@ -35,7 +33,7 @@ func NewServer(ctx context.Context, configFile string) (*CBLEServer, error) {
 	// ENT //
 	//-----//
 
-	client, err := database.Initialize(ctx, cbleConfig)
+	client, err := DatabaseConnect(ctx, cbleConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %v", err)
 	}
@@ -50,7 +48,7 @@ func NewServer(ctx context.Context, configFile string) (*CBLEServer, error) {
 	// Webserver //
 	//-----------//
 
-	w := webserver.New(cbleConfig, client, grpcServer)
+	w := NewWebserver(cbleConfig, client, grpcServer)
 
 	return &CBLEServer{
 		Config:     cbleConfig,
@@ -62,22 +60,20 @@ func NewServer(ctx context.Context, configFile string) (*CBLEServer, error) {
 
 // Initialize should be called before Run
 func (s *CBLEServer) Initialize(ctx context.Context) error {
-	//-------------//
-	// Permissions //
-	//-------------//
+	//-----------------//
+	// Default Project //
+	//-----------------//
 
-	// for _, perm := range s.Config.Initialization.Permissions {
-	// 	_, err := s.PermissionEngine.RegisterPermission(ctx, perm.Key, perm.Component, perm.Description)
-	// 	if err != nil {
-	// 		logrus.Warnf("failed to register permission %s: %v", perm.Key, err)
-	// 	}
-	// }
+	defaultProject, err := initialize.InitDefaultProject(ctx, s.Ent, s.Config)
+	if err != nil {
+		return fmt.Errorf("failed to initialize default admin user/group: %v", err)
+	}
 
 	//---------------//
 	// Default Admin //
 	//---------------//
 
-	err := defaultadmin.InitializeDefaultAdminUserGroup(ctx, s.Ent, s.Config)
+	err = initialize.InitDefaultAdminUserGroup(ctx, s.Ent, s.Config, defaultProject)
 	if err != nil {
 		return fmt.Errorf("failed to initialize default admin user/group: %v", err)
 	}

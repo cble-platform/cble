@@ -29,6 +29,8 @@ const (
 	FieldVariableTypes = "variable_types"
 	// EdgeProvider holds the string denoting the provider edge name in mutations.
 	EdgeProvider = "provider"
+	// EdgeProject holds the string denoting the project edge name in mutations.
+	EdgeProject = "project"
 	// EdgeResources holds the string denoting the resources edge name in mutations.
 	EdgeResources = "resources"
 	// EdgeDeployments holds the string denoting the deployments edge name in mutations.
@@ -42,6 +44,13 @@ const (
 	ProviderInverseTable = "providers"
 	// ProviderColumn is the table column denoting the provider relation/edge.
 	ProviderColumn = "blueprint_provider"
+	// ProjectTable is the table that holds the project relation/edge.
+	ProjectTable = "blueprints"
+	// ProjectInverseTable is the table name for the Project entity.
+	// It exists in this package in order to avoid circular dependency with the "project" package.
+	ProjectInverseTable = "projects"
+	// ProjectColumn is the table column denoting the project relation/edge.
+	ProjectColumn = "blueprint_project"
 	// ResourcesTable is the table that holds the resources relation/edge.
 	ResourcesTable = "resources"
 	// ResourcesInverseTable is the table name for the Resource entity.
@@ -73,6 +82,7 @@ var Columns = []string{
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"blueprint_provider",
+	"blueprint_project",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -136,6 +146,13 @@ func ByProviderField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
+// ByProjectField orders the results by project field.
+func ByProjectField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newProjectStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByResourcesCount orders the results by resources count.
 func ByResourcesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -168,6 +185,13 @@ func newProviderStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ProviderInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, false, ProviderTable, ProviderColumn),
+	)
+}
+func newProjectStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ProjectInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, ProjectTable, ProjectColumn),
 	)
 }
 func newResourcesStep() *sqlgraph.Step {

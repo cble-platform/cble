@@ -1,11 +1,10 @@
 package schema
 
 import (
-	"time"
-
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"github.com/cble-platform/cble-backend/ent/mixins"
 	"github.com/google/uuid"
 )
 
@@ -20,12 +19,6 @@ func (Group) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).
 			Immutable().
 			Default(uuid.New),
-		field.Time("created_at").
-			Immutable().
-			Default(time.Now),
-		field.Time("updated_at").
-			Default(time.Now).
-			UpdateDefault(time.Now),
 		field.String("name"),
 	}
 }
@@ -35,5 +28,15 @@ func (Group) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("users", User.Type).
 			Ref("groups"),
+		edge.From("projects", Project.Type).
+			Ref("group_members").
+			Comment("Projects this group has access to"),
+	}
+}
+
+// Mixins of the Group.
+func (Group) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		mixins.Timestamps{},
 	}
 }

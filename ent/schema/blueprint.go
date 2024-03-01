@@ -1,13 +1,12 @@
 package schema
 
 import (
-	"time"
-
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/cble-platform/cble-backend/engine/models"
+	"github.com/cble-platform/cble-backend/ent/mixins"
 	"github.com/google/uuid"
 )
 
@@ -22,12 +21,6 @@ func (Blueprint) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).
 			Immutable().
 			Default(uuid.New),
-		field.Time("created_at").
-			Immutable().
-			Default(time.Now),
-		field.Time("updated_at").
-			Default(time.Now).
-			UpdateDefault(time.Now),
 		field.String("name").
 			Comment("Display name of the blueprint"),
 		field.String("description").
@@ -46,6 +39,10 @@ func (Blueprint) Edges() []ent.Edge {
 			Unique().
 			Required().
 			Comment("The provider to use for this blueprint"),
+		edge.To("project", Project.Type).
+			Required().
+			Unique().
+			Comment("The project this blueprint is associated with (nil indicates a public blueprint)"),
 		edge.From("resources", Resource.Type).
 			Ref("blueprint").
 			Annotations(entsql.Annotation{
@@ -58,5 +55,12 @@ func (Blueprint) Edges() []ent.Edge {
 				OnDelete: entsql.Restrict,
 			}).
 			Comment("All deployments of this blueprints"),
+	}
+}
+
+// Mixins of the Blueprint.
+func (Blueprint) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		mixins.Timestamps{},
 	}
 }

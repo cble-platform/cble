@@ -12,24 +12,6 @@ import (
 )
 
 var AllSubjectActions = map[grantedpermission.ObjectType][]actions.PermissionAction{
-	grantedpermission.ObjectTypeBlueprint: {
-		actions.ActionBlueprintList,
-		actions.ActionBlueprintCreate,
-		actions.ActionBlueprintGet,
-		actions.ActionBlueprintUpdate,
-		actions.ActionBlueprintDelete,
-		actions.ActionBlueprintDeploy,
-	},
-	grantedpermission.ObjectTypeDeployment: {
-		actions.ActionDeploymentList,
-		actions.ActionDeploymentGet,
-		actions.ActionDeploymentUpdate,
-		actions.ActionDeploymentDelete,
-		actions.ActionDeploymentDestroy,
-		actions.ActionDeploymentRedeploy,
-		actions.ActionDeploymentPower,
-		actions.ActionDeploymentConsole,
-	},
 	grantedpermission.ObjectTypeGroup: {
 		actions.ActionGroupList,
 		actions.ActionGroupCreate,
@@ -42,6 +24,13 @@ var AllSubjectActions = map[grantedpermission.ObjectType][]actions.PermissionAct
 		actions.ActionPermissionGet,
 		actions.ActionPermissionGrant,
 		actions.ActionPermissionRevoke,
+	},
+	grantedpermission.ObjectTypeProject: {
+		actions.ActionProjectList,
+		actions.ActionProjectCreate,
+		actions.ActionProjectUpdate,
+		actions.ActionProjectDelete,
+		actions.ActionProjectUpdateMembership,
 	},
 	grantedpermission.ObjectTypeProvider: {
 		actions.ActionProviderList,
@@ -60,332 +49,6 @@ var AllSubjectActions = map[grantedpermission.ObjectType][]actions.PermissionAct
 		actions.ActionUserUpdate,
 		actions.ActionUserDelete,
 	},
-}
-
-// Blueprint //
-
-// HasBlueprintList reports whether a given user can list all blueprints (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func HasBlueprintList(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
-	return HasPermission(
-		ctx,
-		client,
-		entUser,
-		grantedpermission.ObjectTypeBlueprint,
-		objectID,
-		actions.ActionBlueprintList,
-	)
-}
-
-// HasBlueprintCreate reports whether a given user can create blueprints (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func HasBlueprintCreate(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
-	return HasPermission(
-		ctx,
-		client,
-		entUser,
-		grantedpermission.ObjectTypeBlueprint,
-		objectID,
-		actions.ActionBlueprintCreate,
-	)
-}
-
-// HasBlueprintGet reports whether a given user can get a given blueprint. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func HasBlueprintGet(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
-	return HasPermission(
-		ctx,
-		client,
-		entUser,
-		grantedpermission.ObjectTypeBlueprint,
-		objectID,
-		actions.ActionBlueprintGet,
-	)
-}
-
-// HasBlueprintUpdate reports whether a given user can update a given blueprint. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func HasBlueprintUpdate(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
-	return HasPermission(
-		ctx,
-		client,
-		entUser,
-		grantedpermission.ObjectTypeBlueprint,
-		objectID,
-		actions.ActionBlueprintUpdate,
-	)
-}
-
-// HasBlueprintDelete reports whether a given user can delete a given blueprint. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func HasBlueprintDelete(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
-	return HasPermission(
-		ctx,
-		client,
-		entUser,
-		grantedpermission.ObjectTypeBlueprint,
-		objectID,
-		actions.ActionBlueprintDelete,
-	)
-}
-
-// HasBlueprintDeploy reports whether a given user can deploy a given blueprint. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func HasBlueprintDeploy(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
-	return HasPermission(
-		ctx,
-		client,
-		entUser,
-		grantedpermission.ObjectTypeBlueprint,
-		objectID,
-		actions.ActionBlueprintDeploy,
-	)
-}
-
-// CurrentUserHasBlueprintList reports whether the current user (pulled from context) can list all blueprints (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func CurrentUserHasBlueprintList(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
-	return CurrentUserHasPermission(
-		ctx,
-		client,
-		grantedpermission.ObjectTypeBlueprint,
-		objectID,
-		actions.ActionBlueprintList,
-	)
-}
-
-// CurrentUserHasBlueprintCreate reports whether the current user (pulled from context) can create blueprints (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func CurrentUserHasBlueprintCreate(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
-	return CurrentUserHasPermission(
-		ctx,
-		client,
-		grantedpermission.ObjectTypeBlueprint,
-		objectID,
-		actions.ActionBlueprintCreate,
-	)
-}
-
-// CurrentUserHasBlueprintGet reports whether the current user (pulled from context) can get a given blueprint. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func CurrentUserHasBlueprintGet(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
-	return CurrentUserHasPermission(
-		ctx,
-		client,
-		grantedpermission.ObjectTypeBlueprint,
-		objectID,
-		actions.ActionBlueprintGet,
-	)
-}
-
-// CurrentUserHasBlueprintUpdate reports whether the current user (pulled from context) can update a given blueprint. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func CurrentUserHasBlueprintUpdate(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
-	return CurrentUserHasPermission(
-		ctx,
-		client,
-		grantedpermission.ObjectTypeBlueprint,
-		objectID,
-		actions.ActionBlueprintUpdate,
-	)
-}
-
-// CurrentUserHasBlueprintDelete reports whether the current user (pulled from context) can delete a given blueprint. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func CurrentUserHasBlueprintDelete(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
-	return CurrentUserHasPermission(
-		ctx,
-		client,
-		grantedpermission.ObjectTypeBlueprint,
-		objectID,
-		actions.ActionBlueprintDelete,
-	)
-}
-
-// CurrentUserHasBlueprintDeploy reports whether the current user (pulled from context) can deploy a given blueprint. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func CurrentUserHasBlueprintDeploy(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
-	return CurrentUserHasPermission(
-		ctx,
-		client,
-		grantedpermission.ObjectTypeBlueprint,
-		objectID,
-		actions.ActionBlueprintDeploy,
-	)
-}
-
-// Deployment //
-
-// HasDeploymentList reports whether a given user can list all deployments (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func HasDeploymentList(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
-	return HasPermission(
-		ctx,
-		client,
-		entUser,
-		grantedpermission.ObjectTypeDeployment,
-		objectID,
-		actions.ActionDeploymentList,
-	)
-}
-
-// HasDeploymentGet reports whether a given user can get a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func HasDeploymentGet(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
-	return HasPermission(
-		ctx,
-		client,
-		entUser,
-		grantedpermission.ObjectTypeDeployment,
-		objectID,
-		actions.ActionDeploymentGet,
-	)
-}
-
-// HasDeploymentUpdate reports whether a given user can update a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func HasDeploymentUpdate(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
-	return HasPermission(
-		ctx,
-		client,
-		entUser,
-		grantedpermission.ObjectTypeDeployment,
-		objectID,
-		actions.ActionDeploymentUpdate,
-	)
-}
-
-// HasDeploymentDelete reports whether a given user can delete a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func HasDeploymentDelete(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
-	return HasPermission(
-		ctx,
-		client,
-		entUser,
-		grantedpermission.ObjectTypeDeployment,
-		objectID,
-		actions.ActionDeploymentDelete,
-	)
-}
-
-// HasDeploymentDestroy reports whether a given user can destroy a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func HasDeploymentDestroy(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
-	return HasPermission(
-		ctx,
-		client,
-		entUser,
-		grantedpermission.ObjectTypeDeployment,
-		objectID,
-		actions.ActionDeploymentDestroy,
-	)
-}
-
-// HasDeploymentRedeploy reports whether a given user can redeploy a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func HasDeploymentRedeploy(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
-	return HasPermission(
-		ctx,
-		client,
-		entUser,
-		grantedpermission.ObjectTypeDeployment,
-		objectID,
-		actions.ActionDeploymentRedeploy,
-	)
-}
-
-// HasDeploymentPower reports whether a given user can control the power state of resources in a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func HasDeploymentPower(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
-	return HasPermission(
-		ctx,
-		client,
-		entUser,
-		grantedpermission.ObjectTypeDeployment,
-		objectID,
-		actions.ActionDeploymentPower,
-	)
-}
-
-// HasDeploymentConsole reports whether a given user can get the console of resources in a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func HasDeploymentConsole(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
-	return HasPermission(
-		ctx,
-		client,
-		entUser,
-		grantedpermission.ObjectTypeDeployment,
-		objectID,
-		actions.ActionDeploymentConsole,
-	)
-}
-
-// CurrentUserHasDeploymentList reports whether the current user (pulled from context) can list all deployments (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func CurrentUserHasDeploymentList(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
-	return CurrentUserHasPermission(
-		ctx,
-		client,
-		grantedpermission.ObjectTypeDeployment,
-		objectID,
-		actions.ActionDeploymentList,
-	)
-}
-
-// CurrentUserHasDeploymentGet reports whether the current user (pulled from context) can get a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func CurrentUserHasDeploymentGet(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
-	return CurrentUserHasPermission(
-		ctx,
-		client,
-		grantedpermission.ObjectTypeDeployment,
-		objectID,
-		actions.ActionDeploymentGet,
-	)
-}
-
-// CurrentUserHasDeploymentUpdate reports whether the current user (pulled from context) can update a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func CurrentUserHasDeploymentUpdate(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
-	return CurrentUserHasPermission(
-		ctx,
-		client,
-		grantedpermission.ObjectTypeDeployment,
-		objectID,
-		actions.ActionDeploymentUpdate,
-	)
-}
-
-// CurrentUserHasDeploymentDelete reports whether the current user (pulled from context) can delete a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func CurrentUserHasDeploymentDelete(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
-	return CurrentUserHasPermission(
-		ctx,
-		client,
-		grantedpermission.ObjectTypeDeployment,
-		objectID,
-		actions.ActionDeploymentDelete,
-	)
-}
-
-// CurrentUserHasDeploymentDestroy reports whether the current user (pulled from context) can destroy a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func CurrentUserHasDeploymentDestroy(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
-	return CurrentUserHasPermission(
-		ctx,
-		client,
-		grantedpermission.ObjectTypeDeployment,
-		objectID,
-		actions.ActionDeploymentDestroy,
-	)
-}
-
-// CurrentUserHasDeploymentRedeploy reports whether the current user (pulled from context) can redeploy a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func CurrentUserHasDeploymentRedeploy(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
-	return CurrentUserHasPermission(
-		ctx,
-		client,
-		grantedpermission.ObjectTypeDeployment,
-		objectID,
-		actions.ActionDeploymentRedeploy,
-	)
-}
-
-// CurrentUserHasDeploymentPower reports whether the current user (pulled from context) can control the power state of resources in a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func CurrentUserHasDeploymentPower(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
-	return CurrentUserHasPermission(
-		ctx,
-		client,
-		grantedpermission.ObjectTypeDeployment,
-		objectID,
-		actions.ActionDeploymentPower,
-	)
-}
-
-// CurrentUserHasDeploymentConsole reports whether the current user (pulled from context) can get the console of resources in a given deployment. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
-func CurrentUserHasDeploymentConsole(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
-	return CurrentUserHasPermission(
-		ctx,
-		client,
-		grantedpermission.ObjectTypeDeployment,
-		objectID,
-		actions.ActionDeploymentConsole,
-	)
 }
 
 // Group //
@@ -596,6 +259,123 @@ func CurrentUserHasPermissionRevoke(ctx context.Context, client *ent.Client, obj
 		grantedpermission.ObjectTypePermission,
 		objectID,
 		actions.ActionPermissionRevoke,
+	)
+}
+
+// Project //
+
+// HasProjectList reports whether a given user can list all projects (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+func HasProjectList(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
+	return HasPermission(
+		ctx,
+		client,
+		entUser,
+		grantedpermission.ObjectTypeProject,
+		objectID,
+		actions.ActionProjectList,
+	)
+}
+
+// HasProjectCreate reports whether a given user can create projects (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+func HasProjectCreate(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
+	return HasPermission(
+		ctx,
+		client,
+		entUser,
+		grantedpermission.ObjectTypeProject,
+		objectID,
+		actions.ActionProjectCreate,
+	)
+}
+
+// HasProjectUpdate reports whether a given user can update a given project. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+func HasProjectUpdate(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
+	return HasPermission(
+		ctx,
+		client,
+		entUser,
+		grantedpermission.ObjectTypeProject,
+		objectID,
+		actions.ActionProjectUpdate,
+	)
+}
+
+// HasProjectDelete reports whether a given user can delete a given project. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+func HasProjectDelete(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
+	return HasPermission(
+		ctx,
+		client,
+		entUser,
+		grantedpermission.ObjectTypeProject,
+		objectID,
+		actions.ActionProjectDelete,
+	)
+}
+
+// HasProjectUpdateMembership reports whether a given user can modify project memberships. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+func HasProjectUpdateMembership(ctx context.Context, client *ent.Client, entUser *ent.User, objectID uuid.UUID) (bool, error) {
+	return HasPermission(
+		ctx,
+		client,
+		entUser,
+		grantedpermission.ObjectTypeProject,
+		objectID,
+		actions.ActionProjectUpdateMembership,
+	)
+}
+
+// CurrentUserHasProjectList reports whether the current user (pulled from context) can list all projects (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+func CurrentUserHasProjectList(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
+	return CurrentUserHasPermission(
+		ctx,
+		client,
+		grantedpermission.ObjectTypeProject,
+		objectID,
+		actions.ActionProjectList,
+	)
+}
+
+// CurrentUserHasProjectCreate reports whether the current user (pulled from context) can create projects (only compatible with wildcard id *). Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+func CurrentUserHasProjectCreate(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
+	return CurrentUserHasPermission(
+		ctx,
+		client,
+		grantedpermission.ObjectTypeProject,
+		objectID,
+		actions.ActionProjectCreate,
+	)
+}
+
+// CurrentUserHasProjectUpdate reports whether the current user (pulled from context) can update a given project. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+func CurrentUserHasProjectUpdate(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
+	return CurrentUserHasPermission(
+		ctx,
+		client,
+		grantedpermission.ObjectTypeProject,
+		objectID,
+		actions.ActionProjectUpdate,
+	)
+}
+
+// CurrentUserHasProjectDelete reports whether the current user (pulled from context) can delete a given project. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+func CurrentUserHasProjectDelete(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
+	return CurrentUserHasPermission(
+		ctx,
+		client,
+		grantedpermission.ObjectTypeProject,
+		objectID,
+		actions.ActionProjectDelete,
+	)
+}
+
+// CurrentUserHasProjectUpdateMembership reports whether the current user (pulled from context) can modify project memberships. Use [github.com/google/uuid.Nil] to denote a wildcard object ID.
+func CurrentUserHasProjectUpdateMembership(ctx context.Context, client *ent.Client, objectID uuid.UUID) (bool, error) {
+	return CurrentUserHasPermission(
+		ctx,
+		client,
+		grantedpermission.ObjectTypeProject,
+		objectID,
+		actions.ActionProjectUpdateMembership,
 	)
 }
 

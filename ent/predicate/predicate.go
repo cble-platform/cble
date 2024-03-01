@@ -21,6 +21,15 @@ type GrantedPermission func(*sql.Selector)
 // Group is the predicate function for group builders.
 type Group func(*sql.Selector)
 
+// GroupMembership is the predicate function for groupmembership builders.
+type GroupMembership func(*sql.Selector)
+
+// Membership is the predicate function for membership builders.
+type Membership func(*sql.Selector)
+
+// Project is the predicate function for project builders.
+type Project func(*sql.Selector)
+
 // Provider is the predicate function for entprovider builders.
 type Provider func(*sql.Selector)
 

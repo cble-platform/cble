@@ -13,193 +13,7 @@ import (
 
 type PermissionAction string
 
-// The following is an enum for use in the GraphQL Schema
-/*
-enum Action {
-	"""
-	List all blueprints (only compatible with wildcard ID *)
-	"""
-  blueprint_list
-	"""
-	Create blueprints (only compatible with wildcard ID *)
-	"""
-  blueprint_create
-	"""
-	Get a given blueprint
-	"""
-  blueprint_get
-	"""
-	Update a given blueprint
-	"""
-  blueprint_update
-	"""
-	Delete a given blueprint
-	"""
-  blueprint_delete
-	"""
-	Deploy a given blueprint
-	"""
-  blueprint_deploy
-	"""
-	List all deployments (only compatible with wildcard ID *)
-	"""
-  deployment_list
-	"""
-	Get a given deployment
-	"""
-  deployment_get
-	"""
-	Update a given deployment
-	"""
-  deployment_update
-	"""
-	Delete a given deployment
-	"""
-  deployment_delete
-	"""
-	Destroy a given deployment
-	"""
-  deployment_destroy
-	"""
-	Redeploy a given deployment
-	"""
-  deployment_redeploy
-	"""
-	Control the power state of resources in a given deployment
-	"""
-  deployment_power
-	"""
-	Get the console of resources in a given deployment
-	"""
-  deployment_console
-	"""
-	List all groups (only compatible with wildcard ID *)
-	"""
-  group_list
-	"""
-	Create groups
-	"""
-  group_create
-	"""
-	Get a given group
-	"""
-  group_get
-	"""
-	Update a given group
-	"""
-  group_update
-	"""
-	Delete a given group
-	"""
-  group_delete
-	"""
-	List all permissions (only compatible with wildcard ID *)
-	"""
-  permission_list
-	"""
-	Get a given permission
-	"""
-  permission_get
-	"""
-	Grant permissions (only compatible with wildcard ID *)
-	"""
-  permission_grant
-	"""
-	Revoke permissions (only compatible with wildcard ID *)
-	"""
-  permission_revoke
-	"""
-	List all providers (only compatible with wildcard ID *)
-	"""
-  provider_list
-	"""
-	Create providers
-	"""
-  provider_create
-	"""
-	Get a given provider
-	"""
-  provider_get
-	"""
-	Update a given provider
-	"""
-  provider_update
-	"""
-	Delete a given provider
-	"""
-  provider_delete
-	"""
-	Load a given provider
-	"""
-  provider_load
-	"""
-	Unload a given provider
-	"""
-  provider_unload
-	"""
-	Configure a given provider
-	"""
-  provider_configure
-	"""
-	List all users (only compatible with wildcard ID *)
-	"""
-  user_list
-	"""
-	Create users
-	"""
-  user_create
-	"""
-	Get a given user
-	"""
-  user_get
-	"""
-	Update a given user
-	"""
-  user_update
-	"""
-	Delete a given user
-	"""
-  user_delete
-}
-*/
-
 const (
-	// -----------------------------------------------------------------
-	// Blueprint
-	// -----------------------------------------------------------------
-
-	// List all blueprints (only compatible with wildcard ID *)
-	ActionBlueprintList PermissionAction = "blueprint_list"
-	// Create blueprints (only compatible with wildcard ID *)
-	ActionBlueprintCreate PermissionAction = "blueprint_create"
-	// Get a given blueprint
-	ActionBlueprintGet PermissionAction = "blueprint_get"
-	// Update a given blueprint
-	ActionBlueprintUpdate PermissionAction = "blueprint_update"
-	// Delete a given blueprint
-	ActionBlueprintDelete PermissionAction = "blueprint_delete"
-	// Deploy a given blueprint
-	ActionBlueprintDeploy PermissionAction = "blueprint_deploy"
-	// -----------------------------------------------------------------
-	// Deployment
-	// -----------------------------------------------------------------
-
-	// List all deployments (only compatible with wildcard ID *)
-	ActionDeploymentList PermissionAction = "deployment_list"
-	// Get a given deployment
-	ActionDeploymentGet PermissionAction = "deployment_get"
-	// Update a given deployment
-	ActionDeploymentUpdate PermissionAction = "deployment_update"
-	// Delete a given deployment
-	ActionDeploymentDelete PermissionAction = "deployment_delete"
-	// Destroy a given deployment
-	ActionDeploymentDestroy PermissionAction = "deployment_destroy"
-	// Redeploy a given deployment
-	ActionDeploymentRedeploy PermissionAction = "deployment_redeploy"
-	// Control the power state of resources in a given deployment
-	ActionDeploymentPower PermissionAction = "deployment_power"
-	// Get the console of resources in a given deployment
-	ActionDeploymentConsole PermissionAction = "deployment_console"
 	// -----------------------------------------------------------------
 	// Group
 	// -----------------------------------------------------------------
@@ -226,6 +40,20 @@ const (
 	ActionPermissionGrant PermissionAction = "permission_grant"
 	// Revoke permissions (only compatible with wildcard ID *)
 	ActionPermissionRevoke PermissionAction = "permission_revoke"
+	// -----------------------------------------------------------------
+	// Project
+	// -----------------------------------------------------------------
+
+	// List all projects (only compatible with wildcard ID *)
+	ActionProjectList PermissionAction = "project_list"
+	// Create projects (only compatible with wildcard ID *)
+	ActionProjectCreate PermissionAction = "project_create"
+	// Update a given project
+	ActionProjectUpdate PermissionAction = "project_update"
+	// Delete a given project
+	ActionProjectDelete PermissionAction = "project_delete"
+	// Modify project memberships
+	ActionProjectUpdateMembership PermissionAction = "project_update_membership"
 	// -----------------------------------------------------------------
 	// Provider
 	// -----------------------------------------------------------------
@@ -274,26 +102,6 @@ func (p PermissionAction) DisplayString() string {
 }
 
 var actionMap = map[string]map[string]PermissionAction{
-	// Blueprint
-	"blueprint": {
-		"list":   ActionBlueprintList,
-		"create": ActionBlueprintCreate,
-		"get":    ActionBlueprintGet,
-		"update": ActionBlueprintUpdate,
-		"delete": ActionBlueprintDelete,
-		"deploy": ActionBlueprintDeploy,
-	},
-	// Deployment
-	"deployment": {
-		"list":     ActionDeploymentList,
-		"get":      ActionDeploymentGet,
-		"update":   ActionDeploymentUpdate,
-		"delete":   ActionDeploymentDelete,
-		"destroy":  ActionDeploymentDestroy,
-		"redeploy": ActionDeploymentRedeploy,
-		"power":    ActionDeploymentPower,
-		"console":  ActionDeploymentConsole,
-	},
 	// Group
 	"group": {
 		"list":   ActionGroupList,
@@ -308,6 +116,14 @@ var actionMap = map[string]map[string]PermissionAction{
 		"get":    ActionPermissionGet,
 		"grant":  ActionPermissionGrant,
 		"revoke": ActionPermissionRevoke,
+	},
+	// Project
+	"project": {
+		"list":              ActionProjectList,
+		"create":            ActionProjectCreate,
+		"update":            ActionProjectUpdate,
+		"delete":            ActionProjectDelete,
+		"update_membership": ActionProjectUpdateMembership,
 	},
 	// Provider
 	"provider": {
@@ -343,20 +159,6 @@ func Get(object string, action string) PermissionAction {
 // Values provides list valid values for Enum.
 func (PermissionAction) Values() (kinds []string) {
 	for _, s := range []PermissionAction{
-		ActionBlueprintList,
-		ActionBlueprintCreate,
-		ActionBlueprintGet,
-		ActionBlueprintUpdate,
-		ActionBlueprintDelete,
-		ActionBlueprintDeploy,
-		ActionDeploymentList,
-		ActionDeploymentGet,
-		ActionDeploymentUpdate,
-		ActionDeploymentDelete,
-		ActionDeploymentDestroy,
-		ActionDeploymentRedeploy,
-		ActionDeploymentPower,
-		ActionDeploymentConsole,
 		ActionGroupList,
 		ActionGroupCreate,
 		ActionGroupGet,
@@ -366,6 +168,11 @@ func (PermissionAction) Values() (kinds []string) {
 		ActionPermissionGet,
 		ActionPermissionGrant,
 		ActionPermissionRevoke,
+		ActionProjectList,
+		ActionProjectCreate,
+		ActionProjectUpdate,
+		ActionProjectDelete,
+		ActionProjectUpdateMembership,
 		ActionProviderList,
 		ActionProviderCreate,
 		ActionProviderGet,

@@ -1,4 +1,4 @@
-package defaultadmin
+package initialize
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/ent/grantedpermission"
 	"github.com/cble-platform/cble-backend/ent/group"
+	"github.com/cble-platform/cble-backend/ent/groupmembership"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/cble-platform/cble-backend/permission"
 	"github.com/google/uuid"
@@ -15,7 +16,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func InitializeDefaultAdminUserGroup(ctx context.Context, client *ent.Client, cbleConfig *config.Config) error {
+func InitDefaultAdminUserGroup(ctx context.Context, client *ent.Client, cbleConfig *config.Config, defaultProject *ent.Project) error {
 	// Ensure the built-in admin group exists
 	cbleAdminGroup, err := client.Group.Query().Where(
 		group.NameEQ(cbleConfig.Initialization.AdminGroup),
@@ -29,6 +30,26 @@ func InitializeDefaultAdminUserGroup(ctx context.Context, client *ent.Client, cb
 			Save(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to create default admin group: %v", err)
+		}
+	}
+
+	// Assign this group as admin on the default project
+	isDefaultProjectMember, err := client.GroupMembership.Query().Where(
+		groupmembership.ProjectID(defaultProject.ID),
+		groupmembership.GroupID(cbleAdminGroup.ID),
+	).Exist(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to query default project group membership: %v", err)
+	}
+	if !isDefaultProjectMember {
+		// Create the membership if not exists
+		err = client.GroupMembership.Create().
+			SetProject(defaultProject).
+			SetGroup(cbleAdminGroup).
+			SetRole(groupmembership.RoleAdmin).
+			Exec(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to create default project membership for default admin group: %v", err)
 		}
 	}
 
@@ -80,6 +101,7 @@ func InitializeDefaultAdminUserGroup(ctx context.Context, client *ent.Client, cb
 				SetFirstName(cbleConfig.Initialization.DefaultAdmin.FirstName).
 				SetLastName(cbleConfig.Initialization.DefaultAdmin.LastName).
 				AddGroups(cbleAdminGroup).
+				AddProjects(defaultProject).
 				Save(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to create default admin: %v", err)

@@ -13,6 +13,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent/blueprint"
 	"github.com/cble-platform/cble-backend/ent/deployment"
 	"github.com/cble-platform/cble-backend/ent/deploymentnode"
+	"github.com/cble-platform/cble-backend/ent/project"
 	"github.com/cble-platform/cble-backend/ent/user"
 	"github.com/google/uuid"
 )
@@ -147,6 +148,17 @@ func (dc *DeploymentCreate) SetRequester(u *User) *DeploymentCreate {
 	return dc.SetRequesterID(u.ID)
 }
 
+// SetProjectID sets the "project" edge to the Project entity by ID.
+func (dc *DeploymentCreate) SetProjectID(id uuid.UUID) *DeploymentCreate {
+	dc.mutation.SetProjectID(id)
+	return dc
+}
+
+// SetProject sets the "project" edge to the Project entity.
+func (dc *DeploymentCreate) SetProject(p *Project) *DeploymentCreate {
+	return dc.SetProjectID(p.ID)
+}
+
 // Mutation returns the DeploymentMutation object of the builder.
 func (dc *DeploymentCreate) Mutation() *DeploymentMutation {
 	return dc.mutation
@@ -237,6 +249,9 @@ func (dc *DeploymentCreate) check() error {
 	}
 	if _, ok := dc.mutation.RequesterID(); !ok {
 		return &ValidationError{Name: "requester", err: errors.New(`ent: missing required edge "Deployment.requester"`)}
+	}
+	if _, ok := dc.mutation.ProjectID(); !ok {
+		return &ValidationError{Name: "project", err: errors.New(`ent: missing required edge "Deployment.project"`)}
 	}
 	return nil
 }
@@ -353,6 +368,23 @@ func (dc *DeploymentCreate) createSpec() (*Deployment, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.deployment_requester = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := dc.mutation.ProjectIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   deployment.ProjectTable,
+			Columns: []string{deployment.ProjectColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.deployment_project = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

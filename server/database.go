@@ -1,4 +1,4 @@
-package database
+package server
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/cble-platform/cble-backend/ent"
 )
 
-func Initialize(ctx context.Context, cbleConfig *config.Config) (*ent.Client, error) {
+func DatabaseConnect(ctx context.Context, cbleConfig *config.Config) (*ent.Client, error) {
 	pgPort := 5432
 	if cbleConfig.Database.Port != nil {
 		pgPort = *cbleConfig.Database.Port

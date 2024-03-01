@@ -69,7 +69,7 @@ func StartRedeploy(client *ent.Client, cbleServer *providers.CBLEServer, entDepl
 	// Spawn destroyRoutine's for all root nodes
 	for _, entDeploymentNode := range entDeploymentNodes {
 		wg.Add(1)
-		go destroyRoutine(ctx, client, cbleServer, entDeploymentNode, &wg)
+		go destroyRoutine(ctx, cbleServer, entDeploymentNode, &wg)
 	}
 
 	// Wait for all routines to finish
@@ -111,7 +111,7 @@ func StartRedeploy(client *ent.Client, cbleServer *providers.CBLEServer, entDepl
 	// Spawn deployRoutine's for all root nodes
 	for _, deploymentNode := range entDeploymentNodes {
 		wg.Add(1)
-		go deployRoutine(ctx, client, cbleServer, deploymentNode, &wg)
+		go deployRoutine(ctx, cbleServer, deploymentNode, &wg)
 	}
 
 	// Wait for all routines to finish

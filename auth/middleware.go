@@ -7,10 +7,15 @@ import (
 	"github.com/cble-platform/cble-backend/config"
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/ent/user"
-	"github.com/cble-platform/cble-backend/internal/contexts"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 )
+
+type contextKey struct {
+	field string
+}
+
+var USER_CTX_KEY = &contextKey{"user"}
 
 // Looks up the ENT user object from the session token and injects into context
 func AuthMiddleware(cbleConfig *config.Config, client *ent.Client) gin.HandlerFunc {
@@ -44,7 +49,7 @@ func AuthMiddleware(cbleConfig *config.Config, client *ent.Client) gin.HandlerFu
 		}
 
 		// Inject the user object into request context
-		ctx := context.WithValue(c.Request.Context(), contexts.USER_CTX_KEY, entUser)
+		ctx := context.WithValue(c.Request.Context(), USER_CTX_KEY, entUser)
 		c.Request = c.Request.WithContext(ctx)
 
 		c.Next()

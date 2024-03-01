@@ -32,8 +32,10 @@ type Resource struct {
 	Key string `json:"key,omitempty"`
 	// The resource/data string from the blueprint
 	ResourceType string `json:"resource_type,omitempty"`
-	// Features holds the value of the "features" field.
+	// The features supported by this resource
 	Features provider.Features `json:"features,omitempty"`
+	// The quota space required by this resource
+	QuotaRequirements provider.QuotaRequirements `json:"quota_requirements,omitempty"`
 	// The entire resource/data object from the blueprint
 	Object *models.Object `json:"object,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -92,7 +94,7 @@ func (*Resource) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case resource.FieldFeatures, resource.FieldObject:
+		case resource.FieldFeatures, resource.FieldQuotaRequirements, resource.FieldObject:
 			values[i] = new([]byte)
 		case resource.FieldType, resource.FieldKey, resource.FieldResourceType:
 			values[i] = new(sql.NullString)
@@ -159,6 +161,14 @@ func (r *Resource) assignValues(columns []string, values []any) error {
 			} else if value != nil && len(*value) > 0 {
 				if err := json.Unmarshal(*value, &r.Features); err != nil {
 					return fmt.Errorf("unmarshal field features: %w", err)
+				}
+			}
+		case resource.FieldQuotaRequirements:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field quota_requirements", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &r.QuotaRequirements); err != nil {
+					return fmt.Errorf("unmarshal field quota_requirements: %w", err)
 				}
 			}
 		case resource.FieldObject:
@@ -244,6 +254,9 @@ func (r *Resource) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("features=")
 	builder.WriteString(fmt.Sprintf("%v", r.Features))
+	builder.WriteString(", ")
+	builder.WriteString("quota_requirements=")
+	builder.WriteString(fmt.Sprintf("%v", r.QuotaRequirements))
 	builder.WriteString(", ")
 	builder.WriteString("object=")
 	builder.WriteString(fmt.Sprintf("%v", r.Object))

@@ -316,6 +316,16 @@ func FeaturesNotNil() predicate.Resource {
 	return predicate.Resource(sql.FieldNotNull(FieldFeatures))
 }
 
+// QuotaRequirementsIsNil applies the IsNil predicate on the "quota_requirements" field.
+func QuotaRequirementsIsNil() predicate.Resource {
+	return predicate.Resource(sql.FieldIsNull(FieldQuotaRequirements))
+}
+
+// QuotaRequirementsNotNil applies the NotNil predicate on the "quota_requirements" field.
+func QuotaRequirementsNotNil() predicate.Resource {
+	return predicate.Resource(sql.FieldNotNull(FieldQuotaRequirements))
+}
+
 // HasBlueprint applies the HasEdge predicate on the "blueprint" edge.
 func HasBlueprint() predicate.Resource {
 	return predicate.Resource(func(s *sql.Selector) {

@@ -92,6 +92,20 @@ func (rc *ResourceCreate) SetNillableFeatures(pr *provider.Features) *ResourceCr
 	return rc
 }
 
+// SetQuotaRequirements sets the "quota_requirements" field.
+func (rc *ResourceCreate) SetQuotaRequirements(pr provider.QuotaRequirements) *ResourceCreate {
+	rc.mutation.SetQuotaRequirements(pr)
+	return rc
+}
+
+// SetNillableQuotaRequirements sets the "quota_requirements" field if the given value is not nil.
+func (rc *ResourceCreate) SetNillableQuotaRequirements(pr *provider.QuotaRequirements) *ResourceCreate {
+	if pr != nil {
+		rc.SetQuotaRequirements(*pr)
+	}
+	return rc
+}
+
 // SetObject sets the "object" field.
 func (rc *ResourceCreate) SetObject(m *models.Object) *ResourceCreate {
 	rc.mutation.SetObject(m)
@@ -204,6 +218,10 @@ func (rc *ResourceCreate) defaults() {
 		v := resource.DefaultFeatures
 		rc.mutation.SetFeatures(v)
 	}
+	if _, ok := rc.mutation.QuotaRequirements(); !ok {
+		v := resource.DefaultQuotaRequirements
+		rc.mutation.SetQuotaRequirements(v)
+	}
 	if _, ok := rc.mutation.ID(); !ok {
 		v := resource.DefaultID()
 		rc.mutation.SetID(v)
@@ -296,6 +314,10 @@ func (rc *ResourceCreate) createSpec() (*Resource, *sqlgraph.CreateSpec) {
 	if value, ok := rc.mutation.Features(); ok {
 		_spec.SetField(resource.FieldFeatures, field.TypeJSON, value)
 		_node.Features = value
+	}
+	if value, ok := rc.mutation.QuotaRequirements(); ok {
+		_spec.SetField(resource.FieldQuotaRequirements, field.TypeJSON, value)
+		_node.QuotaRequirements = value
 	}
 	if value, ok := rc.mutation.Object(); ok {
 		_spec.SetField(resource.FieldObject, field.TypeJSON, value)

@@ -1,0 +1,12 @@
+enum Action {
+{{- range $target, $actions := . }}
+{{- range $actions.Content }}
+	{{- if ne .LineComment "" }}
+	"""
+	{{ .LineComment | TrimCommentPrefix }}
+	"""
+	{{- end }}
+  {{ $target -}}_{{- .Value }}
+{{- end }}
+{{- end }}
+}
