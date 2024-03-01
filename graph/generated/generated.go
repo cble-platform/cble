@@ -93,6 +93,7 @@ type ComplexityRoot struct {
 		ExpiresAt       func(childComplexity int) int
 		ID              func(childComplexity int) int
 		Name            func(childComplexity int) int
+		Project         func(childComplexity int) int
 		Requester       func(childComplexity int) int
 		State           func(childComplexity int) int
 		TemplateVars    func(childComplexity int) int
@@ -300,6 +301,7 @@ type DeploymentResolver interface {
 	State(ctx context.Context, obj *ent.Deployment) (model.DeploymentState, error)
 
 	Blueprint(ctx context.Context, obj *ent.Deployment) (*ent.Blueprint, error)
+	Project(ctx context.Context, obj *ent.Deployment) (*ent.Project, error)
 	DeploymentNodes(ctx context.Context, obj *ent.Deployment) ([]*ent.DeploymentNode, error)
 	Requester(ctx context.Context, obj *ent.Deployment) (*ent.User, error)
 }
@@ -558,6 +560,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Deployment.Name(childComplexity), true
+
+	case "Deployment.project":
+		if e.complexity.Deployment.Project == nil {
+			break
+		}
+
+		return e.complexity.Deployment.Project(childComplexity), true
 
 	case "Deployment.requester":
 		if e.complexity.Deployment.Requester == nil {
@@ -2054,6 +2063,7 @@ type Deployment {
   expiresAt: Time!
 
   blueprint: Blueprint!
+  project: Project!
   deploymentNodes: [DeploymentNode!]!
   requester: User!
 }
@@ -4252,6 +4262,8 @@ func (ec *executionContext) fieldContext_Blueprint_deployments(ctx context.Conte
 				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
+			case "project":
+				return ec.fieldContext_Deployment_project(ctx, field)
 			case "deploymentNodes":
 				return ec.fieldContext_Deployment_deploymentNodes(ctx, field)
 			case "requester":
@@ -4795,6 +4807,78 @@ func (ec *executionContext) fieldContext_Deployment_blueprint(ctx context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Deployment_project(ctx context.Context, field graphql.CollectedField, obj *ent.Deployment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Deployment_project(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Deployment().Project(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Project)
+	fc.Result = res
+	return ec.marshalNProject2ᚖgithubᚗcomᚋcbleᚑplatformᚋcbleᚑbackendᚋentᚐProject(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Deployment_project(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Deployment",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Project_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Project_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Project_updatedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_Project_name(ctx, field)
+			case "quotaCpu":
+				return ec.fieldContext_Project_quotaCpu(ctx, field)
+			case "quotaRam":
+				return ec.fieldContext_Project_quotaRam(ctx, field)
+			case "quotaDisk":
+				return ec.fieldContext_Project_quotaDisk(ctx, field)
+			case "quotaNetwork":
+				return ec.fieldContext_Project_quotaNetwork(ctx, field)
+			case "quotaRouter":
+				return ec.fieldContext_Project_quotaRouter(ctx, field)
+			case "memberships":
+				return ec.fieldContext_Project_memberships(ctx, field)
+			case "groupMemberships":
+				return ec.fieldContext_Project_groupMemberships(ctx, field)
+			case "blueprints":
+				return ec.fieldContext_Project_blueprints(ctx, field)
+			case "deployments":
+				return ec.fieldContext_Project_deployments(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Project", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Deployment_deploymentNodes(ctx context.Context, field graphql.CollectedField, obj *ent.Deployment) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Deployment_deploymentNodes(ctx, field)
 	if err != nil {
@@ -5197,6 +5281,8 @@ func (ec *executionContext) fieldContext_DeploymentNode_deployment(ctx context.C
 				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
+			case "project":
+				return ec.fieldContext_Deployment_project(ctx, field)
 			case "deploymentNodes":
 				return ec.fieldContext_Deployment_deploymentNodes(ctx, field)
 			case "requester":
@@ -5461,6 +5547,8 @@ func (ec *executionContext) fieldContext_DeploymentPage_deployments(ctx context.
 				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
+			case "project":
+				return ec.fieldContext_Deployment_project(ctx, field)
 			case "deploymentNodes":
 				return ec.fieldContext_Deployment_deploymentNodes(ctx, field)
 			case "requester":
@@ -8380,6 +8468,8 @@ func (ec *executionContext) fieldContext_Mutation_deployBlueprint(ctx context.Co
 				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
+			case "project":
+				return ec.fieldContext_Deployment_project(ctx, field)
 			case "deploymentNodes":
 				return ec.fieldContext_Deployment_deploymentNodes(ctx, field)
 			case "requester":
@@ -8459,6 +8549,8 @@ func (ec *executionContext) fieldContext_Mutation_updateDeployment(ctx context.C
 				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
+			case "project":
+				return ec.fieldContext_Deployment_project(ctx, field)
 			case "deploymentNodes":
 				return ec.fieldContext_Deployment_deploymentNodes(ctx, field)
 			case "requester":
@@ -8538,6 +8630,8 @@ func (ec *executionContext) fieldContext_Mutation_redeployDeployment(ctx context
 				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
+			case "project":
+				return ec.fieldContext_Deployment_project(ctx, field)
 			case "deploymentNodes":
 				return ec.fieldContext_Deployment_deploymentNodes(ctx, field)
 			case "requester":
@@ -8617,6 +8711,8 @@ func (ec *executionContext) fieldContext_Mutation_destroyDeployment(ctx context.
 				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
+			case "project":
+				return ec.fieldContext_Deployment_project(ctx, field)
 			case "deploymentNodes":
 				return ec.fieldContext_Deployment_deploymentNodes(ctx, field)
 			case "requester":
@@ -9378,6 +9474,8 @@ func (ec *executionContext) fieldContext_Project_deployments(ctx context.Context
 				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
+			case "project":
+				return ec.fieldContext_Deployment_project(ctx, field)
 			case "deploymentNodes":
 				return ec.fieldContext_Deployment_deploymentNodes(ctx, field)
 			case "requester":
@@ -11087,6 +11185,8 @@ func (ec *executionContext) fieldContext_Query_deployment(ctx context.Context, f
 				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
+			case "project":
+				return ec.fieldContext_Deployment_project(ctx, field)
 			case "deploymentNodes":
 				return ec.fieldContext_Deployment_deploymentNodes(ctx, field)
 			case "requester":
@@ -12492,6 +12592,8 @@ func (ec *executionContext) fieldContext_User_deployments(ctx context.Context, f
 				return ec.fieldContext_Deployment_expiresAt(ctx, field)
 			case "blueprint":
 				return ec.fieldContext_Deployment_blueprint(ctx, field)
+			case "project":
+				return ec.fieldContext_Deployment_project(ctx, field)
 			case "deploymentNodes":
 				return ec.fieldContext_Deployment_deploymentNodes(ctx, field)
 			case "requester":
@@ -15114,6 +15216,42 @@ func (ec *executionContext) _Deployment(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._Deployment_blueprint(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "project":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Deployment_project(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

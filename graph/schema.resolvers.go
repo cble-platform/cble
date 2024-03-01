@@ -75,6 +75,11 @@ func (r *deploymentResolver) Blueprint(ctx context.Context, obj *ent.Deployment)
 	return obj.QueryBlueprint().Only(ctx)
 }
 
+// Project is the resolver for the project field.
+func (r *deploymentResolver) Project(ctx context.Context, obj *ent.Deployment) (*ent.Project, error) {
+	return obj.QueryProject().Only(ctx)
+}
+
 // DeploymentNodes is the resolver for the deploymentNodes field.
 func (r *deploymentResolver) DeploymentNodes(ctx context.Context, obj *ent.Deployment) ([]*ent.DeploymentNode, error) {
 	return obj.QueryDeploymentNodes().All(ctx)
@@ -803,8 +808,8 @@ func (r *mutationResolver) DeployBlueprint(ctx context.Context, blueprintID uuid
 
 // Update a deployment (requires `Deployer` role on project)
 func (r *mutationResolver) UpdateDeployment(ctx context.Context, id uuid.UUID, input model.DeploymentInput) (*ent.Deployment, error) {
-	// Get the project through blueprint ID
-	entProject, err := r.ent.Blueprint.Query().Where(blueprint.ID(id)).QueryProject().Only(ctx)
+	// Get the project through deployment ID
+	entProject, err := r.ent.Deployment.Query().Where(deployment.ID(id)).QueryProject().Only(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query deployment: %v", err)
 	}
