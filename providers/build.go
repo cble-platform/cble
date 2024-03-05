@@ -88,6 +88,19 @@ func buildShellProvider(providerRepoPath string, metadata *ProviderMetadata) err
 		return fmt.Errorf("\"shell\" block not found in provider metadata, please provide one with a build_cmd")
 	}
 
+	// Run prebuild command to install dependencies
+	if metadata.ShellMeta.PrebuildCommand != "" {
+		cmd := exec.Command("sh", "-c", metadata.ShellMeta.PrebuildCommand)
+		cmd.Dir = providerRepoPath
+		cmdOutput, err := cmd.CombinedOutput()
+		if err != nil {
+			if exiterr, ok := err.(*exec.ExitError); ok {
+				return fmt.Errorf("prebuild command exited with status %d. output: %s", exiterr.ExitCode(), cmdOutput)
+			}
+			return fmt.Errorf("prebuild command run error: %v", err)
+		}
+	}
+
 	// Build the provider using the provided command
 	cmd := exec.Command("sh", "-c", metadata.ShellMeta.BuildCommand)
 	cmd.Dir = providerRepoPath
