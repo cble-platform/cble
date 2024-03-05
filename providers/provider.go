@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
-	"syscall"
 
 	"github.com/cble-platform/cble-backend/ent"
 	"github.com/cble-platform/cble-backend/git"
@@ -37,18 +35,10 @@ func (ps *CBLEServer) downloadProvider(entProvider *ent.Provider) error {
 		return fmt.Errorf("failed to checkout provider repo: %v", err)
 	}
 
-	providerBinaryPath := path.Join(ps.providersConfig.CacheDir, entProvider.ID.String(), "provider")
-	logrus.WithFields(logrus.Fields{"binary_path": providerBinaryPath}).Debugf("Compiling provider %s", entProvider.ID.String())
-
-	// Build the provider into a binary
-	cmd := exec.Command("sh", "-c", fmt.Sprintf("go get ./... && go build -o %s %s", providerBinaryPath, providerRepoPath))
-	cmd.Dir = providerRepoPath
-	cmdOutput, err := cmd.CombinedOutput()
+	// Build the provider
+	err = BuildProvider(providerRepoPath, entProvider)
 	if err != nil {
-		if exiterr, ok := err.(*exec.ExitError); ok {
-			return fmt.Errorf("command exited with status %d. output: %s", exiterr.ExitCode(), cmdOutput)
-		}
-		return fmt.Errorf("command run error: %v", err)
+		return fmt.Errorf("failed to build provider: %v", err)
 	}
 
 	return nil
@@ -56,51 +46,13 @@ func (ps *CBLEServer) downloadProvider(entProvider *ent.Provider) error {
 
 // Runs a provider binary. Should be run as a go routine
 func (ps *CBLEServer) runProvider(ctx context.Context, entProvider *ent.Provider, shutdown chan bool) {
-	providerBinaryPath := path.Join(ps.providersConfig.CacheDir, entProvider.ID.String(), "provider")
-
-	// Check the provider is compiled
-	if _, err := os.Stat(providerBinaryPath); os.IsNotExist(err) {
-		// The provider binary has yet to be built
-		logrus.WithFields(logrus.Fields{
-			"component":  "PROVIDER_ENGINE",
-			"providerId": entProvider.ID,
-		}).Errorf("failed to run provider server: provider has not been compiled yet")
-		return
-	}
-
 	logrus.WithFields(logrus.Fields{
 		"component":  "PROVIDER_ENGINE",
 		"providerId": entProvider.ID,
 	}).Debugf("Executing provider server binary for %s", entProvider.ID.String())
 
-	// Start the binary with the provider ID as argument
-	cmd := exec.Command(providerBinaryPath, entProvider.ID.String())
-	if err := cmd.Start(); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"component":  "PROVIDER_ENGINE",
-			"providerId": entProvider.ID,
-		}).Errorf("failed to run provider server: failed to start provider: %v", err)
-		return
-	}
-
-	for {
-		select {
-		case <-ctx.Done():
-			logrus.WithFields(logrus.Fields{
-				"component":  "PROVIDER_ENGINE",
-				"providerId": entProvider.ID,
-			}).Warnf("Gracefully shutting down Provider %s", entProvider.DisplayName)
-			cmd.Process.Signal(syscall.SIGTERM)
-			return
-		case <-shutdown:
-			logrus.WithFields(logrus.Fields{
-				"component":  "PROVIDER_ENGINE",
-				"providerId": entProvider.ID,
-			}).Warnf("Gracefully shutting down Provider %s", entProvider.DisplayName)
-			cmd.Process.Signal(syscall.SIGTERM)
-			return
-		}
-	}
+	// Start the provider (blocking)
+	ExecuteProvider(ctx, ps.providersConfig.CacheDir, entProvider, shutdown)
 }
 
 func (ps *CBLEServer) startProviderConnection(ctx context.Context, providerId string) {

@@ -32,3 +32,7 @@ func (ps *CBLEServer) getProviderClient(providerId string) (pgrpc.ProviderClient
 	}
 	return client, nil
 }
+
+func generateDockerImageName(metadata *ProviderMetadata) string {
+	return fmt.Sprintf("cble-platform/%s:%s", metadata.Name, metadata.Version)
+}
