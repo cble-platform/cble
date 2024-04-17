@@ -20,5 +20,6 @@ ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 RUN pnpm run build
 
 FROM caddy:2.7.6-alpine
+COPY --from=caddy-builder /usr/bin/caddy /usr/bin/caddy
 COPY --from=builder /app/dist /app/dist
 EXPOSE 80 443
