@@ -232,7 +232,7 @@ function GrantModal({ onClose }: { onClose: () => void }): React.ReactElement {
   const [subjectID, setSubjectID] = useState<string>('')
   const [objectType, setObjectType] = useState<ObjectType>(ObjectType.Blueprint)
   const [objectID, setObjectID] = useState<string>('')
-  const [action, setAction] = useState<Action>(Action.BlueprintCreate)
+  const [action, setAction] = useState<Action>(Action.GroupCreate)
   const [
     grantPermission,
     {
@@ -390,7 +390,7 @@ function GrantModal({ onClose }: { onClose: () => void }): React.ReactElement {
               setAction(
                 Object.values(Action).filter(
                   (a) => a.indexOf(e.target.value) === 0
-                )[0] || Action.BlueprintCreate
+                )[0] || Action.GroupCreate
               )
             }}
           >

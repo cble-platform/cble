@@ -1,7 +1,7 @@
 overwrite: true
 schema:
-  - 'src/lib/api/graphql/actions_gen.graphqls'
-  - 'src/lib/api/graphql/schema.graphqls'
+  - '../backend/permission/actions/actions_gen.graphqls'
+  - '../backend/graph/schema.graphqls'
 documents: 'src/lib/api/graphql/**/*.(graphql|gql)'
 generates:
   src/lib/api/generated/index.tsx:
