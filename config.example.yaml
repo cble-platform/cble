@@ -13,7 +13,7 @@ database:
   host: db
   ssl: false
 providers:
-  cache: ./providers-cache
+  cache: /tmp/cble-providers
 auth:
   jwt_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
   session_timeout: 24h0m0s

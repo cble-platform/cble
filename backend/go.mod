@@ -4,22 +4,22 @@ go 1.22.2
 
 require (
 	entgo.io/ent v0.12.5
-	github.com/99designs/gqlgen v0.17.40
-	github.com/cble-platform/cble-provider-grpc v0.2.0
+	github.com/99designs/gqlgen v0.17.44
+	github.com/cble-platform/cble-provider-grpc v0.2.1
 	github.com/docker/docker v25.0.3+incompatible
 	github.com/fatih/color v1.16.0
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/golang-jwt/jwt/v4 v4.5.0
-	github.com/google/uuid v1.4.0
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/lib/pq v1.10.9
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/pflag v1.0.5
 	github.com/vektah/gqlparser v1.3.1
-	github.com/vektah/gqlparser/v2 v2.5.10
+	github.com/vektah/gqlparser/v2 v2.5.11
 	golang.org/x/crypto v0.19.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -92,7 +92,7 @@ require (
 	github.com/sosodev/duration v1.2.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
-	github.com/urfave/cli/v2 v2.25.7 // indirect
+	github.com/urfave/cli/v2 v2.27.1 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	github.com/zclconf/go-cty v1.14.1 // indirect
@@ -110,7 +110,7 @@ require (
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240221002015-b0ce06bbee7c // indirect
-	google.golang.org/grpc v1.61.1 // indirect
+	google.golang.org/grpc v1.62.0 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
