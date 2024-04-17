@@ -119,7 +119,7 @@ func NewWebserver(config *config.Config, client *ent.Client, cbleServer *provide
 
 	// Set up http server for gin (allows interactive shutdown)
 	srv := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", config.Server.Hostname, config.Server.Port),
+		Addr:    fmt.Sprintf(":%d", config.Server.Port),
 		Handler: r,
 	}
 
@@ -136,7 +136,7 @@ func (w *CBLEWebserver) Listen(ctx context.Context, wg *sync.WaitGroup) {
 		if err := w.webserver.ListenAndServe(); err != http.ErrServerClosed {
 			logrus.WithFields(logrus.Fields{
 				"component": "WEBSERVER",
-			}).Fatalf("failed to start webserver")
+			}).Fatalf("failed to start webserver: %v", err)
 		}
 	}()
 

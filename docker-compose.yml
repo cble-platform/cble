@@ -11,30 +11,25 @@ services:
       - "80:80"
       - "443:443"
       - "443:443/udp"
-    network_mode: host
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - cble-caddy-data:/data
       - cble-caddy-config:/config
-    # env_file: .env
   backend:
     build:
       context: ./backend
     image: cble.io/backend
     container_name: cble-backend
     restart: unless-stopped
-    network_mode: host
     volumes:
       - ./config.local.yaml:/app/config.local.yaml
       - /tmp/cble-providers:/app/providers-cache
-    # env_file: .env
   db:
     image: postgres:15-alpine
     container_name: cble-db
     restart: always
     volumes:
       - cble-db:/var/lib/postgresql/data
-    network_mode: host
     ports:
       - 5432:5432
     environment:
