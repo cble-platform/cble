@@ -1,0 +1,23 @@
+fragment GroupFragment on Group {
+  id
+  createdAt
+  updatedAt
+  name
+}
+
+query ListGroups {
+  groups {
+    groups {
+      ...GroupFragment
+    }
+    total
+  }
+}
+
+query SearchGroups($search: String!) {
+  searchGroups(search: $search, count: 5) {
+    groups {
+      ...GroupFragment
+    }
+  }
+}

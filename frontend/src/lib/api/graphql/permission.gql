@@ -1,0 +1,68 @@
+fragment PermissionFields on GrantedPermission {
+  id
+  createdAt
+  updatedAt
+  subjectType
+  subjectId
+  objectType
+  objectId
+  action
+  displayString
+}
+
+query ListPermissions($count: Int! = 10, $offset: Int) {
+  permissions(count: $count, offset: $offset) {
+    permissions {
+      ...PermissionFields
+    }
+    total
+  }
+}
+
+query NavPermissions {
+  listProviders: meHasPermission(
+    objectType: provider
+    objectID: null
+    action: provider_list
+  )
+  listPermissions: meHasPermission(
+    objectType: permission
+    objectID: null
+    action: permission_list
+  )
+}
+
+mutation GrantPermission(
+  $subjectType: SubjectType!
+  $subjectID: ID!
+  $objectType: ObjectType!
+  $objectID: ID
+  $action: Action!
+) {
+  grantPermission(
+    subjectType: $subjectType
+    subjectID: $subjectID
+    objectType: $objectType
+    objectID: $objectID
+    action: $action
+  ) {
+    id
+    displayString
+  }
+}
+
+mutation RevokePermission(
+  $subjectType: SubjectType!
+  $subjectID: ID!
+  $objectType: ObjectType!
+  $objectID: ID
+  $action: Action!
+) {
+  revokePermission(
+    subjectType: $subjectType
+    subjectID: $subjectID
+    objectType: $objectType
+    objectID: $objectID
+    action: $action
+  )
+}

@@ -1,0 +1,100 @@
+fragment BlueprintFragement on Blueprint {
+  id
+  createdAt
+  updatedAt
+  name
+  description
+  blueprintTemplate
+  variableTypes
+}
+
+fragment BlueprintEdgesFragment on Blueprint {
+  provider {
+    id
+    displayName
+    isLoaded
+  }
+  project {
+    id
+    name
+    quotaCpu
+    quotaRam
+    quotaDisk
+    quotaNetwork
+    quotaRouter
+  }
+  deployments {
+    id
+  }
+  resources {
+    id
+    type
+    key
+    resourceType
+    features {
+      power
+      console
+    }
+    quotaRequirements {
+      cpu
+      ram
+      disk
+      router
+      network
+    }
+  }
+}
+
+fragment ResourceFragment on Resource {
+  id
+  createdAt
+  updatedAt
+  key
+  features {
+    power
+    console
+  }
+  object
+}
+
+query Blueprints {
+  blueprints {
+    blueprints {
+      ...BlueprintFragement
+    }
+    total
+  }
+}
+
+query GetBlueprint($id: ID!) {
+  blueprint(id: $id) {
+    ...BlueprintFragement
+    ...BlueprintEdgesFragment
+  }
+}
+
+mutation CreateBlueprint($input: BlueprintInput!) {
+  createBlueprint(input: $input) {
+    ...BlueprintFragement
+  }
+}
+
+mutation UpdateBlueprint($id: ID!, $input: BlueprintInput!) {
+  updateBlueprint(id: $id, input: $input) {
+    ...BlueprintFragement
+  }
+}
+
+mutation DeployBlueprint(
+  $blueprintId: ID!
+  $projectId: ID!
+  $templateVars: StrMap!
+) {
+  deployBlueprint(
+    blueprintId: $blueprintId
+    projectId: $projectId
+    templateVars: $templateVars
+  ) {
+    ...DeploymentFragment
+  }
+}
