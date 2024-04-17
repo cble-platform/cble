@@ -1,0 +1,23 @@
+# Config overrides
+config.local.yml
+config.local.yaml
+config.development.yml
+config.development.yaml
+config.production.yml
+config.production.yaml
+
+# Docker overrides
+docker-compose.local.yml
+docker-compose.local.yaml
+docker-compose.dev.yml
+docker-compose.dev.yaml
+docker-compose.prod.yml
+docker-compose.prod.yaml
+
+# Certs
+*.key
+*.cert
+
+# Local go workspace
+go.work
+go.work.sum

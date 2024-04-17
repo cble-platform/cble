@@ -1,0 +1,19 @@
+http://localhost {
+  # Send API requests to backend
+
+  handle /api/* {
+    reverse_proxy localhost:8080
+  }
+
+  handle {
+    # Serve everything else from the file system
+    root * /app/dist
+
+    try_files {path} /index.html
+
+    # Compress responses according to Accept-Encoding headers
+    encode gzip zstd
+
+    file_server
+  }
+}

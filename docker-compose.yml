@@ -1,0 +1,63 @@
+version: "3.4"
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_BASE_URL=http://localhost
+    image: cble.io/frontend
+    container_name: cble-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    network_mode: host
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - cble-caddy-data:/data
+      - cble-caddy-config:/config
+    # env_file: .env
+  backend:
+    build:
+      context: ./backend
+    image: cble.io/backend
+    container_name: cble-backend
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./config.local.yaml:/app/config.local.yaml
+      - /tmp/cble-providers:/app/providers-cache
+    # env_file: .env
+  db:
+    image: postgres:15-alpine
+    container_name: cble-db
+    restart: always
+    volumes:
+      - cble-db:/var/lib/postgresql/data
+    network_mode: host
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=cble
+      - POSTGRES_PASSWORD=cble
+      - POSTGRES_DB=cble
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: cble-redis
+  #   restart: unless-stopped
+  #   networks:
+  #     - cble
+  #   volumes:
+  #     - cble-redis:/data
+  #   env_file: .env
+
+volumes:
+  cble-db:
+    driver: local
+  cble-redis:
+    driver: local
+  cble-caddy-data:
+    driver: local
+  cble-caddy-config:

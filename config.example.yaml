@@ -1,0 +1,26 @@
+debug: false
+server:
+  hostname: localhost
+  port: 8080
+  ssl: false
+  gql_introspection: true
+  origins:
+    - http://localhost:8080
+    - http://localhost:3000
+database:
+  username: cble
+  password: cble
+  host: db
+  ssl: false
+providers:
+  cache: ./providers-cache
+auth:
+  jwt_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  session_timeout: 1440 # 24 hours * 60 mins
+initialization:
+  default_admin:
+    first_name: CBLE
+    last_name: Admin
+    username: cble
+    password: cble
+  admin_group: CBLE Administrators

@@ -13,9 +13,9 @@ Cloud-Based Lab Emulator (CBLE) is a self-service lab platform designed to be us
 
 > This repo contains versions **0.1.x** and beyond. For previous versions, please refer to [cble-platform/cble-backend](https://github.com/cble-platform/cble-backend) and [cble-platform/cble-frontend](https://github.com/cble-platform/cble-frontend)
 
-## Config Files
+## Getting Started
 
-The provided `config.yaml` file is the default configuration for CBLE. **This file IS NOT gitignore'd!!!** Please use `config.local.yaml` to override the default config.
+See [CBLE Docs - Getting Started](https://docs.cble.io/latest/getting-started/quick-start/) for detailed instructions.
 
 ---
 
