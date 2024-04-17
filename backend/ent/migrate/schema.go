@@ -166,9 +166,6 @@ var (
 	}
 	// GroupMembershipsColumns holds the columns for the "group_memberships" table.
 	GroupMembershipsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "role", Type: field.TypeEnum, Enums: []string{"viewer", "deployer", "developer", "admin"}, Default: "deployer"},
 		{Name: "project_id", Type: field.TypeUUID},
 		{Name: "group_id", Type: field.TypeUUID},
@@ -177,17 +174,17 @@ var (
 	GroupMembershipsTable = &schema.Table{
 		Name:       "group_memberships",
 		Columns:    GroupMembershipsColumns,
-		PrimaryKey: []*schema.Column{GroupMembershipsColumns[0]},
+		PrimaryKey: []*schema.Column{GroupMembershipsColumns[1], GroupMembershipsColumns[2]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "group_memberships_projects_project",
-				Columns:    []*schema.Column{GroupMembershipsColumns[4]},
+				Columns:    []*schema.Column{GroupMembershipsColumns[1]},
 				RefColumns: []*schema.Column{ProjectsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "group_memberships_groups_group",
-				Columns:    []*schema.Column{GroupMembershipsColumns[5]},
+				Columns:    []*schema.Column{GroupMembershipsColumns[2]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -196,15 +193,12 @@ var (
 			{
 				Name:    "groupmembership_project_id_group_id",
 				Unique:  true,
-				Columns: []*schema.Column{GroupMembershipsColumns[4], GroupMembershipsColumns[5]},
+				Columns: []*schema.Column{GroupMembershipsColumns[1], GroupMembershipsColumns[2]},
 			},
 		},
 	}
 	// MembershipsColumns holds the columns for the "memberships" table.
 	MembershipsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "role", Type: field.TypeEnum, Enums: []string{"viewer", "deployer", "developer", "admin"}, Default: "deployer"},
 		{Name: "project_id", Type: field.TypeUUID},
 		{Name: "user_id", Type: field.TypeUUID},
@@ -213,17 +207,17 @@ var (
 	MembershipsTable = &schema.Table{
 		Name:       "memberships",
 		Columns:    MembershipsColumns,
-		PrimaryKey: []*schema.Column{MembershipsColumns[0]},
+		PrimaryKey: []*schema.Column{MembershipsColumns[1], MembershipsColumns[2]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "memberships_projects_project",
-				Columns:    []*schema.Column{MembershipsColumns[4]},
+				Columns:    []*schema.Column{MembershipsColumns[1]},
 				RefColumns: []*schema.Column{ProjectsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "memberships_users_user",
-				Columns:    []*schema.Column{MembershipsColumns[5]},
+				Columns:    []*schema.Column{MembershipsColumns[2]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -232,7 +226,7 @@ var (
 			{
 				Name:    "membership_project_id_user_id",
 				Unique:  true,
-				Columns: []*schema.Column{MembershipsColumns[4], MembershipsColumns[5]},
+				Columns: []*schema.Column{MembershipsColumns[1], MembershipsColumns[2]},
 			},
 		},
 	}

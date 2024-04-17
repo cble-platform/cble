@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -28,12 +27,6 @@ type GroupMembershipUpdate struct {
 // Where appends a list predicates to the GroupMembershipUpdate builder.
 func (gmu *GroupMembershipUpdate) Where(ps ...predicate.GroupMembership) *GroupMembershipUpdate {
 	gmu.mutation.Where(ps...)
-	return gmu
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (gmu *GroupMembershipUpdate) SetUpdatedAt(t time.Time) *GroupMembershipUpdate {
-	gmu.mutation.SetUpdatedAt(t)
 	return gmu
 }
 
@@ -108,7 +101,6 @@ func (gmu *GroupMembershipUpdate) ClearGroup() *GroupMembershipUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (gmu *GroupMembershipUpdate) Save(ctx context.Context) (int, error) {
-	gmu.defaults()
 	return withHooks(ctx, gmu.sqlSave, gmu.mutation, gmu.hooks)
 }
 
@@ -134,14 +126,6 @@ func (gmu *GroupMembershipUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// defaults sets the default values of the builder before save.
-func (gmu *GroupMembershipUpdate) defaults() {
-	if _, ok := gmu.mutation.UpdatedAt(); !ok {
-		v := groupmembership.UpdateDefaultUpdatedAt()
-		gmu.mutation.SetUpdatedAt(v)
-	}
-}
-
 // check runs all checks and user-defined validators on the builder.
 func (gmu *GroupMembershipUpdate) check() error {
 	if v, ok := gmu.mutation.Role(); ok {
@@ -162,16 +146,13 @@ func (gmu *GroupMembershipUpdate) sqlSave(ctx context.Context) (n int, err error
 	if err := gmu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(groupmembership.Table, groupmembership.Columns, sqlgraph.NewFieldSpec(groupmembership.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(groupmembership.Table, groupmembership.Columns, sqlgraph.NewFieldSpec(groupmembership.FieldProjectID, field.TypeUUID), sqlgraph.NewFieldSpec(groupmembership.FieldGroupID, field.TypeUUID))
 	if ps := gmu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := gmu.mutation.UpdatedAt(); ok {
-		_spec.SetField(groupmembership.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := gmu.mutation.Role(); ok {
 		_spec.SetField(groupmembership.FieldRole, field.TypeEnum, value)
@@ -252,12 +233,6 @@ type GroupMembershipUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *GroupMembershipMutation
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (gmuo *GroupMembershipUpdateOne) SetUpdatedAt(t time.Time) *GroupMembershipUpdateOne {
-	gmuo.mutation.SetUpdatedAt(t)
-	return gmuo
 }
 
 // SetProjectID sets the "project_id" field.
@@ -344,7 +319,6 @@ func (gmuo *GroupMembershipUpdateOne) Select(field string, fields ...string) *Gr
 
 // Save executes the query and returns the updated GroupMembership entity.
 func (gmuo *GroupMembershipUpdateOne) Save(ctx context.Context) (*GroupMembership, error) {
-	gmuo.defaults()
 	return withHooks(ctx, gmuo.sqlSave, gmuo.mutation, gmuo.hooks)
 }
 
@@ -370,14 +344,6 @@ func (gmuo *GroupMembershipUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// defaults sets the default values of the builder before save.
-func (gmuo *GroupMembershipUpdateOne) defaults() {
-	if _, ok := gmuo.mutation.UpdatedAt(); !ok {
-		v := groupmembership.UpdateDefaultUpdatedAt()
-		gmuo.mutation.SetUpdatedAt(v)
-	}
-}
-
 // check runs all checks and user-defined validators on the builder.
 func (gmuo *GroupMembershipUpdateOne) check() error {
 	if v, ok := gmuo.mutation.Role(); ok {
@@ -398,22 +364,24 @@ func (gmuo *GroupMembershipUpdateOne) sqlSave(ctx context.Context) (_node *Group
 	if err := gmuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(groupmembership.Table, groupmembership.Columns, sqlgraph.NewFieldSpec(groupmembership.FieldID, field.TypeUUID))
-	id, ok := gmuo.mutation.ID()
-	if !ok {
-		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "GroupMembership.id" for update`)}
+	_spec := sqlgraph.NewUpdateSpec(groupmembership.Table, groupmembership.Columns, sqlgraph.NewFieldSpec(groupmembership.FieldProjectID, field.TypeUUID), sqlgraph.NewFieldSpec(groupmembership.FieldGroupID, field.TypeUUID))
+	if id, ok := gmuo.mutation.ProjectID(); !ok {
+		return nil, &ValidationError{Name: "project_id", err: errors.New(`ent: missing "GroupMembership.project_id" for update`)}
+	} else {
+		_spec.Node.CompositeID[0].Value = id
 	}
-	_spec.Node.ID.Value = id
+	if id, ok := gmuo.mutation.GroupID(); !ok {
+		return nil, &ValidationError{Name: "group_id", err: errors.New(`ent: missing "GroupMembership.group_id" for update`)}
+	} else {
+		_spec.Node.CompositeID[1].Value = id
+	}
 	if fields := gmuo.fields; len(fields) > 0 {
-		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, groupmembership.FieldID)
-		for _, f := range fields {
+		_spec.Node.Columns = make([]string, len(fields))
+		for i, f := range fields {
 			if !groupmembership.ValidColumn(f) {
 				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 			}
-			if f != groupmembership.FieldID {
-				_spec.Node.Columns = append(_spec.Node.Columns, f)
-			}
+			_spec.Node.Columns[i] = f
 		}
 	}
 	if ps := gmuo.mutation.predicates; len(ps) > 0 {
@@ -422,9 +390,6 @@ func (gmuo *GroupMembershipUpdateOne) sqlSave(ctx context.Context) (_node *Group
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := gmuo.mutation.UpdatedAt(); ok {
-		_spec.SetField(groupmembership.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := gmuo.mutation.Role(); ok {
 		_spec.SetField(groupmembership.FieldRole, field.TypeEnum, value)

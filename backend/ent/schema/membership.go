@@ -2,10 +2,10 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
-	"github.com/cble-platform/cble/backend/ent/mixins"
 	"github.com/google/uuid"
 )
 
@@ -14,12 +14,15 @@ type Membership struct {
 	ent.Schema
 }
 
+func (Membership) Annotations() []schema.Annotation {
+	return []schema.Annotation{
+		field.ID("project_id", "user_id"),
+	}
+}
+
 // Fields of the Membership.
 func (Membership) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Immutable().
-			Default(uuid.New),
 		field.UUID("project_id", uuid.UUID{}),
 		field.UUID("user_id", uuid.UUID{}),
 		field.Enum("role").Values("viewer", "deployer", "developer", "admin").
@@ -47,12 +50,5 @@ func (Membership) Edges() []ent.Edge {
 			Required().
 			Unique().
 			Field("user_id"),
-	}
-}
-
-// Mixins of the Membership.
-func (Membership) Mixin() []ent.Mixin {
-	return []ent.Mixin{
-		mixins.Timestamps{},
 	}
 }

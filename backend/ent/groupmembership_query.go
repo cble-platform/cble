@@ -9,7 +9,6 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"entgo.io/ent/schema/field"
 	"github.com/cble-platform/cble/backend/ent/group"
 	"github.com/cble-platform/cble/backend/ent/groupmembership"
 	"github.com/cble-platform/cble/backend/ent/predicate"
@@ -74,7 +73,7 @@ func (gmq *GroupMembershipQuery) QueryProject() *ProjectQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(groupmembership.Table, groupmembership.FieldID, selector),
+			sqlgraph.From(groupmembership.Table, groupmembership.ProjectColumn, selector),
 			sqlgraph.To(project.Table, project.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, groupmembership.ProjectTable, groupmembership.ProjectColumn),
 		)
@@ -96,7 +95,7 @@ func (gmq *GroupMembershipQuery) QueryGroup() *GroupQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(groupmembership.Table, groupmembership.FieldID, selector),
+			sqlgraph.From(groupmembership.Table, groupmembership.GroupColumn, selector),
 			sqlgraph.To(group.Table, group.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, groupmembership.GroupTable, groupmembership.GroupColumn),
 		)
@@ -128,29 +127,6 @@ func (gmq *GroupMembershipQuery) FirstX(ctx context.Context) *GroupMembership {
 	return node
 }
 
-// FirstID returns the first GroupMembership ID from the query.
-// Returns a *NotFoundError when no GroupMembership ID was found.
-func (gmq *GroupMembershipQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
-	if ids, err = gmq.Limit(1).IDs(setContextOp(ctx, gmq.ctx, "FirstID")); err != nil {
-		return
-	}
-	if len(ids) == 0 {
-		err = &NotFoundError{groupmembership.Label}
-		return
-	}
-	return ids[0], nil
-}
-
-// FirstIDX is like FirstID, but panics if an error occurs.
-func (gmq *GroupMembershipQuery) FirstIDX(ctx context.Context) uuid.UUID {
-	id, err := gmq.FirstID(ctx)
-	if err != nil && !IsNotFound(err) {
-		panic(err)
-	}
-	return id
-}
-
 // Only returns a single GroupMembership entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one GroupMembership entity is found.
 // Returns a *NotFoundError when no GroupMembership entities are found.
@@ -178,34 +154,6 @@ func (gmq *GroupMembershipQuery) OnlyX(ctx context.Context) *GroupMembership {
 	return node
 }
 
-// OnlyID is like Only, but returns the only GroupMembership ID in the query.
-// Returns a *NotSingularError when more than one GroupMembership ID is found.
-// Returns a *NotFoundError when no entities are found.
-func (gmq *GroupMembershipQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
-	if ids, err = gmq.Limit(2).IDs(setContextOp(ctx, gmq.ctx, "OnlyID")); err != nil {
-		return
-	}
-	switch len(ids) {
-	case 1:
-		id = ids[0]
-	case 0:
-		err = &NotFoundError{groupmembership.Label}
-	default:
-		err = &NotSingularError{groupmembership.Label}
-	}
-	return
-}
-
-// OnlyIDX is like OnlyID, but panics if an error occurs.
-func (gmq *GroupMembershipQuery) OnlyIDX(ctx context.Context) uuid.UUID {
-	id, err := gmq.OnlyID(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return id
-}
-
 // All executes the query and returns a list of GroupMemberships.
 func (gmq *GroupMembershipQuery) All(ctx context.Context) ([]*GroupMembership, error) {
 	ctx = setContextOp(ctx, gmq.ctx, "All")
@@ -223,27 +171,6 @@ func (gmq *GroupMembershipQuery) AllX(ctx context.Context) []*GroupMembership {
 		panic(err)
 	}
 	return nodes
-}
-
-// IDs executes the query and returns a list of GroupMembership IDs.
-func (gmq *GroupMembershipQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
-	if gmq.ctx.Unique == nil && gmq.path != nil {
-		gmq.Unique(true)
-	}
-	ctx = setContextOp(ctx, gmq.ctx, "IDs")
-	if err = gmq.Select(groupmembership.FieldID).Scan(ctx, &ids); err != nil {
-		return nil, err
-	}
-	return ids, nil
-}
-
-// IDsX is like IDs, but panics if an error occurs.
-func (gmq *GroupMembershipQuery) IDsX(ctx context.Context) []uuid.UUID {
-	ids, err := gmq.IDs(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return ids
 }
 
 // Count returns the count of the given query.
@@ -267,7 +194,7 @@ func (gmq *GroupMembershipQuery) CountX(ctx context.Context) int {
 // Exist returns true if the query has elements in the graph.
 func (gmq *GroupMembershipQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, gmq.ctx, "Exist")
-	switch _, err := gmq.FirstID(ctx); {
+	switch _, err := gmq.First(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -334,12 +261,12 @@ func (gmq *GroupMembershipQuery) WithGroup(opts ...func(*GroupQuery)) *GroupMemb
 // Example:
 //
 //	var v []struct {
-//		CreatedAt time.Time `json:"created_at,omitempty"`
+//		ProjectID uuid.UUID `json:"project_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.GroupMembership.Query().
-//		GroupBy(groupmembership.FieldCreatedAt).
+//		GroupBy(groupmembership.FieldProjectID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (gmq *GroupMembershipQuery) GroupBy(field string, fields ...string) *GroupMembershipGroupBy {
@@ -357,11 +284,11 @@ func (gmq *GroupMembershipQuery) GroupBy(field string, fields ...string) *GroupM
 // Example:
 //
 //	var v []struct {
-//		CreatedAt time.Time `json:"created_at,omitempty"`
+//		ProjectID uuid.UUID `json:"project_id,omitempty"`
 //	}
 //
 //	client.GroupMembership.Query().
-//		Select(groupmembership.FieldCreatedAt).
+//		Select(groupmembership.FieldProjectID).
 //		Scan(ctx, &v)
 func (gmq *GroupMembershipQuery) Select(fields ...string) *GroupMembershipSelect {
 	gmq.ctx.Fields = append(gmq.ctx.Fields, fields...)
@@ -505,15 +432,13 @@ func (gmq *GroupMembershipQuery) loadGroup(ctx context.Context, query *GroupQuer
 
 func (gmq *GroupMembershipQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := gmq.querySpec()
-	_spec.Node.Columns = gmq.ctx.Fields
-	if len(gmq.ctx.Fields) > 0 {
-		_spec.Unique = gmq.ctx.Unique != nil && *gmq.ctx.Unique
-	}
+	_spec.Unique = false
+	_spec.Node.Columns = nil
 	return sqlgraph.CountNodes(ctx, gmq.driver, _spec)
 }
 
 func (gmq *GroupMembershipQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(groupmembership.Table, groupmembership.Columns, sqlgraph.NewFieldSpec(groupmembership.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(groupmembership.Table, groupmembership.Columns, nil)
 	_spec.From = gmq.sql
 	if unique := gmq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -522,11 +447,8 @@ func (gmq *GroupMembershipQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := gmq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, groupmembership.FieldID)
 		for i := range fields {
-			if fields[i] != groupmembership.FieldID {
-				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
-			}
+			_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 		}
 		if gmq.withProject != nil {
 			_spec.Node.AddColumnOnce(groupmembership.FieldProjectID)

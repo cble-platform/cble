@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -21,34 +20,6 @@ type MembershipCreate struct {
 	config
 	mutation *MembershipMutation
 	hooks    []Hook
-}
-
-// SetCreatedAt sets the "created_at" field.
-func (mc *MembershipCreate) SetCreatedAt(t time.Time) *MembershipCreate {
-	mc.mutation.SetCreatedAt(t)
-	return mc
-}
-
-// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (mc *MembershipCreate) SetNillableCreatedAt(t *time.Time) *MembershipCreate {
-	if t != nil {
-		mc.SetCreatedAt(*t)
-	}
-	return mc
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (mc *MembershipCreate) SetUpdatedAt(t time.Time) *MembershipCreate {
-	mc.mutation.SetUpdatedAt(t)
-	return mc
-}
-
-// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (mc *MembershipCreate) SetNillableUpdatedAt(t *time.Time) *MembershipCreate {
-	if t != nil {
-		mc.SetUpdatedAt(*t)
-	}
-	return mc
 }
 
 // SetProjectID sets the "project_id" field.
@@ -73,20 +44,6 @@ func (mc *MembershipCreate) SetRole(m membership.Role) *MembershipCreate {
 func (mc *MembershipCreate) SetNillableRole(m *membership.Role) *MembershipCreate {
 	if m != nil {
 		mc.SetRole(*m)
-	}
-	return mc
-}
-
-// SetID sets the "id" field.
-func (mc *MembershipCreate) SetID(u uuid.UUID) *MembershipCreate {
-	mc.mutation.SetID(u)
-	return mc
-}
-
-// SetNillableID sets the "id" field if the given value is not nil.
-func (mc *MembershipCreate) SetNillableID(u *uuid.UUID) *MembershipCreate {
-	if u != nil {
-		mc.SetID(*u)
 	}
 	return mc
 }
@@ -136,32 +93,14 @@ func (mc *MembershipCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (mc *MembershipCreate) defaults() {
-	if _, ok := mc.mutation.CreatedAt(); !ok {
-		v := membership.DefaultCreatedAt()
-		mc.mutation.SetCreatedAt(v)
-	}
-	if _, ok := mc.mutation.UpdatedAt(); !ok {
-		v := membership.DefaultUpdatedAt()
-		mc.mutation.SetUpdatedAt(v)
-	}
 	if _, ok := mc.mutation.Role(); !ok {
 		v := membership.DefaultRole
 		mc.mutation.SetRole(v)
-	}
-	if _, ok := mc.mutation.ID(); !ok {
-		v := membership.DefaultID()
-		mc.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (mc *MembershipCreate) check() error {
-	if _, ok := mc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Membership.created_at"`)}
-	}
-	if _, ok := mc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Membership.updated_at"`)}
-	}
 	if _, ok := mc.mutation.ProjectID(); !ok {
 		return &ValidationError{Name: "project_id", err: errors.New(`ent: missing required field "Membership.project_id"`)}
 	}
@@ -196,35 +135,14 @@ func (mc *MembershipCreate) sqlSave(ctx context.Context) (*Membership, error) {
 		}
 		return nil, err
 	}
-	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
-		}
-	}
-	mc.mutation.id = &_node.ID
-	mc.mutation.done = true
 	return _node, nil
 }
 
 func (mc *MembershipCreate) createSpec() (*Membership, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Membership{config: mc.config}
-		_spec = sqlgraph.NewCreateSpec(membership.Table, sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(membership.Table, nil)
 	)
-	if id, ok := mc.mutation.ID(); ok {
-		_node.ID = id
-		_spec.ID.Value = &id
-	}
-	if value, ok := mc.mutation.CreatedAt(); ok {
-		_spec.SetField(membership.FieldCreatedAt, field.TypeTime, value)
-		_node.CreatedAt = value
-	}
-	if value, ok := mc.mutation.UpdatedAt(); ok {
-		_spec.SetField(membership.FieldUpdatedAt, field.TypeTime, value)
-		_node.UpdatedAt = value
-	}
 	if value, ok := mc.mutation.Role(); ok {
 		_spec.SetField(membership.FieldRole, field.TypeEnum, value)
 		_node.Role = value
@@ -310,7 +228,6 @@ func (mcb *MembershipCreateBulk) Save(ctx context.Context) ([]*Membership, error
 				if err != nil {
 					return nil, err
 				}
-				mutation.id = &nodes[i].ID
 				mutation.done = true
 				return nodes[i], nil
 			})

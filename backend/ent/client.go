@@ -1265,13 +1265,9 @@ func (c *GroupMembershipClient) Update() *GroupMembershipUpdate {
 
 // UpdateOne returns an update builder for the given entity.
 func (c *GroupMembershipClient) UpdateOne(gm *GroupMembership) *GroupMembershipUpdateOne {
-	mutation := newGroupMembershipMutation(c.config, OpUpdateOne, withGroupMembership(gm))
-	return &GroupMembershipUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *GroupMembershipClient) UpdateOneID(id uuid.UUID) *GroupMembershipUpdateOne {
-	mutation := newGroupMembershipMutation(c.config, OpUpdateOne, withGroupMembershipID(id))
+	mutation := newGroupMembershipMutation(c.config, OpUpdateOne)
+	mutation.project = &gm.ProjectID
+	mutation.group = &gm.GroupID
 	return &GroupMembershipUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1279,19 +1275,6 @@ func (c *GroupMembershipClient) UpdateOneID(id uuid.UUID) *GroupMembershipUpdate
 func (c *GroupMembershipClient) Delete() *GroupMembershipDelete {
 	mutation := newGroupMembershipMutation(c.config, OpDelete)
 	return &GroupMembershipDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *GroupMembershipClient) DeleteOne(gm *GroupMembership) *GroupMembershipDeleteOne {
-	return c.DeleteOneID(gm.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *GroupMembershipClient) DeleteOneID(id uuid.UUID) *GroupMembershipDeleteOne {
-	builder := c.Delete().Where(groupmembership.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &GroupMembershipDeleteOne{builder}
 }
 
 // Query returns a query builder for GroupMembership.
@@ -1303,50 +1286,18 @@ func (c *GroupMembershipClient) Query() *GroupMembershipQuery {
 	}
 }
 
-// Get returns a GroupMembership entity by its id.
-func (c *GroupMembershipClient) Get(ctx context.Context, id uuid.UUID) (*GroupMembership, error) {
-	return c.Query().Where(groupmembership.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *GroupMembershipClient) GetX(ctx context.Context, id uuid.UUID) *GroupMembership {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
 // QueryProject queries the project edge of a GroupMembership.
 func (c *GroupMembershipClient) QueryProject(gm *GroupMembership) *ProjectQuery {
-	query := (&ProjectClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := gm.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(groupmembership.Table, groupmembership.FieldID, id),
-			sqlgraph.To(project.Table, project.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, groupmembership.ProjectTable, groupmembership.ProjectColumn),
-		)
-		fromV = sqlgraph.Neighbors(gm.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
+	return c.Query().
+		Where(groupmembership.ProjectID(gm.ProjectID), groupmembership.GroupID(gm.GroupID)).
+		QueryProject()
 }
 
 // QueryGroup queries the group edge of a GroupMembership.
 func (c *GroupMembershipClient) QueryGroup(gm *GroupMembership) *GroupQuery {
-	query := (&GroupClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := gm.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(groupmembership.Table, groupmembership.FieldID, id),
-			sqlgraph.To(group.Table, group.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, groupmembership.GroupTable, groupmembership.GroupColumn),
-		)
-		fromV = sqlgraph.Neighbors(gm.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
+	return c.Query().
+		Where(groupmembership.ProjectID(gm.ProjectID), groupmembership.GroupID(gm.GroupID)).
+		QueryGroup()
 }
 
 // Hooks returns the client hooks.
@@ -1430,13 +1381,9 @@ func (c *MembershipClient) Update() *MembershipUpdate {
 
 // UpdateOne returns an update builder for the given entity.
 func (c *MembershipClient) UpdateOne(m *Membership) *MembershipUpdateOne {
-	mutation := newMembershipMutation(c.config, OpUpdateOne, withMembership(m))
-	return &MembershipUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *MembershipClient) UpdateOneID(id uuid.UUID) *MembershipUpdateOne {
-	mutation := newMembershipMutation(c.config, OpUpdateOne, withMembershipID(id))
+	mutation := newMembershipMutation(c.config, OpUpdateOne)
+	mutation.project = &m.ProjectID
+	mutation.user = &m.UserID
 	return &MembershipUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
@@ -1444,19 +1391,6 @@ func (c *MembershipClient) UpdateOneID(id uuid.UUID) *MembershipUpdateOne {
 func (c *MembershipClient) Delete() *MembershipDelete {
 	mutation := newMembershipMutation(c.config, OpDelete)
 	return &MembershipDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *MembershipClient) DeleteOne(m *Membership) *MembershipDeleteOne {
-	return c.DeleteOneID(m.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *MembershipClient) DeleteOneID(id uuid.UUID) *MembershipDeleteOne {
-	builder := c.Delete().Where(membership.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &MembershipDeleteOne{builder}
 }
 
 // Query returns a query builder for Membership.
@@ -1468,50 +1402,18 @@ func (c *MembershipClient) Query() *MembershipQuery {
 	}
 }
 
-// Get returns a Membership entity by its id.
-func (c *MembershipClient) Get(ctx context.Context, id uuid.UUID) (*Membership, error) {
-	return c.Query().Where(membership.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *MembershipClient) GetX(ctx context.Context, id uuid.UUID) *Membership {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
 // QueryProject queries the project edge of a Membership.
 func (c *MembershipClient) QueryProject(m *Membership) *ProjectQuery {
-	query := (&ProjectClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(membership.Table, membership.FieldID, id),
-			sqlgraph.To(project.Table, project.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, membership.ProjectTable, membership.ProjectColumn),
-		)
-		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
+	return c.Query().
+		Where(membership.ProjectID(m.ProjectID), membership.UserID(m.UserID)).
+		QueryProject()
 }
 
 // QueryUser queries the user edge of a Membership.
 func (c *MembershipClient) QueryUser(m *Membership) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(membership.Table, membership.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, membership.UserTable, membership.UserColumn),
-		)
-		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
+	return c.Query().
+		Where(membership.ProjectID(m.ProjectID), membership.UserID(m.UserID)).
+		QueryUser()
 }
 
 // Hooks returns the client hooks.
@@ -1718,7 +1620,7 @@ func (c *ProjectClient) QueryMemberships(pr *Project) *MembershipQuery {
 		id := pr.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(project.Table, project.FieldID, id),
-			sqlgraph.To(membership.Table, membership.FieldID),
+			sqlgraph.To(membership.Table, membership.ProjectColumn),
 			sqlgraph.Edge(sqlgraph.O2M, true, project.MembershipsTable, project.MembershipsColumn),
 		)
 		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
@@ -1734,7 +1636,7 @@ func (c *ProjectClient) QueryGroupMemberships(pr *Project) *GroupMembershipQuery
 		id := pr.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(project.Table, project.FieldID, id),
-			sqlgraph.To(groupmembership.Table, groupmembership.FieldID),
+			sqlgraph.To(groupmembership.Table, groupmembership.ProjectColumn),
 			sqlgraph.Edge(sqlgraph.O2M, true, project.GroupMembershipsTable, project.GroupMembershipsColumn),
 		)
 		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)

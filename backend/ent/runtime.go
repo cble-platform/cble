@@ -5,19 +5,17 @@ package ent
 import (
 	"time"
 
+	"github.com/cble-platform/cble-provider-grpc/pkg/provider"
 	"github.com/cble-platform/cble/backend/ent/blueprint"
 	"github.com/cble-platform/cble/backend/ent/deployment"
 	"github.com/cble-platform/cble/backend/ent/deploymentnode"
 	"github.com/cble-platform/cble/backend/ent/grantedpermission"
 	"github.com/cble-platform/cble/backend/ent/group"
-	"github.com/cble-platform/cble/backend/ent/groupmembership"
-	"github.com/cble-platform/cble/backend/ent/membership"
 	"github.com/cble-platform/cble/backend/ent/project"
 	entprovider "github.com/cble-platform/cble/backend/ent/provider"
 	"github.com/cble-platform/cble/backend/ent/resource"
 	"github.com/cble-platform/cble/backend/ent/schema"
 	"github.com/cble-platform/cble/backend/ent/user"
-	"github.com/cble-platform/cble-provider-grpc/pkg/provider"
 	"github.com/google/uuid"
 )
 
@@ -132,44 +130,10 @@ func init() {
 	groupDescID := groupFields[0].Descriptor()
 	// group.DefaultID holds the default value on creation for the id field.
 	group.DefaultID = groupDescID.Default.(func() uuid.UUID)
-	groupmembershipMixin := schema.GroupMembership{}.Mixin()
-	groupmembershipMixinFields0 := groupmembershipMixin[0].Fields()
-	_ = groupmembershipMixinFields0
 	groupmembershipFields := schema.GroupMembership{}.Fields()
 	_ = groupmembershipFields
-	// groupmembershipDescCreatedAt is the schema descriptor for created_at field.
-	groupmembershipDescCreatedAt := groupmembershipMixinFields0[0].Descriptor()
-	// groupmembership.DefaultCreatedAt holds the default value on creation for the created_at field.
-	groupmembership.DefaultCreatedAt = groupmembershipDescCreatedAt.Default.(func() time.Time)
-	// groupmembershipDescUpdatedAt is the schema descriptor for updated_at field.
-	groupmembershipDescUpdatedAt := groupmembershipMixinFields0[1].Descriptor()
-	// groupmembership.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	groupmembership.DefaultUpdatedAt = groupmembershipDescUpdatedAt.Default.(func() time.Time)
-	// groupmembership.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	groupmembership.UpdateDefaultUpdatedAt = groupmembershipDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// groupmembershipDescID is the schema descriptor for id field.
-	groupmembershipDescID := groupmembershipFields[0].Descriptor()
-	// groupmembership.DefaultID holds the default value on creation for the id field.
-	groupmembership.DefaultID = groupmembershipDescID.Default.(func() uuid.UUID)
-	membershipMixin := schema.Membership{}.Mixin()
-	membershipMixinFields0 := membershipMixin[0].Fields()
-	_ = membershipMixinFields0
 	membershipFields := schema.Membership{}.Fields()
 	_ = membershipFields
-	// membershipDescCreatedAt is the schema descriptor for created_at field.
-	membershipDescCreatedAt := membershipMixinFields0[0].Descriptor()
-	// membership.DefaultCreatedAt holds the default value on creation for the created_at field.
-	membership.DefaultCreatedAt = membershipDescCreatedAt.Default.(func() time.Time)
-	// membershipDescUpdatedAt is the schema descriptor for updated_at field.
-	membershipDescUpdatedAt := membershipMixinFields0[1].Descriptor()
-	// membership.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	membership.DefaultUpdatedAt = membershipDescUpdatedAt.Default.(func() time.Time)
-	// membership.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	membership.UpdateDefaultUpdatedAt = membershipDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// membershipDescID is the schema descriptor for id field.
-	membershipDescID := membershipFields[0].Descriptor()
-	// membership.DefaultID holds the default value on creation for the id field.
-	membership.DefaultID = membershipDescID.Default.(func() uuid.UUID)
 	projectMixin := schema.Project{}.Mixin()
 	projectMixinFields0 := projectMixin[0].Fields()
 	_ = projectMixinFields0

@@ -172,7 +172,7 @@ func (pq *ProjectQuery) QueryMemberships() *MembershipQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(project.Table, project.FieldID, selector),
-			sqlgraph.To(membership.Table, membership.FieldID),
+			sqlgraph.To(membership.Table, membership.ProjectColumn),
 			sqlgraph.Edge(sqlgraph.O2M, true, project.MembershipsTable, project.MembershipsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
@@ -194,7 +194,7 @@ func (pq *ProjectQuery) QueryGroupMemberships() *GroupMembershipQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(project.Table, project.FieldID, selector),
-			sqlgraph.To(groupmembership.Table, groupmembership.FieldID),
+			sqlgraph.To(groupmembership.Table, groupmembership.ProjectColumn),
 			sqlgraph.Edge(sqlgraph.O2M, true, project.GroupMembershipsTable, project.GroupMembershipsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
@@ -831,7 +831,7 @@ func (pq *ProjectQuery) loadMemberships(ctx context.Context, query *MembershipQu
 		fk := n.ProjectID
 		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "project_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "project_id" returned %v for node %v`, fk, n)
 		}
 		assign(node, n)
 	}
@@ -861,7 +861,7 @@ func (pq *ProjectQuery) loadGroupMemberships(ctx context.Context, query *GroupMe
 		fk := n.ProjectID
 		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "project_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "project_id" returned %v for node %v`, fk, n)
 		}
 		assign(node, n)
 	}

@@ -340,14 +340,14 @@ func newDeploymentsStep() *sqlgraph.Step {
 func newMembershipsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(MembershipsInverseTable, FieldID),
+		sqlgraph.To(MembershipsInverseTable, MembershipsColumn),
 		sqlgraph.Edge(sqlgraph.O2M, true, MembershipsTable, MembershipsColumn),
 	)
 }
 func newGroupMembershipsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(GroupMembershipsInverseTable, FieldID),
+		sqlgraph.To(GroupMembershipsInverseTable, GroupMembershipsColumn),
 		sqlgraph.Edge(sqlgraph.O2M, true, GroupMembershipsTable, GroupMembershipsColumn),
 	)
 }

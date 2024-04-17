@@ -5,7 +5,6 @@ package ent
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -18,12 +17,6 @@ import (
 // Membership is the model entity for the Membership schema.
 type Membership struct {
 	config `json:"-"`
-	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
-	// CreatedAt holds the value of the "created_at" field.
-	CreatedAt time.Time `json:"created_at,omitempty"`
-	// UpdatedAt holds the value of the "updated_at" field.
-	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// ProjectID holds the value of the "project_id" field.
 	ProjectID uuid.UUID `json:"project_id,omitempty"`
 	// UserID holds the value of the "user_id" field.
@@ -80,9 +73,7 @@ func (*Membership) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case membership.FieldRole:
 			values[i] = new(sql.NullString)
-		case membership.FieldCreatedAt, membership.FieldUpdatedAt:
-			values[i] = new(sql.NullTime)
-		case membership.FieldID, membership.FieldProjectID, membership.FieldUserID:
+		case membership.FieldProjectID, membership.FieldUserID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -99,24 +90,6 @@ func (m *Membership) assignValues(columns []string, values []any) error {
 	}
 	for i := range columns {
 		switch columns[i] {
-		case membership.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				m.ID = *value
-			}
-		case membership.FieldCreatedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field created_at", values[i])
-			} else if value.Valid {
-				m.CreatedAt = value.Time
-			}
-		case membership.FieldUpdatedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
-			} else if value.Valid {
-				m.UpdatedAt = value.Time
-			}
 		case membership.FieldProjectID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field project_id", values[i])
@@ -180,13 +153,6 @@ func (m *Membership) Unwrap() *Membership {
 func (m *Membership) String() string {
 	var builder strings.Builder
 	builder.WriteString("Membership(")
-	builder.WriteString(fmt.Sprintf("id=%v, ", m.ID))
-	builder.WriteString("created_at=")
-	builder.WriteString(m.CreatedAt.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("updated_at=")
-	builder.WriteString(m.UpdatedAt.Format(time.ANSIC))
-	builder.WriteString(", ")
 	builder.WriteString("project_id=")
 	builder.WriteString(fmt.Sprintf("%v", m.ProjectID))
 	builder.WriteString(", ")

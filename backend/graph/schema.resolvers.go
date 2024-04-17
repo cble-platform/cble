@@ -125,6 +125,11 @@ func (r *groupResolver) Users(ctx context.Context, obj *ent.Group) ([]*ent.User,
 	return obj.QueryUsers().All(ctx)
 }
 
+// ID is the resolver for the id field.
+func (r *groupMembershipResolver) ID(ctx context.Context, obj *ent.GroupMembership) (uuid.UUID, error) {
+	panic(fmt.Errorf("not implemented: ID - id"))
+}
+
 // Project is the resolver for the project field.
 func (r *groupMembershipResolver) Project(ctx context.Context, obj *ent.GroupMembership) (*ent.Project, error) {
 	return obj.QueryProject().Only(ctx)
@@ -133,6 +138,11 @@ func (r *groupMembershipResolver) Project(ctx context.Context, obj *ent.GroupMem
 // Group is the resolver for the group field.
 func (r *groupMembershipResolver) Group(ctx context.Context, obj *ent.GroupMembership) (*ent.Group, error) {
 	return obj.QueryGroup().Only(ctx)
+}
+
+// ID is the resolver for the id field.
+func (r *membershipResolver) ID(ctx context.Context, obj *ent.Membership) (uuid.UUID, error) {
+	panic(fmt.Errorf("not implemented: ID - id"))
 }
 
 // Project is the resolver for the project field.
@@ -556,7 +566,7 @@ func (r *mutationResolver) UpdateMembership(ctx context.Context, id uuid.UUID, u
 	}
 
 	// Clear all memberships
-	entProject, err := tx.Project.UpdateOneID(id).ClearMemberships().ClearGroupMemberships().Save(ctx)
+	entProject, err := tx.Project.UpdateOneID(id).ClearMembers().ClearGroupMembers().Save(ctx)
 	if err != nil {
 		tx.Rollback()
 		return nil, gqlerror.Errorf("failed to clear memberships: %v", err)

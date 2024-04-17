@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -21,34 +20,6 @@ type GroupMembershipCreate struct {
 	config
 	mutation *GroupMembershipMutation
 	hooks    []Hook
-}
-
-// SetCreatedAt sets the "created_at" field.
-func (gmc *GroupMembershipCreate) SetCreatedAt(t time.Time) *GroupMembershipCreate {
-	gmc.mutation.SetCreatedAt(t)
-	return gmc
-}
-
-// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (gmc *GroupMembershipCreate) SetNillableCreatedAt(t *time.Time) *GroupMembershipCreate {
-	if t != nil {
-		gmc.SetCreatedAt(*t)
-	}
-	return gmc
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (gmc *GroupMembershipCreate) SetUpdatedAt(t time.Time) *GroupMembershipCreate {
-	gmc.mutation.SetUpdatedAt(t)
-	return gmc
-}
-
-// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (gmc *GroupMembershipCreate) SetNillableUpdatedAt(t *time.Time) *GroupMembershipCreate {
-	if t != nil {
-		gmc.SetUpdatedAt(*t)
-	}
-	return gmc
 }
 
 // SetProjectID sets the "project_id" field.
@@ -73,20 +44,6 @@ func (gmc *GroupMembershipCreate) SetRole(gr groupmembership.Role) *GroupMembers
 func (gmc *GroupMembershipCreate) SetNillableRole(gr *groupmembership.Role) *GroupMembershipCreate {
 	if gr != nil {
 		gmc.SetRole(*gr)
-	}
-	return gmc
-}
-
-// SetID sets the "id" field.
-func (gmc *GroupMembershipCreate) SetID(u uuid.UUID) *GroupMembershipCreate {
-	gmc.mutation.SetID(u)
-	return gmc
-}
-
-// SetNillableID sets the "id" field if the given value is not nil.
-func (gmc *GroupMembershipCreate) SetNillableID(u *uuid.UUID) *GroupMembershipCreate {
-	if u != nil {
-		gmc.SetID(*u)
 	}
 	return gmc
 }
@@ -136,32 +93,14 @@ func (gmc *GroupMembershipCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (gmc *GroupMembershipCreate) defaults() {
-	if _, ok := gmc.mutation.CreatedAt(); !ok {
-		v := groupmembership.DefaultCreatedAt()
-		gmc.mutation.SetCreatedAt(v)
-	}
-	if _, ok := gmc.mutation.UpdatedAt(); !ok {
-		v := groupmembership.DefaultUpdatedAt()
-		gmc.mutation.SetUpdatedAt(v)
-	}
 	if _, ok := gmc.mutation.Role(); !ok {
 		v := groupmembership.DefaultRole
 		gmc.mutation.SetRole(v)
-	}
-	if _, ok := gmc.mutation.ID(); !ok {
-		v := groupmembership.DefaultID()
-		gmc.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (gmc *GroupMembershipCreate) check() error {
-	if _, ok := gmc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "GroupMembership.created_at"`)}
-	}
-	if _, ok := gmc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "GroupMembership.updated_at"`)}
-	}
 	if _, ok := gmc.mutation.ProjectID(); !ok {
 		return &ValidationError{Name: "project_id", err: errors.New(`ent: missing required field "GroupMembership.project_id"`)}
 	}
@@ -196,35 +135,14 @@ func (gmc *GroupMembershipCreate) sqlSave(ctx context.Context) (*GroupMembership
 		}
 		return nil, err
 	}
-	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
-		}
-	}
-	gmc.mutation.id = &_node.ID
-	gmc.mutation.done = true
 	return _node, nil
 }
 
 func (gmc *GroupMembershipCreate) createSpec() (*GroupMembership, *sqlgraph.CreateSpec) {
 	var (
 		_node = &GroupMembership{config: gmc.config}
-		_spec = sqlgraph.NewCreateSpec(groupmembership.Table, sqlgraph.NewFieldSpec(groupmembership.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(groupmembership.Table, nil)
 	)
-	if id, ok := gmc.mutation.ID(); ok {
-		_node.ID = id
-		_spec.ID.Value = &id
-	}
-	if value, ok := gmc.mutation.CreatedAt(); ok {
-		_spec.SetField(groupmembership.FieldCreatedAt, field.TypeTime, value)
-		_node.CreatedAt = value
-	}
-	if value, ok := gmc.mutation.UpdatedAt(); ok {
-		_spec.SetField(groupmembership.FieldUpdatedAt, field.TypeTime, value)
-		_node.UpdatedAt = value
-	}
 	if value, ok := gmc.mutation.Role(); ok {
 		_spec.SetField(groupmembership.FieldRole, field.TypeEnum, value)
 		_node.Role = value
@@ -310,7 +228,6 @@ func (gmcb *GroupMembershipCreateBulk) Save(ctx context.Context) ([]*GroupMember
 				if err != nil {
 					return nil, err
 				}
-				mutation.id = &nodes[i].ID
 				mutation.done = true
 				return nodes[i], nil
 			})

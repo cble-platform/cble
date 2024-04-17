@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -28,12 +27,6 @@ type MembershipUpdate struct {
 // Where appends a list predicates to the MembershipUpdate builder.
 func (mu *MembershipUpdate) Where(ps ...predicate.Membership) *MembershipUpdate {
 	mu.mutation.Where(ps...)
-	return mu
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (mu *MembershipUpdate) SetUpdatedAt(t time.Time) *MembershipUpdate {
-	mu.mutation.SetUpdatedAt(t)
 	return mu
 }
 
@@ -108,7 +101,6 @@ func (mu *MembershipUpdate) ClearUser() *MembershipUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (mu *MembershipUpdate) Save(ctx context.Context) (int, error) {
-	mu.defaults()
 	return withHooks(ctx, mu.sqlSave, mu.mutation, mu.hooks)
 }
 
@@ -134,14 +126,6 @@ func (mu *MembershipUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// defaults sets the default values of the builder before save.
-func (mu *MembershipUpdate) defaults() {
-	if _, ok := mu.mutation.UpdatedAt(); !ok {
-		v := membership.UpdateDefaultUpdatedAt()
-		mu.mutation.SetUpdatedAt(v)
-	}
-}
-
 // check runs all checks and user-defined validators on the builder.
 func (mu *MembershipUpdate) check() error {
 	if v, ok := mu.mutation.Role(); ok {
@@ -162,16 +146,13 @@ func (mu *MembershipUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := mu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(membership.Table, membership.Columns, sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(membership.Table, membership.Columns, sqlgraph.NewFieldSpec(membership.FieldProjectID, field.TypeUUID), sqlgraph.NewFieldSpec(membership.FieldUserID, field.TypeUUID))
 	if ps := mu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := mu.mutation.UpdatedAt(); ok {
-		_spec.SetField(membership.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := mu.mutation.Role(); ok {
 		_spec.SetField(membership.FieldRole, field.TypeEnum, value)
@@ -252,12 +233,6 @@ type MembershipUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *MembershipMutation
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (muo *MembershipUpdateOne) SetUpdatedAt(t time.Time) *MembershipUpdateOne {
-	muo.mutation.SetUpdatedAt(t)
-	return muo
 }
 
 // SetProjectID sets the "project_id" field.
@@ -344,7 +319,6 @@ func (muo *MembershipUpdateOne) Select(field string, fields ...string) *Membersh
 
 // Save executes the query and returns the updated Membership entity.
 func (muo *MembershipUpdateOne) Save(ctx context.Context) (*Membership, error) {
-	muo.defaults()
 	return withHooks(ctx, muo.sqlSave, muo.mutation, muo.hooks)
 }
 
@@ -370,14 +344,6 @@ func (muo *MembershipUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// defaults sets the default values of the builder before save.
-func (muo *MembershipUpdateOne) defaults() {
-	if _, ok := muo.mutation.UpdatedAt(); !ok {
-		v := membership.UpdateDefaultUpdatedAt()
-		muo.mutation.SetUpdatedAt(v)
-	}
-}
-
 // check runs all checks and user-defined validators on the builder.
 func (muo *MembershipUpdateOne) check() error {
 	if v, ok := muo.mutation.Role(); ok {
@@ -398,22 +364,24 @@ func (muo *MembershipUpdateOne) sqlSave(ctx context.Context) (_node *Membership,
 	if err := muo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(membership.Table, membership.Columns, sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID))
-	id, ok := muo.mutation.ID()
-	if !ok {
-		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Membership.id" for update`)}
+	_spec := sqlgraph.NewUpdateSpec(membership.Table, membership.Columns, sqlgraph.NewFieldSpec(membership.FieldProjectID, field.TypeUUID), sqlgraph.NewFieldSpec(membership.FieldUserID, field.TypeUUID))
+	if id, ok := muo.mutation.ProjectID(); !ok {
+		return nil, &ValidationError{Name: "project_id", err: errors.New(`ent: missing "Membership.project_id" for update`)}
+	} else {
+		_spec.Node.CompositeID[0].Value = id
 	}
-	_spec.Node.ID.Value = id
+	if id, ok := muo.mutation.UserID(); !ok {
+		return nil, &ValidationError{Name: "user_id", err: errors.New(`ent: missing "Membership.user_id" for update`)}
+	} else {
+		_spec.Node.CompositeID[1].Value = id
+	}
 	if fields := muo.fields; len(fields) > 0 {
-		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, membership.FieldID)
-		for _, f := range fields {
+		_spec.Node.Columns = make([]string, len(fields))
+		for i, f := range fields {
 			if !membership.ValidColumn(f) {
 				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 			}
-			if f != membership.FieldID {
-				_spec.Node.Columns = append(_spec.Node.Columns, f)
-			}
+			_spec.Node.Columns[i] = f
 		}
 	}
 	if ps := muo.mutation.predicates; len(ps) > 0 {
@@ -422,9 +390,6 @@ func (muo *MembershipUpdateOne) sqlSave(ctx context.Context) (_node *Membership,
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := muo.mutation.UpdatedAt(); ok {
-		_spec.SetField(membership.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := muo.mutation.Role(); ok {
 		_spec.SetField(membership.FieldRole, field.TypeEnum, value)

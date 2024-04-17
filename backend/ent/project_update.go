@@ -14,8 +14,6 @@ import (
 	"github.com/cble-platform/cble/backend/ent/blueprint"
 	"github.com/cble-platform/cble/backend/ent/deployment"
 	"github.com/cble-platform/cble/backend/ent/group"
-	"github.com/cble-platform/cble/backend/ent/groupmembership"
-	"github.com/cble-platform/cble/backend/ent/membership"
 	"github.com/cble-platform/cble/backend/ent/predicate"
 	"github.com/cble-platform/cble/backend/ent/project"
 	"github.com/cble-platform/cble/backend/ent/user"
@@ -325,36 +323,6 @@ func (pu *ProjectUpdate) AddDeployments(d ...*Deployment) *ProjectUpdate {
 	return pu.AddDeploymentIDs(ids...)
 }
 
-// AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
-func (pu *ProjectUpdate) AddMembershipIDs(ids ...uuid.UUID) *ProjectUpdate {
-	pu.mutation.AddMembershipIDs(ids...)
-	return pu
-}
-
-// AddMemberships adds the "memberships" edges to the Membership entity.
-func (pu *ProjectUpdate) AddMemberships(m ...*Membership) *ProjectUpdate {
-	ids := make([]uuid.UUID, len(m))
-	for i := range m {
-		ids[i] = m[i].ID
-	}
-	return pu.AddMembershipIDs(ids...)
-}
-
-// AddGroupMembershipIDs adds the "group_memberships" edge to the GroupMembership entity by IDs.
-func (pu *ProjectUpdate) AddGroupMembershipIDs(ids ...uuid.UUID) *ProjectUpdate {
-	pu.mutation.AddGroupMembershipIDs(ids...)
-	return pu
-}
-
-// AddGroupMemberships adds the "group_memberships" edges to the GroupMembership entity.
-func (pu *ProjectUpdate) AddGroupMemberships(g ...*GroupMembership) *ProjectUpdate {
-	ids := make([]uuid.UUID, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
-	}
-	return pu.AddGroupMembershipIDs(ids...)
-}
-
 // Mutation returns the ProjectMutation object of the builder.
 func (pu *ProjectUpdate) Mutation() *ProjectMutation {
 	return pu.mutation
@@ -442,48 +410,6 @@ func (pu *ProjectUpdate) RemoveDeployments(d ...*Deployment) *ProjectUpdate {
 		ids[i] = d[i].ID
 	}
 	return pu.RemoveDeploymentIDs(ids...)
-}
-
-// ClearMemberships clears all "memberships" edges to the Membership entity.
-func (pu *ProjectUpdate) ClearMemberships() *ProjectUpdate {
-	pu.mutation.ClearMemberships()
-	return pu
-}
-
-// RemoveMembershipIDs removes the "memberships" edge to Membership entities by IDs.
-func (pu *ProjectUpdate) RemoveMembershipIDs(ids ...uuid.UUID) *ProjectUpdate {
-	pu.mutation.RemoveMembershipIDs(ids...)
-	return pu
-}
-
-// RemoveMemberships removes "memberships" edges to Membership entities.
-func (pu *ProjectUpdate) RemoveMemberships(m ...*Membership) *ProjectUpdate {
-	ids := make([]uuid.UUID, len(m))
-	for i := range m {
-		ids[i] = m[i].ID
-	}
-	return pu.RemoveMembershipIDs(ids...)
-}
-
-// ClearGroupMemberships clears all "group_memberships" edges to the GroupMembership entity.
-func (pu *ProjectUpdate) ClearGroupMemberships() *ProjectUpdate {
-	pu.mutation.ClearGroupMemberships()
-	return pu
-}
-
-// RemoveGroupMembershipIDs removes the "group_memberships" edge to GroupMembership entities by IDs.
-func (pu *ProjectUpdate) RemoveGroupMembershipIDs(ids ...uuid.UUID) *ProjectUpdate {
-	pu.mutation.RemoveGroupMembershipIDs(ids...)
-	return pu
-}
-
-// RemoveGroupMemberships removes "group_memberships" edges to GroupMembership entities.
-func (pu *ProjectUpdate) RemoveGroupMemberships(g ...*GroupMembership) *ProjectUpdate {
-	ids := make([]uuid.UUID, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
-	}
-	return pu.RemoveGroupMembershipIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -612,9 +538,6 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
-		if specE.ID.Value != nil {
-			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
-		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := pu.mutation.RemovedMembersIDs(); len(nodes) > 0 && !pu.mutation.MembersCleared() {
@@ -635,9 +558,6 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
-		if specE.ID.Value != nil {
-			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
-		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := pu.mutation.MembersIDs(); len(nodes) > 0 {
@@ -658,9 +578,6 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
-		if specE.ID.Value != nil {
-			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
-		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if pu.mutation.GroupMembersCleared() {
@@ -678,9 +595,6 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
-		if specE.ID.Value != nil {
-			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
-		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := pu.mutation.RemovedGroupMembersIDs(); len(nodes) > 0 && !pu.mutation.GroupMembersCleared() {
@@ -701,9 +615,6 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
-		if specE.ID.Value != nil {
-			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
-		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := pu.mutation.GroupMembersIDs(); len(nodes) > 0 {
@@ -724,9 +635,6 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
-		if specE.ID.Value != nil {
-			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
-		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if pu.mutation.BlueprintsCleared() {
@@ -812,96 +720,6 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(deployment.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if pu.mutation.MembershipsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   project.MembershipsTable,
-			Columns: []string{project.MembershipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pu.mutation.RemovedMembershipsIDs(); len(nodes) > 0 && !pu.mutation.MembershipsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   project.MembershipsTable,
-			Columns: []string{project.MembershipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pu.mutation.MembershipsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   project.MembershipsTable,
-			Columns: []string{project.MembershipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if pu.mutation.GroupMembershipsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   project.GroupMembershipsTable,
-			Columns: []string{project.GroupMembershipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(groupmembership.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pu.mutation.RemovedGroupMembershipsIDs(); len(nodes) > 0 && !pu.mutation.GroupMembershipsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   project.GroupMembershipsTable,
-			Columns: []string{project.GroupMembershipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(groupmembership.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pu.mutation.GroupMembershipsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   project.GroupMembershipsTable,
-			Columns: []string{project.GroupMembershipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(groupmembership.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1219,36 +1037,6 @@ func (puo *ProjectUpdateOne) AddDeployments(d ...*Deployment) *ProjectUpdateOne 
 	return puo.AddDeploymentIDs(ids...)
 }
 
-// AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
-func (puo *ProjectUpdateOne) AddMembershipIDs(ids ...uuid.UUID) *ProjectUpdateOne {
-	puo.mutation.AddMembershipIDs(ids...)
-	return puo
-}
-
-// AddMemberships adds the "memberships" edges to the Membership entity.
-func (puo *ProjectUpdateOne) AddMemberships(m ...*Membership) *ProjectUpdateOne {
-	ids := make([]uuid.UUID, len(m))
-	for i := range m {
-		ids[i] = m[i].ID
-	}
-	return puo.AddMembershipIDs(ids...)
-}
-
-// AddGroupMembershipIDs adds the "group_memberships" edge to the GroupMembership entity by IDs.
-func (puo *ProjectUpdateOne) AddGroupMembershipIDs(ids ...uuid.UUID) *ProjectUpdateOne {
-	puo.mutation.AddGroupMembershipIDs(ids...)
-	return puo
-}
-
-// AddGroupMemberships adds the "group_memberships" edges to the GroupMembership entity.
-func (puo *ProjectUpdateOne) AddGroupMemberships(g ...*GroupMembership) *ProjectUpdateOne {
-	ids := make([]uuid.UUID, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
-	}
-	return puo.AddGroupMembershipIDs(ids...)
-}
-
 // Mutation returns the ProjectMutation object of the builder.
 func (puo *ProjectUpdateOne) Mutation() *ProjectMutation {
 	return puo.mutation
@@ -1336,48 +1124,6 @@ func (puo *ProjectUpdateOne) RemoveDeployments(d ...*Deployment) *ProjectUpdateO
 		ids[i] = d[i].ID
 	}
 	return puo.RemoveDeploymentIDs(ids...)
-}
-
-// ClearMemberships clears all "memberships" edges to the Membership entity.
-func (puo *ProjectUpdateOne) ClearMemberships() *ProjectUpdateOne {
-	puo.mutation.ClearMemberships()
-	return puo
-}
-
-// RemoveMembershipIDs removes the "memberships" edge to Membership entities by IDs.
-func (puo *ProjectUpdateOne) RemoveMembershipIDs(ids ...uuid.UUID) *ProjectUpdateOne {
-	puo.mutation.RemoveMembershipIDs(ids...)
-	return puo
-}
-
-// RemoveMemberships removes "memberships" edges to Membership entities.
-func (puo *ProjectUpdateOne) RemoveMemberships(m ...*Membership) *ProjectUpdateOne {
-	ids := make([]uuid.UUID, len(m))
-	for i := range m {
-		ids[i] = m[i].ID
-	}
-	return puo.RemoveMembershipIDs(ids...)
-}
-
-// ClearGroupMemberships clears all "group_memberships" edges to the GroupMembership entity.
-func (puo *ProjectUpdateOne) ClearGroupMemberships() *ProjectUpdateOne {
-	puo.mutation.ClearGroupMemberships()
-	return puo
-}
-
-// RemoveGroupMembershipIDs removes the "group_memberships" edge to GroupMembership entities by IDs.
-func (puo *ProjectUpdateOne) RemoveGroupMembershipIDs(ids ...uuid.UUID) *ProjectUpdateOne {
-	puo.mutation.RemoveGroupMembershipIDs(ids...)
-	return puo
-}
-
-// RemoveGroupMemberships removes "group_memberships" edges to GroupMembership entities.
-func (puo *ProjectUpdateOne) RemoveGroupMemberships(g ...*GroupMembership) *ProjectUpdateOne {
-	ids := make([]uuid.UUID, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
-	}
-	return puo.RemoveGroupMembershipIDs(ids...)
 }
 
 // Where appends a list predicates to the ProjectUpdate builder.
@@ -1536,9 +1282,6 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
-		if specE.ID.Value != nil {
-			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
-		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := puo.mutation.RemovedMembersIDs(); len(nodes) > 0 && !puo.mutation.MembersCleared() {
@@ -1559,9 +1302,6 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
-		if specE.ID.Value != nil {
-			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
-		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := puo.mutation.MembersIDs(); len(nodes) > 0 {
@@ -1582,9 +1322,6 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
-		if specE.ID.Value != nil {
-			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
-		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if puo.mutation.GroupMembersCleared() {
@@ -1602,9 +1339,6 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
-		if specE.ID.Value != nil {
-			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
-		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := puo.mutation.RemovedGroupMembersIDs(); len(nodes) > 0 && !puo.mutation.GroupMembersCleared() {
@@ -1625,9 +1359,6 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
-		if specE.ID.Value != nil {
-			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
-		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := puo.mutation.GroupMembersIDs(); len(nodes) > 0 {
@@ -1648,9 +1379,6 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 		createE.defaults()
 		_, specE := createE.createSpec()
 		edge.Target.Fields = specE.Fields
-		if specE.ID.Value != nil {
-			edge.Target.Fields = append(edge.Target.Fields, specE.ID)
-		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if puo.mutation.BlueprintsCleared() {
@@ -1736,96 +1464,6 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(deployment.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if puo.mutation.MembershipsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   project.MembershipsTable,
-			Columns: []string{project.MembershipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := puo.mutation.RemovedMembershipsIDs(); len(nodes) > 0 && !puo.mutation.MembershipsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   project.MembershipsTable,
-			Columns: []string{project.MembershipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := puo.mutation.MembershipsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   project.MembershipsTable,
-			Columns: []string{project.MembershipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if puo.mutation.GroupMembershipsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   project.GroupMembershipsTable,
-			Columns: []string{project.GroupMembershipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(groupmembership.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := puo.mutation.RemovedGroupMembershipsIDs(); len(nodes) > 0 && !puo.mutation.GroupMembershipsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   project.GroupMembershipsTable,
-			Columns: []string{project.GroupMembershipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(groupmembership.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := puo.mutation.GroupMembershipsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   project.GroupMembershipsTable,
-			Columns: []string{project.GroupMembershipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(groupmembership.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

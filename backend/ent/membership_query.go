@@ -9,7 +9,6 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"entgo.io/ent/schema/field"
 	"github.com/cble-platform/cble/backend/ent/membership"
 	"github.com/cble-platform/cble/backend/ent/predicate"
 	"github.com/cble-platform/cble/backend/ent/project"
@@ -74,7 +73,7 @@ func (mq *MembershipQuery) QueryProject() *ProjectQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(membership.Table, membership.FieldID, selector),
+			sqlgraph.From(membership.Table, membership.ProjectColumn, selector),
 			sqlgraph.To(project.Table, project.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, membership.ProjectTable, membership.ProjectColumn),
 		)
@@ -96,7 +95,7 @@ func (mq *MembershipQuery) QueryUser() *UserQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(membership.Table, membership.FieldID, selector),
+			sqlgraph.From(membership.Table, membership.UserColumn, selector),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, membership.UserTable, membership.UserColumn),
 		)
@@ -128,29 +127,6 @@ func (mq *MembershipQuery) FirstX(ctx context.Context) *Membership {
 	return node
 }
 
-// FirstID returns the first Membership ID from the query.
-// Returns a *NotFoundError when no Membership ID was found.
-func (mq *MembershipQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
-	if ids, err = mq.Limit(1).IDs(setContextOp(ctx, mq.ctx, "FirstID")); err != nil {
-		return
-	}
-	if len(ids) == 0 {
-		err = &NotFoundError{membership.Label}
-		return
-	}
-	return ids[0], nil
-}
-
-// FirstIDX is like FirstID, but panics if an error occurs.
-func (mq *MembershipQuery) FirstIDX(ctx context.Context) uuid.UUID {
-	id, err := mq.FirstID(ctx)
-	if err != nil && !IsNotFound(err) {
-		panic(err)
-	}
-	return id
-}
-
 // Only returns a single Membership entity found by the query, ensuring it only returns one.
 // Returns a *NotSingularError when more than one Membership entity is found.
 // Returns a *NotFoundError when no Membership entities are found.
@@ -178,34 +154,6 @@ func (mq *MembershipQuery) OnlyX(ctx context.Context) *Membership {
 	return node
 }
 
-// OnlyID is like Only, but returns the only Membership ID in the query.
-// Returns a *NotSingularError when more than one Membership ID is found.
-// Returns a *NotFoundError when no entities are found.
-func (mq *MembershipQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
-	if ids, err = mq.Limit(2).IDs(setContextOp(ctx, mq.ctx, "OnlyID")); err != nil {
-		return
-	}
-	switch len(ids) {
-	case 1:
-		id = ids[0]
-	case 0:
-		err = &NotFoundError{membership.Label}
-	default:
-		err = &NotSingularError{membership.Label}
-	}
-	return
-}
-
-// OnlyIDX is like OnlyID, but panics if an error occurs.
-func (mq *MembershipQuery) OnlyIDX(ctx context.Context) uuid.UUID {
-	id, err := mq.OnlyID(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return id
-}
-
 // All executes the query and returns a list of Memberships.
 func (mq *MembershipQuery) All(ctx context.Context) ([]*Membership, error) {
 	ctx = setContextOp(ctx, mq.ctx, "All")
@@ -223,27 +171,6 @@ func (mq *MembershipQuery) AllX(ctx context.Context) []*Membership {
 		panic(err)
 	}
 	return nodes
-}
-
-// IDs executes the query and returns a list of Membership IDs.
-func (mq *MembershipQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
-	if mq.ctx.Unique == nil && mq.path != nil {
-		mq.Unique(true)
-	}
-	ctx = setContextOp(ctx, mq.ctx, "IDs")
-	if err = mq.Select(membership.FieldID).Scan(ctx, &ids); err != nil {
-		return nil, err
-	}
-	return ids, nil
-}
-
-// IDsX is like IDs, but panics if an error occurs.
-func (mq *MembershipQuery) IDsX(ctx context.Context) []uuid.UUID {
-	ids, err := mq.IDs(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return ids
 }
 
 // Count returns the count of the given query.
@@ -267,7 +194,7 @@ func (mq *MembershipQuery) CountX(ctx context.Context) int {
 // Exist returns true if the query has elements in the graph.
 func (mq *MembershipQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, mq.ctx, "Exist")
-	switch _, err := mq.FirstID(ctx); {
+	switch _, err := mq.First(ctx); {
 	case IsNotFound(err):
 		return false, nil
 	case err != nil:
@@ -334,12 +261,12 @@ func (mq *MembershipQuery) WithUser(opts ...func(*UserQuery)) *MembershipQuery {
 // Example:
 //
 //	var v []struct {
-//		CreatedAt time.Time `json:"created_at,omitempty"`
+//		ProjectID uuid.UUID `json:"project_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Membership.Query().
-//		GroupBy(membership.FieldCreatedAt).
+//		GroupBy(membership.FieldProjectID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (mq *MembershipQuery) GroupBy(field string, fields ...string) *MembershipGroupBy {
@@ -357,11 +284,11 @@ func (mq *MembershipQuery) GroupBy(field string, fields ...string) *MembershipGr
 // Example:
 //
 //	var v []struct {
-//		CreatedAt time.Time `json:"created_at,omitempty"`
+//		ProjectID uuid.UUID `json:"project_id,omitempty"`
 //	}
 //
 //	client.Membership.Query().
-//		Select(membership.FieldCreatedAt).
+//		Select(membership.FieldProjectID).
 //		Scan(ctx, &v)
 func (mq *MembershipQuery) Select(fields ...string) *MembershipSelect {
 	mq.ctx.Fields = append(mq.ctx.Fields, fields...)
@@ -505,15 +432,13 @@ func (mq *MembershipQuery) loadUser(ctx context.Context, query *UserQuery, nodes
 
 func (mq *MembershipQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := mq.querySpec()
-	_spec.Node.Columns = mq.ctx.Fields
-	if len(mq.ctx.Fields) > 0 {
-		_spec.Unique = mq.ctx.Unique != nil && *mq.ctx.Unique
-	}
+	_spec.Unique = false
+	_spec.Node.Columns = nil
 	return sqlgraph.CountNodes(ctx, mq.driver, _spec)
 }
 
 func (mq *MembershipQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(membership.Table, membership.Columns, sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(membership.Table, membership.Columns, nil)
 	_spec.From = mq.sql
 	if unique := mq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -522,11 +447,8 @@ func (mq *MembershipQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := mq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, membership.FieldID)
 		for i := range fields {
-			if fields[i] != membership.FieldID {
-				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
-			}
+			_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 		}
 		if mq.withProject != nil {
 			_spec.Node.AddColumnOnce(membership.FieldProjectID)

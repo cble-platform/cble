@@ -21,3 +21,6 @@ docker-compose.prod.yaml
 # Local go workspace
 go.work
 go.work.sum
+
+# Caddyfile
+Caddyfile

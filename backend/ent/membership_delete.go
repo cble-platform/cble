@@ -7,7 +7,6 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"entgo.io/ent/schema/field"
 	"github.com/cble-platform/cble/backend/ent/membership"
 	"github.com/cble-platform/cble/backend/ent/predicate"
 )
@@ -40,7 +39,7 @@ func (md *MembershipDelete) ExecX(ctx context.Context) int {
 }
 
 func (md *MembershipDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(membership.Table, sqlgraph.NewFieldSpec(membership.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(membership.Table, nil)
 	if ps := md.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
