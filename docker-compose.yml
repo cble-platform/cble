@@ -25,14 +25,16 @@ services:
       - ./config.local.yaml:/app/config.local.yaml
       - /tmp/cble-providers:/app/providers-cache
       - /var/run/docker.sock:/var/run/docker.sock # Expose docker socket for running providers
+    ports:
+      - 50051:50051 # gRPC for provider registration
   db:
     image: postgres:15-alpine
     container_name: cble-db
     restart: always
     volumes:
       - cble-db:/var/lib/postgresql/data
-    ports:
-      - 5432:5432
+    # ports:
+    #   - 5432:5432
     environment:
       - POSTGRES_USER=cble
       - POSTGRES_PASSWORD=cble
