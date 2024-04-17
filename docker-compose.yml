@@ -24,6 +24,7 @@ services:
     volumes:
       - ./config.local.yaml:/app/config.local.yaml
       - /tmp/cble-providers:/app/providers-cache
+      - /var/run/docker.sock:/var/run/docker.sock # Expose docker socket for running providers
   db:
     image: postgres:15-alpine
     container_name: cble-db
