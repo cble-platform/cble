@@ -1,0 +1,591 @@
+scalar Time
+scalar Map
+scalar StrMap
+scalar VarTypeMap
+scalar UUID
+scalar MembershipRole
+scalar GroupMembershipRole
+scalar Uint
+
+# directive @hasPermission(objectType: ObjectType!, action: Action!) on FIELD_DEFINITION
+
+type Blueprint {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  name: String!
+  description: String!
+  blueprintTemplate: String!
+  variableTypes: VarTypeMap!
+
+  provider: Provider!
+  project: Project!
+  resources: [Resource!]!
+  deployments: [Deployment]!
+}
+
+type BlueprintPage {
+  blueprints: [Blueprint!]!
+  total: Int!
+}
+
+enum ResourceType {
+  RESOURCE
+  DATA
+}
+
+type ResourceFeatures {
+  power: Boolean!
+  console: Boolean!
+}
+
+type ResourceQuotaRequirements {
+  cpu: Uint!
+  ram: Uint!
+  disk: Uint!
+  router: Uint!
+  network: Uint!
+}
+
+type Resource {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  type: ResourceType!
+  key: String!
+  resourceType: String!
+  features: ResourceFeatures!
+  quotaRequirements: ResourceQuotaRequirements!
+  object: String!
+
+  blueprint: Blueprint!
+  requiredBy: [Resource!]!
+  dependsOn: [Resource!]!
+}
+
+enum DeploymentState {
+  awaiting
+  in_progress
+  complete
+  failed
+  destroyed
+  suspended
+}
+
+type Deployment {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  name: String!
+  description: String!
+  state: DeploymentState!
+  templateVars: StrMap!
+  expiresAt: Time!
+
+  blueprint: Blueprint!
+  project: Project!
+  deploymentNodes: [DeploymentNode!]!
+  requester: User!
+}
+
+type DeploymentPage {
+  deployments: [Deployment!]!
+  total: Int!
+}
+
+enum DeploymentNodeState {
+  to_deploy
+  to_destroy
+  to_rebuild
+  parent_awaiting
+  child_awaiting
+  in_progress
+  complete
+  tainted
+  failed
+  destroyed
+}
+
+type DeploymentNode {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  state: DeploymentNodeState!
+  vars: StrMap
+
+  deployment: Deployment!
+  resource: Resource!
+  nextNodes: [DeploymentNode!]!
+  prevNodes: [DeploymentNode!]!
+}
+
+type Group {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  name: String!
+
+  users: [User]
+}
+
+type GroupPage {
+  groups: [Group!]!
+  total: Int!
+}
+
+enum SubjectType {
+  user
+  group
+}
+
+enum ObjectType {
+  blueprint
+  deployment
+  group
+  permission
+  provider
+  user
+}
+
+type GrantedPermission {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  subjectType: SubjectType!
+  subjectId: ID!
+  objectType: ObjectType!
+  objectId: ID!
+  action: Action!
+
+  displayString: String!
+}
+
+type GrantedPermissionPage {
+  permissions: [GrantedPermission!]!
+  total: Int!
+}
+
+type Membership {
+  id: ID!
+  project: Project!
+  user: User!
+  role: MembershipRole!
+}
+
+type GroupMembership {
+  id: ID!
+  project: Project!
+  group: Group!
+  role: GroupMembershipRole!
+}
+
+type Project {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  name: String!
+  quotaCpu: Int!
+  usageCpu: Int!
+  quotaRam: Int!
+  usageRam: Int!
+  quotaDisk: Int!
+  usageDisk: Int!
+  quotaNetwork: Int!
+  usageNetwork: Int!
+  quotaRouter: Int!
+  usageRouter: Int!
+
+  memberships: [Membership!]!
+  groupMemberships: [GroupMembership!]!
+  blueprints: [Blueprint!]!
+  deployments: [Deployment!]!
+}
+
+type ProjectPage {
+  projects: [Project!]!
+  total: Int!
+}
+
+type Provider {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  displayName: String!
+  providerGitUrl: String!
+  providerVersion: String!
+  configBytes: String!
+  isLoaded: Boolean!
+
+  blueprints: [Blueprint]
+}
+
+type ProviderPage {
+  providers: [Provider!]!
+  total: Int!
+}
+
+type User {
+  id: ID!
+  createdAt: Time!
+  updatedAt: Time!
+  username: String!
+  email: String!
+  firstName: String!
+  lastName: String!
+
+  groups: [Group]!
+  deployments: [Deployment]!
+}
+
+type UserPage {
+  users: [User!]!
+  total: Int!
+}
+
+type Query {
+  ######
+  # ME #
+  ######
+
+  """
+  Get current user
+  """
+  me: User!
+  """
+  Retrieves if the current user has a given permission
+  """
+  meHasPermission(objectType: ObjectType!, objectID: ID, action: Action!): Boolean!
+
+  ########
+  # USER #
+  ########
+
+  """
+  List users (requires permission `x.x.users.*.list`)
+  """
+  users(count: Int! = 10, offset: Int): UserPage!
+  """
+  Get a user (requires permission `x.x.users.x.get`)
+  """
+  user(id: ID!): User!
+
+  #########
+  # GROUP #
+  #########
+
+  """
+  List groups (requires permission `x.x.groups.*.list`)
+  """
+  groups(count: Int! = 10, offset: Int): GroupPage!
+  """
+  Get a group (requires permission `x.x.groups.x.get`)
+  """
+  group(id: ID!): Group!
+
+  ##############
+  # PERMISSION #
+  ##############
+
+  """
+  List permissions (requires permission `x.x.permission.*.list`)
+  """
+  permissions(count: Int! = 10, offset: Int): GrantedPermissionPage!
+  """
+  Get a permission (requires permission `x.x.permission.x.get`)
+  """
+  permission(id: ID!): GrantedPermission!
+
+  ###########
+  # PROJECT #
+  ###########
+
+  """
+  List projects user is a member of (or all if has permission `x.x.projects.*.list`)
+  """
+  projects(count: Int! = 10, offset: Int, minRole: MembershipRole): ProjectPage!
+  """
+  Get a project (requires permission `x.x.projects.x.get`)
+  """
+  project(id: ID!): Project!
+
+  ############
+  # PROVIDER #
+  ############
+
+  """
+  List providers (requires permission `x.x.providers.*.list`)
+  """
+  providers(count: Int! = 10, offset: Int): ProviderPage!
+  """
+  Get a provider (requires permission `x.x.providers.x.get`)
+  """
+  provider(id: ID!): Provider!
+
+  #############
+  # BLUEPRINT #
+  #############
+
+  """
+  List all blueprints from users projects
+  """
+  blueprints(projectFilter: [ID!], count: Int! = 10, offset: Int): BlueprintPage!
+  """
+  Get a blueprint
+  """
+  blueprint(id: ID!): Blueprint!
+
+  ##############
+  # DEPLOYMENT #
+  ##############
+
+  """
+  List deployments (requires permission `x.x.deployments.*.list`)
+  """
+  deployments(includeExpiredAndDestroyed: Boolean! = false, projectFilter: [ID!], count: Int! = 10, offset: Int): DeploymentPage!
+  """
+  Get a deployment (requires permission `x.x.deployments.x.get`)
+  """
+  deployment(id: ID!): Deployment!
+
+  ##########
+  # SEARCH #
+  ##########
+
+  """
+  Search users
+  """
+  searchUsers(search: String!, count: Int! = 10, offset: Int): UserPage!
+  """
+  Search groups
+  """
+  searchGroups(search: String!, count: Int! = 10, offset: Int): GroupPage!
+  """
+  Search projects (requires `Developer` or more)
+  """
+  searchProjects(search: String!, count: Int! = 10, offset: Int, minRole: MembershipRole): ProjectPage!
+}
+
+input BlueprintInput {
+  name: String!
+  description: String!
+  blueprintTemplate: String!
+  variableTypes: VarTypeMap!
+
+  providerId: ID!
+  projectId: ID!
+}
+
+input DeploymentInput {
+  name: String!
+}
+
+input ProjectInput {
+  name: String!
+  """
+  Maximum number of CPU cores in the project (set to -1 for unlimited)
+  """
+  quotaCpu: Int
+  """
+  Maximum MiB of RAM in the project (set to -1 for unlimited)
+  """
+  quotaRam: Int
+  """
+  Maximum MiB of Disk in the project (set to -1 for unlimited)
+  """
+  quotaDisk: Int
+  """
+  Maximum number of networks in the project (set to -1 for unlimited)
+  """
+  quotaNetwork: Int
+  """
+  Maximum number of routers in the project (set to -1 for unlimited)
+  """
+  quotaRouter: Int
+}
+
+input MembershipInput {
+  userID: ID!
+  role: MembershipRole!
+}
+
+input GroupMembershipInput {
+  groupID: ID!
+  role: GroupMembershipRole!
+}
+
+input ProviderInput {
+  displayName: String!
+  providerGitUrl: String!
+  providerVersion: String!
+  configBytes: String!
+}
+
+input UserInput {
+  username: String!
+  email: String!
+  firstName: String!
+  lastName: String!
+}
+
+input GroupInput {
+  name: String!
+}
+
+enum PowerState {
+  on
+  off
+  reset
+}
+
+type Mutation {
+  ########
+  # USER #
+  ########
+
+  """
+  Change current user's password
+  """
+  selfChangePassword(currentPassword: String!, newPassword: String!): Boolean!
+  """
+  Create a user (requires permission `x.x.users.*.create`)
+  """
+  createUser(input: UserInput!): User!
+  """
+  Update a user (requires permission `x.x.users.x.update`)
+  """
+  updateUser(id: ID!, input: UserInput!): User!
+  """
+  Delete a user (requires permission `x.x.users.x.delete`)
+  """
+  deleteUser(id: ID!): Boolean!
+
+  #########
+  # GROUP #
+  #########
+
+  """
+  Create a group (requires permission `x.x.group.x.create`)
+  """
+  createGroup(input: GroupInput!): Group!
+  """
+  Update a group (requires permission `x.x.group.x.update`)
+  """
+  updateGroup(id: ID!, input: GroupInput!): Group!
+  """
+  Delete a group (requires permission `x.x.group.x.delete`)
+  """
+  deleteGroup(id: ID!): Boolean!
+
+  ##############
+  # PERMISSION #
+  ##############
+
+  """
+  Grant a permission (requires permission `x.x.permission.*.grant`)
+  """
+  grantPermission(subjectType: SubjectType!, subjectID: ID!, objectType: ObjectType!, objectID: ID, action: Action!): GrantedPermission!
+  """
+  Revoke a permission (requires permission `x.x.permission.*.revoke`)
+  """
+  revokePermission(subjectType: SubjectType!, subjectID: ID!, objectType: ObjectType!, objectID: ID, action: Action!): Boolean!
+
+  ############
+  # PROVIDER #
+  ############
+
+  """
+  Create a provider (requires permission `x.x.providers.*.create`)
+  """
+  createProvider(input: ProviderInput!): Provider!
+  """
+  Update a provider (requires permission `x.x.providers.x.update`)
+  """
+  updateProvider(id: ID!, input: ProviderInput!): Provider!
+  """
+  Delete a provider (requires permission `x.x.providers.x.delete`)
+  """
+  deleteProvider(id: ID!): Boolean!
+  """
+  Load a provider to connect it to CBLE (requires permission `x.x.providers.x.load`)
+  """
+  loadProvider(id: ID!): Provider!
+  """
+  Unload a provider to disconnect it from CBLE (requires permission `x.x.providers.x.unload`)
+  """
+  unloadProvider(id: ID!): Provider!
+  """
+  Applies the stored configuration to the provider (requires permission `x.x.providers.x.configure`)
+  """
+  configureProvider(id: ID!): Provider!
+
+  ###########
+  # PROJECT #
+  ###########
+
+  """
+  Create a project (requires the permission `x.x.project.*.create`)
+  """
+  createProject(input: ProjectInput!): Project!
+  """
+  Update a project (requires the permission `x.x.project.x.update`)
+  """
+  updateProject(id: ID!, input: ProjectInput!): Project!
+  """
+  Delete a project (requires the permission `x.x.project.x.delete`)
+  """
+  deleteProject(id: ID!): Boolean!
+  """
+  Update membership to project (requires the permission `x.x.project.x.update_membership`)
+  """
+  updateMembership(id: ID!, users: [MembershipInput!]!, groups: [GroupMembershipInput!]!): Project!
+
+  #############
+  # BLUEPRINT #
+  #############
+
+  """
+  Create a blueprint (requires `Developer` role on project)
+  """
+  createBlueprint(input: BlueprintInput!): Blueprint!
+  """
+  Update a blueprint (requires `Developer` role on project)
+  """
+  updateBlueprint(id: ID!, input: BlueprintInput!): Blueprint!
+  """
+  Delete a blueprint (requires `Developer` role on project)
+  """
+  deleteBlueprint(id: ID!): Boolean!
+
+  ##############
+  # DEPLOYMENT #
+  ##############
+
+  """
+  Deploy a blueprint (requires `Deployer` role on project)
+  """
+  deployBlueprint(blueprintId: ID!, projectId: ID!, templateVars: StrMap!): Deployment!
+  """
+  Update a deployment (requires `Deployer` role on project)
+  """
+  updateDeployment(id: ID!, input: DeploymentInput!): Deployment!
+  """
+  Redeploy nodes within a deployment (requires `Deployer` role on project)
+  """
+  redeployDeployment(id: ID!, nodeIds: [ID!]!): Deployment!
+  """
+  Destroy a deployment (requires `Deployer` role on project)
+  """
+  destroyDeployment(id: ID!): Deployment!
+  """
+  Control the power state of a deployment node (requires `Viewer` role on project)
+  """
+  deploymentNodePower(id: ID!, state: PowerState!): Boolean!
+  """
+  Control the power state of a deployment (requires `Viewer` role on project)
+  """
+  deploymentPower(id: ID!, state: PowerState!): Boolean!
+  # """
+  # Get a vm console (requires permission `x.x.deployments.x.console`)
+  # """
+  # getConsole(id: ID!, hostKey: String!): String!
+}

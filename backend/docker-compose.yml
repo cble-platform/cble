@@ -1,0 +1,25 @@
+version: "3.4"
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: cble-db
+    restart: always
+    volumes:
+      - cble-db:/var/lib/postgresql/data
+    networks:
+      - cble
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=cble
+      - POSTGRES_PASSWORD=cble
+      - POSTGRES_DB=cble
+
+volumes:
+  cble-db:
+    driver: local
+
+networks:
+  cble:
+    driver: bridge

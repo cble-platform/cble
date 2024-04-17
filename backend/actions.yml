@@ -1,0 +1,32 @@
+project:
+  - list # List all projects (only compatible with wildcard ID *)
+  - create # Create projects (only compatible with wildcard ID *)
+  - update # Update a given project
+  - delete # Delete a given project
+  - update_membership # Modify project memberships
+group:
+  - list # List all groups (only compatible with wildcard ID *)
+  - create # Create groups
+  - get # Get a given group
+  - update # Update a given group
+  - delete # Delete a given group
+permission:
+  - list # List all permissions (only compatible with wildcard ID *)
+  - get # Get a given permission
+  - grant # Grant permissions (only compatible with wildcard ID *)
+  - revoke # Revoke permissions (only compatible with wildcard ID *)
+provider:
+  - list # List all providers (only compatible with wildcard ID *)
+  - create # Create providers
+  - get # Get a given provider
+  - update # Update a given provider
+  - delete # Delete a given provider
+  - load # Load a given provider
+  - unload # Unload a given provider
+  - configure # Configure a given provider
+user:
+  - list # List all users (only compatible with wildcard ID *)
+  - create # Create users
+  - get # Get a given user
+  - update # Update a given user
+  - delete # Delete a given user
