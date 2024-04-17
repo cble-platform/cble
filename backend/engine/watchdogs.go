@@ -8,12 +8,12 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqljson"
-	"github.com/cble-platform/cble-backend/ent"
-	"github.com/cble-platform/cble-backend/ent/deployment"
-	"github.com/cble-platform/cble-backend/ent/deploymentnode"
-	"github.com/cble-platform/cble-backend/ent/resource"
-	"github.com/cble-platform/cble-backend/providers"
 	"github.com/cble-platform/cble-provider-grpc/pkg/provider"
+	"github.com/cble-platform/cble/backend/ent"
+	"github.com/cble-platform/cble/backend/ent/deployment"
+	"github.com/cble-platform/cble/backend/ent/deploymentnode"
+	"github.com/cble-platform/cble/backend/ent/resource"
+	"github.com/cble-platform/cble/backend/providers"
 	"github.com/sirupsen/logrus"
 )
 

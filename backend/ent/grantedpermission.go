@@ -9,10 +9,10 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/cble-platform/cble-backend/ent/grantedpermission"
-	"github.com/cble-platform/cble-backend/ent/group"
-	"github.com/cble-platform/cble-backend/ent/user"
-	"github.com/cble-platform/cble-backend/permission/actions"
+	"github.com/cble-platform/cble/backend/ent/grantedpermission"
+	"github.com/cble-platform/cble/backend/ent/group"
+	"github.com/cble-platform/cble/backend/ent/user"
+	"github.com/cble-platform/cble/backend/permission/actions"
 	"github.com/google/uuid"
 )
 

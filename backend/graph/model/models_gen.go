@@ -7,10 +7,10 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/cble-platform/cble-backend/engine/models"
-	"github.com/cble-platform/cble-backend/ent"
-	"github.com/cble-platform/cble-backend/ent/groupmembership"
-	"github.com/cble-platform/cble-backend/ent/membership"
+	"github.com/cble-platform/cble/backend/engine/models"
+	"github.com/cble-platform/cble/backend/ent"
+	"github.com/cble-platform/cble/backend/ent/groupmembership"
+	"github.com/cble-platform/cble/backend/ent/membership"
 	"github.com/google/uuid"
 )
 

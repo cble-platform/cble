@@ -1,4 +1,4 @@
-FROM golang:1.21-alpine
+FROM golang:1.22.2-alpine
 
 # Dependencies
 RUN apk add git
@@ -10,6 +10,6 @@ WORKDIR /app
 ENV PATH="${PATH}:/app"
 
 RUN go mod download && go mod verify
-RUN go build -o cble_server main.go
+RUN go build -o cble_server .
 
 CMD ["./cble_server"]

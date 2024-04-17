@@ -36,7 +36,7 @@ resolver:
 # gqlgen will search for any type names in the schema in these go packages
 # if they match it will use them, otherwise it will generate them.
 autobind:
-  - "github.com/cble-platform/cble-backend/ent"
+  - "github.com/cble-platform/cble/backend/ent"
 
 # This section declares type mapping between the GraphQL and go type systems
 #
@@ -46,7 +46,7 @@ autobind:
 models:
   ID:
     model:
-      - github.com/cble-platform/cble-backend/graph/model.UUID
+      - github.com/cble-platform/cble/backend/graph/model.UUID
       - github.com/99designs/gqlgen/graphql.ID
       - github.com/99designs/gqlgen/graphql.Int
       - github.com/99designs/gqlgen/graphql.Int64
@@ -66,29 +66,29 @@ models:
       - github.com/99designs/gqlgen/graphql.Map
   StrMap:
     model:
-      - github.com/cble-platform/cble-backend/graph/model.StrMap
+      - github.com/cble-platform/cble/backend/graph/model.StrMap
   VarTypeMap:
     model:
-      - github.com/cble-platform/cble-backend/graph/model.VarTypeMap
+      - github.com/cble-platform/cble/backend/graph/model.VarTypeMap
   BlueprintObject:
     model:
-      - github.com/cble-platform/cble-backend/engine/models.Object
+      - github.com/cble-platform/cble/backend/engine/models.Object
   UUID:
     model:
-      - github.com/cble-platform/cble-backend/graph/model.UUID
+      - github.com/cble-platform/cble/backend/graph/model.UUID
   Action:
     model:
-      - github.com/cble-platform/cble-backend/permission/actions.PermissionAction
+      - github.com/cble-platform/cble/backend/permission/actions.PermissionAction
   SubjectType:
     model:
-      - github.com/cble-platform/cble-backend/ent/grantedpermission.SubjectType
+      - github.com/cble-platform/cble/backend/ent/grantedpermission.SubjectType
   ObjectType:
     model:
-      - github.com/cble-platform/cble-backend/ent/grantedpermission.ObjectType
-      - github.com/cble-platform/cble-backend/ent/grantedpermission.SubjectType
+      - github.com/cble-platform/cble/backend/ent/grantedpermission.ObjectType
+      - github.com/cble-platform/cble/backend/ent/grantedpermission.SubjectType
   PowerState:
     model:
-      - github.com/cble-platform/cble-backend/graph/model.PowerState
+      - github.com/cble-platform/cble/backend/graph/model.PowerState
       # - github.com/cble-platform/cble-provider-grpc/pkg/provider.PowerState
   ResourceFeatures:
     model:
@@ -98,7 +98,7 @@ models:
       - github.com/cble-platform/cble-provider-grpc/pkg/provider.QuotaRequirements
   MembershipRole:
     model:
-      - github.com/cble-platform/cble-backend/ent/membership.Role
+      - github.com/cble-platform/cble/backend/ent/membership.Role
   GroupMembershipRole:
     model:
-      - github.com/cble-platform/cble-backend/ent/groupmembership.Role
+      - github.com/cble-platform/cble/backend/ent/groupmembership.Role

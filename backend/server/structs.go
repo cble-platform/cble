@@ -1,9 +1,9 @@
 package server
 
 import (
-	"github.com/cble-platform/cble-backend/config"
-	"github.com/cble-platform/cble-backend/ent"
-	"github.com/cble-platform/cble-backend/providers"
+	"github.com/cble-platform/cble/backend/config"
+	"github.com/cble-platform/cble/backend/ent"
+	"github.com/cble-platform/cble/backend/providers"
 )
 
 type CBLEServer struct {

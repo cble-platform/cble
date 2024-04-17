@@ -13,24 +13,24 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/cble-platform/cble-backend/auth"
-	"github.com/cble-platform/cble-backend/engine"
-	"github.com/cble-platform/cble-backend/ent"
-	"github.com/cble-platform/cble-backend/ent/blueprint"
-	"github.com/cble-platform/cble-backend/ent/deployment"
-	"github.com/cble-platform/cble-backend/ent/deploymentnode"
-	"github.com/cble-platform/cble-backend/ent/grantedpermission"
-	"github.com/cble-platform/cble-backend/ent/group"
-	"github.com/cble-platform/cble-backend/ent/groupmembership"
-	"github.com/cble-platform/cble-backend/ent/membership"
-	"github.com/cble-platform/cble-backend/ent/project"
-	"github.com/cble-platform/cble-backend/ent/resource"
-	"github.com/cble-platform/cble-backend/ent/user"
-	"github.com/cble-platform/cble-backend/graph/generated"
-	"github.com/cble-platform/cble-backend/graph/model"
-	"github.com/cble-platform/cble-backend/permission"
-	"github.com/cble-platform/cble-backend/permission/actions"
 	pgrpc "github.com/cble-platform/cble-provider-grpc/pkg/provider"
+	"github.com/cble-platform/cble/backend/auth"
+	"github.com/cble-platform/cble/backend/engine"
+	"github.com/cble-platform/cble/backend/ent"
+	"github.com/cble-platform/cble/backend/ent/blueprint"
+	"github.com/cble-platform/cble/backend/ent/deployment"
+	"github.com/cble-platform/cble/backend/ent/deploymentnode"
+	"github.com/cble-platform/cble/backend/ent/grantedpermission"
+	"github.com/cble-platform/cble/backend/ent/group"
+	"github.com/cble-platform/cble/backend/ent/groupmembership"
+	"github.com/cble-platform/cble/backend/ent/membership"
+	"github.com/cble-platform/cble/backend/ent/project"
+	"github.com/cble-platform/cble/backend/ent/resource"
+	"github.com/cble-platform/cble/backend/ent/user"
+	"github.com/cble-platform/cble/backend/graph/generated"
+	"github.com/cble-platform/cble/backend/graph/model"
+	"github.com/cble-platform/cble/backend/permission"
+	"github.com/cble-platform/cble/backend/permission/actions"
 	"github.com/google/uuid"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	yaml "gopkg.in/yaml.v3"
@@ -1005,7 +1005,7 @@ func (r *mutationResolver) DeploymentPower(ctx context.Context, id uuid.UUID, st
 	wg.Wait()
 
 	// If we successfully applied all power states
-	if len(graphql.GetErrors(ctx).Unwrap()) == 0 {
+	if len(graphql.GetErrors(ctx)) == 0 {
 		// Default set to COMPLETE
 		deploymentState := deployment.StateComplete
 		// If we're powering off, set to SUSPENDED

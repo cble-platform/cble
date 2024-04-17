@@ -5,8 +5,8 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
-	"github.com/cble-platform/cble-backend/ent/mixins"
-	"github.com/cble-platform/cble-backend/permission/actions"
+	"github.com/cble-platform/cble/backend/ent/mixins"
+	"github.com/cble-platform/cble/backend/permission/actions"
 	"github.com/google/uuid"
 )
 

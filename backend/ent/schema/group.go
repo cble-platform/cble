@@ -4,7 +4,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/cble-backend/ent/mixins"
+	"github.com/cble-platform/cble/backend/ent/mixins"
 	"github.com/google/uuid"
 )
 

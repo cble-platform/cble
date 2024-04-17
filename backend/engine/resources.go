@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cble-platform/cble-backend/engine/models"
-	"github.com/cble-platform/cble-backend/ent"
-	"github.com/cble-platform/cble-backend/ent/blueprint"
-	"github.com/cble-platform/cble-backend/ent/resource"
-	"github.com/cble-platform/cble-backend/providers"
 	pgrpc "github.com/cble-platform/cble-provider-grpc/pkg/provider"
+	"github.com/cble-platform/cble/backend/engine/models"
+	"github.com/cble-platform/cble/backend/ent"
+	"github.com/cble-platform/cble/backend/ent/blueprint"
+	"github.com/cble-platform/cble/backend/ent/resource"
+	"github.com/cble-platform/cble/backend/providers"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )

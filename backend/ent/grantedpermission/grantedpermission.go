@@ -8,7 +8,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/cble-platform/cble-backend/permission/actions"
+	"github.com/cble-platform/cble/backend/permission/actions"
 	"github.com/google/uuid"
 )
 

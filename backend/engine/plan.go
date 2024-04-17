@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cble-platform/cble-backend/ent"
-	"github.com/cble-platform/cble-backend/ent/deployment"
-	"github.com/cble-platform/cble-backend/ent/deploymentnode"
-	"github.com/cble-platform/cble-backend/ent/resource"
 	pgrpc "github.com/cble-platform/cble-provider-grpc/pkg/provider"
+	"github.com/cble-platform/cble/backend/ent"
+	"github.com/cble-platform/cble/backend/ent/deployment"
+	"github.com/cble-platform/cble/backend/ent/deploymentnode"
+	"github.com/cble-platform/cble/backend/ent/resource"
 	"github.com/google/uuid"
 )
 

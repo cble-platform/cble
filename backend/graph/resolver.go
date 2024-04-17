@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/cble-platform/cble-backend/config"
-	"github.com/cble-platform/cble-backend/ent"
-	"github.com/cble-platform/cble-backend/graph/generated"
-	"github.com/cble-platform/cble-backend/providers"
+	"github.com/cble-platform/cble/backend/config"
+	"github.com/cble-platform/cble/backend/ent"
+	"github.com/cble-platform/cble/backend/graph/generated"
+	"github.com/cble-platform/cble/backend/providers"
 )
 
 // This file will not be regenerated automatically.

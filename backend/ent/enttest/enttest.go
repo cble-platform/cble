@@ -5,12 +5,12 @@ package enttest
 import (
 	"context"
 
-	"github.com/cble-platform/cble-backend/ent"
+	"github.com/cble-platform/cble/backend/ent"
 	// required by schema hooks.
-	_ "github.com/cble-platform/cble-backend/ent/runtime"
+	_ "github.com/cble-platform/cble/backend/ent/runtime"
 
 	"entgo.io/ent/dialect/sql/schema"
-	"github.com/cble-platform/cble-backend/ent/migrate"
+	"github.com/cble-platform/cble/backend/ent/migrate"
 )
 
 type (

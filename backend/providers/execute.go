@@ -8,7 +8,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/cble-platform/cble-backend/ent"
+	"github.com/cble-platform/cble/backend/ent"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"

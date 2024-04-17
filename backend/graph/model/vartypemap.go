@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/cble-platform/cble-backend/engine/models"
+	"github.com/cble-platform/cble/backend/engine/models"
 )
 
 type VarTypeMap map[string]models.BlueprintVariableType

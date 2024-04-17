@@ -8,8 +8,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/cble-backend/ent/grantedpermission"
-	"github.com/cble-platform/cble-backend/ent/predicate"
+	"github.com/cble-platform/cble/backend/ent/grantedpermission"
+	"github.com/cble-platform/cble/backend/ent/predicate"
 )
 
 // GrantedPermissionDelete is the builder for deleting a GrantedPermission entity.

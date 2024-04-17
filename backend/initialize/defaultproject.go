@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cble-platform/cble-backend/config"
-	"github.com/cble-platform/cble-backend/ent"
-	"github.com/cble-platform/cble-backend/ent/project"
+	"github.com/cble-platform/cble/backend/config"
+	"github.com/cble-platform/cble/backend/ent"
+	"github.com/cble-platform/cble/backend/ent/project"
 )
 
 func InitDefaultProject(ctx context.Context, client *ent.Client, cbleConfig *config.Config) (*ent.Project, error) {

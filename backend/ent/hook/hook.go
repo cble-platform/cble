@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cble-platform/cble-backend/ent"
+	"github.com/cble-platform/cble/backend/ent"
 )
 
 // The BlueprintFunc type is an adapter to allow the use of ordinary

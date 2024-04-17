@@ -8,7 +8,7 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/cble-platform/cble-backend/server"
+	"github.com/cble-platform/cble/backend/server"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"

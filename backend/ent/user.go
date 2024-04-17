@@ -9,7 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/cble-platform/cble-backend/ent/user"
+	"github.com/cble-platform/cble/backend/ent/user"
 	"github.com/google/uuid"
 )
 

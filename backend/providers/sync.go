@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cble-platform/cble-backend/ent"
 	pgrpc "github.com/cble-platform/cble-provider-grpc/pkg/provider"
+	"github.com/cble-platform/cble/backend/ent"
 	"gopkg.in/yaml.v3"
 )
 

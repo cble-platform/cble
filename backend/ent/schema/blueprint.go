@@ -5,8 +5,8 @@ import (
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/cble-backend/engine/models"
-	"github.com/cble-platform/cble-backend/ent/mixins"
+	"github.com/cble-platform/cble/backend/engine/models"
+	"github.com/cble-platform/cble/backend/ent/mixins"
 	"github.com/google/uuid"
 )
 

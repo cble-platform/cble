@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/cble-platform/cble-backend/config"
-	"github.com/cble-platform/cble-backend/ent"
-	"github.com/cble-platform/cble-backend/ent/user"
+	"github.com/cble-platform/cble/backend/config"
+	"github.com/cble-platform/cble/backend/ent"
+	"github.com/cble-platform/cble/backend/ent/user"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 )

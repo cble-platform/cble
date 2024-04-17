@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cble-platform/cble-backend/ent"
-	"github.com/cble-platform/cble-backend/ent/deploymentnode"
+	"github.com/cble-platform/cble/backend/ent"
+	"github.com/cble-platform/cble/backend/ent/deploymentnode"
 	"github.com/sirupsen/logrus"
 )
 

@@ -10,8 +10,8 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/cble-backend/ent/blueprint"
-	entprovider "github.com/cble-platform/cble-backend/ent/provider"
+	"github.com/cble-platform/cble/backend/ent/blueprint"
+	entprovider "github.com/cble-platform/cble/backend/ent/provider"
 	"github.com/google/uuid"
 )
 

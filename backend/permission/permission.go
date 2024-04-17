@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cble-platform/cble-backend/auth"
-	"github.com/cble-platform/cble-backend/ent"
-	"github.com/cble-platform/cble-backend/ent/grantedpermission"
-	"github.com/cble-platform/cble-backend/permission/actions"
+	"github.com/cble-platform/cble/backend/auth"
+	"github.com/cble-platform/cble/backend/ent"
+	"github.com/cble-platform/cble/backend/ent/grantedpermission"
+	"github.com/cble-platform/cble/backend/permission/actions"
 	"github.com/google/uuid"
 )
 

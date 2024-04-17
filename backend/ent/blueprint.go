@@ -10,10 +10,10 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/cble-platform/cble-backend/engine/models"
-	"github.com/cble-platform/cble-backend/ent/blueprint"
-	"github.com/cble-platform/cble-backend/ent/project"
-	entprovider "github.com/cble-platform/cble-backend/ent/provider"
+	"github.com/cble-platform/cble/backend/engine/models"
+	"github.com/cble-platform/cble/backend/ent/blueprint"
+	"github.com/cble-platform/cble/backend/ent/project"
+	entprovider "github.com/cble-platform/cble/backend/ent/provider"
 	"github.com/google/uuid"
 )
 

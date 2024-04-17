@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/cble-platform/cble-backend/ent"
-	"github.com/cble-platform/cble-backend/ent/deployment"
-	"github.com/cble-platform/cble-backend/ent/deploymentnode"
-	"github.com/cble-platform/cble-backend/providers"
+	"github.com/cble-platform/cble/backend/ent"
+	"github.com/cble-platform/cble/backend/ent/deployment"
+	"github.com/cble-platform/cble/backend/ent/deploymentnode"
+	"github.com/cble-platform/cble/backend/providers"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )

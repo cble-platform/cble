@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"entgo.io/ent/dialect"
-	"github.com/cble-platform/cble-backend/config"
-	"github.com/cble-platform/cble-backend/ent"
+	"github.com/cble-platform/cble/backend/config"
+	"github.com/cble-platform/cble/backend/ent"
 )
 
 func DatabaseConnect(ctx context.Context, cbleConfig *config.Config) (*ent.Client, error) {

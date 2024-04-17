@@ -3,7 +3,7 @@ package auth
 import (
 	"net/http"
 
-	"github.com/cble-platform/cble-backend/config"
+	"github.com/cble-platform/cble/backend/config"
 	"github.com/gin-gonic/gin"
 )
 

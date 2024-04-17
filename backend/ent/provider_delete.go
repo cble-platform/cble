@@ -8,9 +8,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/cble-backend/ent/predicate"
+	"github.com/cble-platform/cble/backend/ent/predicate"
 
-	entprovider "github.com/cble-platform/cble-backend/ent/provider"
+	entprovider "github.com/cble-platform/cble/backend/ent/provider"
 )
 
 // ProviderDelete is the builder for deleting a Provider entity.

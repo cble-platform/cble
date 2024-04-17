@@ -4,9 +4,9 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"github.com/cble-platform/cble-backend/engine/models"
-	"github.com/cble-platform/cble-backend/ent/mixins"
 	pgrpc "github.com/cble-platform/cble-provider-grpc/pkg/provider"
+	"github.com/cble-platform/cble/backend/engine/models"
+	"github.com/cble-platform/cble/backend/ent/mixins"
 	"github.com/google/uuid"
 )
 

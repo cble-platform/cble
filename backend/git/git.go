@@ -1,7 +1,7 @@
 package git
 
 import (
-	"github.com/cble-platform/cble-backend/ent"
+	"github.com/cble-platform/cble/backend/ent"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"

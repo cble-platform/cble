@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/cble-platform/cble-backend/ent"
+	"github.com/cble-platform/cble/backend/ent"
 )
 
 // ForContext finds the user from the context. REQUIRES Middleware to have run.

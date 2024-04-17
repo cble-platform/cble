@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cble-platform/cble-backend/config"
-	"github.com/cble-platform/cble-backend/ent"
 	cbleGRPC "github.com/cble-platform/cble-provider-grpc/pkg/cble"
+	"github.com/cble-platform/cble/backend/config"
+	"github.com/cble-platform/cble/backend/ent"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
