@@ -48,7 +48,8 @@ case $auto_config in
       echo "     docker compose -f docker-compose.local.yml build"
       echo "     docker compose -f docker-compose.local.yml up -d"
       echo
-      exit 0 ;;
+      exit 0
+      ;;
     *)
       ;;
 esac
@@ -62,9 +63,11 @@ read -p "Are you using SSL (requires DNS to be set up)? [Y/n] " using_ssl
 case $using_ssl in
   [nN])
     proto="http"
-    is_ssl=false ;;
+    is_ssl=false
+    ;;
   *)
-    sed -i "0,/ssl: false/{s/ssl: false/ssl: true/}" config.local.yaml ;;
+    sed -i "0,/ssl: false/{s/ssl: false/ssl: true/}" config.local.yaml
+    ;;
 esac
 
 # Read in FQDN
