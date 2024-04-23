@@ -120,14 +120,20 @@ sed -i -e "s/POSTGRES_PASSWORD=cble/POSTGRES_PASSWORD=$db_pass/" docker-compose.
 read -p "Default admin account username [cble]: " username
 if [ ! -z "$username" ]; then
   sed -i -e ':a' -e 'N' -e '$!ba' -e "s/last_name: Admin\n    username: cble/last_name: Admin\n    username: $username/g" config.local.yaml
+else
+  username="cble"
 fi
 read -p "Default admin account first name [CBLE]: " first_name
 if [ ! -z "$first_name" ]; then
   sed -i -e "s/first_name: CBLE/first_name: $first_name/g" config.local.yaml
+else
+  first_name="CBLE"
 fi
 read -p "Default admin account last name [Admin]: " last_name
 if [ ! -z "$last_name" ]; then
   sed -i -e "s/last_name: Admin/last_name: $last_name/g" config.local.yaml
+else
+  last_name="Admin"
 fi
 
 # Give next steps instructions
@@ -136,8 +142,14 @@ echo -e "\033[1;32mCBLE has been installed and auto-configured!\033[0m"
 echo
 echo -e "\033[0;33mOnce ready, start CBLE with:\033[0m"
 echo
-echo "     cd cble"
-echo "     docker compose -f docker-compose.local.yml build"
-echo "     docker compose -f docker-compose.local.yml up -d"
+echo "    cd cble"
+echo "    docker compose -f docker-compose.local.yml build"
+echo "    docker compose -f docker-compose.local.yml up -d"
+echo
+echo "Then log in with the following credentials:"
+echo
+echo "    Name: $first_name $last_name"
+echo "    Username: $username"
+echo "    Password: $admin_pass"
 echo
 exit 0
