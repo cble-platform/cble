@@ -30,6 +30,11 @@ query NavPermissions {
     objectID: null
     action: permission_list
   )
+  listUsers: meHasPermission(
+    objectType: user
+    objectID: null
+    action: user_list
+  )
 }
 
 mutation GrantPermission(

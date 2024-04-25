@@ -132,6 +132,19 @@ export default function Navbar({
                 Permissions
               </Button>
             )}
+            {navPermissions?.listUsers && (
+              <Button
+                href="/users"
+                sx={{
+                  my: 2,
+                  color: 'white',
+                  display: 'block',
+                  textAlign: 'center',
+                }}
+              >
+                Users
+              </Button>
+            )}
           </Box>
           <IconButton
             color="inherit"

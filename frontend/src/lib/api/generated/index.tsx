@@ -881,7 +881,7 @@ export type ListPermissionsQuery = { __typename?: 'Query', permissions: { __type
 export type NavPermissionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type NavPermissionsQuery = { __typename?: 'Query', listProviders: boolean, listPermissions: boolean };
+export type NavPermissionsQuery = { __typename?: 'Query', listProviders: boolean, listPermissions: boolean, listUsers: boolean };
 
 export type GrantPermissionMutationVariables = Exact<{
   subjectType: SubjectType;
@@ -1019,7 +1019,10 @@ export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type MeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string } };
 
-export type ListUsersQueryVariables = Exact<{ [key: string]: never; }>;
+export type ListUsersQueryVariables = Exact<{
+  count?: Scalars['Int']['input'];
+  offset?: InputMaybe<Scalars['Int']['input']>;
+}>;
 
 
 export type ListUsersQuery = { __typename?: 'Query', users: { __typename?: 'UserPage', total: number, users: Array<{ __typename?: 'User', id: string, createdAt: any, updatedAt: any, username: string, email: string, firstName: string, lastName: string }> } };
@@ -1763,6 +1766,7 @@ export const NavPermissionsDocument = gql`
     objectID: null
     action: permission_list
   )
+  listUsers: meHasPermission(objectType: user, objectID: null, action: user_list)
 }
     `;
 
@@ -2432,8 +2436,8 @@ export type MeLazyQueryHookResult = ReturnType<typeof useMeLazyQuery>;
 export type MeSuspenseQueryHookResult = ReturnType<typeof useMeSuspenseQuery>;
 export type MeQueryResult = Apollo.QueryResult<MeQuery, MeQueryVariables>;
 export const ListUsersDocument = gql`
-    query ListUsers {
-  users {
+    query ListUsers($count: Int! = 10, $offset: Int) {
+  users(count: $count, offset: $offset) {
     users {
       ...UserFragment
     }
@@ -2454,6 +2458,8 @@ export const ListUsersDocument = gql`
  * @example
  * const { data, loading, error } = useListUsersQuery({
  *   variables: {
+ *      count: // value for 'count'
+ *      offset: // value for 'offset'
  *   },
  * });
  */
