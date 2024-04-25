@@ -14,8 +14,8 @@ query Me {
   }
 }
 
-query ListUsers {
-  users {
+query ListUsers($count: Int! = 10, $offset: Int) {
+  users(count: $count, offset: $offset) {
     users {
       ...UserFragment
     }

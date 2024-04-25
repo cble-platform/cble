@@ -17,10 +17,11 @@ import { SnackbarProvider } from 'notistack'
 import { ReactFlowProvider } from 'reactflow'
 import { Box, CircularProgress } from '@mui/material'
 import Logo from './components/logo'
+import Users from './routes/users'
 
 // Pages
 const Root = lazy(() => import('./routes/root'))
-const ErrorPage = lazy(() => import('./error-page'))
+const ErrorPage = lazy(() => import('./routes/error-page'))
 const Login = lazy(() => import('./routes/auth/login'))
 const Blueprints = lazy(() => import('./routes/blueprints'))
 const RequestBlueprint = lazy(() => import('./routes/blueprints/request'))
@@ -166,6 +167,12 @@ const router = createBrowserRouter([
         path: 'projects',
         children: [
           { index: true, element: <LazyComponent element={<Projects />} /> },
+        ],
+      },
+      {
+        path: 'users',
+        children: [
+          { index: true, element: <LazyComponent element={<Users />} /> },
         ],
       },
     ],

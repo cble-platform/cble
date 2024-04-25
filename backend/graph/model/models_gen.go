@@ -93,10 +93,11 @@ type ProviderPage struct {
 }
 
 type UserInput struct {
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
+	Username  string  `json:"username"`
+	Password  *string `json:"password,omitempty"`
+	Email     string  `json:"email"`
+	FirstName string  `json:"firstName"`
+	LastName  string  `json:"lastName"`
 }
 
 type UserPage struct {
