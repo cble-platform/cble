@@ -422,6 +422,7 @@ input ProviderInput {
 
 input UserInput {
   username: String!
+  password: String
   email: String!
   firstName: String!
   lastName: String!

@@ -33,6 +33,7 @@ import (
 	"github.com/cble-platform/cble/backend/permission/actions"
 	"github.com/google/uuid"
 	"github.com/vektah/gqlparser/v2/gqlerror"
+	"golang.org/x/crypto/bcrypt"
 	yaml "gopkg.in/yaml.v3"
 )
 
@@ -167,12 +168,24 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.UserInput
 		return nil, auth.PERMISSION_DENIED_GQL_ERROR
 	}
 
+	// Make sure password is included
+	if input.Password == nil {
+		return nil, gqlerror.Errorf("must provide password")
+	}
+
+	// Hash the password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(*input.Password), 8)
+	if err != nil {
+		return nil, gqlerror.Errorf("failed to hash user password: %v", err)
+	}
+
 	// Create the user
 	entUser, err := r.ent.User.Create().
 		SetEmail(input.Email).
 		SetFirstName(input.FirstName).
 		SetLastName(input.LastName).
 		SetUsername(input.Username).
+		SetPassword(string(hashedPassword)).
 		Save(ctx)
 	if err != nil {
 		return nil, gqlerror.Errorf("failed to create user: %v", err)

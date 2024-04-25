@@ -752,6 +752,7 @@ export type UserInput = {
   email: Scalars['String']['input'];
   firstName: Scalars['String']['input'];
   lastName: Scalars['String']['input'];
+  password?: InputMaybe<Scalars['String']['input']>;
   username: Scalars['String']['input'];
 };
 

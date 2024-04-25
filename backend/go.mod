@@ -5,7 +5,7 @@ go 1.22.2
 require (
 	entgo.io/ent v0.12.5
 	github.com/99designs/gqlgen v0.17.44
-	github.com/cble-platform/cble-provider-grpc v0.2.1
+	github.com/cble-platform/cble-provider-grpc v0.2.2
 	github.com/docker/docker v25.0.3+incompatible
 	github.com/fatih/color v1.16.0
 	github.com/gin-contrib/cors v1.4.0
